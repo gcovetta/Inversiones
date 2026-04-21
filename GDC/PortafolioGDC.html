@@ -427,7 +427,11 @@ tr:hover td{background:var(--surface2)}
     <!-- MOVIMIENTOS -->
     <div class="page" id="page-movimientos">
       <div class="card">
-        <div class="card-header"><span class="card-title">Registrar movimiento</span></div>
+        <div class="card-header" style="cursor:pointer" onclick="movFormToggle()">
+          <span class="card-title">Registrar movimiento</span>
+          <span id="mov-form-arrow" style="margin-left:auto;font-size:.9rem;color:var(--text3)">▸</span>
+        </div>
+        <div id="mov-form-body" style="display:none">
         <div class="card-body">
           <div class="fg">
             <div class="fgrp"><label>Tipo</label><select id="m-tipo" onchange="onTipo()"><option value="compra">Compra</option><option value="venta">Venta</option><option value="dividendo">Dividendo</option><option value="aporte">Aporte capital</option></select></div>
@@ -455,6 +459,7 @@ tr:hover td{background:var(--surface2)}
             <span id="m-status" class="smsg"></span>
           </div>
           <div class="ibox" style="margin-top:12px"><b>Tip:</b> El CCL se auto-completa con la tabla embebida. Si la fecha no tiene CCL, ingresalo manualmente.</div>
+        </div>
         </div>
       </div>
       <!-- Simulador de Venta -->
@@ -4109,6 +4114,14 @@ function getRubro(ticker){
 }
 
 // ── Catálogo ──────────────────────────────────────────────────
+function movFormToggle(){
+  var body=document.getElementById('mov-form-body');
+  var arrow=document.getElementById('mov-form-arrow');
+  if(!body)return;
+  var open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(arrow)arrow.textContent=open?'▾':'▸';
+}
 function movHistorialToggle(){
   var body=document.getElementById('mov-historial-body');
   var arrow=document.getElementById('mov-historial-arrow');
