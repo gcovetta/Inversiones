@@ -343,7 +343,7 @@ tr:hover td{background:var(--surface2)}
           <div class="metric"><div class="metric-label">Ganancia Neta USD</div><div class="metric-value port-sensitive" id="m-ganancia"><span style="color:var(--accent);font-weight:700">+$40.187</span></div></div>
           <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="m-count">75</div></div>
         </div>
-        <!-- Derecha: 3 gráficos de torta -->
+        <!-- Gráficos de torta -->
         <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0">
           <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
             <div style="position:relative;height:190px"><canvas id="m-pie-sector" width="420" height="190"></canvas></div>
@@ -353,6 +353,24 @@ tr:hover td{background:var(--surface2)}
           </div>
           <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
             <div style="position:relative;height:190px"><canvas id="m-pie-chart" width="420" height="190"></canvas></div>
+          </div>
+        </div>
+        <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
+        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;width:155px;align-self:stretch">
+          <div class="metric" style="flex:1;border-left:3px solid var(--blue);min-height:0">
+            <div class="metric-label">Mayor posición</div>
+            <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:.18rem 0 .12rem" id="stat-pos-ticker">—</div>
+            <div class="port-sensitive" style="font-family:var(--mono);font-size:.72rem;color:var(--text2)" id="stat-pos-val">—</div>
+          </div>
+          <div class="metric" style="flex:1;border-left:3px solid var(--accent);min-height:0">
+            <div class="metric-label">Mayor rendimiento</div>
+            <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:.18rem 0 .12rem" id="stat-best-ticker">—</div>
+            <div style="font-family:var(--mono);font-size:.78rem;font-weight:700" id="stat-best-val">—</div>
+          </div>
+          <div class="metric" style="flex:1;border-left:3px solid var(--red);min-height:0">
+            <div class="metric-label">Peor rendimiento</div>
+            <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:.18rem 0 .12rem" id="stat-worst-ticker">—</div>
+            <div style="font-family:var(--mono);font-size:.78rem;font-weight:700" id="stat-worst-val">—</div>
           </div>
         </div>
       </div>
@@ -1971,7 +1989,7 @@ function renderPortfolio(){
     var mercadoCedearARS=price!=null?(_sectorIsARS?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
     var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):(price/ratio)*p.qty):null;
-    if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}
+    if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
     sectorCost[sector]=(sectorCost[sector]||0)+p.costUSDpuro;
     p._mktARS=mercadoCedearARS;
@@ -2061,7 +2079,7 @@ function renderPortfolio(){
       :(_isARS2?ppcUSD*CCL_HOY:ppcUSD*CCL_HOY);
     var mercadoCedearARS=p._mktARS;
     var inversionCedearARS=p._invARS;
-    var pnlPct=mercadoCedearARS!=null&&ppcCedearARS>0?(mercadoCedearARS-ppcCedearARS)/ppcCedearARS*100:null;
+    var pnlPct=mercadoCedearARS!=null&&ppcCedearARS>0?(mercadoCedearARS-ppcCedearARS)/ppcCedearARS*100:null;p._pnlPct=pnlPct;
     var targetUSD=getTarget(p.ticker);
     var targetARS=targetUSD!=null?(targetUSD/ratio)*_tcHoy:null;
     // ΔUP: (P.Venta USD - Precio mercado USD) / Precio mercado USD
@@ -2165,6 +2183,25 @@ function renderPortfolio(){
   } else {
     gananciaEl.textContent='—';
   }
+
+  // ── Stat cards: mayor posición / mejor / peor rendimiento ──
+  var _openWithVal=open.filter(function(p){return p._valueUSD!=null&&p._valueUSD>0;});
+  var _openWithPnl=open.filter(function(p){return p._pnlPct!=null&&!isNaN(p._pnlPct);});
+  var _statTopPos=_openWithVal.slice().sort(function(a,b){return b._valueUSD-a._valueUSD;})[0]||null;
+  var _statBest=_openWithPnl.slice().sort(function(a,b){return b._pnlPct-a._pnlPct;})[0]||null;
+  var _statWorst=_openWithPnl.slice().sort(function(a,b){return a._pnlPct-b._pnlPct;})[0]||null;
+  var _elPosTk=document.getElementById('stat-pos-ticker');
+  var _elPosVal=document.getElementById('stat-pos-val');
+  var _elBestTk=document.getElementById('stat-best-ticker');
+  var _elBestVal=document.getElementById('stat-best-val');
+  var _elWorstTk=document.getElementById('stat-worst-ticker');
+  var _elWorstVal=document.getElementById('stat-worst-val');
+  if(_elPosTk){_elPosTk.textContent=_statTopPos?_statTopPos.ticker:'—';}
+  if(_elPosVal){_elPosVal.textContent=_statTopPos?'$'+Math.round(_statTopPos._valueUSD).toLocaleString('es-AR'):'—';}
+  if(_elBestTk){_elBestTk.textContent=_statBest?_statBest.ticker:'—';}
+  if(_elBestVal){_elBestVal.innerHTML=_statBest?'<span style="color:var(--accent)">+'+(Math.round(_statBest._pnlPct))+'%</span>':'—';}
+  if(_elWorstTk){_elWorstTk.textContent=_statWorst?_statWorst.ticker:'—';}
+  if(_elWorstVal){_elWorstVal.innerHTML=_statWorst?'<span style="color:var(--red)">'+(Math.round(_statWorst._pnlPct))+'%</span>':'—';}
 
   renderDivsCard();
   renderNearTarget();
