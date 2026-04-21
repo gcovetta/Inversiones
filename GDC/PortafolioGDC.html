@@ -265,12 +265,11 @@ tr:hover td{background:var(--surface2)}
 <header>
   <div class="logo">
     <div class="logo-dot"></div>
+    <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
     <img src="PerfilGaston.png">
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Gastón</span>
-    <span class="tag">Cartera 1</span>
   </div>
   <div class="hright">
-    <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
     <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
     <div class="lupd" id="lupd" data-lastupd="12:06 a. m.">12:06 a.&nbsp;m. · próx. 4:32</div>
   </div>
@@ -464,11 +463,14 @@ tr:hover td{background:var(--surface2)}
       </div>
       <!-- Simulador de Venta -->
       <div class="card" id="sim-card">
-        <div class="card-header">
-          <span class="card-title">Simulador de venta</span>
+        <div class="card-header" style="cursor:pointer" onclick="simToggle()">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="card-title">Simulador de venta</span>
+            <span id="sim-arrow" style="font-size:.9rem;color:var(--text3)">▸</span>
+          </div>
           <span id="sim-status" class="smsg"></span>
         </div>
-        <div class="card-body">
+        <div class="card-body" id="sim-card-body" style="display:none">
           <div class="fg">
             <div class="fgrp">
               <label>Ticker</label>
@@ -4114,6 +4116,14 @@ function getRubro(ticker){
 }
 
 // ── Catálogo ──────────────────────────────────────────────────
+function simToggle(){
+  var body=document.getElementById('sim-card-body');
+  var arrow=document.getElementById('sim-arrow');
+  if(!body)return;
+  var open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(arrow)arrow.textContent=open?'▾':'▸';
+}
 function movFormToggle(){
   var body=document.getElementById('mov-form-body');
   var arrow=document.getElementById('mov-form-arrow');
