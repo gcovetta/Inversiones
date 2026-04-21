@@ -356,21 +356,27 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
         <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
-        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;width:155px;align-self:stretch">
-          <div class="metric" style="flex:1;border-left:3px solid var(--blue);min-height:0">
-            <div class="metric-label">Mayor posición</div>
-            <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:.18rem 0 .12rem" id="stat-pos-ticker">—</div>
-            <div class="port-sensitive" style="font-family:var(--mono);font-size:.72rem;color:var(--text2)" id="stat-pos-val">—</div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;width:155px">
+          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--blue)">
+            <div class="metric-label">↑ posición</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
+              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-pos-ticker">—</span>
+              <span class="port-sensitive" style="font-family:var(--mono);font-size:.63rem;color:var(--text2)" id="stat-pos-val">—</span>
+            </div>
           </div>
-          <div class="metric" style="flex:1;border-left:3px solid var(--accent);min-height:0">
-            <div class="metric-label">Mayor rendimiento</div>
-            <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:.18rem 0 .12rem" id="stat-best-ticker">—</div>
-            <div style="font-family:var(--mono);font-size:.78rem;font-weight:700" id="stat-best-val">—</div>
+          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--accent)">
+            <div class="metric-label">↑ rendimiento</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
+              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-best-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-best-val">—</span>
+            </div>
           </div>
-          <div class="metric" style="flex:1;border-left:3px solid var(--red);min-height:0">
-            <div class="metric-label">Peor rendimiento</div>
-            <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.01em;margin:.18rem 0 .12rem" id="stat-worst-ticker">—</div>
-            <div style="font-family:var(--mono);font-size:.78rem;font-weight:700" id="stat-worst-val">—</div>
+          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--red)">
+            <div class="metric-label">↓ rendimiento</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
+              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-worst-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-worst-val">—</span>
+            </div>
           </div>
         </div>
       </div>
@@ -4771,7 +4777,7 @@ function renderWorldMap(posData) {
     series: {
       regions: [{
         values: countryValues,
-        scale: ['#162a42', '#60a5fa'],
+        scale: ['#1a3060', '#1a4ee8'],
         normalizeFunction: 'polynomial',
         attribute: 'fill'
       }]
