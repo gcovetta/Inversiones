@@ -19,6 +19,9 @@ h2{font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:up
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;width:100%;max-width:860px}
 a.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.5rem;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:.55rem;transition:border-color .15s,background .15s}
 a.card:hover{border-color:var(--accent);background:var(--surface2)}
+.card-top{display:flex;align-items:center;gap:.75rem}
+.card-avatar{width:44px;height:44px;border-radius:50%;border:2px solid var(--border2);object-fit:cover;flex-shrink:0;transition:border-color .15s}
+a.card:hover .card-avatar{border-color:var(--accent)}
 .card-name{font-weight:700;font-size:1rem;letter-spacing:-.01em}
 .card-path{font-family:var(--mono);font-size:.62rem;color:var(--text3)}
 .card-arrow{font-size:.85rem;color:var(--accent);margin-top:auto;padding-top:.4rem}
@@ -35,22 +38,34 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
   <h2>Seleccionar portafolio</h2>
   <div class="grid">
     <a class="card" href="GDC/PortafolioGDC.html">
-      <div class="card-name">GDC</div>
+      <div class="card-top">
+        <img class="card-avatar" src="GDC/PerfilGaston.png" alt="GDC">
+        <div class="card-name">GDC</div>
+      </div>
       <div class="card-path">GDC/PortafolioGDC.html</div>
       <div class="card-arrow">→</div>
     </a>
     <a class="card" href="Ana/PortafolioAna.html">
-      <div class="card-name">Ana</div>
+      <div class="card-top">
+        <img class="card-avatar" src="Ana/PerfilAna.png" alt="Ana">
+        <div class="card-name">Ana</div>
+      </div>
       <div class="card-path">Ana/PortafolioAna.html</div>
       <div class="card-arrow">→</div>
     </a>
     <a class="card" href="Omar/PortafolioOmar.html">
-      <div class="card-name">Omar</div>
+      <div class="card-top">
+        <img class="card-avatar" src="Omar/perfilOmar.png" alt="Omar">
+        <div class="card-name">Omar</div>
+      </div>
       <div class="card-path">Omar/PortafolioOmar.html</div>
       <div class="card-arrow">→</div>
     </a>
     <a class="card" href="Hilda/PortfolioHilda.html">
-      <div class="card-name">Hilda</div>
+      <div class="card-top">
+        <img class="card-avatar" src="Hilda/PerfilHilda.png" alt="Hilda">
+        <div class="card-name">Hilda</div>
+      </div>
       <div class="card-path">Hilda/PortfolioHilda.html</div>
       <div class="card-arrow">→</div>
     </a>
