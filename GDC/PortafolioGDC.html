@@ -823,14 +823,22 @@ tr:hover td{background:var(--surface2)}
             </div>
           </div>
         </div>
-        <!-- Fila 1b: Rendimiento por segmento (debajo del gráfico de tortas) -->
-        <div style="margin-bottom:1rem">
+        <!-- Fila 2: Rendimiento % + Top 10 Ganancias + Top 10 Pérdidas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Rendimiento % promedio por segmento</div>
-            <div style="position:relative;height:280px"><canvas id="db-chart-segmentos"></canvas></div>
+            <div style="position:relative;height:260px"><canvas id="db-chart-segmentos"></canvas></div>
+          </div>
+          <div class="card" style="padding:1rem">
+            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 ganancias (USD)</div>
+            <div style="position:relative;height:260px"><canvas id="db-chart-gains"></canvas></div>
+          </div>
+          <div class="card" style="padding:1rem">
+            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 pérdidas (USD)</div>
+            <div style="position:relative;height:260px"><canvas id="db-chart-losses"></canvas></div>
           </div>
         </div>
-        <!-- Fila 2: Top Holdings -->
+        <!-- Fila 3: Top 10 posiciones -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 posiciones por valor (USD)</div>
@@ -841,15 +849,11 @@ tr:hover td{background:var(--surface2)}
             <div style="position:relative;height:260px"><canvas id="db-chart-top-rv"></canvas></div>
           </div>
         </div>
-        <!-- Fila 3: Ganancias + Pérdidas -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <!-- Fila 4: Mapa del mundo -->
+        <div style="margin-bottom:1rem">
           <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 ganancias (USD)</div>
-            <div style="position:relative;height:280px"><canvas id="db-chart-gains"></canvas></div>
-          </div>
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 pérdidas (USD)</div>
-            <div style="position:relative;height:280px"><canvas id="db-chart-losses"></canvas></div>
+            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Inversiones por región</div>
+            <div id="db-worldmap"></div>
           </div>
         </div>
       </div>
@@ -4652,6 +4656,141 @@ function renderDashboard(){
     plugins:[pieLabelPluginRubros]
   });
 
+  renderWorldMap(posData);
+}
+
+
+// ─── World Map ────────────────────────────────────────
+function renderWorldMap(posData) {
+  var container = document.getElementById('db-worldmap');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var sectorToRegion = {
+    nyse:'usa', cripto:'usa',
+    argentina:'arg', bonos:'arg', on:'arg',
+    brasil:'bra', europa:'eur', china:'chn'
+  };
+
+  var regionVal = { usa:0, arg:0, bra:0, eur:0, chn:0 };
+  posData.forEach(function(d) {
+    var r = sectorToRegion[d.sector];
+    if (r) regionVal[r] += d.valUSD;
+  });
+
+  var vals = Object.keys(regionVal).map(function(k){return regionVal[k];}).filter(function(v){return v>0;});
+  var maxVal = vals.length ? Math.max.apply(null, vals) : 1;
+
+  var W = Math.max(container.offsetWidth || 800, 400);
+  var H = Math.round(W * 0.48);
+  var canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.cssText = 'width:100%;height:auto;display:block';
+  container.appendChild(canvas);
+  var ctx = canvas.getContext('2d');
+
+  function toXY(lon, lat) {
+    return [(lon + 180) / 360 * W, (90 - lat) / 180 * H];
+  }
+
+  function drawPoly(pts, fill, stroke) {
+    if (!pts || pts.length < 2) return;
+    ctx.beginPath();
+    var p0 = toXY(pts[0][0], pts[0][1]);
+    ctx.moveTo(p0[0], p0[1]);
+    for (var i = 1; i < pts.length; i++) {
+      var p = toXY(pts[i][0], pts[i][1]);
+      ctx.lineTo(p[0], p[1]);
+    }
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = stroke || '#1e2026';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
+
+  function regionColor(key) {
+    var val = regionVal[key] || 0;
+    if (val <= 0) return '#252a33';
+    var t = Math.pow(val / maxVal, 0.55);
+    var r = Math.round(22 + t * (126 - 22));
+    var g = Math.round(35 + t * (232 - 35));
+    var b = Math.round(46 + t * (162 - 46));
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  var inactive = '#252a33';
+  var brd = '#1e2026';
+
+  // Ocean
+  ctx.fillStyle = '#161a22';
+  ctx.fillRect(0, 0, W, H);
+
+  // Country polygons (Equirectangular projection)
+  drawPoly([[-140,84],[-52,84],[-52,47],[-67,47],[-95,49],[-125,49],[-140,65]], inactive, brd); // Canada
+  drawPoly([[-125,49],[-95,49],[-82,45],[-67,47],[-67,44],[-80,25],[-97,26],[-110,31],[-117,33],[-124,46]], regionColor('usa'), brd); // USA
+  drawPoly([[-168,71],[-141,71],[-141,60],[-168,60]], regionColor('usa'), brd); // Alaska
+  drawPoly([[-117,33],[-97,26],[-88,16],[-84,10],[-77,8],[-83,9],[-88,15],[-105,20]], inactive, brd); // Mexico+CA
+  drawPoly([[-77,12],[-60,12],[-60,5],[-73,1],[-77,5]], inactive, brd); // Colombia/Venezuela
+  drawPoly([[-74,5],[-34,5],[-35,-10],[-39,-18],[-50,-33],[-58,-33],[-73,-22],[-73,0]], regionColor('bra'), brd); // Brazil
+  drawPoly([[-73,-22],[-53,-34],[-57,-51],[-68,-55],[-74,-43]], regionColor('arg'), brd); // Argentina/Chile
+  drawPoly([[-74,83],[-12,83],[-12,70],[-40,60],[-74,70]], inactive, brd); // Greenland
+  drawPoly([[-10,36],[37,36],[40,48],[30,60],[15,72],[-5,62],[-15,56],[-10,36]], regionColor('eur'), brd); // Europe
+  drawPoly([[5,55],[10,58],[28,71],[15,72],[5,65]], regionColor('eur'), brd); // Scandinavia
+  drawPoly([[25,71],[170,71],[170,50],[140,55],[100,55],[80,45],[50,40],[30,60],[25,71]], inactive, brd); // Russia
+  drawPoly([[-17,37],[37,36],[55,15],[55,-35],[30,-35],[15,-5],[-17,15]], inactive, brd); // Africa
+  drawPoly([[37,36],[60,30],[55,15],[40,10],[37,12]], inactive, brd); // Middle East
+  drawPoly([[68,8],[97,8],[97,35],[75,36],[68,23]], inactive, brd); // India
+  drawPoly([[73,18],[135,18],[135,53],[103,55],[80,45],[73,38]], regionColor('chn'), brd); // China
+  drawPoly([[95,25],[120,25],[125,5],[100,5],[95,15]], inactive, brd); // SE Asia
+  drawPoly([[130,30],[145,44],[143,41],[132,34]], inactive, brd); // Japan
+  drawPoly([[113,-38],[154,-38],[154,-12],[136,-12],[113,-20]], inactive, brd); // Australia
+
+  // Labels for investment regions
+  function drawLabel(lon, lat, name, key) {
+    var val = regionVal[key] || 0;
+    if (val <= 0) return;
+    var xy = toXY(lon, lat);
+    var valStr = val >= 1000 ? '$' + Math.round(val / 1000) + 'k' : '$' + Math.round(val);
+    var fs = Math.max(9, Math.round(W / 90));
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 3;
+    ctx.fillStyle = '#e8eaf0';
+    ctx.font = 'bold ' + fs + 'px "DM Mono",monospace';
+    ctx.fillText(name, xy[0], xy[1]);
+    ctx.font = (fs - 1) + 'px "DM Mono",monospace';
+    ctx.fillStyle = '#c8ccdc';
+    ctx.fillText(valStr, xy[0], xy[1] + fs + 2);
+    ctx.shadowBlur = 0;
+  }
+
+  drawLabel(-98, 37, 'USA', 'usa');
+  drawLabel(-52, -14, 'Brasil', 'bra');
+  drawLabel(-64, -37, 'Argentina', 'arg');
+  drawLabel(13, 50, 'Europa', 'eur');
+  drawLabel(103, 35, 'China', 'chn');
+
+  // Legend at bottom
+  var legendRegs = [
+    {key:'usa',label:'USA'},{key:'arg',label:'Argentina'},
+    {key:'bra',label:'Brasil'},{key:'eur',label:'Europa'},{key:'chn',label:'China'}
+  ];
+  var lx = 10, ly = H - 12;
+  var fs2 = Math.max(8, Math.round(W / 105));
+  ctx.font = fs2 + 'px "DM Mono",monospace';
+  ctx.textAlign = 'left';
+  ctx.shadowBlur = 0;
+  legendRegs.forEach(function(r) {
+    if ((regionVal[r.key] || 0) <= 0) return;
+    ctx.fillStyle = regionColor(r.key);
+    ctx.fillRect(lx, ly - 9, 9, 9);
+    ctx.fillStyle = '#8b8fa8';
+    var label = r.label + ' $' + Math.round((regionVal[r.key]||0) / 1000) + 'k';
+    ctx.fillText(label, lx + 12, ly);
+    lx += ctx.measureText(label).width + 20;
+  });
 }
 
 // ─── Bonos TIR ───────────────────────────────────────────────
