@@ -4833,8 +4833,8 @@ function renderPerfChart() {
     if (!isNaN(n)) myReturns[3] = n;
   }
 
-  // S&P 500: 2023 and 2024 hardcoded; 2025 + 2026 YTD fetched
-  var spReturns = [26.3, 25.0, null, null];
+  // S&P 500: 2023-2025 hardcoded; 2026 YTD fetched en vivo
+  var spReturns = [26.3, 25.0, 18.0, null];
   var labels = ['2023', '2024', '2025', '2026 YTD'];
 
   function draw() {
@@ -4907,8 +4907,8 @@ function renderPerfChart() {
     });
   }
 
-  // Fetch S&P 500 daily closes: Dec 30 2024 → today (covers 2025 + 2026 YTD)
-  var p1 = 1735516800; // 2024-12-30 UTC
+  // Fetch S&P 500 2026 YTD: Dec 30 2025 → hoy
+  var p1 = 1767052800; // 2025-12-30 UTC
   var p2 = Math.floor(Date.now() / 1000);
   var yUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&period1=' + p1 + '&period2=' + p2;
 
@@ -4920,27 +4920,13 @@ function renderPerfChart() {
       var ts = res.timestamp || [];
       var cl = (res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close) || [];
 
-      // Closest close to a target Unix timestamp
-      function closeNear(target) {
-        var bi = -1, bd = Infinity;
-        for (var i = 0; i < ts.length; i++) {
-          if (cl[i] == null) continue;
-          var diff = Math.abs(ts[i] - target);
-          if (diff < bd) { bd = diff; bi = i; }
-        }
-        return bi >= 0 ? cl[bi] : null;
-      }
-
-      var c2024end  = closeNear(1735516800); // ~Dec 30 2024
-      var c2025end  = closeNear(1767139200); // ~Dec 30 2025
+      // Primer precio del año 2026 (primer día hábil desde Jan 1)
       var c2026start = null;
       for (var i = 0; i < ts.length; i++) {
         if (ts[i] >= 1767225600 && cl[i] != null) { c2026start = cl[i]; break; }
       }
       var cNow = cl.slice().reverse().find(function(v) { return v != null; });
 
-      if (c2024end && c2025end)
-        spReturns[2] = Math.round((c2025end / c2024end - 1) * 1000) / 10;
       if (c2026start && cNow)
         spReturns[3] = Math.round((cNow / c2026start - 1) * 1000) / 10;
 
