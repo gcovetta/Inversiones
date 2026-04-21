@@ -120,6 +120,12 @@ def extract_script_block(text):
 
 # ── Aplicar sustituciones de identidad ───────────────────────────────────
 
+def clear_preloaded_data(text):
+    """Vacía PRELOADED y TARGET_TABLE para que no haya datos GDC hardcodeados."""
+    text = re.sub(r'var PRELOADED\s*=\s*\[[^\]]*\]', 'var PRELOADED = []', text, flags=re.DOTALL)
+    text = re.sub(r'var TARGET_TABLE\s*=\s*\{[^}]*\}', 'var TARGET_TABLE = {}', text, flags=re.DOTALL)
+    return text
+
 def restore_identity(text, cfg, sb_url, sb_key, my_returns, pin_key, sess_key, ls_prefix):
     """Sustituye valores GDC con los del portfolio destino."""
 
@@ -148,6 +154,9 @@ def restore_identity(text, cfg, sb_url, sb_key, my_returns, pin_key, sess_key, l
     text = text.replace(GDC_TITLE,  cfg['title'])
     text = text.replace(GDC_FOTO,   cfg['foto'])
     text = text.replace(GDC_NOMBRE, cfg['nombre'])
+
+    # Vaciar datos hardcodeados del GDC
+    text = clear_preloaded_data(text)
 
     return text
 
