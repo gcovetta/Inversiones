@@ -893,23 +893,24 @@ tr:hover td{background:var(--surface2)}
     </div>
 
     <!-- BONOS TIR -->
-    <div class="page" id="page-bonostir" style="padding:1.2rem">
-      <div class="card">
-        <div class="card-header" style="gap:10px;flex-wrap:wrap">
-          <span class="card-title">📈 Bonos — TIR en vivo</span>
-          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Fuente: data912.com/live/arg_bonds</span>
-          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-            <input id="btir-filter" type="text" placeholder="Filtrar ticker…" oninput="btirFilter()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 8px;width:130px;outline:none">
-            <button class="btn btn-sm" onclick="renderBonosTIR()" style="font-size:.7rem">⟳ Actualizar</button>
+    <div class="page" id="page-bonostir" style="padding:0">
+      <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
+        <div class="card">
+          <div class="card-header" style="gap:10px;flex-wrap:wrap">
+            <span class="card-title">📈 Bonos — TIR en vivo</span>
+            <span style="font-size:.66rem;color:var(--text3);font-family:var(--mono)">bonistas.com</span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+              <span id="btir-status" style="font-size:.66rem;font-family:var(--mono);color:var(--text3)"></span>
+              <button class="btn btn-sm" onclick="renderBonosTIR()" style="font-size:.7rem">⟳ Actualizar</button>
+            </div>
           </div>
-        </div>
-        <div class="card-body" style="padding:.6rem 1rem">
-          <div id="btir-status" style="font-size:.72rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px"></div>
-          <div style="overflow-x:auto">
-            <table id="btir-table" style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.73rem">
-              <thead id="btir-thead"></thead>
-              <tbody id="btir-tbody"></tbody>
-            </table>
+          <div class="card-body" style="padding:.5rem 1rem">
+            <div style="overflow-x:auto">
+              <table id="btir-table" style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.73rem;min-width:460px">
+                <thead id="btir-thead"></thead>
+                <tbody id="btir-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -4949,117 +4950,209 @@ function renderPerfChart() {
 }
 
 // ─── Bonos TIR ───────────────────────────────────────────────
-var BTIR_DATA=[];
-var BTIR_HIGHLIGHT=['BC37D','CUAP','DIC','PERF25','GD38','GD41','PARP','PBY26','SA24','DTVP','ATX31','TZX28','TZXS8'];
+// ─── Bonos TIR — bonistas.com ─────────────────────────────────
+var BTIR_DATA = [];
+var BTIR_SORT = { col: 'tir', dir: -1 };   // dir: -1 desc, 1 asc
+var BTIR_FILTERS = { ticker: '', tir: '', modified_duration: '', parity: '' };
 
-// Campos que queremos mostrar (en orden), con label legible
-var BTIR_FIELD_LABELS={
-  ticker:'Ticker', nombre:'Nombre', tipo:'Tipo',
-  precio:'Precio', precio_usd:'Precio USD',
-  tir:'TIR', tna:'TNA', tea:'TEA',
-  duracion:'Duración', duration:'Duración',
-  vencimiento:'Vencimiento', maturity:'Vencimiento',
-  moneda:'Moneda', currency:'Moneda',
-  ultimo:'Último', variacion:'Var%', var_pct:'Var%',
-  paridad:'Paridad', parity:'Paridad'
-};
+var BTIR_COLS = [
+  { key: 'ticker',            label: 'Ticker',   type: 'text' },
+  { key: 'tir',               label: 'TIR',      type: 'num'  },
+  { key: 'modified_duration', label: 'MD',       type: 'num'  },
+  { key: 'parity',            label: 'Paridad',  type: 'num'  }
+];
 
-function renderBonosTIR(){
-  var status=document.getElementById('btir-status');
-  var thead=document.getElementById('btir-thead');
-  var tbody=document.getElementById('btir-tbody');
-  if(!status||!thead||!tbody)return;
-  status.innerHTML='<span style="color:var(--text3)">⏳ Cargando datos…</span>';
-  thead.innerHTML=''; tbody.innerHTML='';
+function renderBonosTIR() {
+  var status = document.getElementById('btir-status');
+  var thead  = document.getElementById('btir-thead');
+  var tbody  = document.getElementById('btir-tbody');
+  if (!status || !thead || !tbody) return;
+  status.innerHTML = '⏳ Cargando…';
+  thead.innerHTML = ''; tbody.innerHTML = '';
 
-  fetch('https://data912.com/live/arg_bonds')
-    .then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
+  fetch('https://bonistas.com/api/bonds')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     })
-    .then(function(data){
-      // Normalizar: puede ser array directo o {data:[...]} o {bonds:[...]}
-      var rows=Array.isArray(data)?data:(data.data||data.bonds||data.result||Object.values(data));
-      BTIR_DATA=rows;
-      _btirRender(rows);
+    .then(function(data) {
+      var rows = Array.isArray(data) ? data : (data.data || data.bonds || []);
+      // Solo bonos con TIR real
+      BTIR_DATA = rows.filter(function(r) {
+        return r.tir && r.tir !== 0 && r.ticker;
+      });
+      _btir2BuildHeader();
+      _btir2Render();
     })
-    .catch(function(e){
-      status.innerHTML='<span style="color:var(--red)">⚠ Error al cargar: '+e.message+'</span>';
+    .catch(function(e) {
+      if (status) status.innerHTML = '<span style="color:var(--red)">⚠ ' + e.message + '</span>';
     });
 }
 
-function _btirRender(rows){
-  var status=document.getElementById('btir-status');
-  var thead=document.getElementById('btir-thead');
-  var tbody=document.getElementById('btir-tbody');
-  if(!rows||!rows.length){status.innerHTML='<span style="color:var(--amber)">Sin datos</span>';return;}
+function _btir2BuildHeader() {
+  var thead = document.getElementById('btir-thead');
+  if (!thead) return;
+  thead.innerHTML = '';
 
-  // Detectar columnas disponibles
-  var sample=rows[0];
-  var allKeys=Object.keys(sample);
-  // Columnas a mostrar: primero las conocidas en orden, luego el resto
-  var orderedKnown=Object.keys(BTIR_FIELD_LABELS).filter(function(k){return allKeys.indexOf(k)>=0;});
-  var rest=allKeys.filter(function(k){return orderedKnown.indexOf(k)<0;});
-  var cols=orderedKnown.concat(rest);
+  var inputStyle = 'width:100%;background:var(--surface2);border:1px solid var(--border);' +
+    'border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.65rem;' +
+    'padding:3px 6px;outline:none;box-sizing:border-box';
 
-  // Detectar qué campo es el ticker key (para el highlight)
-  var tickerKey=allKeys.filter(function(k){return /ticker|symbol|especie|codigo/i.test(k);})[0]||cols[0];
-  // Detectar qué campo es TIR
-  var tirKey=allKeys.filter(function(k){return /^tir$|^yield$|rendimiento/i.test(k);})[0]||null;
-
-  // Header
-  var thRow=document.createElement('tr');
-  thRow.style.borderBottom='2px solid var(--border2)';
-  cols.forEach(function(k){
-    var th=document.createElement('th');
-    th.textContent=(BTIR_FIELD_LABELS[k]||k).toUpperCase();
-    th.style.cssText='text-align:left;padding:5px 8px;color:var(--text3);font-weight:600;font-size:.62rem;letter-spacing:.04em;white-space:nowrap';
-    thRow.appendChild(th);
+  // Row 1: sortable headers
+  var tr1 = document.createElement('tr');
+  tr1.style.borderBottom = '1px solid var(--border2)';
+  BTIR_COLS.forEach(function(col) {
+    var th = document.createElement('th');
+    th.style.cssText = 'padding:6px 8px 4px;color:var(--text2);font-size:.65rem;font-weight:700;' +
+      'text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;cursor:pointer;user-select:none';
+    th.setAttribute('data-col', col.key);
+    th.onclick = function() { btirSort(col.key); };
+    var ind = BTIR_SORT.col === col.key ? (BTIR_SORT.dir === -1 ? ' ↓' : ' ↑') : ' ↕';
+    var indColor = BTIR_SORT.col === col.key ? 'var(--accent)' : 'var(--text3)';
+    th.innerHTML = col.label +
+      '<span id="btir-ind-' + col.key + '" style="color:' + indColor + ';font-size:.7rem">' + ind + '</span>';
+    tr1.appendChild(th);
   });
-  thead.appendChild(thRow);
+  thead.appendChild(tr1);
 
-  // Rows
-  var count=0;
-  rows.forEach(function(row){
-    var tickerVal=String(row[tickerKey]||'').toUpperCase();
-    var isHL=BTIR_HIGHLIGHT.indexOf(tickerVal)>=0;
-    var tr=document.createElement('tr');
-    tr.setAttribute('data-ticker',tickerVal);
-    tr.style.borderBottom='1px solid var(--border)';
-    if(isHL) tr.style.background='rgba(126,232,162,.06)';
+  // Row 2: per-column filter inputs
+  var tr2 = document.createElement('tr');
+  tr2.style.borderBottom = '2px solid var(--border2)';
+  BTIR_COLS.forEach(function(col) {
+    var th = document.createElement('th');
+    th.style.cssText = 'padding:3px 6px 6px';
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.style.cssText = inputStyle;
+    inp.value = BTIR_FILTERS[col.key] || '';
+    inp.placeholder = col.type === 'num' ? '> < >= <= =' : 'Filtrar…';
+    inp.setAttribute('data-col', col.key);
+    inp.oninput = (function(k) {
+      return function() { btirFilterCol(k, this.value); };
+    })(col.key);
+    th.appendChild(inp);
+    tr2.appendChild(th);
+  });
+  thead.appendChild(tr2);
+}
 
-    cols.forEach(function(k){
-      var td=document.createElement('td');
-      var val=row[k];
-      var display=val!=null?val:'—';
+function _btir2Render() {
+  var tbody  = document.getElementById('btir-tbody');
+  var status = document.getElementById('btir-status');
+  if (!tbody) return;
+  tbody.innerHTML = '';
 
-      // Formatear TIR con color
-      if(k===tirKey&&val!=null){
-        var n=parseFloat(val);
-        var color=isNaN(n)?'var(--text)':(n>0?'var(--accent)':'var(--red)');
-        var sign=n>0?'+':'';
-        td.innerHTML='<span style="color:'+color+';font-weight:700">'+sign+(isNaN(n)?display:n.toFixed(2)+'%')+'</span>';
-      } else if(k===tickerKey){
-        td.innerHTML='<span style="font-weight:700;color:'+(isHL?'var(--accent)':'var(--text)')+'">'+display+'</span>';
-      } else {
-        td.textContent=display;
-      }
-      td.style.cssText='padding:5px 8px;white-space:nowrap;color:var(--text2)';
-      tr.appendChild(td);
-    });
+  // Apply filters
+  var rows = BTIR_DATA.filter(function(r) {
+    // Ticker filter: substring
+    if (BTIR_FILTERS.ticker) {
+      var q = BTIR_FILTERS.ticker.toLowerCase();
+      if ((r.ticker || '').toLowerCase().indexOf(q) < 0) return false;
+    }
+    // Numeric filters
+    if (BTIR_FILTERS.tir && !_btirNumMatch(r.tir * 100, BTIR_FILTERS.tir)) return false;
+    if (BTIR_FILTERS.modified_duration && !_btirNumMatch(r.modified_duration, BTIR_FILTERS.modified_duration)) return false;
+    if (BTIR_FILTERS.parity && !_btirNumMatch(r.parity, BTIR_FILTERS.parity)) return false;
+    return true;
+  });
+
+  // Sort
+  var sc = BTIR_SORT.col, sd = BTIR_SORT.dir;
+  rows.sort(function(a, b) {
+    var va = sc === 'tir' ? a.tir * 100 : (a[sc] || 0);
+    var vb = sc === 'tir' ? b.tir * 100 : (b[sc] || 0);
+    if (sc === 'ticker') { va = a.ticker || ''; vb = b.ticker || ''; }
+    if (va < vb) return -sd;
+    if (va > vb) return sd;
+    return 0;
+  });
+
+  rows.forEach(function(r) {
+    var tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--border)';
+    tr.onmouseover = function() { this.style.background = 'rgba(255,255,255,.03)'; };
+    tr.onmouseout  = function() { this.style.background = ''; };
+
+    // Ticker
+    var tdTk = document.createElement('td');
+    tdTk.style.cssText = 'padding:5px 8px;font-weight:700;color:var(--text);white-space:nowrap';
+    tdTk.textContent = r.ticker || '—';
+    tr.appendChild(tdTk);
+
+    // TIR
+    var tirPct = r.tir != null ? r.tir * 100 : null;
+    var tdTir = document.createElement('td');
+    tdTir.style.cssText = 'padding:5px 8px;text-align:right;white-space:nowrap';
+    if (tirPct != null) {
+      var col = tirPct >= 0 ? 'var(--accent)' : 'var(--red)';
+      var sign = tirPct >= 0 ? '+' : '';
+      tdTir.innerHTML = '<span style="color:' + col + ';font-weight:700">' + sign + tirPct.toFixed(2) + '%</span>';
+    } else { tdTir.textContent = '—'; }
+    tr.appendChild(tdTir);
+
+    // MD
+    var tdMd = document.createElement('td');
+    tdMd.style.cssText = 'padding:5px 8px;text-align:right;color:var(--text2);white-space:nowrap';
+    tdMd.textContent = (r.modified_duration != null && r.modified_duration !== 0)
+      ? r.modified_duration.toFixed(2) : '—';
+    tr.appendChild(tdMd);
+
+    // Paridad
+    var tdPar = document.createElement('td');
+    tdPar.style.cssText = 'padding:5px 8px;text-align:right;color:var(--text2);white-space:nowrap';
+    tdPar.textContent = (r.parity != null && r.parity !== 0)
+      ? r.parity.toFixed(1) + '%' : '—';
+    tr.appendChild(tdPar);
+
     tbody.appendChild(tr);
-    count++;
   });
 
-  status.innerHTML='<span style="color:var(--text3)">'+count+' bonos · destacados en verde: tus '+BTIR_HIGHLIGHT.length+' seleccionados · '+new Date().toLocaleTimeString('es-AR')+'</span>';
+  if (status) status.innerHTML =
+    '<span style="color:var(--text3)">' + rows.length + ' bonos' +
+    (rows.length < BTIR_DATA.length ? ' (filtrados de ' + BTIR_DATA.length + ')' : '') +
+    ' · ' + new Date().toLocaleTimeString('es-AR') + '</span>';
 }
 
-function btirFilter(){
-  var q=(document.getElementById('btir-filter').value||'').toLowerCase();
-  document.querySelectorAll('#btir-tbody tr').forEach(function(r){
-    var t=(r.getAttribute('data-ticker')||'').toLowerCase();
-    r.style.display=(!q||t.indexOf(q)>=0)?'':'none';
+function btirSort(col) {
+  if (BTIR_SORT.col === col) {
+    BTIR_SORT.dir *= -1;
+  } else {
+    BTIR_SORT.col = col;
+    BTIR_SORT.dir = col === 'ticker' ? 1 : -1;
+  }
+  // Update all indicators
+  BTIR_COLS.forEach(function(c) {
+    var el = document.getElementById('btir-ind-' + c.key);
+    if (!el) return;
+    if (c.key === col) {
+      el.textContent = BTIR_SORT.dir === -1 ? ' ↓' : ' ↑';
+      el.style.color = 'var(--accent)';
+    } else {
+      el.textContent = ' ↕';
+      el.style.color = 'var(--text3)';
+    }
   });
+  _btir2Render();
+}
+
+function btirFilterCol(col, val) {
+  BTIR_FILTERS[col] = val;
+  _btir2Render();
+}
+
+function _btirNumMatch(rawVal, filterStr) {
+  var s = (filterStr || '').trim();
+  if (!s) return true;
+  var n = parseFloat(rawVal);
+  if (isNaN(n)) return false;
+  var m;
+  if ((m = s.match(/^>=\s*([\d.]+)$/))) return n >= parseFloat(m[1]);
+  if ((m = s.match(/^<=\s*([\d.]+)$/))) return n <= parseFloat(m[1]);
+  if ((m = s.match(/^>\s*([\d.]+)$/)))  return n >  parseFloat(m[1]);
+  if ((m = s.match(/^<\s*([\d.]+)$/)))  return n <  parseFloat(m[1]);
+  if ((m = s.match(/^=\s*([\d.]+)$/)))  return Math.abs(n - parseFloat(m[1])) < 0.001;
+  if ((m = s.match(/^([\d.]+)$/)))      return n >= parseFloat(m[1]);
+  return true;
 }
 
 </script>
