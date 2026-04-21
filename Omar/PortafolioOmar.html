@@ -6,6 +6,9 @@
 <title>Portafolio Omar</title>
 <link href="./Portafolio Tracker — NYSE_files/css2" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
 <style>
 :root{--bg:#0e0f11;--surface:#16181c;--surface2:#1e2026;--border:#2a2d35;--border2:#363a45;--text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;--accent:#7ee8a2;--accent2:#4ade80;--red:#f87171;--amber:#fbbf24;--blue:#60a5fa;--mono:'DM Mono',monospace;--sans:'Syne',sans-serif;--radius:10px;--rsm:6px}
 *{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px}
@@ -107,6 +110,8 @@ tr:hover td{background:var(--surface2)}
 .pfill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
 .ibox{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.65rem .9rem;font-size:.7rem;font-family:var(--mono);color:var(--text2)}
 .ibox b{color:var(--text)}
+.jvm-tooltip{background:#1e2026!important;color:#e8eaf0!important;border:1px solid #363a45!important;font-family:'DM Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
+.jvm-zoom-btn{display:none!important}
 ::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 .panels-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;align-items:start}
 .panels-grid .card{margin-bottom:0}
@@ -185,9 +190,9 @@ tr:hover td{background:var(--surface2)}
 .nt-input::-webkit-outer-spin-button,.nt-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .nt-input[type=number]{-moz-appearance:textfield}
 .nt-pct{color:var(--amber);font-family:var(--mono);font-weight:700;font-size:.82rem}
-.nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px}
-.nt-ticker-card{background:var(--surface2);border:1px solid var(--amber);border-radius:var(--rsm);padding:5px 9px;display:flex;align-items:center;gap:7px}
-.nt-tk-sym{font-weight:800;font-size:.76rem;color:var(--text);min-width:42px;letter-spacing:.02em}
+.nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,110px));gap:5px}
+.nt-ticker-card{background:var(--surface2);border:1px solid var(--amber);border-radius:var(--rsm);padding:7px 7px;min-height:40px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.nt-tk-sym{font-weight:800;font-size:.68rem;color:var(--text);min-width:28px;letter-spacing:.02em}
 .nt-tk-body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
 .nt-tk-prices{display:flex;gap:7px;font-family:var(--mono);font-size:.62rem;white-space:nowrap}
 .nt-tk-price{color:var(--text2)}
@@ -195,7 +200,7 @@ tr:hover td{background:var(--surface2)}
 .nt-tk-progress{display:flex;flex-direction:column;gap:2px;align-items:stretch}
 .nt-tk-pbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:100%}
 .nt-tk-pbar-fill{height:100%;background:var(--amber);border-radius:2px;transition:width .2s}
-.nt-tk-falta{font-family:var(--mono);font-size:.62rem;color:var(--amber);font-weight:700;white-space:nowrap;align-self:flex-end}
+.nt-tk-falta{font-family:var(--mono);font-size:.58rem;color:var(--amber);font-weight:700;white-space:nowrap;align-self:flex-end}
 .nt-empty{color:var(--text3);font-family:var(--mono);font-size:.75rem;text-align:center;padding:14px}
 </style>
 </head>
@@ -347,6 +352,30 @@ tr:hover td{background:var(--surface2)}
           </div>
           <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
             <div style="position:relative;height:190px"><canvas id="m-pie-chart" style="display: block; box-sizing: border-box; height: 190px; width: 420px;" width="420" height="190"></canvas></div>
+          </div>
+        </div>
+        <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;width:155px">
+          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--blue)">
+            <div class="metric-label">↑ posición</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
+              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700" id="stat-pos-ticker">—</span>
+              <span class="port-sensitive" style="font-family:var(--mono);font-size:.63rem;color:var(--text2)" id="stat-pos-val">—</span>
+            </div>
+          </div>
+          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--accent)">
+            <div class="metric-label">↑ rendimiento</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
+              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700" id="stat-best-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.63rem;color:var(--text2)" id="stat-best-val">—</span>
+            </div>
+          </div>
+          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--red)">
+            <div class="metric-label">↓ rendimiento</div>
+            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
+              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700" id="stat-worst-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.63rem;color:var(--text2)" id="stat-worst-val">—</span>
+            </div>
           </div>
         </div>
       </div>
@@ -803,14 +832,22 @@ tr:hover td{background:var(--surface2)}
             </div>
           </div>
         </div>
-        <!-- Fila 1b: Rendimiento por segmento (debajo del gráfico de tortas) -->
-        <div style="margin-bottom:1rem">
+        <!-- Fila 2: Rendimiento % + Top 10 Ganancias + Top 10 Pérdidas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Rendimiento % promedio por segmento</div>
             <div style="position:relative;height:280px"><canvas id="db-chart-segmentos"></canvas></div>
           </div>
+          <div class="card" style="padding:1rem">
+            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 ganancias (USD)</div>
+            <div style="position:relative;height:280px"><canvas id="db-chart-gains"></canvas></div>
+          </div>
+          <div class="card" style="padding:1rem">
+            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 pérdidas (USD)</div>
+            <div style="position:relative;height:280px"><canvas id="db-chart-losses"></canvas></div>
+          </div>
         </div>
-        <!-- Fila 2: Top Holdings -->
+        <!-- Fila 3: Top 10 posiciones -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 posiciones por valor (USD)</div>
@@ -821,15 +858,15 @@ tr:hover td{background:var(--surface2)}
             <div style="position:relative;height:260px"><canvas id="db-chart-top-rv"></canvas></div>
           </div>
         </div>
-        <!-- Fila 3: Ganancias + Pérdidas -->
+        <!-- Fila 4: Mapa + Rendimiento vs S&P -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 ganancias (USD)</div>
-            <div style="position:relative;height:280px"><canvas id="db-chart-gains"></canvas></div>
+            <div class="card-title">Inversiones por región</div>
+            <div id="db-worldmap"></div>
           </div>
           <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 pérdidas (USD)</div>
-            <div style="position:relative;height:280px"><canvas id="db-chart-losses"></canvas></div>
+            <div class="card-title">Mi cartera vs S&amp;P 500</div>
+            <div style="position:relative;height:310px"><canvas id="perf-chart"></canvas></div>
           </div>
         </div>
       </div>
@@ -840,11 +877,8 @@ tr:hover td{background:var(--surface2)}
       <div class="card">
         <div class="card-header" style="gap:10px;flex-wrap:wrap">
           <span class="card-title">📈 Bonos — TIR en vivo</span>
-          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Fuente: data912.com/live/arg_bonds</span>
-          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-            <input id="btir-filter" type="text" placeholder="Filtrar ticker…" oninput="btirFilter()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 8px;width:130px;outline:none">
-            <button class="btn btn-sm" onclick="renderBonosTIR()" style="font-size:.7rem">⟳ Actualizar</button>
-          </div>
+          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Fuente: bonistas.com</span>
+          <button class="btn btn-sm" onclick="renderBonosTIR()" style="font-size:.7rem;margin-left:auto">⟳ Actualizar</button>
         </div>
         <div class="card-body" style="padding:.6rem 1rem">
           <div id="btir-status" style="font-size:.72rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px"></div>
@@ -2128,6 +2162,41 @@ function renderPortfolio(){
   } else {
     gananciaEl.textContent='—';
   }
+
+  // ── Stat cards: mayor posición, mejor/peor rendimiento ──
+  var _elPosTk=document.getElementById('stat-pos-ticker');
+  var _elPosVal=document.getElementById('stat-pos-val');
+  var _elBestTk=document.getElementById('stat-best-ticker');
+  var _elBestVal=document.getElementById('stat-best-val');
+  var _elWorstTk=document.getElementById('stat-worst-ticker');
+  var _elWorstVal=document.getElementById('stat-worst-val');
+
+  // Pasada para PnL%: necesitamos p._pnlPct y p._valueUSD
+  open.forEach(function(p){
+    var q=quotes[p.ticker]; var price=q?q.price:null;
+    var sector=getSector(p.ticker);
+    var ratio=getRatio(p.ticker);
+    var _isBonoON=(sector==='bonos'||sector==='on');
+    var _isARS=(sector==='argentina'||sector==='bonos'||sector==='on');
+    var valUSD=price!=null?(_isBonoON?(price/(MEP_HOY||CCL_HOY))*p.qty/100:(_isARS?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty)):null;
+    p._valueUSD=valUSD;
+    // pnlPct vs costo
+    var costUSD=p.costUSDpuro;
+    p._pnlPct=(valUSD!=null&&costUSD>0)?(valUSD-costUSD)/costUSD*100:null;
+  });
+
+  var _openWithVal=open.filter(function(p){return p._valueUSD!=null&&p._valueUSD>0;});
+  var _openWithPnl=open.filter(function(p){return p._pnlPct!=null&&!isNaN(p._pnlPct);});
+  var _statTopPos=_openWithVal.slice().sort(function(a,b){return b._valueUSD-a._valueUSD;})[0]||null;
+  var _statBest=_openWithPnl.slice().sort(function(a,b){return b._pnlPct-a._pnlPct;})[0]||null;
+  var _statWorst=_openWithPnl.slice().sort(function(a,b){return a._pnlPct-b._pnlPct;})[0]||null;
+
+  if(_elPosTk){_elPosTk.textContent=_statTopPos?_statTopPos.ticker:'—';}
+  if(_elPosVal){_elPosVal.textContent=_statTopPos?'$'+Math.round(_statTopPos._valueUSD).toLocaleString('es-AR'):'—';}
+  if(_elBestTk){_elBestTk.textContent=_statBest?_statBest.ticker:'—';}
+  if(_elBestVal){_elBestVal.innerHTML=_statBest?'<span style="color:var(--accent)">+'+(Math.round(_statBest._pnlPct))+'%</span>':'—';}
+  if(_elWorstTk){_elWorstTk.textContent=_statWorst?_statWorst.ticker:'—';}
+  if(_elWorstVal){_elWorstVal.innerHTML=_statWorst?'<span style="color:var(--red)">'+(Math.round(_statWorst._pnlPct))+'%</span>':'—';}
 
   renderDivsCard();
   renderNearTarget();
@@ -4583,120 +4652,249 @@ function renderDashboard(){
     plugins:[pieLabelPluginRubros]
   });
 
+  // World map and performance chart
+  var _posDataForMap = posData;
+  renderWorldMap(_posDataForMap);
+  renderPerfChart();
+
+}
+
+// ─── World Map ────────────────────────────────────────────────
+var _dbWorldMap = null;
+function renderWorldMap(posData) {
+  var container = document.getElementById('db-worldmap');
+  if (!container) return;
+  if (typeof jsVectorMap === 'undefined') { setTimeout(function(){ renderWorldMap(posData); }, 600); return; }
+  if (_dbWorldMap) { try { _dbWorldMap.destroy(); } catch(e){} _dbWorldMap = null; }
+  container.innerHTML = '';
+  container.style.height = '380px';
+
+  var sectorToRegion = { nyse:'usa', cripto:'usa', argentina:'arg', bonos:'arg', on:'arg', brasil:'bra', europa:'eur', china:'chn' };
+  var regionVal = { usa:0, arg:0, bra:0, eur:0, chn:0 };
+  posData.forEach(function(d) { var r = sectorToRegion[d.sector]; if (r) regionVal[r] += d.valUSD; });
+
+  var regionCountries = {
+    usa: ['US'], arg: ['AR'], bra: ['BR'], chn: ['CN'],
+    eur: ['DE','GB','FR','NL','ES','IT','CH','SE','NO','DK','BE','AT','FI','PT','IE','PL']
+  };
+  var regionLookup = {};
+  Object.keys(regionCountries).forEach(function(region) {
+    regionCountries[region].forEach(function(code) { regionLookup[code] = region; });
+  });
+  var regionNames = { usa:'USA', arg:'Argentina', bra:'Brasil', eur:'Europa', chn:'China' };
+
+  _dbWorldMap = new jsVectorMap({
+    selector: '#db-worldmap', map: 'world', backgroundColor: '#0e0f11',
+    zoomOnScroll: false, zoomButtons: false,
+    regionStyle: { initial: { fill: '#1e2026', fillOpacity: 1, stroke: '#0e0f11', strokeWidth: 0.35 }, hover: { fillOpacity: 0.82, cursor: 'default' } },
+    onRegionTooltipShow: function(event, tooltip, code) {
+      var region = regionLookup[code.toUpperCase ? code.toUpperCase() : code];
+      if (!region) region = regionLookup[code];
+      if (region && (regionVal[region]||0) > 0) {
+        var val = regionVal[region];
+        tooltip.text(regionNames[region] + ' — $' + (val>=1000?Math.round(val/1000)+'k':Math.round(val)) + ' USD');
+      } else { event.preventDefault(); }
+    }
+  });
+
+  var _vals = Object.keys(regionCountries).map(function(r){ return regionVal[r]||0; });
+  var _maxV = Math.max.apply(null, _vals) || 1;
+  var _svgEl = container.querySelector('svg');
+  if (_svgEl) {
+    Object.keys(regionCountries).forEach(function(region) {
+      var val = regionVal[region] || 0;
+      if (val <= 0) return;
+      var t = Math.pow(val / _maxV, 0.5);
+      var gC = Math.round(48 + t * 30); var bC = Math.round(96 + t * 136);
+      var color = 'rgb(26,' + gC + ',' + bC + ')';
+      regionCountries[region].forEach(function(code) {
+        var lc = code.toLowerCase();
+        _svgEl.querySelectorAll('[data-code="' + lc + '"]').forEach(function(p) { p.setAttribute('fill', color); });
+      });
+    });
+  }
+}
+
+// ─── Performance Chart ────────────────────────────────────────
+function renderPerfChart() {
+  var canvas = document.getElementById('perf-chart');
+  if (!canvas || typeof Chart === 'undefined') return;
+  var myReturns = [null, null, null, null];
+  var rendEl = document.getElementById('m-rend');
+  if (rendEl) { var n = parseFloat((rendEl.innerText||'').replace(/[+%\s]/g,'')); if(!isNaN(n)) myReturns[3]=n; }
+  var spReturns = [26.3, 25.0, 18.0, null];
+  var labels = ['2023', '2024', '2025', '2026 YTD'];
+
+  function draw() {
+    dbMakeChart('perf-chart', {
+      type: 'line',
+      data: { labels: labels, datasets: [
+        { label:'Mi cartera', data:myReturns, borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,.12)',
+          borderWidth:2, pointRadius:5, pointBackgroundColor:'#60a5fa', pointBorderColor:'#0e0f11',
+          pointBorderWidth:2, tension:0.35, fill:true, spanGaps:true },
+        { label:'S&P 500', data:spReturns, borderColor:'#7ee8a2', backgroundColor:'rgba(126,232,162,.08)',
+          borderWidth:2, pointRadius:5, pointBackgroundColor:'#7ee8a2', pointBorderColor:'#0e0f11',
+          pointBorderWidth:2, tension:0.35, fill:true, spanGaps:true }
+      ]},
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{ display:true, position:'top', labels:{ color:'#8b8fa8', font:{family:'DM Mono,monospace',size:11}, boxWidth:12, padding:14 } },
+          tooltip:{ callbacks:{ label:function(ctx){ return ' '+(ctx.parsed.y>=0?'+':'')+ctx.parsed.y+'%'; } } }
+        },
+        scales:{
+          x:{ ticks:{ color:'#555870', font:{family:'DM Mono,monospace',size:10} }, grid:{ color:'rgba(42,45,53,.6)' } },
+          y:{ ticks:{ color:'#555870', font:{family:'DM Mono,monospace',size:10}, callback:function(v){ return v+'%'; } }, grid:{ color:'rgba(42,45,53,.6)' } }
+        }
+      }
+    });
+  }
+
+  var p1 = 1767052800; var p2 = Math.floor(Date.now()/1000);
+  fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&period1='+p1+'&period2='+p2)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var res = d.chart&&d.chart.result&&d.chart.result[0];
+      if(!res){draw();return;}
+      var ts=res.timestamp||[]; var cl=(res.indicators.quote[0].close)||[];
+      var c2026start=null;
+      for(var i=0;i<ts.length;i++){if(ts[i]>=1767225600&&cl[i]!=null){c2026start=cl[i];break;}}
+      var cNow=cl.slice().reverse().find(function(v){return v!=null;});
+      if(c2026start&&cNow) spReturns[3]=Math.round((cNow/c2026start-1)*1000)/10;
+      draw();
+    })
+    .catch(function(){draw();});
 }
 
 // ─── Bonos TIR ───────────────────────────────────────────────
-var BTIR_DATA=[];
-var BTIR_HIGHLIGHT=['BC37D','CUAP','DIC','PERF25','GD38','GD41','PARP','PBY26','SA24','DTVP','ATX31','TZX28','TZXS8'];
-
-// Campos que queremos mostrar (en orden), con label legible
-var BTIR_FIELD_LABELS={
-  ticker:'Ticker', nombre:'Nombre', tipo:'Tipo',
-  precio:'Precio', precio_usd:'Precio USD',
-  tir:'TIR', tna:'TNA', tea:'TEA',
-  duracion:'Duración', duration:'Duración',
-  vencimiento:'Vencimiento', maturity:'Vencimiento',
-  moneda:'Moneda', currency:'Moneda',
-  ultimo:'Último', variacion:'Var%', var_pct:'Var%',
-  paridad:'Paridad', parity:'Paridad'
-};
+var BTIR_DATA=[]; var BTIR_SORT={col:'tir',dir:-1};
+var BTIR_FILTERS={ticker:'',tir:'',modified_duration:'',parity:''};
+var BTIR_COLS=[
+  {key:'ticker',label:'Ticker',type:'text'},
+  {key:'tir',label:'TIR',type:'num'},
+  {key:'modified_duration',label:'MD',type:'num'},
+  {key:'parity',label:'Paridad',type:'num'}
+];
 
 function renderBonosTIR(){
   var status=document.getElementById('btir-status');
   var thead=document.getElementById('btir-thead');
   var tbody=document.getElementById('btir-tbody');
   if(!status||!thead||!tbody)return;
-  status.innerHTML='<span style="color:var(--text3)">⏳ Cargando datos…</span>';
+  status.innerHTML='<span style="color:var(--text3)">⏳ Cargando datos de bonistas.com…</span>';
   thead.innerHTML=''; tbody.innerHTML='';
-
-  fetch('https://data912.com/live/arg_bonds')
-    .then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return r.json();
-    })
+  fetch('https://bonistas.com/api/bonds')
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
-      // Normalizar: puede ser array directo o {data:[...]} o {bonds:[...]}
-      var rows=Array.isArray(data)?data:(data.data||data.bonds||data.result||Object.values(data));
-      BTIR_DATA=rows;
-      _btirRender(rows);
+      BTIR_DATA=data.filter(function(r){return r.tir&&r.tir!==0&&r.ticker;});
+      _btir2BuildHeader(); _btir2Render();
     })
     .catch(function(e){
-      status.innerHTML='<span style="color:var(--red)">⚠ Error al cargar: '+e.message+'</span>';
+      status.innerHTML='<span style="color:var(--red)">⚠ Error: '+e.message+'</span>';
     });
 }
 
-function _btirRender(rows){
-  var status=document.getElementById('btir-status');
+function _btir2BuildHeader(){
   var thead=document.getElementById('btir-thead');
-  var tbody=document.getElementById('btir-tbody');
-  if(!rows||!rows.length){status.innerHTML='<span style="color:var(--amber)">Sin datos</span>';return;}
-
-  // Detectar columnas disponibles
-  var sample=rows[0];
-  var allKeys=Object.keys(sample);
-  // Columnas a mostrar: primero las conocidas en orden, luego el resto
-  var orderedKnown=Object.keys(BTIR_FIELD_LABELS).filter(function(k){return allKeys.indexOf(k)>=0;});
-  var rest=allKeys.filter(function(k){return orderedKnown.indexOf(k)<0;});
-  var cols=orderedKnown.concat(rest);
-
-  // Detectar qué campo es el ticker key (para el highlight)
-  var tickerKey=allKeys.filter(function(k){return /ticker|symbol|especie|codigo/i.test(k);})[0]||cols[0];
-  // Detectar qué campo es TIR
-  var tirKey=allKeys.filter(function(k){return /^tir$|^yield$|rendimiento/i.test(k);})[0]||null;
-
-  // Header
-  var thRow=document.createElement('tr');
-  thRow.style.borderBottom='2px solid var(--border2)';
-  cols.forEach(function(k){
+  if(!thead)return;
+  thead.innerHTML='';
+  var trSort=document.createElement('tr');
+  trSort.style.borderBottom='1px solid var(--border)';
+  var trFilter=document.createElement('tr');
+  trFilter.style.borderBottom='2px solid var(--border2)';
+  BTIR_COLS.forEach(function(col){
+    // Sort header
     var th=document.createElement('th');
-    th.textContent=(BTIR_FIELD_LABELS[k]||k).toUpperCase();
-    th.style.cssText='text-align:left;padding:5px 8px;color:var(--text3);font-weight:600;font-size:.62rem;letter-spacing:.04em;white-space:nowrap';
-    thRow.appendChild(th);
+    th.style.cssText='padding:5px 8px;cursor:pointer;white-space:nowrap;user-select:none;color:var(--text3);font-size:.62rem;letter-spacing:.04em;font-weight:600';
+    var arrow=BTIR_SORT.col===col.key?(BTIR_SORT.dir>0?'↑':'↓'):'↕';
+    th.innerHTML='<span style="color:'+(BTIR_SORT.col===col.key?'var(--accent)':'var(--text3)')+'">'+col.label.toUpperCase()+' <span style="font-size:.6rem">'+arrow+'</span></span>';
+    th.onclick=(function(c){return function(){btirSort(c.key);};})(col);
+    trSort.appendChild(th);
+    // Filter input
+    var td=document.createElement('td');
+    td.style.cssText='padding:3px 5px';
+    var inp=document.createElement('input');
+    inp.type='text'; inp.placeholder='Filtrar…';
+    inp.value=BTIR_FILTERS[col.key]||'';
+    inp.style.cssText='width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.65rem;padding:3px 5px;outline:none';
+    inp.oninput=(function(c){return function(e){btirFilterCol(c.key,e.target.value);};})(col);
+    td.appendChild(inp);
+    trFilter.appendChild(td);
   });
-  thead.appendChild(thRow);
+  thead.appendChild(trSort);
+  thead.appendChild(trFilter);
+}
 
-  // Rows
-  var count=0;
+function _btir2Render(){
+  var tbody=document.getElementById('btir-tbody');
+  var status=document.getElementById('btir-status');
+  if(!tbody)return;
+  tbody.innerHTML='';
+  var rows=BTIR_DATA.slice();
+  // Filter
+  BTIR_COLS.forEach(function(col){
+    var fv=(BTIR_FILTERS[col.key]||'').trim();
+    if(!fv)return;
+    rows=rows.filter(function(r){
+      if(col.type==='num') return _btirNumMatch(r[col.key],fv);
+      return String(r[col.key]||'').toLowerCase().indexOf(fv.toLowerCase())>=0;
+    });
+  });
+  // Sort
+  rows.sort(function(a,b){
+    var av=a[BTIR_SORT.col]; var bv=b[BTIR_SORT.col];
+    var an=parseFloat(av); var bn=parseFloat(bv);
+    if(!isNaN(an)&&!isNaN(bn)) return (an-bn)*BTIR_SORT.dir;
+    return String(av||'').localeCompare(String(bv||''))*BTIR_SORT.dir;
+  });
   rows.forEach(function(row){
-    var tickerVal=String(row[tickerKey]||'').toUpperCase();
-    var isHL=BTIR_HIGHLIGHT.indexOf(tickerVal)>=0;
     var tr=document.createElement('tr');
-    tr.setAttribute('data-ticker',tickerVal);
     tr.style.borderBottom='1px solid var(--border)';
-    if(isHL) tr.style.background='rgba(126,232,162,.06)';
-
-    cols.forEach(function(k){
+    BTIR_COLS.forEach(function(col){
       var td=document.createElement('td');
-      var val=row[k];
-      var display=val!=null?val:'—';
-
-      // Formatear TIR con color
-      if(k===tirKey&&val!=null){
-        var n=parseFloat(val);
-        var color=isNaN(n)?'var(--text)':(n>0?'var(--accent)':'var(--red)');
-        var sign=n>0?'+':'';
-        td.innerHTML='<span style="color:'+color+';font-weight:700">'+sign+(isNaN(n)?display:n.toFixed(2)+'%')+'</span>';
-      } else if(k===tickerKey){
-        td.innerHTML='<span style="font-weight:700;color:'+(isHL?'var(--accent)':'var(--text)')+'">'+display+'</span>';
+      td.style.cssText='padding:5px 8px;white-space:nowrap;font-family:var(--mono);font-size:.72rem';
+      var val=row[col.key];
+      if(col.key==='ticker'){
+        td.innerHTML='<span style="font-weight:700;color:var(--text)">'+String(val||'—')+'</span>';
+      } else if(col.key==='tir'&&val!=null){
+        var n=parseFloat(val)*100;
+        var color=n>0?'var(--accent)':'var(--red)';
+        td.innerHTML='<span style="color:'+color+';font-weight:700">'+(n>=0?'+':'')+n.toFixed(1)+'%</span>';
+      } else if(col.type==='num'&&val!=null){
+        td.style.color='var(--text2)';
+        td.textContent=parseFloat(val).toFixed(2);
       } else {
-        td.textContent=display;
+        td.style.color='var(--text2)';
+        td.textContent=val!=null?val:'—';
       }
-      td.style.cssText='padding:5px 8px;white-space:nowrap;color:var(--text2)';
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
-    count++;
   });
-
-  status.innerHTML='<span style="color:var(--text3)">'+count+' bonos · destacados en verde: tus '+BTIR_HIGHLIGHT.length+' seleccionados · '+new Date().toLocaleTimeString('es-AR')+'</span>';
+  if(status) status.innerHTML='<span style="color:var(--text3)">'+rows.length+' bonos · '+new Date().toLocaleTimeString('es-AR')+'</span>';
 }
 
-function btirFilter(){
-  var q=(document.getElementById('btir-filter').value||'').toLowerCase();
-  document.querySelectorAll('#btir-tbody tr').forEach(function(r){
-    var t=(r.getAttribute('data-ticker')||'').toLowerCase();
-    r.style.display=(!q||t.indexOf(q)>=0)?'':'none';
-  });
+function btirSort(col){
+  if(BTIR_SORT.col===col) BTIR_SORT.dir*=-1;
+  else { BTIR_SORT.col=col; BTIR_SORT.dir=-1; }
+  _btir2BuildHeader(); _btir2Render();
+}
+
+function btirFilterCol(col,val){
+  BTIR_FILTERS[col]=val;
+  _btir2Render();
+}
+
+function _btirNumMatch(val,str){
+  var n=parseFloat(str.replace(/[><=]/g,''));
+  var v=parseFloat(val);
+  if(isNaN(n)||isNaN(v))return true;
+  if(str.indexOf('>=')===0)return v>=n;
+  if(str.indexOf('<=')===0)return v<=n;
+  if(str.charAt(0)==='>') return v>n;
+  if(str.charAt(0)==='<') return v<n;
+  if(str.charAt(0)==='=') return v===n;
+  return v>=n;
 }
 
 </script>
