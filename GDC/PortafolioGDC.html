@@ -189,7 +189,7 @@ tr:hover td{background:var(--surface2)}
 .nt-input[type=number]{-moz-appearance:textfield}
 .nt-pct{color:var(--amber);font-family:var(--mono);font-weight:700;font-size:.82rem}
 .nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,110px));gap:5px}
-.nt-ticker-card{background:var(--surface2);border:1px solid var(--amber);border-radius:var(--rsm);padding:3px 6px;display:flex;align-items:center;gap:4px}
+.nt-ticker-card{background:var(--surface2);border:1px solid var(--amber);border-radius:var(--rsm);padding:7px 7px;min-height:40px;display:flex;align-items:center;gap:4px}
 .nt-tk-sym{font-weight:800;font-size:.68rem;color:var(--text);min-width:28px;letter-spacing:.01em}
 .nt-tk-body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
 .nt-tk-prices{display:flex;gap:7px;font-family:var(--mono);font-size:.62rem;white-space:nowrap}
@@ -878,11 +878,15 @@ tr:hover td{background:var(--surface2)}
             <div style="position:relative;height:260px"><canvas id="db-chart-top-rv"></canvas></div>
           </div>
         </div>
-        <!-- Fila 4: Mapa del mundo -->
-        <div style="margin-bottom:1rem">
-          <div class="card" style="padding:1rem;max-width:780px;margin-left:auto;margin-right:auto">
+        <!-- Fila 4: Mapa + Rendimiento vs S&P -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Inversiones por región</div>
             <div id="db-worldmap"></div>
+          </div>
+          <div class="card" style="padding:1rem">
+            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Mi cartera vs S&P 500</div>
+            <div style="position:relative;height:310px"><canvas id="perf-chart"></canvas></div>
           </div>
         </div>
       </div>
@@ -4705,6 +4709,7 @@ function renderDashboard(){
   });
 
   renderWorldMap(posData);
+  renderPerfChart();
 }
 
 
@@ -4774,16 +4779,9 @@ function renderWorldMap(posData) {
       },
       hover: { fillOpacity: 0.82, cursor: 'default' }
     },
-    series: {
-      regions: [{
-        values: countryValues,
-        scale: ['#1a3060', '#1a4ee8'],
-        normalizeFunction: 'polynomial',
-        attribute: 'fill'
-      }]
-    },
     onRegionTooltipShow: function(event, tooltip, code) {
-      var region = regionLookup[code];
+      var region = regionLookup[code.toUpperCase ? code.toUpperCase() : code];
+      if (!region) region = regionLookup[code];
       if (region && (regionVal[region]||0) > 0) {
         var val = regionVal[region];
         var valStr = val >= 1000 ? ('$'+Math.round(val/1000)+'k') : ('$'+Math.round(val));
@@ -4793,6 +4791,152 @@ function renderWorldMap(posData) {
       }
     }
   });
+
+  // Color invested countries directly on SVG paths (jsvectormap uses lowercase codes)
+  var _vals = Object.keys(regionCountries).map(function(r){ return regionVal[r]||0; });
+  var _maxV = Math.max.apply(null, _vals) || 1;
+  var _svgEl = container.querySelector('svg');
+  if (_svgEl) {
+    Object.keys(regionCountries).forEach(function(region) {
+      var val = regionVal[region] || 0;
+      if (val <= 0) return;
+      var t = Math.pow(val / _maxV, 0.5);
+      // Gradient: #1a3060 (26,48,96) → #1a4ee8 (26,78,232)
+      var gC = Math.round(48 + t * 30);
+      var bC = Math.round(96 + t * 136);
+      var color = 'rgb(26,' + gC + ',' + bC + ')';
+      regionCountries[region].forEach(function(code) {
+        var lc = code.toLowerCase();
+        _svgEl.querySelectorAll('[data-code="' + lc + '"]').forEach(function(p) {
+          p.setAttribute('fill', color);
+        });
+      });
+    });
+  }
+}
+
+
+// ─── Rendimiento vs S&P 500 ───────────────────────────────────
+function renderPerfChart() {
+  var canvas = document.getElementById('perf-chart');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  // Portfolio returns provided by user
+  var myReturns = [300, 70, 23, null]; // 2023, 2024, 2025, 2026 YTD
+
+  // Read current portfolio rendimiento for 2026 YTD
+  var rendEl = document.getElementById('m-rend');
+  if (rendEl) {
+    var txt = (rendEl.innerText || rendEl.textContent || '').replace(/[+%\s]/g, '');
+    var n = parseFloat(txt);
+    if (!isNaN(n)) myReturns[3] = n;
+  }
+
+  // S&P 500: 2023 and 2024 hardcoded; 2025 + 2026 YTD fetched
+  var spReturns = [26.3, 25.0, null, null];
+  var labels = ['2023', '2024', '2025', '2026 YTD'];
+
+  function draw() {
+    dbMakeChart('perf-chart', {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Mi cartera',
+            data: myReturns,
+            backgroundColor: myReturns.map(function(v) {
+              return v === null ? 'rgba(96,165,250,.2)' : 'rgba(96,165,250,.75)';
+            }),
+            borderColor: '#60a5fa', borderWidth: 1, borderRadius: 4
+          },
+          {
+            label: 'S&P 500',
+            data: spReturns,
+            backgroundColor: spReturns.map(function(v) {
+              return v === null ? 'rgba(126,232,162,.15)' : (v >= 0 ? 'rgba(126,232,162,.55)' : 'rgba(248,113,113,.55)');
+            }),
+            borderColor: spReturns.map(function(v) {
+              return v === null ? '#7ee8a244' : (v >= 0 ? '#7ee8a2' : '#f87171');
+            }),
+            borderWidth: 1, borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true, position: 'top',
+            labels: { color: '#8b8fa8', font: { family: 'DM Mono,monospace', size: 10 }, boxWidth: 10, padding: 10 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var v = ctx.parsed.y;
+                if (v === null || v === undefined) return ' N/D';
+                return ' ' + ctx.dataset.label + ': ' + (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b8fa8', font: { family: 'DM Mono,monospace', size: 10 } },
+            grid: { color: '#2a2d35' }
+          },
+          y: {
+            ticks: {
+              color: '#8b8fa8', font: { family: 'DM Mono,monospace', size: 10 },
+              callback: function(v) { return v + '%'; }
+            },
+            grid: { color: '#2a2d35' }
+          }
+        }
+      }
+    });
+  }
+
+  // Fetch S&P 500 daily closes: Dec 30 2024 → today (covers 2025 + 2026 YTD)
+  var p1 = 1735516800; // 2024-12-30 UTC
+  var p2 = Math.floor(Date.now() / 1000);
+  var yUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&period1=' + p1 + '&period2=' + p2;
+
+  fetch(yUrl)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var res = d.chart && d.chart.result && d.chart.result[0];
+      if (!res) { draw(); return; }
+      var ts = res.timestamp || [];
+      var cl = (res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close) || [];
+
+      // Closest close to a target Unix timestamp
+      function closeNear(target) {
+        var bi = -1, bd = Infinity;
+        for (var i = 0; i < ts.length; i++) {
+          if (cl[i] == null) continue;
+          var diff = Math.abs(ts[i] - target);
+          if (diff < bd) { bd = diff; bi = i; }
+        }
+        return bi >= 0 ? cl[bi] : null;
+      }
+
+      var c2024end  = closeNear(1735516800); // ~Dec 30 2024
+      var c2025end  = closeNear(1767139200); // ~Dec 30 2025
+      var c2026start = null;
+      for (var i = 0; i < ts.length; i++) {
+        if (ts[i] >= 1767225600 && cl[i] != null) { c2026start = cl[i]; break; }
+      }
+      var cNow = cl.slice().reverse().find(function(v) { return v != null; });
+
+      if (c2024end && c2025end)
+        spReturns[2] = Math.round((c2025end / c2024end - 1) * 1000) / 10;
+      if (c2026start && cNow)
+        spReturns[3] = Math.round((cNow / c2026start - 1) * 1000) / 10;
+
+      draw();
+    })
+    .catch(function() { draw(); });
 }
 
 // ─── Bonos TIR ───────────────────────────────────────────────
