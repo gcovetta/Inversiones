@@ -856,7 +856,7 @@ tr:hover td{background:var(--surface2)}
         </div>
         <!-- Fila 4: Mapa del mundo -->
         <div style="margin-bottom:1rem">
-          <div class="card" style="padding:1rem">
+          <div class="card" style="padding:1rem;max-width:780px;margin-left:auto;margin-right:auto">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Inversiones por región</div>
             <div id="db-worldmap"></div>
           </div>
@@ -4734,7 +4734,7 @@ function renderWorldMap(posData) {
     series: {
       regions: [{
         values: countryValues,
-        scale: ['#1b4a30', '#7ee8a2'],
+        scale: ['#162a42', '#60a5fa'],
         normalizeFunction: 'polynomial',
         attribute: 'fill'
       }]
