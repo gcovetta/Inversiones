@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portafolios — Inversiones</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0f11;--surface:#16181c;--surface2:#1e2026;--border:#2a2d35;--border2:#363a45;--text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;--accent:#7ee8a2;--accent2:#4ade80;--mono:'DM Mono',monospace;--sans:'Syne',sans-serif;--radius:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15.5px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}
+header{padding:1rem 2rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em}
+.subtitle{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-left:auto}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.5rem}
+h2{font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.5rem;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;width:100%;max-width:860px}
+a.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.5rem;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:.55rem;transition:border-color .15s,background .15s}
+a.card:hover{border-color:var(--accent);background:var(--surface2)}
+.card-name{font-weight:700;font-size:1rem;letter-spacing:-.01em}
+.card-path{font-family:var(--mono);font-size:.62rem;color:var(--text3)}
+.card-arrow{font-size:.85rem;color:var(--accent);margin-top:auto;padding-top:.4rem}
+footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:.6rem;color:var(--text3);text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-dot"></div>
+  <span class="logo">Inversiones</span>
+  <span class="subtitle">Portafolio Tracker</span>
+</header>
+<main>
+  <h2>Seleccionar portafolio</h2>
+  <div class="grid">
+    <a class="card" href="GDC/PortafolioGDC.html">
+      <div class="card-name">GDC</div>
+      <div class="card-path">GDC/PortafolioGDC.html</div>
+      <div class="card-arrow">→</div>
+    </a>
+    <a class="card" href="Ana/PortafolioAna.html">
+      <div class="card-name">Ana</div>
+      <div class="card-path">Ana/PortafolioAna.html</div>
+      <div class="card-arrow">→</div>
+    </a>
+    <a class="card" href="Omar/PortafolioOmar.html">
+      <div class="card-name">Omar</div>
+      <div class="card-path">Omar/PortafolioOmar.html</div>
+      <div class="card-arrow">→</div>
+    </a>
+    <a class="card" href="Hilda/PortfolioHilda.html">
+      <div class="card-name">Hilda</div>
+      <div class="card-path">Hilda/PortfolioHilda.html</div>
+      <div class="card-arrow">→</div>
+    </a>
+  </div>
+</main>
+<footer>gcovetta · github.io/Inversiones</footer>
+</body>
+</html>
