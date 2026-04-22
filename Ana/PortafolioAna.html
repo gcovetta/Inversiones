@@ -1667,6 +1667,7 @@ function movModalSave(){
   var mkt=document.getElementById('me-mkt');
   if(mkt&&mkt.value){
     var newMkt=mkt.value;
+    // Propagar mercado a todos los movimientos del mismo ticker para que el sector sea consistente
     movimientos.forEach(function(x){if(x.ticker===m.ticker)x.mercado=newMkt;});
   }
   if(ticker)m.ticker=ticker;
@@ -1962,7 +1963,12 @@ function renderMovimientos(){
       if(content&&wrapTop>headerH+4){
         content.scrollTop+=wrapTop-headerH;
       }
-      wrap.focus({preventScroll:true});
+      // No robar el foco si ya está en uno de los filtros
+      var _active=document.activeElement;
+      var _filterIds=['mov-filter','mov-filter-tipo','mov-filter-mkt','mov-filter-fecha','mov-filter-notas'];
+      if(\!_active||_filterIds.indexOf(_active.id)<0){
+        wrap.focus({preventScroll:true});
+      }
     });
   }
 }
@@ -1980,10 +1986,10 @@ function getPositions(){
     if(m.tipo==='dividendo'){p.dividendsUSD+=priceUSD;}
     else if(m.tipo==='compra'){
       // Bonos y ONs: dividir por MEP del día; resto: por CCL
-      // Fallback: si m.ccl está vacío, usar CCL/MEP histórico de la fecha
+      // Prioridad: tabla Tipo de Cambio de la fecha; m.ccl solo como fallback si la fecha no está en tabla
       var _tc=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||m.ccl||getCCL(m.fecha)||1)
-        :(m.ccl||getCCL(m.fecha)||1);
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
+        :(getCCL(m.fecha)||m.ccl||1);
       var usdPuro=_tc>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty;
       p.costUSD+=priceUSD*m.qty+comUSD;
       p.costARS+=(m.precioARS||0)*m.qty;
@@ -1996,8 +2002,8 @@ function getPositions(){
       var avgUSDpuro=p.qty>0?p.costUSDpuro/p.qty:0;
       // G/P realizada en USD puro (MEP para bonos/ON, CCL para el resto)
       var _tcV=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||m.ccl||getCCL(m.fecha)||1)
-        :(m.ccl||getCCL(m.fecha)||1);
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
+        :(getCCL(m.fecha)||m.ccl||1);
       var ventaUSDpuro=_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0);
       var costBasisPuro=avgUSDpuro*m.qty;
       var proceedsPuro=ventaUSDpuro*m.qty-comUSD;
