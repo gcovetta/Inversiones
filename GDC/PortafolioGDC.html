@@ -360,34 +360,34 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
         <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
-        <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;width:138px">
-          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid var(--blue)">
-            <div class="metric-label">↑ posición</div>
-            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
-              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-pos-ticker">—</span>
-              <span class="port-sensitive" style="font-family:var(--mono);font-size:.58rem;color:var(--text2)" id="stat-pos-val">—</span>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;flex-shrink:0;width:200px;align-content:flex-start">
+          <div class="metric" style="padding:.3rem .55rem;border-left:3px solid var(--blue);flex:1 1 calc(50% - 3px);min-width:0">
+            <div class="metric-label" style="color:var(--blue)">↑ posición</div>
+            <div style="display:flex;align-items:baseline;gap:3px;flex-wrap:wrap;margin-top:.08rem">
+              <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-pos-ticker">—</span>
+              <span class="port-sensitive" style="font-family:var(--mono);font-size:.55rem;color:var(--text2)" id="stat-pos-val">—</span>
             </div>
           </div>
-          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid var(--accent)">
-            <div class="metric-label">↑ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
-              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-best-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.62rem;font-weight:700" id="stat-best-val">—</span>
+          <div class="metric" style="padding:.3rem .55rem;border-left:3px solid var(--accent);flex:1 1 calc(50% - 3px);min-width:0">
+            <div class="metric-label" style="color:var(--accent)">↑ rendimiento</div>
+            <div style="display:flex;align-items:baseline;gap:3px;flex-wrap:wrap;margin-top:.08rem">
+              <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-best-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.58rem;font-weight:700" id="stat-best-val">—</span>
             </div>
           </div>
-          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid var(--red)">
-            <div class="metric-label">↓ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
-              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-worst-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.62rem;font-weight:700" id="stat-worst-val">—</span>
+          <div class="metric" style="padding:.3rem .55rem;border-left:3px solid var(--red);flex:1 1 calc(50% - 3px);min-width:0">
+            <div class="metric-label" style="color:var(--red)">↓ rendimiento</div>
+            <div style="display:flex;align-items:baseline;gap:3px;flex-wrap:wrap;margin-top:.08rem">
+              <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-worst-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.58rem;font-weight:700" id="stat-worst-val">—</span>
             </div>
           </div>
-          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid #eab308">
-            <div class="metric-label">⏳ más antiguo</div>
-            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
-              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-oldest-ticker">—</span>
+          <div class="metric" style="padding:.3rem .55rem;border-left:3px solid #eab308;flex:1 1 calc(50% - 3px);min-width:0">
+            <div class="metric-label" style="color:#eab308">⏳ más antiguo</div>
+            <div style="display:flex;align-items:baseline;gap:3px;flex-wrap:wrap;margin-top:.08rem">
+              <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-oldest-ticker">—</span>
             </div>
-            <div style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:.1rem" id="stat-oldest-fecha">—</div>
+            <div style="font-family:var(--mono);font-size:.55rem;color:var(--text3);margin-top:.08rem" id="stat-oldest-fecha">—</div>
           </div>
         </div>
       </div>
