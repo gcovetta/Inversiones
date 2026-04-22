@@ -306,6 +306,10 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
+    <div class="nav-sec">Portafolios</div>
+    <a class="nav-item" href="../Omar/PortafolioOmar.html" target="_blank" style="text-decoration:none"><span>👤</span>Omar</a>
+    <a class="nav-item" href="../Ana/PortafolioAna.html" target="_blank" style="text-decoration:none"><span>👤</span>Ana</a>
+    <a class="nav-item" href="../Hilda/PortfolioHilda.html" target="_blank" style="text-decoration:none"><span>👤</span>Hilda</a>
   </nav>
   <div class="content">
 
@@ -356,27 +360,34 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
         <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;width:155px">
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--blue)">
+        <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;width:138px">
+          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid var(--blue)">
             <div class="metric-label">↑ posición</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-pos-ticker">—</span>
-              <span class="port-sensitive" style="font-family:var(--mono);font-size:.63rem;color:var(--text2)" id="stat-pos-val">—</span>
+            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
+              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-pos-ticker">—</span>
+              <span class="port-sensitive" style="font-family:var(--mono);font-size:.58rem;color:var(--text2)" id="stat-pos-val">—</span>
             </div>
           </div>
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--accent)">
+          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid var(--accent)">
             <div class="metric-label">↑ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-best-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-best-val">—</span>
+            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
+              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-best-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.62rem;font-weight:700" id="stat-best-val">—</span>
             </div>
           </div>
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--red)">
+          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid var(--red)">
             <div class="metric-label">↓ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-worst-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-worst-val">—</span>
+            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
+              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-worst-ticker">—</span>
+              <span style="font-family:var(--mono);font-size:.62rem;font-weight:700" id="stat-worst-val">—</span>
             </div>
+          </div>
+          <div class="metric" style="padding:.35rem .6rem;border-left:3px solid #eab308">
+            <div class="metric-label">⏳ más antiguo</div>
+            <div style="display:flex;align-items:baseline;gap:4px;flex-wrap:wrap;margin-top:.1rem">
+              <span style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-oldest-ticker">—</span>
+            </div>
+            <div style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:.1rem" id="stat-oldest-fecha">—</div>
           </div>
         </div>
       </div>
@@ -2268,6 +2279,21 @@ function renderPortfolio(){
   if(_elBestVal){_elBestVal.innerHTML=_statBest?'<span style="color:var(--accent)">+'+(Math.round(_statBest._pnlPct))+'%</span>':'—';}
   if(_elWorstTk){_elWorstTk.textContent=_statWorst?_statWorst.ticker:'—';}
   if(_elWorstVal){_elWorstVal.innerHTML=_statWorst?'<span style="color:var(--red)">'+(Math.round(_statWorst._pnlPct))+'%</span>':'—';}
+
+  // Activo más antiguo en cartera
+  var _openTickers=open.map(function(p){return p.ticker;});
+  var _oldestDate=null,_oldestTicker=null;
+  movimientos.forEach(function(m){
+    if(m.tipo!=='compra'||_openTickers.indexOf(m.ticker)<0)return;
+    var parts=(m.fecha||'').split('/');
+    if(parts.length!==3)return;
+    var d=new Date(parts[2],parts[1]-1,parts[0]);
+    if(!_oldestDate||d<_oldestDate){_oldestDate=d;_oldestTicker=m.ticker;}
+  });
+  var _elOldestTk=document.getElementById('stat-oldest-ticker');
+  var _elOldestFecha=document.getElementById('stat-oldest-fecha');
+  if(_elOldestTk)_elOldestTk.textContent=_oldestTicker||'—';
+  if(_elOldestFecha)_elOldestFecha.textContent=_oldestDate?_oldestDate.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'2-digit'}):'—';
 
   renderDivsCard();
   renderNearTarget();
