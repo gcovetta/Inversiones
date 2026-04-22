@@ -574,11 +574,14 @@ tr:hover td{background:var(--surface2)}
       <div class="card">
         <div class="card-header">
           <span class="card-title">Historial de dividendos</span>
-          <div class="gap-row"><span id="d-total" class="smsg"></span><button class="btn btn-d" onclick="clearDividendos()" title="Borrar todos los dividendos">🗑 Borrar todo</button></div>
+          <span id="d-total" class="smsg"></span>
         </div>
         <div id="d-empty" class="empty-state">Sin dividendos registrados</div>
-        <div class="tw" id="d-wrap" style="display:none">
-          <table><thead><tr><th>Fecha</th><th>Ticker</th><th>ARS</th><th>CCL</th><th>USD</th><th>Notas</th><th></th></tr></thead><tbody id="d-body"></tbody></table>
+        <div id="d-wrap" style="display:none">
+          <div class="gap-row" style="padding:.5rem 1rem;border-bottom:1px solid var(--border)">
+            <button class="btn btn-d" onclick="clearDividendos()" title="Borrar todos los dividendos">🗑 Borrar todo</button>
+          </div>
+          <div class="tw"><table><thead><tr><th>Fecha</th><th>Ticker</th><th>ARS</th><th>CCL</th><th>USD</th><th>Notas</th><th></th></tr></thead><tbody id="d-body"></tbody></table></div>
         </div>
       </div>
     </div>
@@ -2767,7 +2770,7 @@ function addDividendo(){
 }
 
 function deleteDividendo(id){
-  dividendos=dividendos.filter(function(d){return d.id!==id;});
+  dividendos=dividendos.filter(function(d){return d.id!=id;});
   try{localStorage.setItem('ptOMAR_divs',JSON.stringify(dividendos));}catch(e){}
   sbSaveArray('dividendos', dividendos);
   renderDividendos();renderPortfolio();renderDivsCard();
