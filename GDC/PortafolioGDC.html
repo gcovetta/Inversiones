@@ -1155,6 +1155,8 @@ function getTC(fecha, mercado){
   return esBonoON ? (getMEP(fecha)||getCCL(fecha)) : getCCL(fecha);
 }
 var CCL_HOY = CCL_TABLE['17/04/2026'] || 1453;
+var _lastPieRender = 0;  // timestamp última vez que se dibujaron los gráficos de torta
+var PIE_THROTTLE_MS = 10 * 60 * 1000; // 10 minutos
 var MEP_HOY = MEP_TABLE['17/04/2026'] || CCL_HOY; // se actualiza al hacer fetch
 
 var movimientos = [];
@@ -1963,7 +1965,12 @@ function renderMovimientos(){
       if(content&&wrapTop>headerH+4){
         content.scrollTop+=wrapTop-headerH;
       }
-      wrap.focus({preventScroll:true});
+      // No robar el foco si ya está en uno de los filtros
+      var _active=document.activeElement;
+      var _filterIds=['mov-filter','mov-filter-tipo','mov-filter-mkt','mov-filter-fecha','mov-filter-notas'];
+      if(\!_active||_filterIds.indexOf(_active.id)<0){
+        wrap.focus({preventScroll:true});
+      }
     });
   }
 }
@@ -2200,11 +2207,16 @@ function renderPortfolio(){
   var _liqMEP=liqUSD+((MEP_HOY||CCL_HOY)>0?liqARS/(MEP_HOY||CCL_HOY):0);
   var _fija=(sectorVal.bonos||0)+(sectorVal.on||0);
   var _variable=totalVal-_fija;
-  renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
-  // Sector pie desglose
-  renderSectorPie(sectorVal);
-  // RV pie por país
-  renderRVPie(sectorVal);
+  // Gráficos de torta: throttle de 10 min para no redibujar en cada fetch de cotizaciones
+  var _now=Date.now();
+  if(_now-_lastPieRender>=PIE_THROTTLE_MS){
+    renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
+    // Sector pie desglose
+    renderSectorPie(sectorVal);
+    // RV pie por país
+    renderRVPie(sectorVal);
+    _lastPieRender=_now;
+  }
 
   // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
   var trkDivsTotal=0;
