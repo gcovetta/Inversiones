@@ -1967,7 +1967,7 @@ function renderMovimientos(){
       // No robar el foco si ya está en uno de los filtros
       var _active=document.activeElement;
       var _filterIds=['mov-filter','mov-filter-tipo','mov-filter-mkt','mov-filter-fecha','mov-filter-notas'];
-      if(\!_active||_filterIds.indexOf(_active.id)<0){
+      if(!_active||_filterIds.indexOf(_active.id)<0){
         wrap.focus({preventScroll:true});
       }
     });
@@ -2207,7 +2207,7 @@ function renderPortfolio(){
   var _fija=(sectorVal.bonos||0)+(sectorVal.on||0);
   var _variable=totalVal-_fija;
   // Gráficos de torta: solo cuando no hay un fetch de cotizaciones en curso
-  if(\!_fetchingQuotes){
+  if(!_fetchingQuotes){
     renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
     // Sector pie desglose
     renderSectorPie(sectorVal);
