@@ -558,6 +558,7 @@ tr:hover td{background:var(--surface2)}
             <input id="mov-filter-notas" type="text" placeholder="Notas..." style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none" oninput="renderMovimientos()" title="Filtrar por notas">
             <button class="btn btn-sm" onclick="(function(){document.getElementById(&#39;mov-filter&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-tipo&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-mkt&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-fecha&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-notas&#39;).value=&#39;&#39;;renderMovimientos();})()" title="Limpiar filtros" style="color:var(--text3)">✕</button>
             <button class="btn" onclick="exportCSV()">↓ CSV</button>
+            <button class="btn btn-d" onclick="clearAll()" title="Borrar todos los movimientos">🗑 Borrar todo</button>
           </div>
         </div>
         <div id="mov-historial-body" style="display:none">
