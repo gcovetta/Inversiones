@@ -121,9 +121,9 @@ def extract_script_block(text):
 # ── Aplicar sustituciones de identidad ───────────────────────────────────
 
 def clear_preloaded_data(text):
-    """Vacía PRELOADED y TARGET_TABLE para que no haya datos GDC hardcodeados."""
+    """Vacía PRELOADED para que no haya movimientos GDC hardcodeados.
+    TARGET_TABLE se preserva porque es configuración compartida (P. Venta)."""
     text = re.sub(r'var PRELOADED\s*=\s*\[[^\]]*\]', 'var PRELOADED = []', text, flags=re.DOTALL)
-    text = re.sub(r'var TARGET_TABLE\s*=\s*\{[^}]*\}', 'var TARGET_TABLE = {}', text, flags=re.DOTALL)
     return text
 
 def restore_identity(text, cfg, sb_url, sb_key, my_returns, pin_key, sess_key, ls_prefix):

@@ -1008,6 +1008,28 @@ tr:hover td{background:var(--surface2)}
 </div>
 
 <script>
+// ── Soporte coma como separador decimal ──────────────────────────────────
+(function(){
+  function convertNumInputs(root){
+    (root||document).querySelectorAll('input[type="number"]').forEach(function(el){
+      el.setAttribute('type','text');
+      el.setAttribute('inputmode','decimal');
+    });
+  }
+  document.addEventListener('input',function(e){
+    var el=e.target;
+    if(el.tagName!=='INPUT'||el.value.indexOf(',')===-1)return;
+    var p=el.selectionStart;
+    el.value=el.value.replace(/,/g,'.');
+    try{el.setSelectionRange(p,p);}catch(x){}
+  },true);
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){convertNumInputs();});
+  }else{convertNumInputs();}
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)convertNumInputs(n);});});
+  }).observe(document.documentElement,{childList:true,subtree:true});
+})();
 // ════════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ════════════════════════════════════════════════════════

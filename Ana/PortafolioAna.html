@@ -1038,6 +1038,28 @@ tr:hover td{background:var(--surface2)}
 </div>
 
 <script>
+// ── Soporte coma como separador decimal ──────────────────────────────────
+(function(){
+  function convertNumInputs(root){
+    (root||document).querySelectorAll('input[type="number"]').forEach(function(el){
+      el.setAttribute('type','text');
+      el.setAttribute('inputmode','decimal');
+    });
+  }
+  document.addEventListener('input',function(e){
+    var el=e.target;
+    if(el.tagName!=='INPUT'||el.value.indexOf(',')===-1)return;
+    var p=el.selectionStart;
+    el.value=el.value.replace(/,/g,'.');
+    try{el.setSelectionRange(p,p);}catch(x){}
+  },true);
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){convertNumInputs();});
+  }else{convertNumInputs();}
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)convertNumInputs(n);});});
+  }).observe(document.documentElement,{childList:true,subtree:true});
+})();
 // ════════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ════════════════════════════════════════════════════════
@@ -1164,7 +1186,7 @@ function getSector(ticker){
 var TICKER_MAP = {'GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
 function getFinnhubTicker(ticker){return TICKER_MAP[ticker]||ticker;}
 
-var TARGET_TABLE = {};
+var TARGET_TABLE = {"CLSIO": null,"LECAO": null,"LECHO": null,"MR36O": null,"MRCAO": null,"MRCPO": null,"MRCZO": null,"SNEAO": null,"TZV27": null, "BC37D": null,"CUAP": null,"DICP": null,"ERF25": null,"GD29": null,"GD38": null,"GD41": null,"PARP": null,"PBY26": null,"SA24D": null,"TVPA": null,"TX31": null,"TZXM7": null,"TZXS7": null,"TZXS8": null, "ADBE": 573, "AMZN": 258.6, "AVGO": null, "CRM": null, "DEO": null, "DOCU": null, "FSLR": null, "HOG": null, "IBIT": null, "JD": null, "LAC": null, "META": null, "MSFT": null, "NFLX": null, "NKE": null, "NVDA": null, "SPOT": null, "STLA": null, "TEAM": null, "UBER": null, "UNH": null, "UPST": null, "GGB": null, "MELI": null, "NU": null, "PAGS": null, "SID": null, "XP": null};
 function getTarget(ticker){return TARGET_TABLE[ticker]||null;}
 
 // ── Tipo de Cambio: CCL y MEP editables ──────────────────────────────────
