@@ -360,7 +360,7 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
         <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
-        <div style="display:flex;flex-wrap:wrap;gap:5px;flex-shrink:0;width:200px;align-content:flex-start">
+        <div style="display:flex;flex-wrap:wrap;gap:5px;flex-shrink:0;width:240px;align-content:flex-start">
           <div class="metric" style="padding:.3rem .55rem;border-left:3px solid var(--blue);flex:1 1 calc(50% - 3px);min-width:0">
             <div class="metric-label" style="color:var(--blue)">↑ posición</div>
             <div style="display:flex;align-items:baseline;gap:3px;flex-wrap:wrap;margin-top:.08rem">
@@ -996,15 +996,19 @@ tr:hover td{background:var(--surface2)}
       <div class="card">
         <div class="card-header" style="gap:10px;flex-wrap:wrap">
           <span class="card-title">🧪 VetaMovim</span>
-          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Tabla de prueba para importar movimientos — aislada del portafolio principal</span>
+          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Laboratorio de importación — aislado del portafolio principal</span>
           <div class="gap-row" style="margin-left:auto">
+            <button class="btn btn-sm btn-a" onclick="vmImportFile()" title="Importar .xls del broker">↑ Importar archivo</button>
             <button class="btn btn-sm" onclick="vmAddRow()">+ Fila</button>
             <button class="btn btn-sm btn-d" onclick="vmClearAll()" title="Vaciar tabla">🗑</button>
           </div>
         </div>
         <div class="card-body" style="padding:.6rem 1rem">
           <div class="ibox" style="margin-bottom:10px;font-size:.68rem">
-            ⚠️ Esta pestaña está en <b>modo borrador</b>. Los datos cargados acá <u>no se suman</u> al portafolio ni a los cálculos. Cuando tengamos la estructura mapeada, la conectamos.
+            ⚠️ Modo borrador. Los datos acá <u>no se suman</u> al portafolio real. Importá el .xls de tu broker, corregí los tickers y confirmá.
+          </div>
+          <!-- Preview de importación -->
+          <div id="vm-preview-container" style="display:none;margin-bottom:12px">
           </div>
         </div>
         <div class="tw">
@@ -1012,19 +1016,20 @@ tr:hover td{background:var(--surface2)}
             <thead>
               <tr>
                 <th>#</th>
-                <th>Fecha</th>
+                <th>Fecha Op.</th>
                 <th>Ticker</th>
                 <th>Tipo</th>
+                <th>Mercado</th>
                 <th>Cant.</th>
-                <th>Precio</th>
+                <th>Precio ARS</th>
                 <th>Moneda</th>
-                <th>Total</th>
-                <th>Notas</th>
+                <th>Importe</th>
+                <th>Especie original</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="vm-body">
-              <tr><td colspan="10" class="empty-state" style="padding:1.5rem">Sin movimientos cargados — usá "+ Fila" o esperá a que mapeemos la estructura de importación</td></tr>
+              <tr><td colspan="11" class="empty-state" style="padding:1.5rem">Sin movimientos — importá un archivo del broker con "↑ Importar archivo"</td></tr>
             </tbody>
           </table>
         </div>
@@ -1574,10 +1579,13 @@ function portBlur(){
 
 function portToggleBlur(){
   if(!_portBlurred){portBlur();return;}
-  // Verificar sesión activa
+  // Si no hay PIN configurado, desbloquear directamente
+  var stored=localStorage.getItem(PORT_PIN_KEY);
+  if(!stored){portUnblur();return;}
+  // Verificar sesion activa
   var sess=parseInt(localStorage.getItem(PORT_SESSION_KEY)||'0');
   var age=(Date.now()-sess)/1000/3600;
-  if(age<PORT_SESSION_HOURS&&localStorage.getItem(PORT_PIN_KEY)){
+  if(age<PORT_SESSION_HOURS){
     portUnblur();
   } else {
     portShowOverlay();
@@ -2392,9 +2400,291 @@ function toggleQtyCol(show){
 })();
 
 // ─── VetaMovim (laboratorio de importación de movimientos, NO impacta portafolio) ───
+
+// Mapa especie → ticker (nombres completos del broker → código de mercado)
+var VM_ESPECIE_MAP = {
+  // CEDEARs por nombre parcial (se busca substring, orden importa — más específico primero)
+  'NVIDIA':          'NVDA',
+  'BROADCOM':        'AVGO',
+  'LAS VEGAS':       'LVS',
+  'UNITEDHEALTH':    'UNH',
+  'APPLE':           'AAPL',
+  'MICROSOFT':       'MSFT',
+  'AMAZON':          'AMZN',
+  'ALPHABET':        'GOOGL',
+  'META PLATFORMS':  'META',
+  'TESLA':           'TSLA',
+  'BERKSHIRE':       'BRKB',
+  'JPMORGAN':        'JPM',
+  'JOHNSON':         'JNJ',
+  'WALMART':         'WMT',
+  'EXXON':           'XOM',
+  'MASTERCARD':      'MA',
+  'VISA INC':        'V',
+  'PFIZER':          'PFE',
+  'ABBOTT':          'ABT',
+  'COCA-COLA':       'KO',
+  'DISNEY':          'DIS',
+  'NETFLIX':         'NFLX',
+  'SALESFORCE':      'CRM',
+  'QUALCOMM':        'QCOM',
+  'INTEL':           'INTC',
+  'AMD':             'AMD',
+  'BANK OF AMERICA': 'BAC',
+  'CITIGROUP':       'C',
+  'WELLS FARGO':     'WFC',
+  'GOLDMAN':         'GS',
+  'MORGAN STANLEY':  'MS',
+  'CHEVRON':         'CVX',
+  'ABBOTT':          'ABT',
+  'PEPSICO':         'PEP',
+  'PROCTER':         'PG',
+  'MERCK':           'MRK',
+  'UNITEDHEALTH':    'UNH',
+  'CATERPILLAR':     'CAT',
+  'DEERE':           'DE',
+  'BOEING':          'BA',
+  'LOCKHEED':        'LMT',
+  'PALANTIR':        'PLTR',
+  // Acciones argentinas
+  'Y.P.F':           'YPFD',
+  'TRANS. DE GAS DEL SUR': 'TGSU2',
+  'TRANS. GAS DEL SUR':    'TGSU2',
+  'PAMPA ENERGIA':   'PAMP',
+  'PAMPA':           'PAMP',
+  'GRUPO FINANCIERO GALICIA': 'GGAL',
+  'GALICIA':         'GGAL',
+  'BANCO MACRO':     'BMA',
+  'MACRO':           'BMA',
+  'TELECOM':         'TECO2',
+  'LOMA NEGRA':      'LOMA',
+  'ALUAR':           'ALUA',
+  'TERNIUM':         'TXAR',
+  'CRESUD':          'CRES',
+  'IRSA':            'IRSA',
+  'CENTRAL PUERTO':  'CEPU',
+  'EDENOR':          'EDN',
+  'METROGAS':        'METR',
+  // Bonos soberanos por vencimiento
+  'STEP UP V.09/01/38': 'AL38',
+  'STEP UP V.09/07/41': 'AL41',
+  'STEP UP V.09/01/30': 'AL30',
+  'STEP UP V.09/01/35': 'AL35',
+  'V.09/01/38':      'AL38',
+  'V.09/07/41':      'AL41',
+  'V.09/01/30':      'AL30',
+  // Bonos CER / pesos
+  'CERO CUPON AJ. CER 28/03/29': 'CUAP',
+  'AJ CER 2,50%  V.30/11/31':    'TX31',
+  'AJ CER 2,50% V.30/11/31':     'TX31',
+  'AJ CER':          'DICP',
+  // ONs (Obligaciones Negociables) — detectadas por la regex, acá el resto
+  'ON EDENOR':       'DENIO',
+  'EDENOR CL.3':     'DENIO',
+};
+
+function vmAutoTicker(especie){
+  var upper=(especie||'').toUpperCase();
+  // Buscar en el mapa por substring
+  for(var key in VM_ESPECIE_MAP){
+    if(upper.indexOf(key.toUpperCase())>=0) return VM_ESPECIE_MAP[key];
+  }
+  // CEDEAR genérico: tomar primera palabra del nombre de empresa
+  if(upper.indexOf('CEDEAR ')===0){
+    var nombre=upper.replace('CEDEAR ','').trim();
+    // Retornar las primeras 4 letras como sugerencia marcada como dudosa
+    return nombre.split(' ')[0].substring(0,4)+'?';
+  }
+  return '???';
+}
+
+function vmParseNum(s){
+  if(!s||s.trim()==='') return 0;
+  // Formato AR: punto=miles, coma=decimal → quitar puntos, reemplazar coma por punto
+  return parseFloat(s.replace(/\./g,'').replace(',','.'))||0;
+}
+
+function vmParseDate(s){
+  // DD/MM/YY → DD/MM/YYYY
+  if(!s) return '';
+  var parts=s.trim().split('/');
+  if(parts.length===3&&parts[2].length===2){
+    var yr=parseInt(parts[2]);
+    parts[2]=(yr>50?'19':'20')+parts[2];
+  }
+  return parts.join('/');
+}
+
+function vmMapTipo(op){
+  if(op==='CPRA') return 'compra';
+  if(op==='VTAS'||op==='VTU$') return 'venta';
+  return op.toLowerCase();
+}
+
+function vmDetectMercado(especie,op){
+  var u=(especie||'').toUpperCase();
+  if(u.indexOf('CEDEAR')===0) return 'CEDEAR';
+  if(u.indexOf('ON ')===0||u.indexOf(' ON ')>=0||u.indexOf('OBLIG')===0) return 'ON';
+  if(u.indexOf('BONO')===0||u.indexOf('B. TES')===0||u.indexOf('LETES')>=0||op==='VTU$') return 'BONOS';
+  return 'MERVAL';
+}
+
+function vmImportFile(){
+  var input=document.createElement('input');
+  input.type='file';
+  input.accept='.xls,.xlsx,.csv,.html,.htm';
+  input.onchange=function(e){
+    var file=e.target.files[0];
+    if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      vmParseAndShow(ev.target.result,file.name);
+    };
+    reader.readAsText(file,'utf-8');
+  };
+  input.click();
+}
+
+function vmParseAndShow(text,filename){
+  var rows=vmParseXLS(text);
+  if(!rows||!rows.length){
+    alert('No se pudo parsear el archivo. Formato esperado: .xls del broker (Movimientos de Pesos por tipo de Operacion).');
+    return;
+  }
+  vmShowPreview(rows,filename);
+}
+
+function vmParseXLS(text){
+  var parser=new DOMParser();
+  var doc=parser.parseFromString(text,'text/html');
+  var tables=doc.querySelectorAll('table');
+  var dataTable=null;
+  for(var i=0;i<tables.length;i++){
+    var hdr=tables[i].querySelector('tr');
+    if(hdr&&(hdr.textContent.indexOf('Operaci')>=0||hdr.textContent.indexOf('Especie')>=0)){
+      dataTable=tables[i];
+      break;
+    }
+  }
+  if(!dataTable) return [];
+  var rows=dataTable.querySelectorAll('tr');
+  var result=[];
+  for(var r=1;r<rows.length;r++){
+    var cells=rows[r].querySelectorAll('td,th');
+    if(cells.length<9) continue;
+    var liquida =cells[1].textContent.trim();
+    var operado =cells[2].textContent.trim();
+    var operacion=cells[3].textContent.trim();
+    var nOpe    =cells[4].textContent.trim();
+    var especie  =cells[5].textContent.trim();
+    var cantidad =cells[6].textContent.trim();
+    var precio   =cells[7].textContent.trim();
+    var importe  =cells[8].textContent.trim();
+    if(!operado||operado==='Operado') continue;
+    var cantNum=vmParseNum(cantidad);
+    var precioNum=vmParseNum(precio);
+    var importeNum=vmParseNum(importe);
+    result.push({
+      fecha:    vmParseDate(operado),
+      liquida:  vmParseDate(liquida),
+      especie:  especie,
+      ticker:   vmAutoTicker(especie),
+      operacion:operacion,
+      tipo:     vmMapTipo(operacion),
+      mercado:  vmDetectMercado(especie,operacion),
+      cant:     Math.abs(cantNum),
+      precio:   precioNum,
+      moneda:   operacion==='VTU$'?'USD':'ARS',
+      importe:  importeNum,
+      ref:      nOpe,
+    });
+  }
+  return result;
+}
+
+var VM_PREVIEW_ROWS=[];
+
+function vmShowPreview(rows,filename){
+  VM_PREVIEW_ROWS=rows;
+  var container=document.getElementById('vm-preview-container');
+  if(!container) return;
+  var mercados=['MERVAL','CEDEAR','BONOS','ON','LETRAS','FCI'];
+  var tipos=['compra','venta'];
+
+  var html='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.6rem .9rem;margin-bottom:10px">';
+  html+='<div style="font-size:.78rem;font-weight:600;margin-bottom:6px">📂 '+filename+' — <span style="color:var(--accent)">'+rows.length+' operaciones detectadas</span></div>';
+  html+='<div style="font-size:.68rem;color:var(--text3)">Revisá los tickers (los que terminan en <b style="color:var(--amber)">?</b> necesitan corrección manual). Luego hacé clic en <b>Cargar en tabla</b>.</div>';
+  html+='</div>';
+
+  html+='<div class="tw" style="max-height:380px;overflow-y:auto;margin-bottom:10px"><table>';
+  html+='<thead><tr>';
+  html+='<th>Fecha Op.</th><th>Tipo</th><th>Especie</th>';
+  html+='<th>Ticker <span style="color:var(--text3);font-weight:400;font-size:.65rem">(editable)</span></th>';
+  html+='<th>Mercado</th><th style="text-align:right">Cant.</th>';
+  html+='<th style="text-align:right">Precio</th><th>Mon.</th><th style="text-align:right">Importe</th>';
+  html+='</tr></thead><tbody>';
+
+  rows.forEach(function(r,i){
+    var needsFix=r.ticker.indexOf('???')>=0||r.ticker.slice(-1)==='?';
+    var tickerColor=needsFix?'color:var(--amber);font-weight:700':'color:var(--accent)';
+    var tipoColor=r.tipo==='compra'?'color:var(--blue)':'color:var(--red)';
+    var tipoOpts=tipos.map(function(t){return '<option'+(r.tipo===t?' selected':'')+'>'+t+'</option>';}).join('');
+    var mktOpts=mercados.map(function(m){return '<option'+(r.mercado===m?' selected':'')+'>'+m+'</option>';}).join('');
+    var impColor=r.importe<0?'color:var(--red)':'color:var(--accent)';
+    html+='<tr>';
+    html+='<td class="mono" style="font-size:.7rem">'+r.fecha+'</td>';
+    html+='<td><select class="arb-input" style="font-size:.7rem;'+tipoColor+'" onchange="VM_PREVIEW_ROWS['+i+'].tipo=this.value">'+tipoOpts+'</select></td>';
+    html+='<td class="muted" style="font-size:.65rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+r.especie+'">'+r.especie+'</td>';
+    html+='<td><input class="arb-input" style="width:75px;font-size:.72rem;'+tickerColor+'" value="'+r.ticker+'" oninput="VM_PREVIEW_ROWS['+i+'].ticker=this.value.toUpperCase();this.style.color=this.value.slice(-1)===\'?\'?\'var(--amber)\':(this.value===\'???\'?\'var(--amber)\':\'var(--accent)\')"></td>';
+    html+='<td><select class="arb-input" style="font-size:.7rem" onchange="VM_PREVIEW_ROWS['+i+'].mercado=this.value">'+mktOpts+'</select></td>';
+    html+='<td class="mono" style="text-align:right;font-size:.7rem">'+r.cant.toLocaleString('es-AR')+'</td>';
+    html+='<td class="mono" style="text-align:right;font-size:.7rem">'+(r.precio?r.precio.toLocaleString('es-AR',{maximumFractionDigits:3}):'—')+'</td>';
+    html+='<td class="mono" style="font-size:.7rem">'+r.moneda+'</td>';
+    html+='<td class="mono" style="text-align:right;font-size:.7rem;'+impColor+'">'+r.importe.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+
+  html+='<div class="gap-row">';
+  html+='<button class="btn btn-a" onclick="vmConfirmImport()">✓ Cargar en tabla</button>';
+  html+='<button class="btn" onclick="vmCancelPreview()">✕ Cancelar</button>';
+  var pendFix=rows.filter(function(r){return r.ticker.indexOf('???')>=0||r.ticker.slice(-1)==='?';}).length;
+  if(pendFix) html+='<span class="smsg" style="color:var(--amber);font-size:.68rem">⚠ '+pendFix+' ticker'+(pendFix>1?'s':'')+' pendiente'+(pendFix>1?'s':'')+' de corrección</span>';
+  html+='</div>';
+
+  container.innerHTML=html;
+  container.style.display='';
+}
+
+function vmConfirmImport(){
+  VM_PREVIEW_ROWS.forEach(function(r){
+    VM_ROWS.push({
+      fecha:   r.fecha,
+      ticker:  r.ticker.toUpperCase().replace('?',''),
+      tipo:    r.tipo,
+      mercado: r.mercado,
+      cant:    r.cant.toString(),
+      precio:  r.precio?r.precio.toString():'',
+      moneda:  r.moneda,
+      total:   r.importe?Math.abs(r.importe).toString():'',
+      notas:   r.especie+' | '+r.operacion+(r.ref?' | #'+r.ref:''),
+    });
+  });
+  vmRender();
+  var c=document.getElementById('vm-preview-container');
+  if(c){c.style.display='none';c.innerHTML='';}
+  VM_PREVIEW_ROWS=[];
+}
+
+function vmCancelPreview(){
+  var c=document.getElementById('vm-preview-container');
+  if(c){c.style.display='none';c.innerHTML='';}
+  VM_PREVIEW_ROWS=[];
+}
+
 var VM_ROWS=[];
 function vmAddRow(){
-  VM_ROWS.push({fecha:'',ticker:'',tipo:'',cant:'',precio:'',moneda:'USD',total:'',notas:''});
+  VM_ROWS.push({fecha:'',ticker:'',tipo:'compra',mercado:'MERVAL',cant:'',precio:'',moneda:'ARS',total:'',notas:''});
   vmRender();
 }
 function vmDelRow(i){
@@ -2416,7 +2706,7 @@ function vmRender(){
   var body=document.getElementById('vm-body');
   if(!body)return;
   if(!VM_ROWS.length){
-    body.innerHTML='<tr><td colspan="10" class="empty-state" style="padding:1.5rem">Sin movimientos cargados — usá "+ Fila" o esperá a que mapeemos la estructura de importación</td></tr>';
+    body.innerHTML='<tr><td colspan="11" class="empty-state" style="padding:1.5rem">Sin movimientos — importá un archivo del broker con "↑ Importar archivo"</td></tr>';
     return;
   }
   var inp=function(i,field,val,w){
@@ -2427,12 +2717,13 @@ function vmRender(){
       '<td class="mono muted" style="font-size:.7rem">'+(i+1)+'</td>'+
       '<td>'+inp(i,'fecha',r.fecha,'95px')+'</td>'+
       '<td>'+inp(i,'ticker',r.ticker,'80px')+'</td>'+
-      '<td>'+inp(i,'tipo',r.tipo,'90px')+'</td>'+
-      '<td>'+inp(i,'cant',r.cant,'80px')+'</td>'+
-      '<td>'+inp(i,'precio',r.precio,'90px')+'</td>'+
-      '<td>'+inp(i,'moneda',r.moneda,'65px')+'</td>'+
-      '<td>'+inp(i,'total',r.total,'100px')+'</td>'+
-      '<td>'+inp(i,'notas',r.notas,'140px')+'</td>'+
+      '<td class="muted" style="font-size:.72rem">'+r.tipo+'</td>'+
+      '<td class="muted" style="font-size:.72rem">'+r.mercado+'</td>'+
+      '<td class="mono" style="font-size:.72rem;text-align:right">'+(r.cant?parseFloat(r.cant).toLocaleString('es-AR'):'—')+'</td>'+
+      '<td class="mono" style="font-size:.72rem;text-align:right">'+(r.precio?parseFloat(r.precio).toLocaleString('es-AR',{maximumFractionDigits:3}):'—')+'</td>'+
+      '<td class="mono" style="font-size:.72rem">'+(r.moneda||'ARS')+'</td>'+
+      '<td class="mono" style="font-size:.72rem;text-align:right">'+(r.total?parseFloat(r.total).toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td>'+
+      '<td class="muted" style="font-size:.65rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r.notas||'')+'">'+(r.notas||'')+'</td>'+
       '<td><button class="btn btn-d btn-sm" onclick="vmDelRow('+i+')" title="Eliminar">✕</button></td>'+
     '</tr>';
   }).join('');
