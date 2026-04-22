@@ -252,18 +252,18 @@ tr:hover td{background:var(--surface2)}
     <span class="topbar-label">Liquidez</span>
     <div style="display:flex;align-items:center;gap:3px">
       <span class="topbar-sub">$</span>
-      <input id="liq-ars" type="text" inputmode="numeric" placeholder="0" title="Liquidez ARS" style="width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)liqConfirm()" onblur="liqConfirm()" oninput="fmtNumInput(this,0)">
+      <input id="liq-ars" type="text" inputmode="decimal" placeholder="0" title="Liquidez ARS" style="width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)liqConfirm()" onblur="liqConfirm()" oninput="fmtNumInput(this,0)">
     </div>
     <div style="display:flex;align-items:center;gap:3px">
       <span class="topbar-sub">USD</span>
-      <input id="liq-usd" type="text" inputmode="numeric" placeholder="0" title="Liquidez USD" style="width:64px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)liqConfirm()" onblur="liqConfirm()" oninput="fmtNumInput(this,2)">
+      <input id="liq-usd" type="text" inputmode="decimal" placeholder="0" title="Liquidez USD" style="width:64px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)liqConfirm()" onblur="liqConfirm()" oninput="fmtNumInput(this,2)">
     </div>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-left:1.2rem;border-left:1px solid var(--border)">
     <span class="topbar-label">Inv. Inicial</span>
     <div style="display:flex;align-items:center;gap:3px">
       <span class="topbar-sub">USD</span>
-      <input id="inv-sidebar-usd" type="text" inputmode="numeric" placeholder="0" title="Inversión inicial USD" style="width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)invConfirm()" onblur="invConfirm()" oninput="fmtNumInput(this,0)">
+      <input id="inv-sidebar-usd" type="text" inputmode="decimal" placeholder="0" title="Inversión inicial USD" style="width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)invConfirm()" onblur="invConfirm()" oninput="fmtNumInput(this,0)">
     </div>
   </div>
 </div>
@@ -566,6 +566,7 @@ tr:hover td{background:var(--surface2)}
           <div class="fgrp" style="margin-top:4px"><label>Notas</label><input id="d-notas" type="text" placeholder="ej: Q1 2026"></div>
           <div class="gap-row" style="margin-top:10px">
             <button class="btn btn-a" onclick="addDividendo()">+ Registrar</button>
+            <button class="btn btn-d" onclick="clearDividendos()" title="Borrar todos los dividendos">🗑 Borrar todo</button>
             <span id="d-status"></span>
           </div>
         </div>
@@ -1019,6 +1020,7 @@ tr:hover td{background:var(--surface2)}
   document.addEventListener('input',function(e){
     var el=e.target;
     if(el.tagName!=='INPUT'||el.value.indexOf(',')===-1)return;
+    if((el.getAttribute('oninput')||'').indexOf('fmtNumInput')!==-1)return;
     var p=el.selectionStart;
     el.value=el.value.replace(/,/g,'.');
     try{el.setSelectionRange(p,p);}catch(x){}
