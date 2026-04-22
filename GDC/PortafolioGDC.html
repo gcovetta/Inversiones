@@ -2561,9 +2561,25 @@ function vmParseXLS(text){
   var dataTable=null;
   for(var i=0;i<tables.length;i++){
     var hdr=tables[i].querySelector('tr');
-    if(hdr&&(hdr.textContent.indexOf('Operaci')>=0||hdr.textContent.indexOf('Especie')>=0)){
+    if(!hdr) continue;
+    var hdrText=hdr.textContent||'';
+    // La tabla de datos tiene "Liquida" y "Operado" en el header (únicas en esa tabla)
+    if(hdrText.indexOf('Liquida')>=0&&hdrText.indexOf('Operado')>=0){
       dataTable=tables[i];
       break;
+    }
+  }
+  // Fallback: buscar por "Operaci" si no encontró por Liquida/Operado
+  if(!dataTable){
+    for(var i=0;i<tables.length;i++){
+      var rows=tables[i].querySelectorAll('tr');
+      if(rows.length>3){
+        var hdrText=(tables[i].querySelector('tr')||{textContent:''}).textContent||'';
+        if(hdrText.indexOf('Operaci')>=0||hdrText.indexOf('Importe')>=0){
+          dataTable=tables[i];
+          break;
+        }
+      }
     }
   }
   if(!dataTable) return [];
