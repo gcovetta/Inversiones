@@ -1665,7 +1665,10 @@ function movModalSave(){
   m.fecha=fechaVal.split('-').reverse().join('/');
   m.tipo=tipo;
   var mkt=document.getElementById('me-mkt');
-  if(mkt&&mkt.value)m.mercado=mkt.value;
+  if(mkt&&mkt.value){
+    var newMkt=mkt.value;
+    movimientos.forEach(function(x){if(x.ticker===m.ticker)x.mercado=newMkt;});
+  }
   if(ticker)m.ticker=ticker;
   if(!isNaN(qty)&&qty>=0)m.qty=qty;
   if(!isNaN(ars)&&ars>=0)m.precioARS=ars;
