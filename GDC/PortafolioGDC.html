@@ -1155,8 +1155,7 @@ function getTC(fecha, mercado){
   return esBonoON ? (getMEP(fecha)||getCCL(fecha)) : getCCL(fecha);
 }
 var CCL_HOY = CCL_TABLE['17/04/2026'] || 1453;
-var _lastPieRender = 0;  // timestamp última vez que se dibujaron los gráficos de torta
-var PIE_THROTTLE_MS = 10 * 60 * 1000; // 10 minutos
+var _fetchingQuotes = false; // true durante batch fetch: pies se dibujan solo al final
 var MEP_HOY = MEP_TABLE['17/04/2026'] || CCL_HOY; // se actualiza al hacer fetch
 
 var movimientos = [];
@@ -2207,15 +2206,13 @@ function renderPortfolio(){
   var _liqMEP=liqUSD+((MEP_HOY||CCL_HOY)>0?liqARS/(MEP_HOY||CCL_HOY):0);
   var _fija=(sectorVal.bonos||0)+(sectorVal.on||0);
   var _variable=totalVal-_fija;
-  // Gráficos de torta: throttle de 10 min para no redibujar en cada fetch de cotizaciones
-  var _now=Date.now();
-  if(_now-_lastPieRender>=PIE_THROTTLE_MS){
+  // Gráficos de torta: solo cuando no hay un fetch de cotizaciones en curso
+  if(\!_fetchingQuotes){
     renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
     // Sector pie desglose
     renderSectorPie(sectorVal);
     // RV pie por país
     renderRVPie(sectorVal);
-    _lastPieRender=_now;
   }
 
   // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
@@ -2630,6 +2627,7 @@ async function fetchAllQuotes(){
   try{localStorage.removeItem('ptNYSE_q2');localStorage.removeItem('ptNYSE_q2_ts');}catch(e){}
   var icon=document.getElementById('ref-icon');var status=document.getElementById('ref-status');var prog=document.getElementById('pos-prog');var pfill=document.getElementById('pfill');
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
+  _fetchingQuotes=true; // suspender redibujado de pies durante fetch
 
   // Separar por fuente: Finnhub (NYSE/Brasil/etc), Yahoo AR (Argentina), data912 (Bonos/ON)
   var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on';});
@@ -2699,7 +2697,8 @@ async function fetchAllQuotes(){
   // Los cuatro grupos corren en paralelo
   await Promise.all([fetchFinnhubAll(),fetchYahooAll(),fetchBonosAll(),fetchONsAll()]);
 
-  // Render final con todos los datos listos
+  // Render final con todos los datos listos — reactiva pies
+  _fetchingQuotes=false;
   renderPortfolio();
 
   icon.textContent='⟳';prog.style.display='none';
