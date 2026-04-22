@@ -28,6 +28,7 @@ Qué preserva por portfolio:
 import re
 import sys
 import shutil
+import subprocess
 from datetime import datetime
 
 DRY_RUN    = '--dry-run' in sys.argv
@@ -277,6 +278,19 @@ def main():
 
     for name, cfg in targets.items():
         sync_portfolio(name, cfg, gdc)
+
+    # ── Sync ratios GDC → todos los portfolios destino ────────────────────
+    if not DRY_RUN:
+        print(f"\n{'─'*50}")
+        print("  SYNC RATIOS  →  Supabase Omar + Ana")
+        print(f"{'─'*50}")
+        script = sys.argv[0].replace('sync_omar.py', 'sync_ratios.py')
+        args = [sys.executable, script]
+        if ONLY:
+            args.append(ONLY)
+        result = subprocess.run(args, capture_output=False)
+        if result.returncode != 0:
+            print("  ADVERTENCIA: sync_ratios.py terminó con error.")
 
     print()
 

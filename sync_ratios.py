@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
-sync_ratios.py — Copia los ratios de GDC (Supabase) a Omar y Ana.
+sync_ratios.py — Sincroniza configuración compartida de GDC → Omar y Ana.
+
+Sincroniza:
+  • ratios    — ratios CEDEAR por ticker
+  • targets   — P. Venta por ticker
+  • rubros    — clasificación de rubros por ticker
 
 Uso:
   python3 sync_ratios.py           (sincroniza Omar y Ana)
   python3 sync_ratios.py omar      (solo Omar)
   python3 sync_ratios.py ana       (solo Ana)
-  python3 sync_ratios.py --dry-run (muestra los ratios sin escribir)
+  python3 sync_ratios.py --dry-run (muestra valores sin escribir)
 """
 
 import sys
 import json
 import urllib.request
-import urllib.error
 
 DRY_RUN = '--dry-run' in sys.argv
 ONLY    = next((a for a in sys.argv[1:] if not a.startswith('--')), None)
@@ -32,7 +36,14 @@ SUPABASE = {
     },
 }
 
-def headers(key):
+# Claves a sincronizar: (config_key, label)
+SYNC_KEYS = [
+    ('ratios',  'Ratios CEDEAR'),
+    ('targets', 'P. Venta'),
+    ('rubros',  'Rubros'),
+]
+
+def sb_headers(key):
     return {
         'Content-Type': 'application/json',
         'apikey': key,
@@ -40,7 +51,7 @@ def headers(key):
     }
 
 def sb_get(url, key, path):
-    req = urllib.request.Request(f'{url}/rest/v1/{path}', headers=headers(key))
+    req = urllib.request.Request(f'{url}/rest/v1/{path}', headers=sb_headers(key))
     with urllib.request.urlopen(req, timeout=10) as r:
         return json.loads(r.read())
 
@@ -49,57 +60,64 @@ def sb_upsert(url, key, table, payload):
     req = urllib.request.Request(
         f'{url}/rest/v1/{table}',
         data=data,
-        headers={**headers(key), 'Prefer': 'resolution=merge-duplicates'},
+        headers={**sb_headers(key), 'Prefer': 'resolution=merge-duplicates'},
         method='POST',
     )
     with urllib.request.urlopen(req, timeout=10) as r:
         return r.status
 
-def fetch_ratios(name):
+def fetch_config(name, config_key):
     cfg = SUPABASE[name]
-    rows = sb_get(cfg['url'], cfg['key'], 'config?key=eq.ratios&select=value')
+    rows = sb_get(cfg['url'], cfg['key'], f'config?key=eq.{config_key}&select=value')
     if not rows:
         return None
     val = rows[0].get('value', '{}')
     return json.loads(val) if isinstance(val, str) else val
 
-def push_ratios(name, ratios):
+def push_config(name, config_key, value):
     cfg = SUPABASE[name]
-    payload = {'key': 'ratios', 'value': json.dumps(ratios)}
-    status = sb_upsert(cfg['url'], cfg['key'], 'config', payload)
-    return status
+    payload = {'key': config_key, 'value': json.dumps(value)}
+    return sb_upsert(cfg['url'], cfg['key'], 'config', payload)
 
 # ── Main ─────────────────────────────────────────────────────────────────
 
-print('\n── Leyendo ratios de GDC Supabase...')
-try:
-    gdc_ratios = fetch_ratios('gdc')
-except Exception as e:
-    print(f'  ERROR leyendo GDC: {e}')
-    sys.exit(1)
+print(f"\n{'─'*50}")
+print("  SYNC CONFIG  GDC → Omar / Ana")
+print(f"{'─'*50}")
 
-if not gdc_ratios:
-    print('  No hay ratios guardados en GDC Supabase (config key=ratios vacío).')
-    sys.exit(0)
-
-print(f'  {len(gdc_ratios)} ratios encontrados:')
-for ticker, ratio in sorted(gdc_ratios.items()):
-    print(f'    {ticker}: {ratio}')
+gdc_data = {}
+for config_key, label in SYNC_KEYS:
+    try:
+        val = fetch_config('gdc', config_key)
+        gdc_data[config_key] = val
+        count = len(val) if val else 0
+        print(f"  GDC {label:<18} {count} entradas" if count else f"  GDC {label:<18} (vacío)")
+    except Exception as e:
+        print(f"  ERROR leyendo GDC {label}: {e}")
+        gdc_data[config_key] = None
 
 if DRY_RUN:
     print('\n  [DRY RUN] No se escribió nada.')
     sys.exit(0)
 
-targets = [k for k in ('omar', 'ana') if ONLY is None or k == ONLY.lower()]
+dest = [k for k in ('omar', 'ana') if ONLY is None or k == ONLY.lower()]
+if not dest:
+    print(f"Portfolio '{ONLY}' no reconocido.")
+    sys.exit(1)
 
-for name in targets:
-    print(f'\n── Sincronizando → {name.upper()}...')
-    try:
-        existing = fetch_ratios(name) or {}
-        merged = {**existing, **gdc_ratios}
-        push_ratios(name, merged)
-        print(f'  ✓ {len(merged)} ratios guardados en {name.upper()} Supabase.')
-    except Exception as e:
-        print(f'  ERROR en {name}: {e}')
+for name in dest:
+    print(f"\n  → {name.upper()}")
+    for config_key, label in SYNC_KEYS:
+        gdc_val = gdc_data.get(config_key)
+        if gdc_val is None:
+            print(f"    {label:<18} — sin datos en GDC, omitido")
+            continue
+        try:
+            existing = fetch_config(name, config_key) or {}
+            merged   = {**existing, **gdc_val}
+            push_config(name, config_key, merged)
+            print(f"    {label:<18} ✓ {len(merged)} entradas")
+        except Exception as e:
+            print(f"    {label:<18} ERROR: {e}")
 
 print()
