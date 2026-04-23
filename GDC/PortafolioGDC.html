@@ -992,48 +992,101 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
-    <div class="page" id="page-vetamovim">
-      <div class="card">
-        <div class="card-header" style="gap:10px;flex-wrap:wrap">
-          <span class="card-title">🧪 VetaMovim</span>
-          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Laboratorio de importación — aislado del portafolio principal</span>
-          <div class="gap-row" style="margin-left:auto">
-            <button class="btn btn-sm btn-a" onclick="vmImportFile()" title="Importar .xls del broker">↑ Importar archivo</button>
-            <button class="btn btn-sm" onclick="vmAddRow()">+ Fila</button>
-            <button class="btn btn-sm btn-d" onclick="vmClearAll()" title="Vaciar tabla">🗑</button>
-          </div>
-        </div>
-        <div class="card-body" style="padding:.6rem 1rem">
-          <div class="ibox" style="margin-bottom:10px;font-size:.68rem">
-            ⚠️ Modo borrador. Los datos acá <u>no se suman</u> al portafolio real. Importá el .xls de tu broker, corregí los tickers y confirmá.
-          </div>
-          <!-- Preview de importación -->
-          <div id="vm-preview-container" style="display:none;margin-bottom:12px">
-          </div>
-        </div>
-        <div class="tw">
-          <table id="vm-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Fecha Op.</th>
-                <th>Ticker</th>
-                <th>Tipo</th>
-                <th>Mercado</th>
-                <th>Cant.</th>
-                <th>Precio ARS</th>
-                <th>Moneda</th>
-                <th>Importe</th>
-                <th>Especie original</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="vm-body">
-              <tr><td colspan="11" class="empty-state" style="padding:1.5rem">Sin movimientos — importá un archivo del broker con "↑ Importar archivo"</td></tr>
-            </tbody>
-          </table>
+    <div class="page" id="page-vetamovim" style="padding:1rem;display:flex;flex-direction:column;gap:10px;height:100%;box-sizing:border-box">
+
+      <!-- Header bar -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0">
+        <span style="font-weight:700;font-size:.95rem">🧪 VetaMovim</span>
+        <span style="font-size:.68rem;color:var(--text3)">Laboratorio de importación — aislado del portafolio real</span>
+        <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">
+          <button class="btn btn-sm btn-a" onclick="vmImportFile()">↑ Importar archivo</button>
+          <button class="btn btn-sm" onclick="vmAddRow()">+ Fila</button>
+          <button class="btn btn-sm btn-d" onclick="vmClearAll()">🗑</button>
         </div>
       </div>
+
+      <!-- Métricas -->
+      <div id="vm-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;flex-shrink:0">
+        <div class="metric" style="padding:.55rem .75rem;border-left:3px solid var(--accent)">
+          <div class="metric-label">Operaciones</div>
+          <div class="metric-value" style="font-size:1.1rem" id="vms-count">—</div>
+        </div>
+        <div class="metric" style="padding:.55rem .75rem;border-left:3px solid var(--blue)">
+          <div class="metric-label">Comprado ARS</div>
+          <div class="metric-value" style="font-size:.95rem;color:var(--red)" id="vms-comprado">—</div>
+        </div>
+        <div class="metric" style="padding:.55rem .75rem;border-left:3px solid var(--accent)">
+          <div class="metric-label">Vendido ARS</div>
+          <div class="metric-value" style="font-size:.95rem;color:var(--accent)" id="vms-vendido">—</div>
+        </div>
+        <div class="metric" style="padding:.55rem .75rem;border-left:3px solid #eab308">
+          <div class="metric-label">Neto ARS</div>
+          <div class="metric-value" style="font-size:.95rem" id="vms-neto">—</div>
+        </div>
+        <div class="metric" style="padding:.55rem .75rem;border-left:3px solid var(--text3)">
+          <div class="metric-label">Monto USD</div>
+          <div class="metric-value" style="font-size:.95rem;color:var(--text2)" id="vms-usd">—</div>
+        </div>
+        <div class="metric" style="padding:.55rem .75rem;border-left:3px solid var(--text3)">
+          <div class="metric-label">Tickers únicos</div>
+          <div class="metric-value" style="font-size:1.1rem" id="vms-tickers">—</div>
+        </div>
+      </div>
+
+      <!-- Preview de importación -->
+      <div id="vm-preview-container" style="display:none;flex-shrink:0"></div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-shrink:0;padding:.5rem .7rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm)">
+        <span style="font-size:.7rem;color:var(--text3);font-family:var(--mono)">FILTRAR:</span>
+        <input id="vmf-ticker" type="text" placeholder="Ticker..." oninput="vmApplyFilters()" style="width:90px;padding:3px 7px;font-size:.72rem;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
+        <select id="vmf-tipo" onchange="vmApplyFilters()" style="padding:3px 6px;font-size:.72rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text)">
+          <option value="">Todos los tipos</option>
+          <option value="compra">Compra</option>
+          <option value="venta">Venta</option>
+        </select>
+        <select id="vmf-mercado" onchange="vmApplyFilters()" style="padding:3px 6px;font-size:.72rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text)">
+          <option value="">Todos los mercados</option>
+          <option value="MERVAL">MERVAL</option>
+          <option value="CEDEAR">CEDEAR</option>
+          <option value="BONOS">BONOS</option>
+          <option value="ON">ON</option>
+          <option value="LETRAS">LETRAS</option>
+          <option value="FCI">FCI</option>
+        </select>
+        <select id="vmf-moneda" onchange="vmApplyFilters()" style="padding:3px 6px;font-size:.72rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text)">
+          <option value="">Todas las monedas</option>
+          <option value="ARS">ARS</option>
+          <option value="USD">USD</option>
+        </select>
+        <button class="btn btn-sm" onclick="vmClearFilters()" style="font-size:.68rem">✕ Limpiar</button>
+        <span id="vmf-count" style="margin-left:auto;font-size:.68rem;color:var(--text3);font-family:var(--mono)"></span>
+      </div>
+
+      <!-- Tabla con scroll vertical -->
+      <div style="flex:1;overflow:auto;min-height:0;border:1px solid var(--border);border-radius:var(--rsm)">
+        <table id="vm-table" style="width:100%;border-collapse:collapse;font-size:.78rem">
+          <thead>
+            <tr style="position:sticky;top:0;z-index:2;background:var(--surface)">
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">#</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Fecha Op.</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Ticker</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Tipo</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Mercado</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Cant.</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Precio</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Mon.</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Importe</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:.65rem;color:var(--text3);font-weight:600">Especie</th>
+              <th style="padding:.4rem .5rem;border-bottom:1px solid var(--border)"></th>
+            </tr>
+          </thead>
+          <tbody id="vm-body">
+            <tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--text3);font-size:.78rem">Sin movimientos — importá un archivo del broker con "↑ Importar archivo"</td></tr>
+          </tbody>
+        </table>
+      </div>
+
     </div>
 
   </div>
@@ -2699,6 +2752,8 @@ function vmCancelPreview(){
 }
 
 var VM_ROWS=[];
+var VM_FILTER={ticker:'',tipo:'',mercado:'',moneda:''};
+
 function vmAddRow(){
   VM_ROWS.push({fecha:'',ticker:'',tipo:'compra',mercado:'MERVAL',cant:'',precio:'',moneda:'ARS',total:'',notas:''});
   vmRender();
@@ -2714,33 +2769,102 @@ function vmEditRow(i,field,val){
 }
 function vmClearAll(){
   if(!VM_ROWS.length)return;
-  if(!confirm('¿Vaciar toda la tabla VetaMovim?'))return;
+  if(!confirm('Vaciar toda la tabla VetaMovim?'))return;
   VM_ROWS=[];
   vmRender();
+}
+function vmApplyFilters(){
+  var tf=document.getElementById('vmf-ticker');
+  var tipof=document.getElementById('vmf-tipo');
+  var mktf=document.getElementById('vmf-mercado');
+  var monf=document.getElementById('vmf-moneda');
+  VM_FILTER.ticker=(tf?tf.value.trim().toUpperCase():'');
+  VM_FILTER.tipo=(tipof?tipof.value:'');
+  VM_FILTER.mercado=(mktf?mktf.value:'');
+  VM_FILTER.moneda=(monf?monf.value:'');
+  vmRender();
+}
+function vmClearFilters(){
+  var ids=['vmf-ticker','vmf-tipo','vmf-mercado','vmf-moneda'];
+  ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  VM_FILTER={ticker:'',tipo:'',mercado:'',moneda:''};
+  vmRender();
+}
+function vmFilteredRows(){
+  return VM_ROWS.filter(function(r){
+    if(VM_FILTER.ticker&&(r.ticker||'').toUpperCase().indexOf(VM_FILTER.ticker)<0)return false;
+    if(VM_FILTER.tipo&&r.tipo!==VM_FILTER.tipo)return false;
+    if(VM_FILTER.mercado&&r.mercado!==VM_FILTER.mercado)return false;
+    if(VM_FILTER.moneda&&r.moneda!==VM_FILTER.moneda)return false;
+    return true;
+  });
+}
+function vmRenderStats(rows){
+  var total=VM_ROWS.length;
+  var filtered=rows.length;
+  var compradoARS=0, vendidoARS=0, montoUSD=0;
+  var tickers=new Set();
+  rows.forEach(function(r){
+    var imp=parseFloat(r.total)||0;
+    if(r.moneda==='USD'){
+      montoUSD+=imp;
+    } else {
+      if(r.tipo==='compra') compradoARS+=imp;
+      else vendidoARS+=imp;
+    }
+    if(r.ticker) tickers.add(r.ticker.replace('?','').toUpperCase());
+  });
+  var neto=vendidoARS-compradoARS;
+  var fmt=function(n){return '$'+Math.abs(Math.round(n)).toLocaleString('es-AR');};
+  var fmtUSD=function(n){return 'u$s '+Math.abs(n).toLocaleString('es-AR',{maximumFractionDigits:2});};
+  var el=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  el('vms-count', filtered+(total!==filtered?' / '+total:''));
+  el('vms-comprado', fmt(compradoARS));
+  el('vms-vendido', fmt(vendidoARS));
+  var netoEl=document.getElementById('vms-neto');
+  if(netoEl){
+    netoEl.textContent=(neto>=0?'+':'')+fmt(neto).replace('$','')+' ARS';
+    netoEl.style.color=neto>=0?'var(--accent)':'var(--red)';
+  }
+  el('vms-usd', montoUSD?fmtUSD(montoUSD):'—');
+  el('vms-tickers', tickers.size||'—');
+  var cntEl=document.getElementById('vmf-count');
+  if(cntEl){
+    var hasFilter=VM_FILTER.ticker||VM_FILTER.tipo||VM_FILTER.mercado||VM_FILTER.moneda;
+    cntEl.textContent=hasFilter?(filtered+' de '+total+' operaciones'):(total+' operaciones');
+  }
 }
 function vmRender(){
   var body=document.getElementById('vm-body');
   if(!body)return;
+  var rows=vmFilteredRows();
+  vmRenderStats(rows);
   if(!VM_ROWS.length){
-    body.innerHTML='<tr><td colspan="11" class="empty-state" style="padding:1.5rem">Sin movimientos — importá un archivo del broker con "↑ Importar archivo"</td></tr>';
+    body.innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--text3);font-size:.78rem">Sin movimientos — importá un archivo del broker con "↑ Importar archivo"</td></tr>';
     return;
   }
-  var inp=function(i,field,val,w){
-    return '<input class="arb-input" style="width:'+(w||'100%')+';text-align:left;padding:3px 5px;font-size:.72rem" value="'+(val||'')+'" oninput="vmEditRow('+i+',\''+field+'\',this.value)">';
-  };
-  var html=VM_ROWS.map(function(r,i){
-    return '<tr>'+
-      '<td class="mono muted" style="font-size:.7rem">'+(i+1)+'</td>'+
-      '<td>'+inp(i,'fecha',r.fecha,'95px')+'</td>'+
-      '<td>'+inp(i,'ticker',r.ticker,'80px')+'</td>'+
-      '<td class="muted" style="font-size:.72rem">'+r.tipo+'</td>'+
-      '<td class="muted" style="font-size:.72rem">'+r.mercado+'</td>'+
-      '<td class="mono" style="font-size:.72rem;text-align:right">'+(r.cant?parseFloat(r.cant).toLocaleString('es-AR'):'—')+'</td>'+
-      '<td class="mono" style="font-size:.72rem;text-align:right">'+(r.precio?parseFloat(r.precio).toLocaleString('es-AR',{maximumFractionDigits:3}):'—')+'</td>'+
-      '<td class="mono" style="font-size:.72rem">'+(r.moneda||'ARS')+'</td>'+
-      '<td class="mono" style="font-size:.72rem;text-align:right">'+(r.total?parseFloat(r.total).toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td>'+
-      '<td class="muted" style="font-size:.65rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r.notas||'')+'">'+(r.notas||'')+'</td>'+
-      '<td><button class="btn btn-d btn-sm" onclick="vmDelRow('+i+')" title="Eliminar">✕</button></td>'+
+  if(!rows.length){
+    body.innerHTML='<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--text3);font-size:.78rem">Sin resultados para los filtros aplicados</td></tr>';
+    return;
+  }
+  var tdS='padding:.35rem .5rem;border-bottom:1px solid var(--border2);white-space:nowrap;';
+  var html=rows.map(function(r,i){
+    var globalIdx=VM_ROWS.indexOf(r);
+    var tipoColor=r.tipo==='compra'?'color:var(--blue)':'color:var(--red)';
+    var totalNum=parseFloat(r.total)||0;
+    var impColor=r.tipo==='compra'?'color:var(--red)':'color:var(--accent)';
+    return '<tr style="transition:background .1s" onmouseover="this.style.background=\'var(--surface2)\'" onmouseout="this.style.background=\'\'">'+
+      '<td style="'+tdS+'color:var(--text3);font-size:.68rem;font-family:var(--mono)">'+(i+1)+'</td>'+
+      '<td style="'+tdS+'font-family:var(--mono);font-size:.72rem">'+r.fecha+'</td>'+
+      '<td style="'+tdS+'font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--accent)">'+r.ticker+'</td>'+
+      '<td style="'+tdS+'font-size:.72rem;'+tipoColor+'">'+r.tipo+'</td>'+
+      '<td style="'+tdS+'font-size:.7rem;color:var(--text3)">'+r.mercado+'</td>'+
+      '<td style="'+tdS+'font-family:var(--mono);font-size:.72rem;text-align:right">'+(r.cant?parseFloat(r.cant).toLocaleString('es-AR'):'—')+'</td>'+
+      '<td style="'+tdS+'font-family:var(--mono);font-size:.72rem;text-align:right">'+(r.precio?parseFloat(r.precio).toLocaleString('es-AR',{maximumFractionDigits:3}):'—')+'</td>'+
+      '<td style="'+tdS+'font-family:var(--mono);font-size:.7rem;color:var(--text3)">'+r.moneda+'</td>'+
+      '<td style="'+tdS+'font-family:var(--mono);font-size:.72rem;text-align:right;'+impColor+'">'+(totalNum?totalNum.toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td>'+
+      '<td style="'+tdS+'font-size:.65rem;color:var(--text3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r.notas||'')+'">'+(r.notas||'')+'</td>'+
+      '<td style="'+tdS+'"><button style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.75rem;padding:0 4px" onclick="vmDelRow('+globalIdx+')" title="Eliminar">✕</button></td>'+
     '</tr>';
   }).join('');
   body.innerHTML=html;
