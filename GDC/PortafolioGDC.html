@@ -176,7 +176,7 @@ tr:hover td{background:var(--surface2)}
   .pin-key{width:50px;height:38px}
 }
 /* Near-target filter */
-.nt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem;width:75%;max-width:100%}
+.nt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
 .nt-header{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap}
 .nt-title{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;color:var(--text)}
 .nt-label{font-size:.72rem;color:var(--text2);font-family:var(--mono)}
@@ -380,16 +380,38 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
-      <!-- Tickers cerca del objetivo -->
-      <div class="nt-card" id="near-target-card" style="">
-        <div class="nt-header">
-          <span class="nt-title">🎯 Tickers cerca del objetivo</span>
-          <span class="nt-label">Faltan menos de</span>
-          <input type="range" min="0.5" max="30" step="0.5" value="4" id="nt-slider" class="nt-slider" oninput="ntOnSlider(this.value)">
-          <input type="number" min="0" max="100" step="0.5" value="4" id="nt-input" class="nt-input" oninput="ntOnInput(this.value)">
-          <span class="nt-pct" id="nt-pct-label">2.5%</span>
+      <!-- Tickers cerca del objetivo + CCL implícito -->
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:1rem">
+        <div class="nt-card" id="near-target-card" style="flex:3;margin-bottom:0">
+          <div class="nt-header">
+            <span class="nt-title">🎯 Tickers cerca del objetivo</span>
+            <span class="nt-label">Faltan menos de</span>
+            <input type="range" min="0.5" max="30" step="0.5" value="4" id="nt-slider" class="nt-slider" oninput="ntOnSlider(this.value)">
+            <input type="number" min="0" max="100" step="0.5" value="4" id="nt-input" class="nt-input" oninput="ntOnInput(this.value)">
+            <span class="nt-pct" id="nt-pct-label">2.5%</span>
+          </div>
+          <div class="nt-grid" id="nt-grid"><div class="nt-ticker-card"><span class="nt-tk-sym">PARP</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:98.5%"></div></div><span class="nt-tk-falta">Falta 1.5%</span></div></div></div><div class="nt-ticker-card"><span class="nt-tk-sym">TX31</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:97.6%"></div></div><span class="nt-tk-falta">Falta 2.5%</span></div></div></div></div>
         </div>
-        <div class="nt-grid" id="nt-grid"><div class="nt-ticker-card"><span class="nt-tk-sym">PARP</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:98.5%"></div></div><span class="nt-tk-falta">Falta 1.5%</span></div></div></div><div class="nt-ticker-card"><span class="nt-tk-sym">TX31</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:97.6%"></div></div><span class="nt-tk-falta">Falta 2.5%</span></div></div></div></div>
+        <!-- CCL implícito -->
+        <div class="card" style="flex:1;min-width:160px;align-self:stretch;display:flex;flex-direction:column;justify-content:center">
+          <div class="card-header" style="padding-bottom:.5rem">
+            <span class="card-title" style="font-size:.82rem">💱 CCL Implícito</span>
+          </div>
+          <div class="card-body" style="padding-top:.5rem">
+            <div class="fgrp" style="margin-bottom:.5rem">
+              <label style="font-size:.68rem">Precio $</label>
+              <input type="text" id="ccli-ars" inputmode="decimal" placeholder="ej: 1471" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.82rem">
+            </div>
+            <div class="fgrp" style="margin-bottom:.8rem">
+              <label style="font-size:.68rem">Precio u$s</label>
+              <input type="text" id="ccli-usd" inputmode="decimal" placeholder="ej: 1" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.82rem">
+            </div>
+            <div style="text-align:center;padding:.5rem;background:var(--surface2);border-radius:var(--rsm)">
+              <div style="font-size:.6rem;color:var(--text3);font-family:var(--mono);letter-spacing:.06em;margin-bottom:2px">CCL IMPLÍCITO</div>
+              <div id="ccli-resultado" style="font-size:1.35rem;font-weight:800;font-family:var(--mono);color:var(--accent)">—</div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="card">
         <div class="card-header">
@@ -2262,6 +2284,19 @@ function renderPortfolio(){
 
   renderDivsCard();
   renderNearTarget();
+}
+
+// ─── CCL Implícito ───
+function calcCCLI(){
+  var ars = parseFloat((document.getElementById('ccli-ars').value||'').replace(',','.'));
+  var usd = parseFloat((document.getElementById('ccli-usd').value||'').replace(',','.'));
+  var el  = document.getElementById('ccli-resultado');
+  if(!isNaN(ars) && !isNaN(usd) && usd > 0){
+    var ccl = ars / usd;
+    el.textContent = '$' + ccl.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  } else {
+    el.textContent = '—';
+  }
 }
 
 // ─── Tickers cerca del objetivo ───
