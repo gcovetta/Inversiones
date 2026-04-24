@@ -393,21 +393,21 @@ tr:hover td{background:var(--surface2)}
           <div class="nt-grid" id="nt-grid"><div class="nt-ticker-card"><span class="nt-tk-sym">PARP</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:98.5%"></div></div><span class="nt-tk-falta">Falta 1.5%</span></div></div></div><div class="nt-ticker-card"><span class="nt-tk-sym">TX31</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:97.6%"></div></div><span class="nt-tk-falta">Falta 2.5%</span></div></div></div></div>
         </div>
         <!-- CCL implícito -->
-        <div class="card" style="flex:0 0 auto;width:fit-content;display:flex;flex-direction:column;justify-content:center;padding:.65rem .8rem">
-          <div style="font-size:.68rem;font-weight:700;color:var(--text2);margin-bottom:.55rem;white-space:nowrap">💱 CCL Implícito</div>
-          <div style="display:flex;flex-direction:column;gap:.35rem">
+        <div class="card" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;padding:.6rem .9rem;gap:.45rem">
+          <div style="font-size:.68rem;font-weight:700;color:var(--text2);white-space:nowrap">💱 CCL Implícito</div>
+          <div style="display:flex;align-items:flex-end;gap:.6rem">
             <div style="display:flex;flex-direction:column;gap:2px">
               <label style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">Precio $</label>
-              <input type="text" id="ccli-ars" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:6ch;padding:3px 5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
+              <input type="text" id="ccli-ars" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:8ch;padding:3px 6px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
             </div>
             <div style="display:flex;flex-direction:column;gap:2px">
               <label style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">Precio u$s</label>
-              <input type="text" id="ccli-usd" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:6ch;padding:3px 5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
+              <input type="text" id="ccli-usd" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:8ch;padding:3px 6px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
             </div>
-          </div>
-          <div style="margin-top:.55rem;padding:.35rem .4rem;background:var(--surface2);border-radius:var(--rsm);text-align:center">
-            <div style="font-size:.52rem;color:var(--text3);font-family:var(--mono);letter-spacing:.05em">CCL</div>
-            <div id="ccli-resultado" style="font-size:1rem;font-weight:800;font-family:var(--mono);color:var(--accent);white-space:nowrap">—</div>
+            <div style="padding:.3rem .55rem;background:var(--surface2);border-radius:var(--rsm);text-align:center;white-space:nowrap">
+              <div style="font-size:.52rem;color:var(--text3);font-family:var(--mono);letter-spacing:.05em">CCL</div>
+              <div id="ccli-resultado" style="font-size:1rem;font-weight:800;font-family:var(--mono);color:var(--accent)">—</div>
+            </div>
           </div>
         </div>
       </div>
