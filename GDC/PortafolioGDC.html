@@ -1949,6 +1949,16 @@ function renderMovimientos(){
           '<button class="btn btn-sm" style="color:var(--amber);border-color:#3e2c10" onclick="reduceMov('+sid+')">−</button>'+
         '</span>'
       : '';
+    // CCL/MEP efectivo: la tabla histórica tiene prioridad sobre el valor guardado
+    var _mEsBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+    var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON);
+    var _mTcTabla=_mEsBonoON?(getMEP(m.fecha)||getCCL(m.fecha)):(getCCL(m.fecha));
+    var _mTcEfectivo=_mTcTabla||m.ccl||null;
+    // precioUSD: para mercados ARS recalcular desde precioARS/tc_tabla; para USD usar el guardado
+    var _mPrecioUSD=(_mEsARS&&(m.precioARS||0)>0&&_mTcEfectivo>0)
+      ?(m.precioARS/_mTcEfectivo)
+      :(m.precioUSD||null);
+    var _mCCLstr=_mTcTabla?String(Math.round(_mTcTabla))+(_mTcTabla===m.ccl?'':' ✓'):(m.ccl?String(m.ccl):'—');
     return '<tr>'+
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
@@ -1956,8 +1966,8 @@ function renderMovimientos(){
       '<td style="font-weight:600">'+m.ticker+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
       '<td class="mono">'+(m.precioARS?'$'+m.precioARS.toLocaleString('es-AR'):'')+'</td>'+
-      '<td class="mono muted">'+(m.ccl?m.ccl:'—')+'</td>'+
-      '<td class="mono">'+(m.precioUSD?'$'+m.precioUSD.toFixed(4):'—')+'</td>'+
+      '<td class="mono muted">'+_mCCLstr+'</td>'+
+      '<td class="mono">'+(_mPrecioUSD?'$'+_mPrecioUSD.toFixed(4):'—')+'</td>'+
       '<td class="mono muted">'+(m.comision||0)+'</td>'+
       '<td class="muted" style="max-width:100px;overflow:hidden;text-overflow:ellipsis">'+(m.notas||'')+'</td>'+
       '<td style="white-space:nowrap">'+
@@ -2001,12 +2011,12 @@ function getPositions(){
     if(m.tipo==='dividendo'){p.dividendsUSD+=priceUSD;}
     else if(m.tipo==='compra'){
       // Bonos y ONs: dividir por MEP del día; resto: por CCL
-      // Fallback: si m.ccl está vacío, usar CCL/MEP histórico de la fecha
+      // La tabla histórica (Tipo de cambio) tiene PRIORIDAD sobre el CCL guardado en el movimiento
       var _tc=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||m.ccl||getCCL(m.fecha)||1)
-        :(m.ccl||getCCL(m.fecha)||1);
-      var usdPuro=_tc>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty;
-      p.costUSD+=priceUSD*m.qty+comUSD;
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
+        :(getCCL(m.fecha)||m.ccl||1);
+      var usdPuro=_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty;
+      p.costUSD+=usdPuro+comUSD;  // consistente con costUSDpuro: usa precioARS/tc_dia
       p.costARS+=(m.precioARS||0)*m.qty;
       p.costUSDpuro+=usdPuro;  // USD real pagado: precioARS*qty/MEP o CCL según mercado
       p.qty+=m.qty;
@@ -2016,9 +2026,10 @@ function getPositions(){
       var avgARS=p.qty>0?p.costARS/p.qty:0;
       var avgUSDpuro=p.qty>0?p.costUSDpuro/p.qty:0;
       // G/P realizada en USD puro (MEP para bonos/ON, CCL para el resto)
+      // La tabla histórica tiene PRIORIDAD sobre el CCL guardado en el movimiento
       var _tcV=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||m.ccl||getCCL(m.fecha)||1)
-        :(m.ccl||getCCL(m.fecha)||1);
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
+        :(getCCL(m.fecha)||m.ccl||1);
       var ventaUSDpuro=_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0);
       var costBasisPuro=avgUSDpuro*m.qty;
       var proceedsPuro=ventaUSDpuro*m.qty-comUSD;
