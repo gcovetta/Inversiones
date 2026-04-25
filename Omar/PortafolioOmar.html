@@ -38,7 +38,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .topbar-val{color:var(--text);font-weight:600;font-size:.72rem}
 .topbar-sub{color:var(--text3);font-size:.62rem}
 .topbar-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
 .logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
@@ -1043,6 +1043,88 @@ tr:hover td{background:var(--surface2)}
   }).observe(document.documentElement,{childList:true,subtree:true});
 })();
 // ════════════════════════════════════════════════════════
+// GITHUB SYNC CONFIG
+// ════════════════════════════════════════════════════════
+var GH_TOKEN  = '';  // se guarda en localStorage, nunca en el código   // github.com/settings/tokens → scope: workflow
+var GH_REPO   = 'gcovetta/Inversiones';
+var GH_BRANCH = 'main';
+var GH_WORKFLOW = 'sync.yml';
+
+// ── Sync GDC → Ana + Omar via GitHub Actions ─────────────────────────────
+async function syncPortfolios() {
+  var btn   = document.getElementById('sync-btn');
+  var icon  = document.getElementById('sync-icon');
+  var label = document.getElementById('sync-label');
+
+  // Token se guarda en localStorage, nunca en el código
+  var token = localStorage.getItem('ghSyncToken');
+  if (!token) {
+    token = prompt('GitHub Token para Sync:\n(se guarda solo en este browser, nunca en el código)');
+    if (!token) return;
+    localStorage.setItem('ghSyncToken', token.trim());
+  }
+  GH_TOKEN = token.trim();
+
+  // Estado: cargando
+  btn.disabled = true;
+  icon.style.display = 'inline-block';
+  icon.style.animation = 'spin360 1s linear infinite';
+  label.textContent = 'Sync...';
+  btn.style.borderColor = 'var(--amber)';
+  btn.style.color = 'var(--amber)';
+
+  var url = 'https://api.github.com/repos/' + GH_REPO +
+            '/actions/workflows/' + GH_WORKFLOW + '/dispatches';
+  try {
+    var res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept':        'application/vnd.github+json',
+        'Authorization': 'Bearer ' + GH_TOKEN,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({ ref: GH_BRANCH })
+    });
+
+    if (res.status === 204) {
+      // Éxito: GitHub acepta el trigger (no devuelve body)
+      icon.style.animation = '';
+      icon.textContent = '✓';
+      label.textContent = 'Synced!';
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+      setTimeout(function() {
+        icon.textContent = '⟳';
+        icon.style.animation = '';
+        label.textContent = 'Sync';
+        btn.style.borderColor = '#4a5568';
+        btn.style.color = '';
+        btn.disabled = false;
+      }, 4000);
+    } else {
+      var body = await res.json().catch(function(){ return {}; });
+      throw new Error('HTTP ' + res.status + ': ' + (body.message || 'Error desconocido'));
+    }
+  } catch(e) {
+    icon.style.animation = '';
+    icon.textContent = '✗';
+    label.textContent = 'Error';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    console.error('Sync error:', e);
+    alert('Error al disparar sync:\n' + e.message);
+    setTimeout(function() {
+      icon.textContent = '⟳';
+      label.textContent = 'Sync';
+      btn.style.borderColor = '#4a5568';
+      btn.style.color = '';
+      btn.disabled = false;
+    }, 3000);
+  }
+}
+
+// ════════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ════════════════════════════════════════════════════════
 var SUPABASE_URL = 'https://bekepiyyyxipyduawuyq.supabase.co';
@@ -1132,7 +1214,6 @@ function getTC(fecha, mercado){
   return esBonoON ? (getMEP(fecha)||getCCL(fecha)) : getCCL(fecha);
 }
 var CCL_HOY = CCL_TABLE['17/04/2026'] || 1453;
-var _fetchingQuotes = false; // true durante batch fetch: pies se dibujan solo al final
 var MEP_HOY = MEP_TABLE['17/04/2026'] || CCL_HOY; // se actualiza al hacer fetch
 
 var movimientos = [];
@@ -1330,14 +1411,16 @@ function addMov(){
   var mkt=document.getElementById('m-mkt').value;
   // Bonos/ONs: dividir por MEP. Resto: por CCL.
   var cclVal=parseFloat(document.getElementById('m-ccl').value)||getTC(fecha,mkt);
-  var comision=parseFloat(document.getElementById('m-comision').value)||0;
+  var comisionPct=parseFloat(document.getElementById('m-comision').value)||0;
   if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
   if(!qty||qty<=0){flash(sel,'Cantidad invalida',true);return;}
   if(isNaN(precioARS)||precioARS<0){flash(sel,'Precio invalido',true);return;}
   var ratio=getRatio(ticker);
   var precioUSD=cclVal?precioARS*ratio/cclVal:null;
+  // Calcular comisión absoluta: (qty * precioARS * % / 100)
+  var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
-  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comision,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false});
+  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false});
   saveAndRender();
   ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-comision','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   if(finishEl)finishEl.checked=false;
@@ -1540,13 +1623,10 @@ function portBlur(){
 
 function portToggleBlur(){
   if(!_portBlurred){portBlur();return;}
-  // Si no hay PIN configurado, desbloquear directamente
-  var stored=localStorage.getItem(PORT_PIN_KEY);
-  if(!stored){portUnblur();return;}
-  // Verificar sesion activa
+  // Verificar sesión activa
   var sess=parseInt(localStorage.getItem(PORT_SESSION_KEY)||'0');
   var age=(Date.now()-sess)/1000/3600;
-  if(age<PORT_SESSION_HOURS){
+  if(age<PORT_SESSION_HOURS&&localStorage.getItem(PORT_PIN_KEY)){
     portUnblur();
   } else {
     portShowOverlay();
@@ -1591,7 +1671,7 @@ function movModalOpen(id){
     '<div class="fgrp"><label>Cantidad</label><input type="number" id="me-qty" value="'+(m.qty||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label>Precio ARS</label><input type="number" id="me-ars" value="'+(m.precioARS||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label id="me-ccl-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'MEP':'CCL')+'</label><input type="number" id="me-ccl" value="'+(m.ccl||'')+'" min="0" step="any"></div>'+
-    '<div class="fgrp"><label>Comisión USD</label><input type="number" id="me-com" value="'+(m.comision||0)+'" min="0" step="any"></div>'+
+    '<div class="fgrp"><label>Comisión %</label><input type="number" id="me-com" value="'+(m.comisionPct||0)+'" min="0" max="100" step="0.01"></div>'+
     '<div class="fgrp" style="grid-column:1/-1"><label>Notas</label><input type="text" id="me-notas" value="'+(m.notas||'')+'"></div>'+
     '<div class="fgrp" style="grid-column:1/-1;display:flex;align-items:center"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none"><input type="checkbox" id="me-finish"'+(m.finish?' checked':'')+' style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0"> 🏁 A finish</label></div>';
   // Evento para recalcular USD al cambiar ARS/CCL/ticker
@@ -1660,7 +1740,9 @@ function movModalSave(){
     m.precioUSD=m.precioARS*rt/m.ccl;
     m.ratio=rt;
   }
-  m.comision=com;
+  // Calcular comisión absoluta desde porcentaje: (qty * precioARS * % / 100)
+  m.comision=(m.qty*m.precioARS*com/100);
+  m.comisionPct=com;
   m.notas=notas;
   var meFinish=document.getElementById('me-finish');
   if(meFinish)m.finish=meFinish.checked;
@@ -1879,11 +1961,16 @@ function renderMovimientos(){
   var empty=document.getElementById('mov-empty');
   var wrap=document.getElementById('mov-wrap');
   var filterEl=document.getElementById('mov-filter');
-  var filterVal=filterEl?(filterEl.value||'').trim().toUpperCase():'';
+  
+  // Guardar valores actuales de filtros y elemento con focus
+  var currentFilterVal=(filterEl?(filterEl.value||'').trim().toUpperCase():'');
   var filterTipo=(document.getElementById('mov-filter-tipo')||{value:''}).value.toLowerCase();
   var filterMkt=(document.getElementById('mov-filter-mkt')||{value:''}).value.toUpperCase();
   var filterFecha=(document.getElementById('mov-filter-fecha')||{value:''}).value.trim();
   var filterNotas=(document.getElementById('mov-filter-notas')||{value:''}).value.trim().toLowerCase();
+  var activeFocusId=document.activeElement?document.activeElement.id:null;
+  
+  var filterVal=currentFilterVal;
 
   var lista=movimientos.slice().reverse();
   if(filterVal) lista=lista.filter(function(m){return (m.ticker||'').toUpperCase().indexOf(filterVal)>=0;});
@@ -1910,6 +1997,16 @@ function renderMovimientos(){
           '<button class="btn btn-sm" style="color:var(--amber);border-color:#3e2c10" onclick="reduceMov('+sid+')">−</button>'+
         '</span>'
       : '';
+    // CCL/MEP efectivo: la tabla histórica tiene prioridad sobre el valor guardado
+    var _mEsBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+    var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON);
+    var _mTcTabla=_mEsBonoON?(getMEP(m.fecha)||getCCL(m.fecha)):(getCCL(m.fecha));
+    var _mTcEfectivo=_mTcTabla||m.ccl||null;
+    // precioUSD: para mercados ARS recalcular desde precioARS/tc_tabla; para USD usar el guardado
+    var _mPrecioUSD=(_mEsARS&&(m.precioARS||0)>0&&_mTcEfectivo>0)
+      ?(m.precioARS/_mTcEfectivo)
+      :(m.precioUSD||null);
+    var _mCCLstr=_mTcTabla?String(Math.round(_mTcTabla))+(_mTcTabla===m.ccl?'':' ✓'):(m.ccl?String(m.ccl):'—');
     return '<tr>'+
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
@@ -1917,9 +2014,9 @@ function renderMovimientos(){
       '<td style="font-weight:600">'+m.ticker+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
       '<td class="mono">'+(m.precioARS?'$'+m.precioARS.toLocaleString('es-AR'):'')+'</td>'+
-      '<td class="mono muted">'+(m.ccl?m.ccl:'—')+'</td>'+
-      '<td class="mono">'+(m.precioUSD?'$'+m.precioUSD.toFixed(4):'—')+'</td>'+
-      '<td class="mono muted">'+(m.comision||0)+'</td>'+
+      '<td class="mono muted">'+_mCCLstr+'</td>'+
+      '<td class="mono">'+(_mPrecioUSD?'$'+_mPrecioUSD.toFixed(4):'—')+'</td>'+
+      '<td class="mono muted">'+(m.comisionPct?m.comisionPct.toFixed(2)+'%':'0%')+'</td>'+
       '<td class="muted" style="max-width:100px;overflow:hidden;text-overflow:ellipsis">'+(m.notas||'')+'</td>'+
       '<td style="white-space:nowrap">'+
         '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">'+
@@ -1931,12 +2028,30 @@ function renderMovimientos(){
     '</tr>';
   }).join('');
 
-  // Cuando hay filtro activo: scrollear .content para que #mov-wrap quede en el
-  // tope del viewport (debajo del card-header sticky) y enfocar #mov-wrap para
-  // que el scroll de teclado/trackpad vaya directo a la tabla.
-  if(anyFilter){
-    wrap.scrollTop=0;
-    requestAnimationFrame(function(){
+  // Restaurar valores de filtros y focus en el elemento que estaba enfocado
+  requestAnimationFrame(function(){
+    // Restaurar valores de filtros (después de que el HTML fue regenerado)
+    var filterElNew=document.getElementById('mov-filter');
+    var filterTipoNew=document.getElementById('mov-filter-tipo');
+    var filterMktNew=document.getElementById('mov-filter-mkt');
+    var filterFechaNew=document.getElementById('mov-filter-fecha');
+    var filterNotasNew=document.getElementById('mov-filter-notas');
+    
+    if(filterElNew&&currentFilterVal)filterElNew.value=currentFilterVal;
+    if(filterTipoNew&&filterTipo)filterTipoNew.value=filterTipo;
+    if(filterMktNew&&filterMkt)filterMktNew.value=filterMkt;
+    if(filterFechaNew&&filterFecha)filterFechaNew.value=filterFecha;
+    if(filterNotasNew&&filterNotas)filterNotasNew.value=filterNotas;
+    
+    // Restaurar focus en el elemento que estaba enfocado
+    if(activeFocusId){
+      var elToFocus=document.getElementById(activeFocusId);
+      if(elToFocus)elToFocus.focus();
+    }
+    
+    // Scroll para que wrap quede visible si hay filtro activo
+    if(anyFilter){
+      wrap.scrollTop=0;
       var content=document.querySelector('.content');
       var cardHeader=document.querySelector('#mov-card .card-header');
       var headerH=cardHeader?cardHeader.getBoundingClientRect().bottom:0;
@@ -1944,14 +2059,8 @@ function renderMovimientos(){
       if(content&&wrapTop>headerH+4){
         content.scrollTop+=wrapTop-headerH;
       }
-      // No robar el foco si ya está en uno de los filtros
-      var _active=document.activeElement;
-      var _filterIds=['mov-filter','mov-filter-tipo','mov-filter-mkt','mov-filter-fecha','mov-filter-notas'];
-      if(!_active||_filterIds.indexOf(_active.id)<0){
-        wrap.focus({preventScroll:true});
-      }
-    });
-  }
+    }
+  });
 }
 
 function getPositions(){
@@ -1967,12 +2076,12 @@ function getPositions(){
     if(m.tipo==='dividendo'){p.dividendsUSD+=priceUSD;}
     else if(m.tipo==='compra'){
       // Bonos y ONs: dividir por MEP del día; resto: por CCL
-      // Prioridad: tabla Tipo de Cambio de la fecha; m.ccl solo como fallback si la fecha no está en tabla
+      // La tabla histórica (Tipo de cambio) tiene PRIORIDAD sobre el CCL guardado en el movimiento
       var _tc=(m.mercado==='BONOS'||m.mercado==='ON')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
         :(getCCL(m.fecha)||m.ccl||1);
-      var usdPuro=_tc>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty;
-      p.costUSD+=priceUSD*m.qty+comUSD;
+      var usdPuro=_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty;
+      p.costUSD+=usdPuro+comUSD;  // consistente con costUSDpuro: usa precioARS/tc_dia
       p.costARS+=(m.precioARS||0)*m.qty;
       p.costUSDpuro+=usdPuro;  // USD real pagado: precioARS*qty/MEP o CCL según mercado
       p.qty+=m.qty;
@@ -1982,6 +2091,7 @@ function getPositions(){
       var avgARS=p.qty>0?p.costARS/p.qty:0;
       var avgUSDpuro=p.qty>0?p.costUSDpuro/p.qty:0;
       // G/P realizada en USD puro (MEP para bonos/ON, CCL para el resto)
+      // La tabla histórica tiene PRIORIDAD sobre el CCL guardado en el movimiento
       var _tcV=(m.mercado==='BONOS'||m.mercado==='ON')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
         :(getCCL(m.fecha)||m.ccl||1);
@@ -2186,14 +2296,11 @@ function renderPortfolio(){
   var _liqMEP=liqUSD+((MEP_HOY||CCL_HOY)>0?liqARS/(MEP_HOY||CCL_HOY):0);
   var _fija=(sectorVal.bonos||0)+(sectorVal.on||0);
   var _variable=totalVal-_fija;
-  // Gráficos de torta: solo cuando no hay un fetch de cotizaciones en curso
-  if(!_fetchingQuotes){
-    renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
-    // Sector pie desglose
-    renderSectorPie(sectorVal);
-    // RV pie por país
-    renderRVPie(sectorVal);
-  }
+  renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
+  // Sector pie desglose
+  renderSectorPie(sectorVal);
+  // RV pie por país
+  renderRVPie(sectorVal);
 
   // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
   var trkDivsTotal=0;
@@ -2249,23 +2356,21 @@ function renderPortfolio(){
   if(_elWorstTk){_elWorstTk.textContent=_statWorst?_statWorst.ticker:'—';}
   if(_elWorstVal){_elWorstVal.innerHTML=_statWorst?'<span style="color:var(--red)">'+(Math.round(_statWorst._pnlPct))+'%</span>':'—';}
 
-  // Activo más antiguo en cartera
-  var _openTickers=open.map(function(p){return p.ticker;});
-  var _oldestDate=null,_oldestTicker=null;
-  movimientos.forEach(function(m){
-    if(m.tipo!=='compra'||_openTickers.indexOf(m.ticker)<0)return;
-    var parts=(m.fecha||'').split('/');
-    if(parts.length!==3)return;
-    var d=new Date(parts[2],parts[1]-1,parts[0]);
-    if(!_oldestDate||d<_oldestDate){_oldestDate=d;_oldestTicker=m.ticker;}
-  });
-  var _elOldestTk=document.getElementById('stat-oldest-ticker');
-  var _elOldestFecha=document.getElementById('stat-oldest-fecha');
-  if(_elOldestTk)_elOldestTk.textContent=_oldestTicker||'—';
-  if(_elOldestFecha)_elOldestFecha.textContent=_oldestDate?_oldestDate.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'2-digit'}):'—';
-
   renderDivsCard();
   renderNearTarget();
+}
+
+// ─── CCL Implícito ───
+function calcCCLI(){
+  var ars = parseFloat((document.getElementById('ccli-ars').value||'').replace(',','.'));
+  var usd = parseFloat((document.getElementById('ccli-usd').value||'').replace(',','.'));
+  var el  = document.getElementById('ccli-resultado');
+  if(!isNaN(ars) && !isNaN(usd) && usd > 0){
+    var ccl = ars / usd;
+    el.textContent = '$' + ccl.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  } else {
+    el.textContent = '—';
+  }
 }
 
 // ─── Tickers cerca del objetivo ───
@@ -2622,7 +2727,6 @@ async function fetchAllQuotes(){
   try{localStorage.removeItem('ptOMAR_q2');localStorage.removeItem('ptOMAR_q2_ts');}catch(e){}
   var icon=document.getElementById('ref-icon');var status=document.getElementById('ref-status');var prog=document.getElementById('pos-prog');var pfill=document.getElementById('pfill');
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
-  _fetchingQuotes=true; // suspender redibujado de pies durante fetch
 
   // Separar por fuente: Finnhub (NYSE/Brasil/etc), Yahoo AR (Argentina), data912 (Bonos/ON)
   var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on';});
@@ -2692,8 +2796,7 @@ async function fetchAllQuotes(){
   // Los cuatro grupos corren en paralelo
   await Promise.all([fetchFinnhubAll(),fetchYahooAll(),fetchBonosAll(),fetchONsAll()]);
 
-  // Render final con todos los datos listos — reactiva pies
-  _fetchingQuotes=false;
+  // Render final con todos los datos listos
   renderPortfolio();
 
   icon.textContent='⟳';prog.style.display='none';
