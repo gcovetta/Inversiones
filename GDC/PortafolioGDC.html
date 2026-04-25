@@ -320,7 +320,7 @@ tr:hover td{background:var(--surface2)}
       <!-- PIN overlay portafolio -->
       <div id="port-pin-overlay" style="display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.7); z-index: 8000; align-items: center; justify-content: center;">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:220px">
-          <div style="font-size:.85rem;font-weight:600;color:var(--text)">🔒 PIN requerido</div>
+          <div id="port-pin-title" style="font-size:.85rem;font-weight:600;color:var(--text)">🔒 Ingresá tu PIN</div>
           <div class="pin-dots" id="port-pin-dots">
             <div class="pin-dot" id="port-pd0"></div><div class="pin-dot" id="port-pd1"></div>
             <div class="pin-dot" id="port-pd2"></div><div class="pin-dot" id="port-pd3"></div>
@@ -1591,8 +1591,8 @@ function loadLiquidez(){
   }catch(e){}
 }
 // ── PIN y blur del portafolio ────────────────────────────────────────────
-var PORT_PIN_KEY='ptNYSE_pin_hash';
-var PORT_SESSION_KEY='ptNYSE_pin_sess';
+var PORT_PIN_KEY='ptSHARED_pin_hash';
+var PORT_SESSION_KEY='ptSHARED_pin_sess';
 var PORT_SESSION_HOURS=8;
 var _portPinBuf='';
 var _portBlurred=true;
@@ -1684,11 +1684,14 @@ function portToggleBlur(){
 
 function portCheckSession(){
   var stored=localStorage.getItem(PORT_PIN_KEY);
-  if(!stored){portUnblur();return;} // sin PIN configurado: mostrar todo
+  // Actualizar título del overlay según si es primera vez o no
+  var titleEl=document.getElementById('port-pin-title');
+  if(titleEl) titleEl.textContent = stored ? '🔒 Ingresá tu PIN' : '🔑 Configurá tu PIN';
+  if(!stored){portShowOverlay();return;} // Primera vez: configurar PIN
   var sess=parseInt(localStorage.getItem(PORT_SESSION_KEY)||'0');
   var age=(Date.now()-sess)/1000/3600;
   if(age<PORT_SESSION_HOURS){portUnblur();}
-  // Si expiró, queda blurred
+  else{portShowOverlay();} // Sesión expirada: pedir PIN
 }
 // ─────────────────────────────────────────────────────────────────────────
 
