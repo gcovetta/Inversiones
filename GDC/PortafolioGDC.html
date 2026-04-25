@@ -38,7 +38,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .topbar-val{color:var(--text);font-weight:600;font-size:.72rem}
 .topbar-sub{color:var(--text3);font-size:.62rem}
 .topbar-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
 .logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
@@ -277,6 +277,9 @@ tr:hover td{background:var(--surface2)}
   <div class="hright">
     <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
     <div class="lupd" id="lupd" data-lastupd="12:06 a. m.">12:06 a.&nbsp;m. · próx. 4:32</div>
+    <button class="btn" id="sync-btn" onclick="syncPortfolios()" title="Sincronizar Ana y Omar con GDC" style="border-color:#4a5568;gap:5px;">
+      <span id="sync-icon" style="font-size:.85rem;line-height:1;">⟳</span><span id="sync-label">Sync</span>
+    </button>
   </div>
 </header>
 <div class="main" id="main">
@@ -1085,6 +1088,88 @@ tr:hover td{background:var(--surface2)}
     muts.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)convertNumInputs(n);});});
   }).observe(document.documentElement,{childList:true,subtree:true});
 })();
+// ════════════════════════════════════════════════════════
+// GITHUB SYNC CONFIG
+// ════════════════════════════════════════════════════════
+var GH_TOKEN  = '';  // se guarda en localStorage, nunca en el código   // github.com/settings/tokens → scope: workflow
+var GH_REPO   = 'gcovetta/Inversiones';
+var GH_BRANCH = 'main';
+var GH_WORKFLOW = 'sync.yml';
+
+// ── Sync GDC → Ana + Omar via GitHub Actions ─────────────────────────────
+async function syncPortfolios() {
+  var btn   = document.getElementById('sync-btn');
+  var icon  = document.getElementById('sync-icon');
+  var label = document.getElementById('sync-label');
+
+  // Token se guarda en localStorage, nunca en el código
+  var token = localStorage.getItem('ghSyncToken');
+  if (!token) {
+    token = prompt('GitHub Token para Sync:\n(se guarda solo en este browser, nunca en el código)');
+    if (!token) return;
+    localStorage.setItem('ghSyncToken', token.trim());
+  }
+  GH_TOKEN = token.trim();
+
+  // Estado: cargando
+  btn.disabled = true;
+  icon.style.display = 'inline-block';
+  icon.style.animation = 'spin360 1s linear infinite';
+  label.textContent = 'Sync...';
+  btn.style.borderColor = 'var(--amber)';
+  btn.style.color = 'var(--amber)';
+
+  var url = 'https://api.github.com/repos/' + GH_REPO +
+            '/actions/workflows/' + GH_WORKFLOW + '/dispatches';
+  try {
+    var res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept':        'application/vnd.github+json',
+        'Authorization': 'Bearer ' + GH_TOKEN,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({ ref: GH_BRANCH })
+    });
+
+    if (res.status === 204) {
+      // Éxito: GitHub acepta el trigger (no devuelve body)
+      icon.style.animation = '';
+      icon.textContent = '✓';
+      label.textContent = 'Synced!';
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+      setTimeout(function() {
+        icon.textContent = '⟳';
+        icon.style.animation = '';
+        label.textContent = 'Sync';
+        btn.style.borderColor = '#4a5568';
+        btn.style.color = '';
+        btn.disabled = false;
+      }, 4000);
+    } else {
+      var body = await res.json().catch(function(){ return {}; });
+      throw new Error('HTTP ' + res.status + ': ' + (body.message || 'Error desconocido'));
+    }
+  } catch(e) {
+    icon.style.animation = '';
+    icon.textContent = '✗';
+    label.textContent = 'Error';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    console.error('Sync error:', e);
+    alert('Error al disparar sync:\n' + e.message);
+    setTimeout(function() {
+      icon.textContent = '⟳';
+      label.textContent = 'Sync';
+      btn.style.borderColor = '#4a5568';
+      btn.style.color = '';
+      btn.disabled = false;
+    }, 3000);
+  }
+}
+
 // ════════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ════════════════════════════════════════════════════════

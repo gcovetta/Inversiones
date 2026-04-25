@@ -1,0 +1,48 @@
+name: Sync GDC → Ana + Omar
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Portfolio a sincronizar'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - omar
+          - ana
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Correr sync_omar.py
+        run: |
+          TARGET="${{ github.event.inputs.target }}"
+          if [ "$TARGET" = "all" ]; then
+            python3 sync_omar.py
+          else
+            python3 sync_omar.py "$TARGET"
+          fi
+
+      - name: Commit y push si hay cambios
+        run: |
+          git config user.name  "Sync Bot"
+          git config user.email "sync@portafolio.local"
+          git add Ana/PortafolioAna.html Omar/PortafolioOmar.html
+          if git diff --staged --quiet; then
+            echo "Sin cambios — Ana y Omar ya estaban al día."
+          else
+            git commit -m "sync: GDC → Ana + Omar [$(date '+%Y-%m-%d %H:%M')]"
+            git push
+            echo "✓ Cambios pusheados."
+          fi
