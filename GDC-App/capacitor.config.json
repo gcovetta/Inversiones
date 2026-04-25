@@ -1,0 +1,22 @@
+{
+  "appId": "com.gcovetta.portafoliogdc",
+  "appName": "Portafolio GDC",
+  "webDir": "www",
+  "server": {
+    "allowNavigation": [
+      "*.supabase.co",
+      "finnhub.io",
+      "*.googleapis.com",
+      "cdn.jsdelivr.net",
+      "fonts.googleapis.com",
+      "fonts.gstatic.com"
+    ]
+  },
+  "ios": {
+    "scheme": "PortafolioGDC",
+    "backgroundColor": "#0e0f11",
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true
+  }
+}

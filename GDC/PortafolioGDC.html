@@ -1981,8 +1981,8 @@ function renderMovimientos(){
   }).join('');
 
   // Cuando hay filtro activo: scrollear .content para que #mov-wrap quede en el
-  // tope del viewport (debajo del card-header sticky) y enfocar #mov-wrap para
-  // que el scroll de teclado/trackpad vaya directo a la tabla.
+  // tope del viewport (debajo del card-header sticky) pero NO hacer focus a wrap
+  // si estamos escribiendo en un input (evita que pierda el focus el input de filtro)
   if(anyFilter){
     wrap.scrollTop=0;
     requestAnimationFrame(function(){
@@ -1993,7 +1993,11 @@ function renderMovimientos(){
       if(content&&wrapTop>headerH+4){
         content.scrollTop+=wrapTop-headerH;
       }
-      wrap.focus({preventScroll:true});
+      // No hacer focus si el focus está en un input de filtro
+      var activeEl=document.activeElement;
+      if(activeEl!==filterEl&&activeEl.id!=='mov-filter-fecha'&&activeEl.id!=='mov-filter-notas'){
+        wrap.focus({preventScroll:true});
+      }
     });
   }
 }

@@ -1,0 +1,17 @@
+{
+  "name": "portafolio-gdc",
+  "version": "1.0.0",
+  "description": "Portafolio GDC — iOS App via Capacitor",
+  "scripts": {
+    "build": "bash build.sh",
+    "sync": "bash build.sh && npx cap sync",
+    "ios": "bash build.sh && npx cap sync && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
