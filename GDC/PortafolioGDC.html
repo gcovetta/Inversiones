@@ -1922,11 +1922,16 @@ function renderMovimientos(){
   var empty=document.getElementById('mov-empty');
   var wrap=document.getElementById('mov-wrap');
   var filterEl=document.getElementById('mov-filter');
-  var filterVal=filterEl?(filterEl.value||'').trim().toUpperCase():'';
+  
+  // Guardar valores actuales de filtros y elemento con focus
+  var currentFilterVal=(filterEl?(filterEl.value||'').trim().toUpperCase():'');
   var filterTipo=(document.getElementById('mov-filter-tipo')||{value:''}).value.toLowerCase();
   var filterMkt=(document.getElementById('mov-filter-mkt')||{value:''}).value.toUpperCase();
   var filterFecha=(document.getElementById('mov-filter-fecha')||{value:''}).value.trim();
   var filterNotas=(document.getElementById('mov-filter-notas')||{value:''}).value.trim().toLowerCase();
+  var activeFocusId=document.activeElement?document.activeElement.id:null;
+  
+  var filterVal=currentFilterVal;
 
   var lista=movimientos.slice().reverse();
   if(filterVal) lista=lista.filter(function(m){return (m.ticker||'').toUpperCase().indexOf(filterVal)>=0;});
@@ -1984,12 +1989,30 @@ function renderMovimientos(){
     '</tr>';
   }).join('');
 
-  // Cuando hay filtro activo: scrollear .content para que #mov-wrap quede en el
-  // tope del viewport (debajo del card-header sticky) pero NO hacer focus a wrap
-  // si estamos escribiendo en un input (evita que pierda el focus el input de filtro)
-  if(anyFilter){
-    wrap.scrollTop=0;
-    requestAnimationFrame(function(){
+  // Restaurar valores de filtros y focus en el elemento que estaba enfocado
+  requestAnimationFrame(function(){
+    // Restaurar valores de filtros (después de que el HTML fue regenerado)
+    var filterElNew=document.getElementById('mov-filter');
+    var filterTipoNew=document.getElementById('mov-filter-tipo');
+    var filterMktNew=document.getElementById('mov-filter-mkt');
+    var filterFechaNew=document.getElementById('mov-filter-fecha');
+    var filterNotasNew=document.getElementById('mov-filter-notas');
+    
+    if(filterElNew&&currentFilterVal)filterElNew.value=currentFilterVal;
+    if(filterTipoNew&&filterTipo)filterTipoNew.value=filterTipo;
+    if(filterMktNew&&filterMkt)filterMktNew.value=filterMkt;
+    if(filterFechaNew&&filterFecha)filterFechaNew.value=filterFecha;
+    if(filterNotasNew&&filterNotas)filterNotasNew.value=filterNotas;
+    
+    // Restaurar focus en el elemento que estaba enfocado
+    if(activeFocusId){
+      var elToFocus=document.getElementById(activeFocusId);
+      if(elToFocus)elToFocus.focus();
+    }
+    
+    // Scroll para que wrap quede visible si hay filtro activo
+    if(anyFilter){
+      wrap.scrollTop=0;
       var content=document.querySelector('.content');
       var cardHeader=document.querySelector('#mov-card .card-header');
       var headerH=cardHeader?cardHeader.getBoundingClientRect().bottom:0;
@@ -1997,13 +2020,8 @@ function renderMovimientos(){
       if(content&&wrapTop>headerH+4){
         content.scrollTop+=wrapTop-headerH;
       }
-      // No hacer focus si el focus está en un input de filtro
-      var activeEl=document.activeElement;
-      if(activeEl!==filterEl&&activeEl.id!=='mov-filter-fecha'&&activeEl.id!=='mov-filter-notas'){
-        wrap.focus({preventScroll:true});
-      }
-    });
-  }
+    }
+  });
 }
 
 function getPositions(){
