@@ -494,7 +494,7 @@ tr:hover td{background:var(--surface2)}
               <div class="fgrp"><label id="lbl-precio">Precio ARS</label><input id="m-precio-ars" type="number" min="0" step="any" placeholder="0"></div>
               <div class="fgrp"><label id="m-ccl-label">CCL del día</label><input id="m-ccl" type="number" min="0" step="any" placeholder="auto"></div>
               <div class="fgrp"><label>Precio USD (calc.)</label><input id="m-precio-usd" type="text" placeholder="—" readonly="" style="color:var(--accent)"></div>
-              <div class="fgrp"><label>Comisión USD</label><input id="m-comision" type="number" min="0" step="any" placeholder="0"></div>
+              <div class="fgrp"><label>Comisión %</label><input id="m-comision" type="number" min="0" max="100" step="0.01" placeholder="0" title="Porcentaje de comisión sobre el valor de compra"></div>
             </div>
           </div>
           <div id="row-aporte" style="display:none">
@@ -1372,14 +1372,16 @@ function addMov(){
   var mkt=document.getElementById('m-mkt').value;
   // Bonos/ONs: dividir por MEP. Resto: por CCL.
   var cclVal=parseFloat(document.getElementById('m-ccl').value)||getTC(fecha,mkt);
-  var comision=parseFloat(document.getElementById('m-comision').value)||0;
+  var comisionPct=parseFloat(document.getElementById('m-comision').value)||0;
   if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
   if(!qty||qty<=0){flash(sel,'Cantidad invalida',true);return;}
   if(isNaN(precioARS)||precioARS<0){flash(sel,'Precio invalido',true);return;}
   var ratio=getRatio(ticker);
   var precioUSD=cclVal?precioARS*ratio/cclVal:null;
+  // Calcular comisión absoluta: (qty * precioARS * % / 100)
+  var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
-  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comision,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false});
+  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false});
   saveAndRender();
   ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-comision','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   if(finishEl)finishEl.checked=false;
@@ -1630,7 +1632,7 @@ function movModalOpen(id){
     '<div class="fgrp"><label>Cantidad</label><input type="number" id="me-qty" value="'+(m.qty||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label>Precio ARS</label><input type="number" id="me-ars" value="'+(m.precioARS||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label id="me-ccl-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'MEP':'CCL')+'</label><input type="number" id="me-ccl" value="'+(m.ccl||'')+'" min="0" step="any"></div>'+
-    '<div class="fgrp"><label>Comisión USD</label><input type="number" id="me-com" value="'+(m.comision||0)+'" min="0" step="any"></div>'+
+    '<div class="fgrp"><label>Comisión %</label><input type="number" id="me-com" value="'+(m.comisionPct||0)+'" min="0" max="100" step="0.01"></div>'+
     '<div class="fgrp" style="grid-column:1/-1"><label>Notas</label><input type="text" id="me-notas" value="'+(m.notas||'')+'"></div>'+
     '<div class="fgrp" style="grid-column:1/-1;display:flex;align-items:center"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none"><input type="checkbox" id="me-finish"'+(m.finish?' checked':'')+' style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0"> 🏁 A finish</label></div>';
   // Evento para recalcular USD al cambiar ARS/CCL/ticker
@@ -1699,7 +1701,9 @@ function movModalSave(){
     m.precioUSD=m.precioARS*rt/m.ccl;
     m.ratio=rt;
   }
-  m.comision=com;
+  // Calcular comisión absoluta desde porcentaje: (qty * precioARS * % / 100)
+  m.comision=(m.qty*m.precioARS*com/100);
+  m.comisionPct=com;
   m.notas=notas;
   var meFinish=document.getElementById('me-finish');
   if(meFinish)m.finish=meFinish.checked;
@@ -1968,7 +1972,7 @@ function renderMovimientos(){
       '<td class="mono">'+(m.precioARS?'$'+m.precioARS.toLocaleString('es-AR'):'')+'</td>'+
       '<td class="mono muted">'+_mCCLstr+'</td>'+
       '<td class="mono">'+(_mPrecioUSD?'$'+_mPrecioUSD.toFixed(4):'—')+'</td>'+
-      '<td class="mono muted">'+(m.comision||0)+'</td>'+
+      '<td class="mono muted">'+(m.comisionPct?m.comisionPct.toFixed(2)+'%':'0%')+'</td>'+
       '<td class="muted" style="max-width:100px;overflow:hidden;text-overflow:ellipsis">'+(m.notas||'')+'</td>'+
       '<td style="white-space:nowrap">'+
         '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">'+
