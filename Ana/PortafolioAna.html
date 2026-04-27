@@ -2948,7 +2948,6 @@ function addDividendo(){
 }
 
 function deleteDividendo(id){
-  if(!confirm('¿Eliminar este dividendo?'))return;
   dividendos=dividendos.filter(function(d){return d.id!=id;});
   try{localStorage.setItem('ptANA_divs',JSON.stringify(dividendos));}catch(e){}
   renderDividendos();renderPortfolio();renderDivsCard();
