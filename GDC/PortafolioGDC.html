@@ -1190,12 +1190,13 @@ async function sbSetConfig(key, value){
     await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.'+encodeURIComponent(key),{
       method:'DELETE', headers:sbHeaders()
     });
-    await fetch(SUPABASE_URL+'/rest/v1/config',{
+    var r=await fetch(SUPABASE_URL+'/rest/v1/config',{
       method:'POST',
       headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
       body:JSON.stringify({key:key, value:value, updated_at:new Date().toISOString()})
     });
-  }catch(e){ console.warn('sbSetConfig error',key,e); }
+    return r.ok;
+  }catch(e){ console.warn('sbSetConfig error',key,e); return false; }
 }
 
 async function sbGetConfig(key){
@@ -2968,9 +2969,16 @@ function addDividendo(){
 
 function deleteDividendo(id){
   dividendos=dividendos.filter(function(d){return d.id!=id;});
+  try{
+    var pd=JSON.parse(localStorage.getItem('ptNYSE_divs_del')||'[]');
+    if(pd.indexOf(id)<0) pd.push(id);
+    localStorage.setItem('ptNYSE_divs_del',JSON.stringify(pd));
+  }catch(e){}
   try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
   renderDividendos();renderPortfolio();renderDivsCard();
-  sbSetConfig('dividendos', dividendos);
+  sbSetConfig('dividendos',dividendos).then(function(ok){
+    if(ok){try{localStorage.removeItem('ptNYSE_divs_del');}catch(e){}}
+  });
 }
 
 function clearDividendos(){
@@ -3782,6 +3790,17 @@ function trkCalcCCL(){
     } else {
       try{var sd=localStorage.getItem('ptNYSE_divs');if(sd)dividendos=JSON.parse(sd);}catch(e){}
     }
+    // Aplicar borrados pendientes (protección ante datos stale de Supabase)
+    try{
+      var _pd=JSON.parse(localStorage.getItem('ptNYSE_divs_del')||'[]');
+      if(_pd.length){
+        dividendos=dividendos.filter(function(d){return _pd.indexOf(d.id)<0;});
+        try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
+        sbSetConfig('dividendos',dividendos).then(function(ok){
+          if(ok){try{localStorage.removeItem('ptNYSE_divs_del');}catch(e){}}
+        });
+      }
+    }catch(e){}
 
     // 3. Tracker divs CCL
     var sbTrkDivs = await sbLoadArray('trk_divs');
