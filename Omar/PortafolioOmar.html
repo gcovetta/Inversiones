@@ -1160,16 +1160,18 @@ async function sbGetConfig(key){
 // Guardar array completo en tabla (borra todo y reinserta)
 async function sbSaveArray(table, arr){
   try{
-    // Borrar todos
-    await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gte.0',{method:'DELETE',headers:sbHeaders()});
-    if(!arr||!arr.length) return;
+    var delRes=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gte.0',{method:'DELETE',headers:sbHeaders()});
+    if(!delRes.ok) throw new Error('DEL '+delRes.status);
+    if(!arr||!arr.length) return true;
     var rows=arr.map(function(item){return{id:item.id,data:item,updated_at:new Date().toISOString()};});
-    await fetch(SUPABASE_URL+'/rest/v1/'+table,{
+    var insRes=await fetch(SUPABASE_URL+'/rest/v1/'+table,{
       method:'POST',
       headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
       body:JSON.stringify(rows)
     });
-  }catch(e){ console.warn('sbSaveArray error',table,e); }
+    if(!insRes.ok) throw new Error('INS '+insRes.status);
+    return true;
+  }catch(e){ console.warn('sbSaveArray error',table,e); return false; }
 }
 
 async function sbLoadArray(table){
@@ -2916,10 +2918,13 @@ function addDividendo(){
 }
 
 function deleteDividendo(id){
+  if(!confirm('¿Eliminar este dividendo?'))return;
   dividendos=dividendos.filter(function(d){return d.id!=id;});
   try{localStorage.setItem('ptOMAR_divs',JSON.stringify(dividendos));}catch(e){}
-  sbSaveArray('dividendos', dividendos);
   renderDividendos();renderPortfolio();renderDivsCard();
+  sbSaveArray('dividendos',dividendos).then(function(ok){
+    if(!ok){var el=document.getElementById('d-status');if(el)flash(el,'Sin conexión — guardado solo localmente',true);}
+  });
 }
 
 function clearDividendos(){
