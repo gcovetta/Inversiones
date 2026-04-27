@@ -2919,16 +2919,23 @@ function addDividendo(){
 }
 
 function deleteDividendo(id){
-  dividendos=dividendos.filter(function(d){return d.id!=id;});
+  var _st=document.getElementById('d-status');
+  if(_st) flash(_st,'Eliminando...', false);
+  dividendos=dividendos.filter(function(d){return String(d.id)!==String(id);});
   try{
     var pd=JSON.parse(localStorage.getItem('ptOMAR_divs_del')||'[]');
-    if(pd.indexOf(id)<0) pd.push(id);
+    if(pd.indexOf(String(id))<0) pd.push(String(id));
     localStorage.setItem('ptOMAR_divs_del',JSON.stringify(pd));
   }catch(e){}
   try{localStorage.setItem('ptOMAR_divs',JSON.stringify(dividendos));}catch(e){}
   renderDividendos();renderPortfolio();renderDivsCard();
   sbSetConfig('dividendos',dividendos).then(function(ok){
-    if(ok){try{localStorage.removeItem('ptOMAR_divs_del');}catch(e){}}
+    if(ok){
+      try{localStorage.removeItem('ptOMAR_divs_del');}catch(e){}
+      if(_st) flash(_st,'Eliminado y guardado ✓',false);
+    } else {
+      if(_st) flash(_st,'Eliminado localmente (sin servidor)',true);
+    }
   });
 }
 
@@ -3745,7 +3752,7 @@ function trkCalcCCL(){
     try{
       var _pd=JSON.parse(localStorage.getItem('ptOMAR_divs_del')||'[]');
       if(_pd.length){
-        dividendos=dividendos.filter(function(d){return _pd.indexOf(d.id)<0;});
+        dividendos=dividendos.filter(function(d){return _pd.indexOf(String(d.id))<0;});
         try{localStorage.setItem('ptOMAR_divs',JSON.stringify(dividendos));}catch(e){}
         sbSetConfig('dividendos',dividendos).then(function(ok){
           if(ok){try{localStorage.removeItem('ptOMAR_divs_del');}catch(e){}}
