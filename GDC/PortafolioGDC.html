@@ -633,8 +633,10 @@ tr:hover td{background:var(--surface2)}
             <div class="fgrp"><label>Monto USD (calc.)</label><input id="d-usd" type="text" readonly="" placeholder="—" style="color:var(--accent)"></div>
           </div>
           <div class="fgrp" style="margin-top:4px"><label>Notas</label><input id="d-notas" type="text" placeholder="ej: Q1 2026"></div>
+          <input type="hidden" id="d-edit-id" value="">
           <div class="gap-row" style="margin-top:10px">
-            <button class="btn btn-a" onclick="addDividendo()">+ Registrar</button>
+            <button class="btn btn-a" id="d-submit-btn" onclick="addDividendo()">+ Registrar</button>
+            <button class="btn" id="d-cancel-btn" onclick="cancelEditDividendo()" style="display:none">✕ Cancelar</button>
             <button class="btn btn-d" onclick="clearDividendos()" title="Borrar todos los dividendos">🗑 Borrar todo</button>
             <span id="d-status"></span>
           </div>
@@ -3098,6 +3100,7 @@ function calcDivUSD(){
 }
 
 function addDividendo(){
+  var editId=document.getElementById('d-edit-id').value;
   var ticker=document.getElementById('d-ticker').value.trim().toUpperCase();
   var fechaInput=document.getElementById('d-fecha').value;var fecha=fechaInput.split('-').reverse().join('/');
   var ars=parseFloat(document.getElementById('d-ars').value);
@@ -3106,12 +3109,61 @@ function addDividendo(){
   if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
   if(!ars||ars<=0){flash(sel,'Ingresa el monto',true);return;}
   var usd=ccl?ars/ccl:null;
-  dividendos.push({id:Date.now(),fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas});
+  if(editId){
+    // Modo edición: reemplazar el dividendo existente
+    dividendos=dividendos.map(function(d){
+      return String(d.id)===String(editId)?{id:d.id,fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas}:d;
+    });
+    flash(sel,'Dividendo actualizado ✓',false);
+  } else {
+    dividendos.push({id:Date.now(),fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas});
+    flash(sel,'Dividendo registrado',false);
+  }
   try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
   sbSetConfig('dividendos', dividendos);
   renderDividendos();renderPortfolio();renderDivsCard();
-  document.getElementById('d-ars').value='';document.getElementById('d-ccl').value='';document.getElementById('d-usd').value='';document.getElementById('d-notas').value='';
-  flash(sel,'Dividendo registrado',false);
+  cancelEditDividendo();
+}
+
+function editDividendo(id){
+  var d=dividendos.find(function(x){return String(x.id)===String(id);});
+  if(!d) return;
+  // Llenar el formulario
+  var sel=document.getElementById('d-ticker');
+  if(sel){
+    // Si el ticker no está en el select, agregarlo temporalmente
+    if(!Array.from(sel.options).some(function(o){return o.value===d.ticker;})){
+      var opt=document.createElement('option');opt.value=d.ticker;opt.textContent=d.ticker;sel.appendChild(opt);
+    }
+    sel.value=d.ticker;
+  }
+  var fechaISO=d.fecha.split('/').reverse().join('-');
+  document.getElementById('d-fecha').value=fechaISO;
+  document.getElementById('d-ars').value=d.ars||'';
+  document.getElementById('d-ccl').value=d.ccl||'';
+  document.getElementById('d-usd').value=d.usd?d.usd.toFixed(2):'';
+  document.getElementById('d-notas').value=d.notas||'';
+  document.getElementById('d-edit-id').value=String(id);
+  var btn=document.getElementById('d-submit-btn');
+  if(btn){btn.textContent='✓ Actualizar';btn.classList.add('btn-edit');}
+  var cancel=document.getElementById('d-cancel-btn');
+  if(cancel) cancel.style.display='';
+  // Hacer scroll al formulario
+  var card=document.getElementById('page-dividendos');
+  if(card) card.scrollTop=0;
+  document.getElementById('page-dividendos').querySelector('.card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEditDividendo(){
+  document.getElementById('d-edit-id').value='';
+  document.getElementById('d-ars').value='';
+  document.getElementById('d-ccl').value='';
+  document.getElementById('d-usd').value='';
+  document.getElementById('d-notas').value='';
+  var btn=document.getElementById('d-submit-btn');
+  if(btn){btn.textContent='+ Registrar';btn.classList.remove('btn-edit');}
+  var cancel=document.getElementById('d-cancel-btn');
+  if(cancel) cancel.style.display='none';
 }
 
 function deleteDividendo(id){
@@ -3149,7 +3201,7 @@ function renderDividendos(){
   var totalUSD=dividendos.reduce(function(a,d){return a+(d.usd||0);},0);
   totalEl.textContent='Total: $'+Math.round(totalUSD).toLocaleString('es-AR')+' USD';
   body.innerHTML=dividendos.slice().sort(function(a,b){return b.fecha.split('/').reverse().join('').localeCompare(a.fecha.split('/').reverse().join(''));}).map(function(d){
-    return '<tr><td class="mono">'+d.fecha+'</td><td style="font-weight:700">'+d.ticker+'</td><td class="mono">$'+(d.ars||0).toLocaleString('es-AR')+'</td><td class="mono muted">'+(d.ccl||'—')+'</td><td class="mono pos">$'+Math.round(d.usd||0).toLocaleString('es-AR')+'</td><td class="muted">'+(d.notas||'')+'</td><td><button class="btn btn-d btn-sm" onclick="deleteDividendo('+d.id+')">x</button></td></tr>';
+    return '<tr><td class="mono">'+d.fecha+'</td><td style="font-weight:700">'+d.ticker+'</td><td class="mono">$'+(d.ars||0).toLocaleString('es-AR')+'</td><td class="mono muted">'+(d.ccl||'—')+'</td><td class="mono pos">$'+Math.round(d.usd||0).toLocaleString('es-AR')+'</td><td class="muted">'+(d.notas||'')+'</td><td class="gap-row" style="gap:3px"><button class="btn btn-a btn-sm" onclick="editDividendo('+d.id+')">✏</button><button class="btn btn-d btn-sm" onclick="deleteDividendo('+d.id+')">✕</button></td></tr>';
   }).join('');
 }
 
