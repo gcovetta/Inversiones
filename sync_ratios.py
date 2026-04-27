@@ -114,7 +114,12 @@ for name in dest:
             continue
         try:
             existing = fetch_config(name, config_key) or {}
-            merged   = {**existing, **gdc_val}
+            if config_key == 'targets':
+                # Solo sincronizar targets con precio definido (no null)
+                gdc_real = {k: v for k, v in gdc_val.items() if v is not None}
+                merged   = {**existing, **gdc_real}
+            else:
+                merged = {**existing, **gdc_val}
             push_config(name, config_key, merged)
             print(f"    {label:<18} ✓ {len(merged)} entradas")
         except Exception as e:
