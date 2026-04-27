@@ -38,6 +38,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .topbar-val{color:var(--text);font-weight:600;font-size:.72rem}
 .topbar-sub{color:var(--text3);font-size:.62rem}
 .topbar-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
+
+/* ── Marcas de activos ─────────────────────────────────────────── */
+.mark-btn{background:none;border:none;cursor:pointer;font-size:.72rem;padding:0 3px 0 0;opacity:.25;transition:opacity .15s;line-height:1;vertical-align:middle}
+.mark-btn:hover{opacity:1}
+.mark-btn.active{opacity:1}
+tr.marked-sell>td:first-child{border-left:3px solid var(--red);padding-left:5px}
+tr.marked-buy>td:first-child{border-left:3px solid var(--accent);padding-left:5px}
+tr.marked-watch>td:first-child{border-left:3px solid var(--amber);padding-left:5px}
+tr.marked-sell{background:rgba(248,113,113,.04)}
+tr.marked-buy{background:rgba(126,232,162,.04)}
+tr.marked-watch{background:rgba(251,191,36,.04)}
+.mark-note-tag{display:inline-block;font-size:.56rem;font-style:italic;color:var(--text3);margin-left:4px;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.mark-popover{position:fixed;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:.8rem;z-index:9500;min-width:210px;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+.mark-pop-title{font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:.55rem;font-family:var(--sans)}
+.mark-type-btns{display:flex;gap:5px;margin-bottom:.5rem}
+.mark-type-btn{flex:1;padding:5px 2px;border-radius:var(--rsm);border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-size:.68rem;text-align:center;transition:all .12s;color:var(--text2);font-family:var(--sans)}
+.mark-type-btn:hover{background:var(--border);color:var(--text)}
+.mark-type-btn.sel-sell{border-color:var(--red);background:rgba(248,113,113,.15);color:var(--red)}
+.mark-type-btn.sel-buy{border-color:var(--accent);background:rgba(126,232,162,.15);color:var(--accent)}
+.mark-type-btn.sel-watch{border-color:var(--amber);background:rgba(251,191,36,.15);color:var(--amber)}
+.mark-note-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:5px 7px;outline:none;margin-bottom:.5rem;box-sizing:border-box}
+.mark-note-input:focus{border-color:var(--accent)}
+.mark-pop-actions{display:flex;gap:5px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
 .logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
@@ -1593,6 +1616,94 @@ function loadLiquidez(){
     }
   }catch(e){}
 }
+// ── Marcas de activos ────────────────────────────────────────────────────
+var MARKS = {};
+var _markPopTicker = null;
+
+function loadMarks(){
+  try{
+    var s=localStorage.getItem('ptNYSE_marks');
+    if(s) MARKS=JSON.parse(s);
+  }catch(e){}
+}
+
+function saveMarks(){
+  try{ localStorage.setItem('ptNYSE_marks',JSON.stringify(MARKS)); }catch(e){}
+}
+
+function openMarkPopover(ticker, el){
+  closeMarkPopover();
+  _markPopTicker = ticker;
+  var m = MARKS[ticker]||{};
+  var pop = document.createElement('div');
+  pop.className='mark-popover';
+  pop.id='mark-popover';
+  pop.innerHTML=
+    '<div style="margin-bottom:6px;font-weight:600;font-size:.8rem">' + ticker + '</div>'+
+    '<div style="display:flex;gap:4px;margin-bottom:8px">'+
+      '<button class="mark-type-btn'+(m.type==='sell'?' sel-sell':'')+'" onclick="setMarkType(this,'sell')">🔴 Vender</button>'+
+      '<button class="mark-type-btn'+(m.type==='buy'?' sel-buy':'')+'" onclick="setMarkType(this,'buy')">🟢 Comprar</button>'+
+      '<button class="mark-type-btn'+(m.type==='watch'?' sel-watch':'')+'" onclick="setMarkType(this,'watch')">⭐ Seguir</button>'+
+    '</div>'+
+    '<textarea id="mark-note-input" placeholder="Nota (opcional)..." style="width:100%;box-sizing:border-box;height:52px;resize:none;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:.78rem">'+
+      (m.note||'')+
+    '</textarea>'+
+    '<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:6px">'+
+      '<button onclick="clearMark()" style="font-size:.72rem;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-muted)">Quitar</button>'+
+      '<button onclick="confirmMark()" style="font-size:.72rem;padding:3px 8px;background:var(--accent);border:none;border-radius:4px;cursor:pointer;color:#fff">Guardar</button>'+
+    '</div>';
+  // Position near button
+  var r = el.getBoundingClientRect();
+  var left = Math.min(r.left, window.innerWidth-200);
+  var top  = r.bottom + 4;
+  if(top + 180 > window.innerHeight) top = r.top - 184;
+  pop.style.left = left + 'px';
+  pop.style.top  = top  + 'px';
+  document.body.appendChild(pop);
+  // Highlight current type btn
+  if(m.type) setMarkType(pop.querySelector('.sel-'+m.type)||null, m.type, true);
+  setTimeout(function(){document.addEventListener('click',_markOutsideClick);},10);
+}
+
+function _markOutsideClick(e){
+  var pop=document.getElementById('mark-popover');
+  if(pop && !pop.contains(e.target)) closeMarkPopover();
+}
+
+function setMarkType(btnEl, type, silent){
+  var pop=document.getElementById('mark-popover');
+  if(!pop) return;
+  pop.querySelectorAll('.mark-type-btn').forEach(function(b){ b.className='mark-type-btn'; });
+  if(btnEl){ btnEl.className='mark-type-btn sel-'+type; }
+  pop.dataset.type=type;
+}
+
+function confirmMark(){
+  var pop=document.getElementById('mark-popover');
+  if(!pop||!_markPopTicker) return;
+  var type=pop.dataset.type||(MARKS[_markPopTicker]&&MARKS[_markPopTicker].type)||'';
+  var note=(document.getElementById('mark-note-input')||{}).value||'';
+  if(type){ MARKS[_markPopTicker]={type:type,note:note.trim()}; }
+  else { delete MARKS[_markPopTicker]; }
+  saveMarks();
+  closeMarkPopover();
+  renderPortfolio();
+}
+
+function clearMark(){
+  if(_markPopTicker) delete MARKS[_markPopTicker];
+  saveMarks();
+  closeMarkPopover();
+  renderPortfolio();
+}
+
+function closeMarkPopover(){
+  document.removeEventListener('click',_markOutsideClick);
+  var pop=document.getElementById('mark-popover');
+  if(pop) pop.remove();
+  _markPopTicker=null;
+}
+
 // ── PIN y blur del portafolio ────────────────────────────────────────────
 var PORT_PIN_KEY='ptSHARED_pin_hash';
 var PORT_SESSION_KEY='ptSHARED_pin_sess';
@@ -1685,6 +1796,7 @@ function portToggleBlur(){
   }
 }
 
+loadMarks();
 function portCheckSession(){
   var stored=localStorage.getItem(PORT_PIN_KEY);
   // Actualizar título del overlay según si es primera vez o no
@@ -2318,8 +2430,16 @@ function renderPortfolio(){
     var ppcARS='$'+Math.round(ppcCedearARS).toLocaleString('es-AR');
 
     var finishFlag=finishTickers.has(p.ticker)?'<span title="A finish" style="font-size:.7rem;margin-left:4px">🏁</span>':'';
-    var row='<tr>'+
-      '<td style="font-weight:700">'+p.ticker+finishFlag+'</td>'+
+    var _mark=MARKS[p.ticker];
+    var _markClass=_mark?' marked-'+_mark.type:'';
+    var _markIcon=_mark?(_mark.type==='sell'?'🔴':_mark.type==='buy'?'🟢':'⭐'):'🏷';
+    var _markBtnCls='mark-btn'+(_mark?' active':'');
+    var _markNote=_mark&&_mark.note?'<span class="mark-note-tag" title="'+_mark.note.replace(/"/g,'&quot;')+'">'+_mark.note.replace(/</g,'&lt;')+'</span>':'';
+    var row='<tr class="'+_markClass+'">' +
+      '<td style="font-weight:700">'+
+        '<button class="'+_markBtnCls+'" onclick="event.stopPropagation();openMarkPopover(''+p.ticker.replace(/'/g,"\'")+'',this)" title="Marcar activo">'+_markIcon+'</button>'+
+        p.ticker+finishFlag+_markNote+
+      '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
       '<td class="mono">'+invARS+'</td>'+
       '<td class="mono">'+(mktARS?mktARS:'<span style="color:var(--text3)">—</span>')+'</td>'+
