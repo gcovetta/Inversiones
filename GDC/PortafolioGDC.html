@@ -1638,30 +1638,56 @@ function openMarkPopover(ticker, el){
   var pop = document.createElement('div');
   pop.className='mark-popover';
   pop.id='mark-popover';
-  pop.innerHTML=
-    '<div style="margin-bottom:6px;font-weight:600;font-size:.8rem">' + ticker + '</div>'+
-    '<div style="display:flex;gap:4px;margin-bottom:8px">'+
-      '<button class="mark-type-btn'+(m.type==='sell'?' sel-sell':'')+'" onclick="setMarkType(this,'sell')">🔴 Vender</button>'+
-      '<button class="mark-type-btn'+(m.type==='buy'?' sel-buy':'')+'" onclick="setMarkType(this,'buy')">🟢 Comprar</button>'+
-      '<button class="mark-type-btn'+(m.type==='watch'?' sel-watch':'')+'" onclick="setMarkType(this,'watch')">⭐ Seguir</button>'+
-    '</div>'+
-    '<textarea id="mark-note-input" placeholder="Nota (opcional)..." style="width:100%;box-sizing:border-box;height:52px;resize:none;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:.78rem">'+
-      (m.note||'')+
-    '</textarea>'+
-    '<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:6px">'+
-      '<button onclick="clearMark()" style="font-size:.72rem;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-muted)">Quitar</button>'+
-      '<button onclick="confirmMark()" style="font-size:.72rem;padding:3px 8px;background:var(--accent);border:none;border-radius:4px;cursor:pointer;color:#fff">Guardar</button>'+
-    '</div>';
-  // Position near button
+
+  // Título
+  var title = document.createElement('div');
+  title.style.cssText='margin-bottom:6px;font-weight:600;font-size:.8rem';
+  title.textContent = ticker;
+  pop.appendChild(title);
+
+  // Botones de tipo
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText='display:flex;gap:4px;margin-bottom:8px';
+  [['sell','🔴 Vender'],['buy','🟢 Comprar'],['watch','⭐ Seguir']].forEach(function(pair){
+    var b = document.createElement('button');
+    b.className = 'mark-type-btn' + (m.type===pair[0] ? ' sel-'+pair[0] : '');
+    b.textContent = pair[1];
+    b.onclick = function(){ setMarkType(b, pair[0]); };
+    btnRow.appendChild(b);
+  });
+  pop.appendChild(btnRow);
+
+  // Textarea nota
+  var ta = document.createElement('textarea');
+  ta.id='mark-note-input';
+  ta.placeholder='Nota (opcional)...';
+  ta.style.cssText='width:100%;box-sizing:border-box;height:52px;resize:none;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:.78rem';
+  ta.value = m.note||'';
+  pop.appendChild(ta);
+
+  // Botones acción
+  var actRow = document.createElement('div');
+  actRow.style.cssText='display:flex;justify-content:flex-end;gap:6px;margin-top:6px';
+  var btnQ = document.createElement('button');
+  btnQ.textContent='Quitar';
+  btnQ.style.cssText='font-size:.72rem;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-muted)';
+  btnQ.onclick = clearMark;
+  var btnG = document.createElement('button');
+  btnG.textContent='Guardar';
+  btnG.style.cssText='font-size:.72rem;padding:3px 8px;background:var(--accent);border:none;border-radius:4px;cursor:pointer;color:#fff';
+  btnG.onclick = confirmMark;
+  actRow.appendChild(btnQ);
+  actRow.appendChild(btnG);
+  pop.appendChild(actRow);
+
+  // Posición
   var r = el.getBoundingClientRect();
   var left = Math.min(r.left, window.innerWidth-200);
   var top  = r.bottom + 4;
-  if(top + 180 > window.innerHeight) top = r.top - 184;
+  if(top + 210 > window.innerHeight) top = r.top - 214;
   pop.style.left = left + 'px';
   pop.style.top  = top  + 'px';
   document.body.appendChild(pop);
-  // Highlight current type btn
-  if(m.type) setMarkType(pop.querySelector('.sel-'+m.type)||null, m.type, true);
   setTimeout(function(){document.addEventListener('click',_markOutsideClick);},10);
 }
 
@@ -2437,7 +2463,7 @@ function renderPortfolio(){
     var _markNote=_mark&&_mark.note?'<span class="mark-note-tag" title="'+_mark.note.replace(/"/g,'&quot;')+'">'+_mark.note.replace(/</g,'&lt;')+'</span>':'';
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
-        '<button class="'+_markBtnCls+'" onclick="event.stopPropagation();openMarkPopover(''+p.ticker.replace(/'/g,"\'")+'',this)" title="Marcar activo">'+_markIcon+'</button>'+
+        '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
         p.ticker+finishFlag+_markNote+
       '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
