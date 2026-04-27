@@ -2959,7 +2959,7 @@ async function fetchYahooAR(ticker){
   });
 }
 async function fetchFinnhub(ticker){
-  var res=await fetch(FBASE+'/quote?symbol='+encodeURIComponent(ticker)+'&token='+FKEY);
+  var res=await fetchWithTimeout(FBASE+'/quote?symbol='+encodeURIComponent(ticker)+'&token='+FKEY,{},8000);
   if(!res.ok)throw new Error('HTTP '+res.status);
   var d=await res.json();
   if(!d||d.c==null||d.c===0)throw new Error('Sin datos');
@@ -2995,8 +2995,16 @@ async function fetchAllQuotes(){
   async function fetchFinnhubAll(){
     for(var i=0;i<finnhubPos.length;i++){
       var p=finnhubPos[i];
-      try{quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));}
-      catch(e){errors++;}
+      try{
+        quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
+      }catch(e){
+        // Fallback Yahoo para tickers Brasil (NU, PAGS, MELI, etc.)
+        if(getSector(p.ticker)==='brasil'){
+          try{quotes[p.ticker]=await fetchYahooAR(p.ticker);}catch(e2){errors++;}
+        } else {
+          errors++;
+        }
+      }
       updateProgress();
       if(i<finnhubPos.length-1)await delay(1100);
     }
@@ -3202,7 +3210,11 @@ function renderTargets(){
   var body=document.getElementById('targets-body');
   var pos_map={};getPositions().forEach(function(p){if(p.qty>0)pos_map[p.ticker]=p;});
   var filterVal=((document.getElementById('targets-filter')||{}).value||'').toUpperCase().trim();
-  var allTickers=Object.keys(TARGET_TABLE).sort();
+  // Solo mostrar tickers que están en cartera (qty > 0)
+  var allTickers=Object.keys(pos_map).sort();
+  // Agregar también los que tienen target seteado aunque hayan salido de cartera temporalmente
+  Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null && allTickers.indexOf(t)<0) allTickers.push(t); });
+  allTickers.sort();
   var tickers=filterVal?allTickers.filter(function(t){return t.includes(filterVal);}):allTickers;
   var countEl=document.getElementById('targets-filter-count');
   if(countEl){countEl.textContent=tickers.length<allTickers.length?(tickers.length+' de '+allTickers.length+' tickers'):(allTickers.length+' tickers');}
