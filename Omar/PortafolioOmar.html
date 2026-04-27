@@ -2911,7 +2911,7 @@ function addDividendo(){
   var usd=ccl?ars/ccl:null;
   dividendos.push({id:Date.now(),fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas});
   try{localStorage.setItem('ptOMAR_divs',JSON.stringify(dividendos));}catch(e){}
-  sbSaveArray('dividendos', dividendos);
+  sbSetConfig('dividendos', dividendos);
   renderDividendos();renderPortfolio();renderDivsCard();
   document.getElementById('d-ars').value='';document.getElementById('d-ccl').value='';document.getElementById('d-usd').value='';document.getElementById('d-notas').value='';
   flash(sel,'Dividendo registrado',false);
@@ -2921,15 +2921,13 @@ function deleteDividendo(id){
   dividendos=dividendos.filter(function(d){return d.id!=id;});
   try{localStorage.setItem('ptOMAR_divs',JSON.stringify(dividendos));}catch(e){}
   renderDividendos();renderPortfolio();renderDivsCard();
-  sbSaveArray('dividendos',dividendos).then(function(ok){
-    if(!ok){var el=document.getElementById('d-status');if(el)flash(el,'Sin conexión — guardado solo localmente',true);}
-  });
+  sbSetConfig('dividendos', dividendos);
 }
 
 function clearDividendos(){
   if(!confirm('Borrar todos los dividendos?'))return;
   dividendos=[];try{localStorage.removeItem('ptOMAR_divs');}catch(e){}
-  sbSaveArray('dividendos', []);
+  sbSetConfig('dividendos', []);
   renderDividendos();renderPortfolio();renderDivsCard();
 }
 
@@ -3728,7 +3726,7 @@ function trkCalcCCL(){
     }
 
     // 2. Dividendos
-    var sbDivs = await sbLoadArray('dividendos');
+    var sbDivs = await sbGetConfig('dividendos');
     if(sbDivs && sbDivs.length){
       dividendos = sbDivs;
       try{localStorage.setItem('ptOMAR_divs',JSON.stringify(dividendos));}catch(e){}
