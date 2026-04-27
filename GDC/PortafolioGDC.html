@@ -3233,11 +3233,8 @@ function renderTargets(){
   var body=document.getElementById('targets-body');
   var pos_map={};getPositions().forEach(function(p){if(p.qty>0)pos_map[p.ticker]=p;});
   var filterVal=((document.getElementById('targets-filter')||{}).value||'').toUpperCase().trim();
-  // Solo mostrar tickers que están en cartera (qty > 0)
+  // Solo mostrar tickers que están en cartera (qty > 0) — no mostrar extras de TARGET_TABLE
   var allTickers=Object.keys(pos_map).sort();
-  // Agregar también los que tienen target seteado aunque hayan salido de cartera temporalmente
-  Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null && allTickers.indexOf(t)<0) allTickers.push(t); });
-  allTickers.sort();
   var tickers=filterVal?allTickers.filter(function(t){return t.includes(filterVal);}):allTickers;
   var countEl=document.getElementById('targets-filter-count');
   if(countEl){countEl.textContent=tickers.length<allTickers.length?(tickers.length+' de '+allTickers.length+' tickers'):(allTickers.length+' tickers');}
