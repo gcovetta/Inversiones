@@ -3233,8 +3233,11 @@ function renderTargets(){
   var body=document.getElementById('targets-body');
   var pos_map={};getPositions().forEach(function(p){if(p.qty>0)pos_map[p.ticker]=p;});
   var filterVal=((document.getElementById('targets-filter')||{}).value||'').toUpperCase().trim();
-  // Solo mostrar tickers que están en cartera (qty > 0) — no mostrar extras de TARGET_TABLE
+  // Solo mostrar tickers que están en cartera (qty > 0)
   var allTickers=Object.keys(pos_map).sort();
+  // Agregar también los que tienen target seteado aunque hayan salido de cartera temporalmente
+  Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null && allTickers.indexOf(t)<0) allTickers.push(t); });
+  allTickers.sort();
   var tickers=filterVal?allTickers.filter(function(t){return t.includes(filterVal);}):allTickers;
   var countEl=document.getElementById('targets-filter-count');
   if(countEl){countEl.textContent=tickers.length<allTickers.length?(tickers.length+' de '+allTickers.length+' tickers'):(allTickers.length+' tickers');}
@@ -4005,11 +4008,18 @@ function trkCalcCCL(){
       movimientos = sbMov.filter(function(m){return m!=null;});
       try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));localStorage.setItem('ptNYSE_version',DATA_VERSION);}catch(e){}
     } else {
-      // Fallback localStorage
+      // Fallback localStorage — NO escribir a Supabase aquí (evita borrar datos por error temporal de red)
       var storedVersion=null;try{storedVersion=localStorage.getItem('ptNYSE_version');}catch(e){}
       var saved=null;try{saved=localStorage.getItem('ptNYSE_mov2');}catch(e){}
-      if(saved&&storedVersion===DATA_VERSION){try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}}
-      else{movimientos=PRELOADED;sbSaveArray('movimientos',movimientos);try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));localStorage.setItem('ptNYSE_version',DATA_VERSION);}catch(e){}}
+      if(saved&&storedVersion===DATA_VERSION){
+        try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}
+      } else if(PRELOADED.length){
+        // Solo usar PRELOADED si tiene datos reales (instalación nueva sin localStorage)
+        movimientos=PRELOADED;
+        sbSaveArray('movimientos',movimientos);
+        try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));localStorage.setItem('ptNYSE_version',DATA_VERSION);}catch(e){}
+      }
+      // Si no hay datos en ningún lado → movimientos=[] sin tocar Supabase
     }
 
     // 2. Dividendos
@@ -4172,6 +4182,7 @@ function trkCalcCCL(){
 
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portCheckSession();
     document.getElementById('lupd').textContent='Datos cargados ✓';
+    if(initFromSupabase._done) initFromSupabase._done();
 
     // Si no hay quotes en caché, lanzar fetch inmediato (no esperar 5 min)
     if(Object.keys(quotes).length === 0){
@@ -4233,8 +4244,11 @@ function trkCalcCCL(){
 
   _startCycle();
 
-  // Render inicial con delay para asegurar que los quotes están listos
-  setTimeout(function(){ renderPortfolio(); }, 800);
+  // Render inicial con delay — solo si initFromSupabase aún no terminó
+  // (evita mostrar datos del localStorage antes de que Supabase cargue)
+  var _sbInitDone = false;
+  initFromSupabase._done = function(){ _sbInitDone = true; };
+  setTimeout(function(){ if(!_sbInitDone) renderPortfolio(); }, 800);
 
   // ── Market data: BTC, EWZ, IMV/CCL ──────────────────────────────────────
   async function fetchMarketExtras(){

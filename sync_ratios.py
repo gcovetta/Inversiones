@@ -37,9 +37,8 @@ SUPABASE = {
 }
 
 # Claves a sincronizar: (config_key, label)
-# NOTA: 'ratios' ya viene hardcodeado en el HTML sincronizado por sync_omar.py,
-# no es necesario pushear via Supabase (causaría que Omar/Ana muestren todos los tickers de GDC)
 SYNC_KEYS = [
+    ('ratios',  'Ratios CEDEAR'),
     ('targets', 'P. Venta'),
     ('rubros',  'Rubros'),
 ]
