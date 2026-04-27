@@ -1138,10 +1138,14 @@ async function syncDataToOthers(statusCallback) {
   var cclOvr = await sbGetConfig('ccl_override');
   var mepOvr = await sbGetConfig('mep_override');
 
+  // Filtrar TARGET_TABLE: solo tickers con precio real (no null)
+  var realTargets = {};
+  Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null) realTargets[t]=TARGET_TABLE[t]; });
+
   var tables = [
-    { key: 'ratios',       value: RATIOS_TABLE },
-    { key: 'targets',      value: TARGET_TABLE },
-    { key: 'rubros',       value: USER_RUBRO_TABLE },
+    // RATIOS_TABLE no se pushea — ya viene hardcodeado en el HTML sincronizado
+    { key: 'targets',      value: Object.keys(realTargets).length ? realTargets : null },
+    { key: 'rubros',       value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
     { key: 'ccl_override', value: cclOvr || CCL_TABLE },
     { key: 'mep_override', value: mepOvr || null }
   ];
