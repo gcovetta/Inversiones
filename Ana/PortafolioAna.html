@@ -1104,6 +1104,62 @@ var GH_BRANCH = 'main';
 var GH_WORKFLOW = 'sync.yml';
 
 // ── Sync GDC → Ana + Omar via GitHub Actions ─────────────────────────────
+// ── Sync de datos GDC → Omar + Ana ──────────────────────────────────────
+var SYNC_OTHERS = [
+  { name: 'Omar', url: 'https://opbbnvfmgdmdsmbhmgsc.supabase.co', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng' },
+  { name: 'Ana',  url: 'https://arxntlqhtrtskabzihlf.supabase.co',  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg' }
+];
+
+async function _sbSetOther(baseUrl, apiKey, configKey, value) {
+  try {
+    var headers = {
+      'apikey': apiKey,
+      'Authorization': 'Bearer ' + apiKey,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    };
+    // Borrar entrada existente
+    await fetch(baseUrl + '/rest/v1/config?key=eq.' + encodeURIComponent(configKey), {
+      method: 'DELETE', headers: headers
+    });
+    // Insertar nueva
+    var r = await fetch(baseUrl + '/rest/v1/config', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ key: configKey, value: JSON.stringify(value) })
+    });
+    return r.ok;
+  } catch(e) { return false; }
+}
+
+async function syncDataToOthers(statusCallback) {
+  // Lee los valores actuales en memoria de GDC
+  // También intenta leer ccl_override y mep_override de Supabase
+  var cclOvr = await sbGetConfig('ccl_override');
+  var mepOvr = await sbGetConfig('mep_override');
+
+  var tables = [
+    { key: 'ratios',       value: RATIOS_TABLE },
+    { key: 'targets',      value: TARGET_TABLE },
+    { key: 'rubros',       value: USER_RUBRO_TABLE },
+    { key: 'ccl_override', value: cclOvr || CCL_TABLE },
+    { key: 'mep_override', value: mepOvr || null }
+  ];
+
+  var errors = [];
+  for (var pi = 0; pi < SYNC_OTHERS.length; pi++) {
+    var p = SYNC_OTHERS[pi];
+    if (statusCallback) statusCallback('Sincronizando datos → ' + p.name + '...');
+    for (var ti = 0; ti < tables.length; ti++) {
+      var t = tables[ti];
+      if (!t.value || (typeof t.value === 'object' && Object.keys(t.value).length === 0)) continue;
+      var ok = await _sbSetOther(p.url, p.key, t.key, t.value);
+      if (!ok) errors.push(p.name + '/' + t.key);
+    }
+  }
+  return errors;
+}
+
 async function syncPortfolios() {
   var btn   = document.getElementById('sync-btn');
   var icon  = document.getElementById('sync-icon');
@@ -1125,6 +1181,13 @@ async function syncPortfolios() {
   label.textContent = 'Sync...';
   btn.style.borderColor = 'var(--amber)';
   btn.style.color = 'var(--amber)';
+
+  // 1. Sincronizar datos (Ratios, Targets, Rubros, CCL) a Omar y Ana
+  var dataErrors = await syncDataToOthers(function(msg){ label.textContent = msg; });
+  if (dataErrors.length) {
+    console.warn('syncDataToOthers errores:', dataErrors);
+  }
+  label.textContent = 'Sync HTML...';
 
   var url = 'https://api.github.com/repos/' + GH_REPO +
             '/actions/workflows/' + GH_WORKFLOW + '/dispatches';
