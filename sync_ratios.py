@@ -27,8 +27,8 @@ SUPABASE = {
         'key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU',
     },
     'omar': {
-        'url': 'https://bekepiyyyxipyduawuyq.supabase.co',
-        'key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJla2VwaXl5eXhpcHlkdWF3dXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2OTA1MDYsImV4cCI6MjA5MjI2NjUwNn0.1gNq-GlKBpaSGZXWZAAtiWHhwIr8V0MWMcss69cW6Bs',
+        'url': 'https://opbbnvfmgdmdsmbhmgsc.supabase.co',
+        'key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng',
     },
     'ana': {
         'url': 'https://arxntlqhtrtskabzihlf.supabase.co',
