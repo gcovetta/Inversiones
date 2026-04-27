@@ -2126,9 +2126,10 @@ function getPositions(){
     else if(m.tipo==='compra'){
       // Bonos y ONs: dividir por MEP del día; resto: por CCL
       // La tabla histórica (Tipo de cambio) tiene PRIORIDAD sobre el CCL guardado en el movimiento
+      // Fallback: CCL_HOY como último recurso para no tratar ARS como USD
       var _tc=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
-        :(getCCL(m.fecha)||m.ccl||1);
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
+        :(getCCL(m.fecha)||m.ccl||CCL_HOY);
       var usdPuro=_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty;
       p.costUSD+=usdPuro+comUSD;  // consistente con costUSDpuro: usa precioARS/tc_dia
       p.costARS+=(m.precioARS||0)*m.qty;
@@ -2142,8 +2143,8 @@ function getPositions(){
       // G/P realizada en USD puro (MEP para bonos/ON, CCL para el resto)
       // La tabla histórica tiene PRIORIDAD sobre el CCL guardado en el movimiento
       var _tcV=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||1)
-        :(getCCL(m.fecha)||m.ccl||1);
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
+        :(getCCL(m.fecha)||m.ccl||CCL_HOY);
       var ventaUSDpuro=_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0);
       var costBasisPuro=avgUSDpuro*m.qty;
       var proceedsPuro=ventaUSDpuro*m.qty-comUSD;
