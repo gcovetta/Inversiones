@@ -1315,8 +1315,12 @@ async function sbSaveArray(table, arr){
 }
 
 async function sbLoadArray(table){
+  // Retorna: array (ok, puede ser vacío), null (error de red/parse)
+  // El llamador puede distinguir: null → Supabase inalcanzable → usar localStorage
+  //                               []   → tabla vacía legítima → NO usar localStorage contaminado
   try{
     var r=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?select=data&order=id.asc',{headers:sbHeaders()});
+    if(!r.ok) return null; // error HTTP → tratar como inalcanzable
     var d=await r.json();
     if(!Array.isArray(d)) return null;
     return d.map(function(row){return row.data;});
@@ -3995,7 +3999,7 @@ function trkCalcCCL(){
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (function(){
-  var DATA_VERSION='v17_mep_bonos';
+  var DATA_VERSION='v18_cache_fix';
 
   // ── Carga inicial desde Supabase (con fallback a localStorage) ──
   async function initFromSupabase(){
@@ -4003,23 +4007,29 @@ function trkCalcCCL(){
     await sbPing();
 
     // 1. Movimientos
+    // sbMov === null  → Supabase inalcanzable (error de red) → usar localStorage como fallback
+    // sbMov === []    → tabla vacía legítima (portfolio nuevo) → NO usar localStorage (puede estar contaminado)
+    // sbMov.length>0  → datos reales → usar y cachear
     var sbMov = await sbLoadArray('movimientos');
-    if(sbMov && sbMov.length){
+    if(sbMov !== null && sbMov.length){
+      // Supabase tiene datos → fuente de verdad
       movimientos = sbMov.filter(function(m){return m!=null;});
       try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));localStorage.setItem('ptNYSE_version',DATA_VERSION);}catch(e){}
-    } else {
-      // Fallback localStorage — NO escribir a Supabase aquí (evita borrar datos por error temporal de red)
+    } else if(sbMov === null){
+      // Supabase inalcanzable → fallback localStorage (solo si versión coincide)
       var storedVersion=null;try{storedVersion=localStorage.getItem('ptNYSE_version');}catch(e){}
       var saved=null;try{saved=localStorage.getItem('ptNYSE_mov2');}catch(e){}
       if(saved&&storedVersion===DATA_VERSION){
         try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}
-      } else if(PRELOADED.length){
-        // Solo usar PRELOADED si tiene datos reales (instalación nueva sin localStorage)
+      }
+      // Si no coincide versión → movimientos=[] y el usuario verá portafolio vacío hasta que Supabase vuelva
+    } else {
+      // sbMov === [] → tabla vacía (portfolio nuevo o recién limpiado)
+      if(PRELOADED.length){
         movimientos=PRELOADED;
         sbSaveArray('movimientos',movimientos);
         try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));localStorage.setItem('ptNYSE_version',DATA_VERSION);}catch(e){}
       }
-      // Si no hay datos en ningún lado → movimientos=[] sin tocar Supabase
     }
 
     // 2. Dividendos
