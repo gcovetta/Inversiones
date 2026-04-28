@@ -1296,8 +1296,12 @@ async function sbSaveArray(table, arr){
 }
 
 async function sbLoadArray(table){
+  // Retorna: array (ok, puede ser vacío), null (error de red/parse)
+  // El llamador puede distinguir: null → Supabase inalcanzable → usar localStorage
+  //                               []   → tabla vacía legítima → NO usar localStorage contaminado
   try{
     var r=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?select=data&order=id.asc',{headers:sbHeaders()});
+    if(!r.ok) return null; // error HTTP → tratar como inalcanzable
     var d=await r.json();
     if(!Array.isArray(d)) return null;
     return d.map(function(row){return row.data;});
@@ -3976,7 +3980,7 @@ function trkCalcCCL(){
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (function(){
-  var DATA_VERSION='v17_mep_bonos';
+  var DATA_VERSION='v18_cache_fix';
 
   // ── Carga inicial desde Supabase (con fallback a localStorage) ──
   async function initFromSupabase(){
@@ -3984,16 +3988,29 @@ function trkCalcCCL(){
     await sbPing();
 
     // 1. Movimientos
+    // sbMov === null  → Supabase inalcanzable (error de red) → usar localStorage como fallback
+    // sbMov === []    → tabla vacía legítima (portfolio nuevo) → NO usar localStorage (puede estar contaminado)
+    // sbMov.length>0  → datos reales → usar y cachear
     var sbMov = await sbLoadArray('movimientos');
-    if(sbMov && sbMov.length){
+    if(sbMov !== null && sbMov.length){
+      // Supabase tiene datos → fuente de verdad
       movimientos = sbMov.filter(function(m){return m!=null;});
       try{localStorage.setItem('ptANA_mov2',JSON.stringify(movimientos));localStorage.setItem('ptANA_version',DATA_VERSION);}catch(e){}
-    } else {
-      // Fallback localStorage
+    } else if(sbMov === null){
+      // Supabase inalcanzable → fallback localStorage (solo si versión coincide)
       var storedVersion=null;try{storedVersion=localStorage.getItem('ptANA_version');}catch(e){}
       var saved=null;try{saved=localStorage.getItem('ptANA_mov2');}catch(e){}
-      if(saved&&storedVersion===DATA_VERSION){try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}}
-      else{movimientos=PRELOADED;sbSaveArray('movimientos',movimientos);try{localStorage.setItem('ptANA_mov2',JSON.stringify(movimientos));localStorage.setItem('ptANA_version',DATA_VERSION);}catch(e){}}
+      if(saved&&storedVersion===DATA_VERSION){
+        try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}
+      }
+      // Si no coincide versión → movimientos=[] y el usuario verá portafolio vacío hasta que Supabase vuelva
+    } else {
+      // sbMov === [] → tabla vacía (portfolio nuevo o recién limpiado)
+      if(PRELOADED.length){
+        movimientos=PRELOADED;
+        sbSaveArray('movimientos',movimientos);
+        try{localStorage.setItem('ptANA_mov2',JSON.stringify(movimientos));localStorage.setItem('ptANA_version',DATA_VERSION);}catch(e){}
+      }
     }
 
     // 2. Dividendos
@@ -4156,6 +4173,7 @@ function trkCalcCCL(){
 
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portCheckSession();
     document.getElementById('lupd').textContent='Datos cargados ✓';
+    if(initFromSupabase._done) initFromSupabase._done();
 
     // Si no hay quotes en caché, lanzar fetch inmediato (no esperar 5 min)
     if(Object.keys(quotes).length === 0){
@@ -4217,8 +4235,11 @@ function trkCalcCCL(){
 
   _startCycle();
 
-  // Render inicial con delay para asegurar que los quotes están listos
-  setTimeout(function(){ renderPortfolio(); }, 800);
+  // Render inicial con delay — solo si initFromSupabase aún no terminó
+  // (evita mostrar datos del localStorage antes de que Supabase cargue)
+  var _sbInitDone = false;
+  initFromSupabase._done = function(){ _sbInitDone = true; };
+  setTimeout(function(){ if(!_sbInitDone) renderPortfolio(); }, 800);
 
   // ── Market data: BTC, EWZ, IMV/CCL ──────────────────────────────────────
   async function fetchMarketExtras(){
