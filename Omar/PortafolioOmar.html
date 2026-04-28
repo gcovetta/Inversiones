@@ -1287,7 +1287,10 @@ async function sbGetConfig(key){
   try{
     var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.'+encodeURIComponent(key)+'&select=value',{headers:sbHeaders()});
     var d=await r.json();
-    return d&&d[0]?d[0].value:null;
+    if(!d||!d[0]) return null;
+    var val=d[0].value;
+    if(typeof val==='string'){try{val=JSON.parse(val);}catch(e){}}
+    return val;
   }catch(e){ return null; }
 }
 
