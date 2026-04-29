@@ -226,6 +226,13 @@ tr:hover td{background:var(--surface2)}
 .jvm-tooltip{background:#1e2026!important;color:#e8eaf0!important;border:1px solid #363a45!important;font-family:'DM Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
 .jvm-zoom-btn{display:none!important}
 </style>
+<script>
+// Limpiar datos de portafolio anterior al arrancar
+(function(){
+  var keys = ['ptNYSE_mov2','ptNYSE_divs','ptNYSE_divs_del','trk_divs_v1','ptNYSE_version','ptNYSE_inv_inicial','ptNYSE_liq','ptNYSE_q2','ptNYSE_q2_ts'];
+  keys.forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
+})();
+</script>
 </head>
 <body>
 <div class="app">
@@ -367,10 +374,10 @@ tr:hover td{background:var(--surface2)}
       <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
         <!-- Izquierda: 2 filas de métricas -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
-          <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">$230.121</div></div>
-          <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="m-rend"><span style="color:var(--accent);font-weight:700">+21%</span></div></div>
-          <div class="metric"><div class="metric-label">Ganancia Neta USD</div><div class="metric-value port-sensitive" id="m-ganancia"><span style="color:var(--accent);font-weight:700">+$40.187</span></div></div>
-          <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="m-count">75</div></div>
+          <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">—</div></div>
+          <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="m-rend">—</div></div>
+          <div class="metric"><div class="metric-label">Ganancia Neta USD</div><div class="metric-value port-sensitive" id="m-ganancia">—</div></div>
+          <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="m-count">—</div></div>
         </div>
         <!-- Gráficos de torta -->
         <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0">
