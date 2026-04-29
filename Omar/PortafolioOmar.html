@@ -227,10 +227,13 @@ tr:hover td{background:var(--surface2)}
 .jvm-zoom-btn{display:none!important}
 </style>
 <script>
-// Limpiar datos de portafolio anterior al arrancar
+// Limpiar TODO el localStorage al arrancar - portafolio siempre desde Supabase
 (function(){
-  var keys = ['ptNYSE_mov2','ptNYSE_divs','ptNYSE_divs_del','trk_divs_v1','ptNYSE_version','ptNYSE_inv_inicial','ptNYSE_liq','ptNYSE_q2','ptNYSE_q2_ts'];
-  keys.forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
+  try{
+    Object.keys(localStorage).forEach(function(k){
+      localStorage.removeItem(k);
+    });
+  }catch(e){}
 })();
 </script>
 </head>
