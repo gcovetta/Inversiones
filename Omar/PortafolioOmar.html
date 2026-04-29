@@ -227,14 +227,7 @@ tr:hover td{background:var(--surface2)}
 .jvm-zoom-btn{display:none!important}
 </style>
 <script>
-// Limpiar TODO el localStorage al arrancar - portafolio siempre desde Supabase
-(function(){
-  try{
-    Object.keys(localStorage).forEach(function(k){
-      localStorage.removeItem(k);
-    });
-  }catch(e){}
-})();
+(function(){try{Object.keys(localStorage).forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();
 </script>
 </head>
 <body>
@@ -323,11 +316,11 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">R. Variable</div>
     <div style="padding:.2rem .85rem .1rem">
       <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-bottom:2px">Total RV invertido (USD):</div>
-      <div style="font-size:.72rem;font-family:var(--mono);color:var(--text);font-weight:600" id="rv-total-usd">$97.010</div>
+      <div style="font-size:.72rem;font-family:var(--mono);color:var(--text);font-weight:600" id="rv-total-usd">—</div>
       <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-top:4px;margin-bottom:1px">Sugerido en $ARS:</div>
       <div style="display:flex;gap:8px;margin-bottom:4px">
-        <span style="font-size:.65rem;font-family:var(--mono);color:#eab308;font-weight:700">2% → <span id="rv-auto-naranja">$2.819.117</span></span>
-        <span style="font-size:.65rem;font-family:var(--mono);color:var(--red);font-weight:700">3% → <span id="rv-auto-rojo">$4.228.676</span></span>
+        <span style="font-size:.65rem;font-family:var(--mono);color:#eab308;font-weight:700">2% → <span id="rv-auto-naranja">—</span></span>
+        <span style="font-size:.65rem;font-family:var(--mono);color:var(--red);font-weight:700">3% → <span id="rv-auto-rojo">—</span></span>
       </div>
     </div>
     <div class="nav-sec">Herramientas</div>
@@ -373,7 +366,7 @@ tr:hover td{background:var(--surface2)}
       </div>
       <div id="port-content" class="">
       <!-- Elemento oculto para mantener el cálculo de dividendos -->
-      <div style="display:none"><div id="m-divs">$2.652</div></div>
+      <div style="display:none"><div id="m-divs">—</div></div>
       <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
         <!-- Izquierda: 2 filas de métricas -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
@@ -467,25 +460,25 @@ tr:hover td{background:var(--surface2)}
             <div class="panels-grid hide-qty" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="">
-            <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag">18 posiciones · <span class="port-sensitive">$47.309.420</span></span></div>
+            <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
           </div>
           <div class="card" id="panel-brasil" style="">
-            <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag">6 posiciones · <span class="port-sensitive">$32.023.307</span></span></div>
+            <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
           </div>
           <div class="card" id="panel-europa" style="">
-            <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag">3 posiciones · <span class="port-sensitive">$3.921.210</span></span></div>
+            <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-bonos" style="">
-            <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag">13 posiciones · <span class="port-sensitive">$191.998.098</span></span></div>
+            <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
           </div>
           <div class="card" id="panel-on" style="">
-            <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag">9 posiciones · <span class="port-sensitive">$6.909.273</span></span></div>
+            <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
           </div>
           <div class="card" id="panel-china" style="display: none;">
@@ -495,11 +488,11 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-argentina" style="">
-            <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag">25 posiciones · <span class="port-sensitive">$43.379.292</span></span></div>
+            <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
           </div>
           <div class="card" id="panel-cripto" style="">
-            <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag">1 posiciones · <span class="port-sensitive">$1.649.533</span></span></div>
+            <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
           </div>
         </div>
