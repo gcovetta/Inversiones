@@ -226,9 +226,6 @@ tr:hover td{background:var(--surface2)}
 .jvm-tooltip{background:#1e2026!important;color:#e8eaf0!important;border:1px solid #363a45!important;font-family:'DM Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
 .jvm-zoom-btn{display:none!important}
 </style>
-<script>
-(function(){try{Object.keys(localStorage).forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();
-</script>
 </head>
 <body>
 <div class="app">
@@ -1127,7 +1124,10 @@ var GH_WORKFLOW = 'sync.yml';
 
 // ── Sync GDC → Ana + Omar via GitHub Actions ─────────────────────────────
 // ── Sync de datos GDC → Omar + Ana ──────────────────────────────────────
-var SYNC_OTHERS = [];
+var SYNC_OTHERS = [
+  { name: 'Omar', url: 'https://opbbnvfmgdmdsmbhmgsc.supabase.co', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng' },
+  { name: 'Ana',  url: 'https://arxntlqhtrtskabzihlf.supabase.co',  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg' }
+];
 
 async function _sbSetOther(baseUrl, apiKey, configKey, value) {
   try {
@@ -1399,7 +1399,7 @@ function getSector(ticker){
 var TICKER_MAP = {'GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
 function getFinnhubTicker(ticker){return TICKER_MAP[ticker]||ticker;}
 
-var TARGET_TABLE = {"CLSIO": null,"LECAO": null,"LECHO": null,"MR36O": null,"MRCAO": null,"MRCPO": null,"MRCZO": null,"SNEAO": null,"TZV27": null, "BC37D": null,"CUAP": null,"DICP": null,"ERF25": null,"GD29": null,"GD38": null,"GD41": null,"PARP": null,"PBY26": null,"SA24D": null,"TVPA": null,"TX31": null,"TZXM7": null,"TZXS7": null,"TZXS8": null, "ADBE": 573, "AMZN": 258.6, "AVGO": null, "CRM": null, "DEO": null, "DOCU": null, "FSLR": null, "HOG": null, "IBIT": null, "JD": null, "LAC": null, "META": null, "MSFT": null, "NFLX": null, "NKE": null, "NVDA": null, "SPOT": null, "STLA": null, "TEAM": null, "UBER": null, "UNH": null, "UPST": null, "GGB": null, "MELI": null, "NU": null, "PAGS": null, "SID": null, "XP": null};
+var TARGET_TABLE = {};
 function getTarget(ticker){return TARGET_TABLE[ticker]||null;}
 
 // ── Tipo de Cambio: CCL y MEP editables ──────────────────────────────────
@@ -1897,7 +1897,7 @@ function portToggleBlur(){
 }
 
 loadMarks();
-function portCheckSession(){
+function portCheckSession(){portUnblur();return; // PIN desactivado
   var stored=localStorage.getItem(PORT_PIN_KEY);
   // Actualizar título del overlay según si es primera vez o no
   var titleEl=document.getElementById('port-pin-title');
@@ -2386,7 +2386,7 @@ function renderPortfolio(){
   if(!open.length){
     empty.style.display='';
     document.getElementById('panels-grid').style.display='none';
-    ['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto'].forEach(function(id){document.getElementById(id).style.display='none';});
+    ['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     ['m-val','m-ganancia','m-divs','m-count'].forEach(function(id){document.getElementById(id).textContent='—';});document.getElementById('m-rend').innerHTML='—';
     renderDivsCard();
     return;
@@ -2552,6 +2552,7 @@ function renderPortfolio(){
   var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'}];
   panelDefs.forEach(function(def){
     var rows=sectors[def.key];var panel=document.getElementById('panel-'+def.id);var body=document.getElementById('body-'+def.id);var meta=document.getElementById('panel-'+def.id+'-meta');
+    if(!panel||!body){return;}
     if(!rows||!rows.length){panel.style.display='none';return;}
     panel.style.display='';body.innerHTML=rows.join('');
     var val=sectorVal[def.key];
@@ -4193,7 +4194,7 @@ function trkCalcCCL(){
     });
     if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){} }
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portCheckSession();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portUnblur();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     if(initFromSupabase._done) initFromSupabase._done();
 
