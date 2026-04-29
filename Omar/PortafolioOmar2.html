@@ -334,7 +334,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
     <div class="nav-sec">Links</div>
     <a class="nav-item" href="../GDC/PortafolioGDC.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
-    <a class="nav-item" href="../Ana/PortafolioAna2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio Ana</a>
+    <a class="nav-item" href="../Ana/PortafolioAna2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
   </nav>
   <div class="content">
 
@@ -1895,7 +1895,7 @@ function portToggleBlur(){
 }
 
 loadMarks();
-function portCheckSession(){
+function portCheckSession(){portUnblur();return; // PIN desactivadoportUnblur();return; // PIN desactivado
   var stored=localStorage.getItem(PORT_PIN_KEY);
   // Actualizar título del overlay según si es primera vez o no
   var titleEl=document.getElementById('port-pin-title');
@@ -2550,6 +2550,7 @@ function renderPortfolio(){
   var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'}];
   panelDefs.forEach(function(def){
     var rows=sectors[def.key];var panel=document.getElementById('panel-'+def.id);var body=document.getElementById('body-'+def.id);var meta=document.getElementById('panel-'+def.id+'-meta');
+    if(!panel||!body){return;}
     if(!panel||!body){return;}
     if(!rows||!rows.length){panel.style.display='none';return;}
     panel.style.display='';body.innerHTML=rows.join('');
@@ -4192,7 +4193,7 @@ function trkCalcCCL(){
     });
     if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){} }
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portCheckSession();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portUnblur();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     if(initFromSupabase._done) initFromSupabase._done();
 
