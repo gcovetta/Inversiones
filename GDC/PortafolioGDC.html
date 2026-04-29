@@ -1897,7 +1897,7 @@ function portToggleBlur(){
 }
 
 loadMarks();
-function portCheckSession(){
+function portCheckSession(){portUnblur();return; // PIN desactivado
   var stored=localStorage.getItem(PORT_PIN_KEY);
   // Actualizar título del overlay según si es primera vez o no
   var titleEl=document.getElementById('port-pin-title');
@@ -4194,7 +4194,7 @@ function trkCalcCCL(){
     });
     if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){} }
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portCheckSession();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portUnblur();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     if(initFromSupabase._done) initFromSupabase._done();
 
