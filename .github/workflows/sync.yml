@@ -38,7 +38,7 @@ jobs:
         run: |
           git config user.name  "Sync Bot"
           git config user.email "sync@portafolio.local"
-          git add Ana/PortafolioAna.html Omar/PortafolioOmar.html
+          git add Ana/PortafolioAna2.html Omar/PortafolioOmar2.html
           if git diff --staged --quiet; then
             echo "Sin cambios — Ana y Omar ya estaban al día."
           else

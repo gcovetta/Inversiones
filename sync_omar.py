@@ -3,13 +3,13 @@
 sync_portfolios.py — Sincroniza mejoras de PortafolioGDC.html a todos los portfolios.
 
 Portfolios sincronizados:
-  • Omar/PortafolioOmar.html
-  • Ana/PortafolioAna.html
+  • Omar/PortafolioOmar2.html
+  • Ana/PortafolioAna2.html
 
 Uso:  python3 sync_omar.py
-      python3 sync_omar.py --dry-run   (muestra cambios sin escribir)
-      python3 sync_omar.py omar        (solo sincroniza Omar)
-      python3 sync_omar.py ana         (solo sincroniza Ana)
+      python3 sync_omar.py --dry-run
+      python3 sync_omar.py omar
+      python3 sync_omar.py ana
 
 Qué sincroniza:
   • Bloque <style> completo (CSS)
@@ -19,10 +19,20 @@ Qué sincroniza:
 
 Qué preserva por portfolio:
   • Título, foto de perfil, nombre en header
-  • Supabase URL + KEY propios de cada portfolio
-  • localStorage prefix (ptOMAR_, ptANA_, ...)
-  • myReturns históricos propios de cada portfolio
+  • Supabase URL + KEY propios
+  • myReturns históricos propios
   • PIN keys propias
+
+Qué limpia en destino (Omar/Ana siempre arrancan vacíos):
+  • PRELOADED = []
+  • SYNC_OTHERS = []
+  • Paneles ocultos al inicio
+  • tbodys de paneles vacíos
+  • divs-content vacío
+  • trk-tbody vacío
+  • Métricas hardcodeadas → —
+  • localStorage wipe al arrancar
+  • PIN desactivado
 """
 
 import re
@@ -31,33 +41,35 @@ import shutil
 import subprocess
 from datetime import datetime
 
-DRY_RUN    = '--dry-run' in sys.argv
-ONLY       = next((a for a in sys.argv[1:] if not a.startswith('--')), None)
+DRY_RUN = '--dry-run' in sys.argv
+ONLY    = next((a for a in sys.argv[1:] if not a.startswith('--')), None)
 
-GDC_FILE   = 'GDC/PortafolioGDC.html'
+GDC_FILE = 'GDC/PortafolioGDC.html'
 
-# ── Configuración de cada portfolio ──────────────────────────────────────
 PORTFOLIOS = {
     'omar': {
-        'file':    'Omar/PortafolioOmar.html',
-        'title':   'Portafolio Omar',
-        'foto':    'src="perfilOmar.png"',
-        'nombre':  'Portafolio Omar',
+        'file':   'Omar/PortafolioOmar2.html',
+        'title':  'Portafolio - Omar',
+        'foto':   'src="../Omar/perfilOmar.png"',
+        'nombre': 'Portafolio - Omar',
+        'nav1_href': '../GDC/PortafolioGDC.html', 'nav1_label': 'Portafolio GDC',
+        'nav2_href': '../Ana/PortafolioAna2.html', 'nav2_label': 'Portafolio Ana',
     },
     'ana': {
-        'file':    'Ana/PortafolioAna.html',
-        'title':   'Portafolio Ana',
-        'foto':    'src="PerfilAna.png"',
-        'nombre':  'Portafolio Ana',
+        'file':   'Ana/PortafolioAna2.html',
+        'title':  'Portafolio - Ana',
+        'foto':   'src="../Ana/PerfilAna.png"',
+        'nombre': 'Portafolio - Ana',
+        'nav1_href': '../GDC/PortafolioGDC.html', 'nav1_label': 'Portafolio GDC',
+        'nav2_href': '../Omar/PortafolioOmar2.html', 'nav2_label': 'Portafolio Omar',
     },
 }
 
-# Valores GDC que se reemplazan en todos los portfolios
 GDC_TITLE  = 'Portafolio Tracker — NYSE'
 GDC_FOTO   = 'src="PerfilGaston.png"'
 GDC_NOMBRE = 'Portafolio Gastón'
 
-# ── Extractores de valores personales ────────────────────────────────────
+# ── Extractores ───────────────────────────────────────────────────────────
 
 def extract_supabase(text):
     url_m = re.search(r"var SUPABASE_URL = '([^']+)'", text)
@@ -73,12 +85,6 @@ def extract_pin_keys(text):
     pk = re.search(r"var PORT_PIN_KEY='([^']+)'", text)
     sk = re.search(r"var PORT_SESSION_KEY='([^']+)'", text)
     return (pk.group(0) if pk else None, sk.group(0) if sk else None)
-
-def extract_ls_prefix(text):
-    matches = re.findall(r"'(pt[A-Z]+_)", text)
-    return max(set(matches), key=matches.count) if matches else None
-
-# ── Extractores de secciones del HTML ────────────────────────────────────
 
 def extract_block(text, open_tag, close_tag):
     start = text.find(open_tag)
@@ -119,46 +125,106 @@ def extract_script_block(text):
             return m.group(0), m.start(), m.end()
     return None, -1, -1
 
-# ── Aplicar sustituciones de identidad ───────────────────────────────────
+# ── Limpiezas específicas para Omar/Ana ──────────────────────────────────
 
-def clear_preloaded_data(text):
-    """Vacía PRELOADED y TARGET_TABLE. Los datos se cargan desde Supabase al abrir."""
-    text = re.sub(r'var PRELOADED\s*=\s*\[[^\]]*\]', 'var PRELOADED = []', text, flags=re.DOTALL)
-    text = re.sub(r'var TARGET_TABLE\s*=\s*\{[^}]*\}', 'var TARGET_TABLE = {}', text, flags=re.DOTALL)
+def apply_clean_transforms(text, cfg):
+    """Aplica todas las limpiezas necesarias para que Omar/Ana arranquen vacíos."""
+
+    # 1. PRELOADED y SYNC_OTHERS vacíos
+    text = re.sub(r'var PRELOADED = \[.*?\];', 'var PRELOADED = [];', text, flags=re.DOTALL)
+    text = re.sub(r'var SYNC_OTHERS = \[.*?\];', 'var SYNC_OTHERS = [];', text, flags=re.DOTALL)
+
+    # 2. Nav links
+    text = text.replace('../Ana/PortafolioAna.html', cfg['nav1_href'])
+    text = text.replace('Portafolio Ana', cfg['nav1_label'], 1)
+    text = text.replace('../Omar/PortafolioOmar.html', cfg['nav2_href'])
+    text = text.replace('Portafolio Omar', cfg['nav2_label'], 1)
+
+    # 3. Vaciar tbody de paneles
+    for bid in ['body-nyse','body-brasil','body-europa','body-bonos','body-on','body-argentina','body-cripto','body-china']:
+        text = re.sub(r'(<tbody id="' + bid + r'">)(.*?)(</tbody>)',
+                      lambda m: m.group(1) + m.group(3), text, flags=re.DOTALL)
+
+    # 4. Vaciar panel-meta
+    for pid in ['panel-nyse-meta','panel-brasil-meta','panel-europa-meta','panel-bonos-meta',
+                'panel-on-meta','panel-argentina-meta','panel-cripto-meta','panel-china-meta']:
+        text = re.sub(r'(<span id="' + pid + r'"[^>]*>)(.*?)(</span>)',
+                      lambda m: m.group(1) + m.group(3), text, flags=re.DOTALL)
+
+    # 5. Ocultar paneles al inicio
+    for pid in ['panel-nyse','panel-brasil','panel-europa','panel-bonos',
+                'panel-on','panel-argentina','panel-cripto','panel-china']:
+        text = text.replace(f'<div class="card" id="{pid}" style="">',
+                            f'<div class="card" id="{pid}" style="display:none">')
+        text = text.replace(f'<div class="card" id="{pid}" style="display: none;">',
+                            f'<div class="card" id="{pid}" style="display:none">')
+
+    # 6. Limpiar métricas principales hardcodeadas
+    text = text.replace('>$230.121<', '>—<')
+    text = re.sub(r'id="m-rend"><span[^>]+>\+21%</span>', 'id="m-rend">—', text)
+    text = re.sub(r'id="m-ganancia"><span[^>]+>\+\$40\.187</span>', 'id="m-ganancia">—', text)
+    text = text.replace('>$97.010<', '>—<')
+    text = text.replace('>$2.819.117<', '>—<')
+    text = text.replace('>$4.228.676<', '>—<')
+    text = text.replace('>$2.652<', '>—<')
+
+    # 7. Vaciar divs-content (gráfico dividendos hardcodeado)
+    start_idx = text.find('<div id="divs-content"')
+    if start_idx >= 0:
+        line_end = text.index('\n', start_idx)
+        text = text[:start_idx] + '<div id="divs-content" class=""></div>' + text[line_end:]
+
+    # 8. Vaciar trk-tbody
+    text = re.sub(r'(<tbody id="trk-tbody">)(.*?)(</tbody>)',
+                  lambda m: m.group(1) + m.group(3), text, flags=re.DOTALL)
+
+    # 9. Limpiar métricas tracker
+    text = text.replace('>USD 2.453,72<', '>—<')
+    text = text.replace('>USD 10,67<', '>—<')
+    text = text.replace('>Total: USD 2.453,72<', '>Total: USD 0<')
+    text = text.replace('>≈ $3.608.931 ARS<', '><')
+
+    # 10. PIN desactivado
+    text = text.replace(
+        'function portCheckSession(){',
+        'function portCheckSession(){portUnblur();return; // PIN desactivado'
+    )
+    text = text.replace(
+        'renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portCheckSession();',
+        'renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portUnblur();'
+    )
+
+    # 11. Script limpieza total localStorage al arrancar
+    cleanup = '<script>(function(){try{Object.keys(localStorage).forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();</script>\n'
+    if 'Object.keys(localStorage)' not in text:
+        text = text.replace('<script>\n// ── Soporte coma', cleanup + '<script>\n// ── Soporte coma', 1)
+
+    # 12. Null checks para panel-china eliminado
+    text = text.replace(
+        "['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto'].forEach(function(id){document.getElementById(id).style.display='none';});",
+        "['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});"
+    )
+    text = text.replace(
+        "    if(!rows||!rows.length){panel.style.display='none';return;}\n    panel.style.display='';body.innerHTML=rows.join('');",
+        "    if(!panel||!body){return;}\n    if(!rows||!rows.length){panel.style.display='none';return;}\n    panel.style.display='';body.innerHTML=rows.join('');"
+    )
+
     return text
 
-def restore_identity(text, cfg, sb_url, sb_key, my_returns, pin_key, sess_key, ls_prefix):
-    """Sustituye valores GDC con los del portfolio destino."""
+# ── Restaurar identidad ───────────────────────────────────────────────────
 
-    # Supabase
-    text = re.sub(r"var SUPABASE_URL = '[^']+'",
-                  f"var SUPABASE_URL = '{sb_url}'", text)
-    text = re.sub(r"var SUPABASE_KEY = '[^']+'",
-                  f"var SUPABASE_KEY = '{sb_key}'", text)
-
-    # localStorage prefix
-    gdc_prefix = extract_ls_prefix(text)
-    if gdc_prefix and ls_prefix and gdc_prefix != ls_prefix:
-        text = text.replace(gdc_prefix, ls_prefix)
-
-    # myReturns
+def restore_identity(text, cfg, sb_url, sb_key, my_returns, pin_key, sess_key):
+    text = re.sub(r"var SUPABASE_URL = '[^']+'", f"var SUPABASE_URL = '{sb_url}'", text)
+    text = re.sub(r"var SUPABASE_KEY = '[^']+'", f"var SUPABASE_KEY = '{sb_key}'", text)
     if my_returns:
         text = re.sub(r'var myReturns = \[[^\]]+\]', my_returns, text)
-
-    # PIN keys
     if pin_key:
         text = re.sub(r"var PORT_PIN_KEY='[^']+'", pin_key, text)
     if sess_key:
         text = re.sub(r"var PORT_SESSION_KEY='[^']+'", sess_key, text)
-
-    # Identidad visual
     text = text.replace(GDC_TITLE,  cfg['title'])
     text = text.replace(GDC_FOTO,   cfg['foto'])
     text = text.replace(GDC_NOMBRE, cfg['nombre'])
-
-    # Vaciar datos hardcodeados del GDC
-    text = clear_preloaded_data(text)
-
     return text
 
 # ── Sincronizar un portfolio ──────────────────────────────────────────────
@@ -176,78 +242,61 @@ def sync_portfolio(name, cfg, gdc):
         print(f"  ERROR: {target_file} no existe.")
         return False
 
-    # Capturar valores personales ANTES de tocar nada
-    sb_url, sb_key  = extract_supabase(target)
-    my_returns      = extract_my_returns(target)
-    pin_key, sess   = extract_pin_keys(target)
-    ls_prefix       = extract_ls_prefix(target)
+    sb_url, sb_key = extract_supabase(target)
+    my_returns     = extract_my_returns(target)
+    pin_key, sess  = extract_pin_keys(target)
 
     if not all([sb_url, sb_key]):
-        print(f"  ERROR: No se encontraron claves Supabase. Abortando este portfolio.")
+        print(f"  ERROR: No se encontraron claves Supabase. Abortando.")
         return False
 
     print(f"  Supabase URL : {sb_url[:45]}...")
-    print(f"  LS prefix    : {ls_prefix}")
-    print(f"  myReturns    : {my_returns}")
 
     new_target = target
     changes    = []
 
-    # ── <style> ──────────────────────────────────────────────────────────
-    gdc_style,   gs,  ge  = extract_style_block(gdc)
-    tgt_style,  ts_, te_  = extract_style_block(new_target)
+    # <style>
+    gdc_style, gs, ge = extract_style_block(gdc)
+    tgt_style, ts, te = extract_style_block(new_target)
     if gdc_style and tgt_style:
-        normed = restore_identity(gdc_style, cfg, sb_url, sb_key,
-                                  my_returns, pin_key, sess, ls_prefix)
+        normed = restore_identity(gdc_style, cfg, sb_url, sb_key, my_returns, pin_key, sess)
         if normed != tgt_style:
-            new_target = new_target[:ts_] + normed + new_target[te_:]
+            new_target = new_target[:ts] + normed + new_target[te:]
             changes.append('<style>')
-        else:
-            print("  <style>           — sin cambios")
 
-    # ── CDN scripts ──────────────────────────────────────────────────────
+    # CDN scripts
     gdc_cdns, gc1, gc2 = extract_head_cdns(gdc)
     tgt_cdns, tc1, tc2 = extract_head_cdns(new_target)
     if gdc_cdns and tgt_cdns and gdc_cdns != tgt_cdns:
         new_target = new_target[:tc1] + gdc_cdns + new_target[tc2:]
         changes.append('CDN')
-    else:
-        print("  CDN scripts       — sin cambios")
 
-    # ── Dashboard HTML ───────────────────────────────────────────────────
+    # Dashboard HTML
     gdc_db, gd1, gd2 = extract_dashboard_html(gdc)
     tgt_db, td1, td2 = extract_dashboard_html(new_target)
     if gdc_db and tgt_db and gdc_db != tgt_db:
         new_target = new_target[:td1] + gdc_db + new_target[td2:]
         changes.append('dashboard HTML')
-    else:
-        print("  dashboard HTML    — sin cambios")
 
-    # ── <script> principal ───────────────────────────────────────────────
-    gdc_js,  gjs1, gjs2 = extract_script_block(gdc)
-    tgt_js,  tjs1, tjs2 = extract_script_block(new_target)
+    # <script> principal
+    gdc_js, gjs1, gjs2 = extract_script_block(gdc)
+    tgt_js, tjs1, tjs2 = extract_script_block(new_target)
     if gdc_js and tgt_js:
-        normed = restore_identity(gdc_js, cfg, sb_url, sb_key,
-                                  my_returns, pin_key, sess, ls_prefix)
+        normed = restore_identity(gdc_js, cfg, sb_url, sb_key, my_returns, pin_key, sess)
         if normed != tgt_js:
             new_target = new_target[:tjs1] + normed + new_target[tjs2:]
             changes.append('<script>')
-        else:
-            print("  <script>          — sin cambios")
 
-    # ── Verificaciones ───────────────────────────────────────────────────
+    # Aplicar limpiezas específicas Omar/Ana SIEMPRE
+    new_target = apply_clean_transforms(new_target, cfg)
+    changes.append('clean transforms')
+
+    # Verificaciones
     if sb_url not in new_target:
-        print(f"  ERROR: Supabase URL no está en el resultado. Abortando.")
-        return False
-    if ls_prefix and ls_prefix not in new_target:
-        print(f"  ERROR: Prefijo LS '{ls_prefix}' no está en el resultado. Abortando.")
+        print(f"  ERROR: Supabase URL perdida. Abortando.")
         return False
 
-    if not changes:
-        print("\n  Sin cambios que sincronizar.")
-        return True
-
-    print(f"\n  Sincronizado: {', '.join(changes)}")
+    print(f"  Sincronizado: {', '.join(changes)}")
     print(f"  Tamaño: {len(target):,} → {len(new_target):,} bytes")
 
     if DRY_RUN:
@@ -256,7 +305,6 @@ def sync_portfolio(name, cfg, gdc):
 
     backup = target_file.replace('.html', f'.bak_{datetime.now().strftime("%Y%m%d_%H%M%S")}.html')
     shutil.copy(target_file, backup)
-    print(f"  Backup: {backup}")
 
     with open(target_file, 'w', encoding='utf-8') as f:
         f.write(new_target)
@@ -279,18 +327,19 @@ def main():
     for name, cfg in targets.items():
         sync_portfolio(name, cfg, gdc)
 
-    # ── Sync ratios GDC → todos los portfolios destino ────────────────────
     if not DRY_RUN:
         print(f"\n{'─'*50}")
         print("  SYNC RATIOS  →  Supabase Omar + Ana")
         print(f"{'─'*50}")
         script = sys.argv[0].replace('sync_omar.py', 'sync_ratios.py')
-        args = [sys.executable, script]
-        if ONLY:
-            args.append(ONLY)
-        result = subprocess.run(args, capture_output=False)
-        if result.returncode != 0:
-            print("  ADVERTENCIA: sync_ratios.py terminó con error.")
+        import os
+        if os.path.exists(script):
+            args = [sys.executable, script]
+            if ONLY:
+                args.append(ONLY)
+            result = subprocess.run(args, capture_output=False)
+            if result.returncode != 0:
+                print("  ADVERTENCIA: sync_ratios.py terminó con error.")
 
     print()
 
