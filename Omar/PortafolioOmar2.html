@@ -478,7 +478,11 @@ tr:hover td{background:var(--surface2)}
             <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
             <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
           </div>
-          
+          <div class="card" id="panel-china" style="display:none">
+            <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></span></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
+          </div>
+        </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-argentina" style="display:none">
             <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
@@ -1086,7 +1090,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<script>(function(){try{var ks=Object.keys(localStorage);ks.forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();</script>
+<script>(function(){try{Object.keys(localStorage).forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();</script>
 <script>
 // ── Soporte coma como separador decimal ──────────────────────────────────
 (function(){
