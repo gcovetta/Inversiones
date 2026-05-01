@@ -1591,7 +1591,7 @@ function addMov(){
   var finishEl=document.getElementById('m-finish');
   movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false});
   saveAndRender();
-  ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-comision','m-notas'].forEach(function(id){document.getElementById(id).value='';});
+  ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   if(finishEl)finishEl.checked=false;
   flash(sel,'Movimiento registrado',false);
 }
