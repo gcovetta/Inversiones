@@ -333,6 +333,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
     <button class="nav-item" onclick="showPage(&#39;labimport&#39;,this)"><span>🔬</span>LAB Import</button>
+    <button class="nav-item" onclick="showPage(&#39;labportfolio&#39;,this);labPortfolioRender()"><span>📋</span>LAB Portfolio</button>
     <div class="nav-sec">Links</div>
     <a class="nav-item" href="../GDC/PortafolioGDC.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
     <a class="nav-item" href="../Ana/PortafolioAna2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
@@ -1219,6 +1220,7 @@ tr:hover td{background:var(--surface2)}
         <div class="card-header" style="flex-wrap:wrap;gap:8px">
           <span class="card-title" style="color:var(--accent)">✅ Confirmados</span>
           <span id="lab-confirmed-info" style="font-size:.72rem;font-family:var(--mono);color:var(--accent)"></span>
+          <button onclick="showPage('labportfolio',null);labPortfolioRender()" class="btn btn-sm btn-a" style="margin-left:auto">📋 Ver LAB Portfolio →</button>
         </div>
         <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
           <table style="font-size:.75rem;min-width:580px">
@@ -1250,6 +1252,89 @@ tr:hover td{background:var(--surface2)}
       </div>
 
     </div><!-- /page-labimport -->
+
+    <!-- ══════════════════════════════════════════════════════════════
+         📋 LAB PORTFOLIO — Vista de posiciones calculadas desde LAB Import
+         Solo muestra confirmados. No afecta el portafolio real.
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-labportfolio" style="padding:1.2rem">
+
+      <!-- Banner -->
+      <div style="background:linear-gradient(135deg,#0a1a0a,#0d2410);border:1px solid #143a24;border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:1.2rem">📋</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.78rem;font-weight:700;color:var(--accent);letter-spacing:.02em">LAB PORTFOLIO — SOLO MOVIMIENTOS CONFIRMADOS</div>
+          <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:2px">Posiciones calculadas a partir de los movimientos confirmados en LAB Import. No afecta el portafolio real.</div>
+        </div>
+        <button onclick="labPortfolioRender()" class="btn btn-sm">↺ Recalcular</button>
+        <button onclick="showPage('labimport',document.querySelector('[onclick*=labimport]'))" class="btn btn-sm">← Volver al LAB</button>
+      </div>
+
+      <!-- Sin datos -->
+      <div id="lab-port-empty" style="display:none" class="empty-state" style="padding:2rem">
+        Sin movimientos confirmados — confirmá movimientos en LAB Import primero.
+      </div>
+
+      <!-- Métricas resumen -->
+      <div id="lab-port-metrics" style="display:none">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+          <div class="metric"><div class="metric-label">Posiciones abiertas</div><div class="metric-value" id="lp-count">—</div></div>
+          <div class="metric"><div class="metric-label">Inversión total ARS</div><div class="metric-value" id="lp-cost-ars">—</div></div>
+          <div class="metric"><div class="metric-label">Inversión total USD</div><div class="metric-value" id="lp-cost-usd">—</div></div>
+          <div class="metric"><div class="metric-label">Compras</div><div class="metric-value" id="lp-buys">—</div></div>
+          <div class="metric"><div class="metric-label">Ventas</div><div class="metric-value" id="lp-sells">—</div></div>
+        </div>
+
+        <!-- Tabla de posiciones -->
+        <div class="card">
+          <div class="card-header" style="flex-wrap:wrap;gap:8px">
+            <span class="card-title">Posiciones calculadas</span>
+            <span id="lp-source-info" style="font-size:.67rem;font-family:var(--mono);color:var(--text3)"></span>
+            <span style="font-size:.65rem;font-family:var(--mono);color:var(--amber);margin-left:auto">⚠ Precio ARS — sin conversión a USD (requiere tipo de cambio del día)</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="font-size:.78rem">
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Sector</th>
+                  <th style="text-align:right">Cantidad</th>
+                  <th style="text-align:right">PPC ARS</th>
+                  <th style="text-align:right">Inversión ARS</th>
+                  <th style="text-align:right">G/P realiz. ARS</th>
+                  <th style="text-align:center">Movimientos</th>
+                </tr>
+              </thead>
+              <tbody id="lab-port-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabla de movimientos confirmados -->
+        <div class="card" style="margin-top:1rem">
+          <div class="card-header">
+            <span class="card-title">Movimientos confirmados</span>
+            <span id="lp-movs-count" style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-left:8px"></span>
+          </div>
+          <div style="overflow-x:auto;max-height:320px;overflow-y:auto">
+            <table style="font-size:.75rem">
+              <thead>
+                <tr>
+                  <th style="position:sticky;top:0;background:var(--surface)">Fecha</th>
+                  <th style="position:sticky;top:0;background:var(--surface)">Ticker</th>
+                  <th style="position:sticky;top:0;background:var(--surface)">Tipo</th>
+                  <th style="position:sticky;top:0;background:var(--surface);text-align:right">Cantidad</th>
+                  <th style="position:sticky;top:0;background:var(--surface);text-align:right">Precio ARS</th>
+                  <th style="position:sticky;top:0;background:var(--surface);text-align:right">Total ARS</th>
+                </tr>
+              </thead>
+              <tbody id="lab-movs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-labportfolio -->
 
   </div>
 </div>
@@ -5848,6 +5933,14 @@ function _btirNumMatch(rawVal, filterStr) {
     nextId: 0
   };
 
+  // Exponer referencia global para que labPortfolioRender (fuera del scope) pueda leer LAB.pending
+  window._labPendingRef = LAB.pending;
+  // Proxy: siempre apunta al array actual
+  Object.defineProperty(window, '_labPendingRef', {
+    get: function(){ return LAB.pending; },
+    configurable: true
+  });
+
   // ── Columnas Bull (mapeo fijo según skill importacion-bull) ───────────
   var BULL_MAP = { fecha:1, tipo:2, cant:4, ticker:5, precio:6 };
 
@@ -6504,7 +6597,142 @@ function _btirNumMatch(rawVal, filterStr) {
     return null; // descartar el resto
   }
 
+  // ── "Confirmar todos" también actualiza el botón del portfolio ──────────
+  var _origConfirmAll = window.labConfirmAll;
+  window.labConfirmAll = function() {
+    if (_origConfirmAll) _origConfirmAll();
+    labPortfolioRefreshBadge();
+  };
+  var _origConfirm = window.labConfirm;
+  window.labConfirm = function(id) {
+    if (_origConfirm) _origConfirm(id);
+    labPortfolioRefreshBadge();
+  };
+
+  function labPortfolioRefreshBadge() {
+    var n = LAB.pending.filter(function(p){ return p.estado === 'confirmado'; }).length;
+    var btn = document.querySelector('[onclick*="labportfolio"]');
+    if (btn && n > 0) {
+      btn.innerHTML = '<span>📋</span>LAB Portfolio <span style="background:var(--accent);color:#072010;border-radius:10px;padding:1px 6px;font-size:.58rem;font-weight:700;margin-left:3px">' + n + '</span>';
+    }
+  }
+
 })(); // fin LAB IMPORT scope
+
+// ── LAB PORTFOLIO — fuera del scope para acceso global ────────────────────
+function labPortfolioRender() {
+  var confirmed = (window.LAB_GET_CONFIRMED && window.LAB_GET_CONFIRMED()) || [];
+
+  // LAB es un closure — accedemos via función expuesta
+  // Buscar en el estado del LAB a través de la función exportConfirmed
+  // En su lugar leemos desde los elementos DOM ya renderizados
+  // Mejor: exponer LAB.pending directamente
+  var pendingAll = window._labPendingRef || [];
+  confirmed = pendingAll.filter(function(p){ return p.estado === 'confirmado'; }).map(function(p){ return p.mov; });
+
+  var empty  = document.getElementById('lab-port-empty');
+  var metrics= document.getElementById('lab-port-metrics');
+
+  if (!confirmed.length) {
+    empty.style.display = 'block';
+    metrics.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  metrics.style.display = 'block';
+
+  // ── Calcular posiciones (igual que getPositions pero con datos LAB) ──
+  var pos = {};
+  confirmed.forEach(function(m) {
+    var tk = m.ticker;
+    if (!pos[tk]) pos[tk] = { ticker:tk, qty:0, costARS:0, realizedARS:0, buys:0, sells:0 };
+    var p = pos[tk];
+    if (m.tipo === 'compra') {
+      p.costARS += m.cant * m.precio;
+      p.qty     += m.cant;
+      p.buys++;
+    } else if (m.tipo === 'venta') {
+      var avgARS = p.qty > 0 ? p.costARS / p.qty : 0;
+      var proceeds = m.cant * m.precio;
+      var cost     = avgARS * m.cant;
+      p.realizedARS += proceeds - cost;
+      p.costARS     -= cost;
+      p.qty         -= m.cant;
+      p.sells++;
+    }
+  });
+
+  var open = Object.values(pos).filter(function(p){ return p.qty > 0.001; });
+  open.sort(function(a,b){ return a.ticker.localeCompare(b.ticker); });
+
+  // ── Métricas ────────────────────────────────────────────────────────────
+  var totalCostARS = open.reduce(function(s,p){ return s + p.costARS; }, 0);
+  var totalCostUSD = CCL_HOY > 0 ? totalCostARS / CCL_HOY : null;
+  var totalBuys    = confirmed.filter(function(m){ return m.tipo==='compra'; }).length;
+  var totalSells   = confirmed.filter(function(m){ return m.tipo==='venta'; }).length;
+
+  document.getElementById('lp-count').textContent     = open.length;
+  document.getElementById('lp-cost-ars').textContent  = '$' + Math.round(totalCostARS).toLocaleString('es-AR');
+  document.getElementById('lp-cost-usd').textContent  = totalCostUSD ? 'USD ' + Math.round(totalCostUSD).toLocaleString('es-AR') : '—';
+  document.getElementById('lp-buys').textContent      = totalBuys;
+  document.getElementById('lp-sells').textContent     = totalSells;
+  document.getElementById('lp-source-info').textContent = confirmed.length + ' movimientos · CCL $' + Math.round(CCL_HOY).toLocaleString('es-AR');
+  document.getElementById('lp-movs-count').textContent  = confirmed.length + ' movimientos';
+
+  // ── Tabla posiciones ────────────────────────────────────────────────────
+  var SECTOR_ICONS = { nyse:'🇺🇸', brasil:'🇧🇷', europa:'🇪🇺', bonos:'🏦', on:'🏢', argentina:'🇦🇷', china:'🇨🇳', cripto:'₿' };
+  var tbody = document.getElementById('lab-port-tbody');
+  tbody.innerHTML = open.map(function(p) {
+    var ppcARS  = p.qty > 0 ? p.costARS / p.qty : 0;
+    var sector  = getSector(p.ticker);
+    var icon    = SECTOR_ICONS[sector] || '•';
+    var rpnlColor = p.realizedARS >= 0 ? 'var(--accent)' : 'var(--red)';
+    var rpnlSign  = p.realizedARS >= 0 ? '+' : '';
+    var movsCount = pos[p.ticker].buys + pos[p.ticker].sells;
+    return '<tr>' +
+      '<td style="padding:5px 10px;font-weight:700;font-family:var(--mono)">' + p.ticker + '</td>' +
+      '<td style="padding:5px 10px;font-size:.68rem;color:var(--text3)">' + icon + ' ' + sector + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono)">' + fmtLP(p.qty, 2) + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono)">$' + fmtLP(ppcARS, 4) + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono);font-weight:600">$' + fmtLP(p.costARS, 0) + '</td>' +
+      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono);color:' + rpnlColor + '">' +
+        (p.realizedARS !== 0 ? rpnlSign + '$' + fmtLP(Math.abs(p.realizedARS), 0) : '<span style="color:var(--text3)">—</span>') +
+      '</td>' +
+      '<td style="padding:5px 10px;text-align:center;font-size:.68rem;color:var(--text3)">' + movsCount + '</td>' +
+    '</tr>';
+  }).join('') + (open.length === 0 ? '<tr><td colspan="7" class="empty-state">Sin posiciones abiertas</td></tr>' : '') +
+  // Fila totales
+  '<tr style="border-top:2px solid var(--border2);background:rgba(255,255,255,.02)">' +
+    '<td colspan="2" style="padding:6px 10px;font-size:.68rem;color:var(--text3);font-family:var(--mono)">TOTAL</td>' +
+    '<td></td>' +
+    '<td></td>' +
+    '<td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent)">$' + fmtLP(totalCostARS, 0) + '</td>' +
+    '<td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent)">' +
+      (totalCostUSD ? 'USD ' + fmtLP(totalCostUSD, 0) : '—') +
+    '</td>' +
+    '<td></td>' +
+  '</tr>';
+
+  // ── Tabla movimientos ───────────────────────────────────────────────────
+  var mbody = document.getElementById('lab-movs-tbody');
+  mbody.innerHTML = confirmed.map(function(m) {
+    var isCompra = m.tipo === 'compra';
+    var total    = m.cant * m.precio;
+    return '<tr>' +
+      '<td style="padding:4px 10px;font-family:var(--mono);font-size:.7rem;white-space:nowrap">' + m.fecha + '</td>' +
+      '<td style="padding:4px 10px;font-weight:700;font-family:var(--mono)">' + m.ticker + '</td>' +
+      '<td style="padding:4px 10px"><span style="background:' + (isCompra?'rgba(126,232,162,.1)':'rgba(248,113,113,.1)') + ';color:' + (isCompra?'var(--accent)':'var(--red)') + ';border-radius:4px;padding:1px 7px;font-size:.65rem;font-family:var(--mono);font-weight:600">' + (isCompra?'▲ compra':'▼ venta') + '</span></td>' +
+      '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">' + fmtLP(m.cant, 2) + '</td>' +
+      '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">$' + fmtLP(m.precio, 4) + '</td>' +
+      '<td style="padding:4px 10px;text-align:right;font-family:var(--mono);font-weight:600;color:' + (isCompra?'var(--red)':'var(--accent)') + '">' + (isCompra?'-':'+') + '$' + fmtLP(total, 0) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function fmtLP(n, dec) {
+  if (n == null || n === '') return '—';
+  return Number(n).toLocaleString('es-AR', { minimumFractionDigits: dec||0, maximumFractionDigits: dec||0 });
+}
 
 </script>
 
