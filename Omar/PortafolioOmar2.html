@@ -6666,22 +6666,36 @@ window.labInjectMovs = function(movs) {
   var pendingRef = window._labPendingRef;
   if (!pendingRef) { console.error('LAB no inicializado'); return; }
 
+  // Deduplicar contra lo que ya está en pendingRef
+  var existingKeys = {};
+  pendingRef.forEach(function(p) {
+    var m = p.mov;
+    existingKeys[m.fecha+'|'+m.ticker+'|'+m.tipo+'|'+m.cant+'|'+m.precio] = true;
+  });
+  var nuevos = movs.filter(function(m) {
+    var k = m.fecha+'|'+m.ticker+'|'+m.tipo+'|'+m.cant+'|'+m.precio;
+    if (existingKeys[k]) return false;
+    existingKeys[k] = true; // marcar para dedup entre los nuevos también
+    return true;
+  });
+  if (!nuevos.length) { console.log('LAB: todos los movimientos ya estaban cargados'); return; }
+
   var nextId = pendingRef.length
     ? Math.max.apply(null, pendingRef.map(function(p){ return p.id; })) + 1
     : 0;
-  movs.forEach(function(m) {
+  nuevos.forEach(function(m) {
     pendingRef.push({ id: nextId++, mov: m, estado: 'pendiente' });
   });
 
   var r = window._labRender || {};
   if (r.pending)  r.pending();
   if (r.alerts)   r.alerts();
-  if (r.analysis) r.analysis(movs);
+  if (r.analysis) r.analysis(nuevos);
 
   var statusEl = document.getElementById('lab-file-status');
   if (statusEl) {
     statusEl.style.color = 'var(--accent)';
-    statusEl.textContent = '🧩 ' + movs.length + ' movimientos cargados desde la extensión BullMarket';
+    statusEl.textContent = '🧩 ' + nuevos.length + ' movimientos cargados desde la extensión BullMarket';
   }
 };
 
