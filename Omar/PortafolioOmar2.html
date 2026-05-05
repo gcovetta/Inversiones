@@ -6028,50 +6028,64 @@ function _btirNumMatch(rawVal, filterStr) {
   async function unzipAsync(buf) {
     var files = {};
     var i = 0;
-    // buf puede ser Uint8Array o ArrayBuffer
-    if (buf.buffer) buf = buf; else buf = new Uint8Array(buf);
+    if (!(buf instanceof Uint8Array)) buf = new Uint8Array(buf);
     var view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
 
     while (i < buf.length - 30) {
-      // Local file header signature: 0x04034b50
+      // Local file header: PK\x03\x04
       if (view.getUint32(i, true) !== 0x04034b50) { i++; continue; }
+
       var compression = view.getUint16(i + 8,  true);
-      var compSize    = view.getUint32(i + 18, true);
-      var uncompSize  = view.getUint32(i + 22, true);
+      var compSize    = view.getUint32(i + 18, true);  // puede ser 0xFFFFFFFF en ZIP64
       var fnLen       = view.getUint16(i + 26, true);
       var extraLen    = view.getUint16(i + 28, true);
-      var fnBytes     = buf.slice(i + 30, i + 30 + fnLen);
-      var fname       = new TextDecoder().decode(fnBytes);
-      var dataStart   = i + 30 + fnLen + extraLen;
-      var compData    = buf.slice(dataStart, dataStart + compSize);
+      var fname       = new TextDecoder().decode(buf.slice(i + 30, i + 30 + fnLen));
+      var extraStart  = i + 30 + fnLen;
+      var dataStart   = extraStart + extraLen;
+
+      // ── ZIP64: si compSize es 0xFFFFFFFF, leer del campo extra ──────────
+      if (compSize === 0xFFFFFFFF) {
+        var j = extraStart;
+        while (j < extraStart + extraLen - 4) {
+          var tag  = view.getUint16(j, true);
+          var size = view.getUint16(j + 2, true);
+          if (tag === 0x0001 && size >= 16) {
+            // ZIP64 extended info: uncompSize(8) + compSize(8)
+            // DataView no tiene getUint64 — leer como dos Uint32 (lo suficiente para <4GB)
+            compSize = view.getUint32(j + 4 + 8, true); // offset 8 = compSize lo
+            // hi word j+4+12 debería ser 0 para archivos normales
+            break;
+          }
+          j += 4 + size;
+        }
+      }
+
+      var compData = buf.slice(dataStart, dataStart + compSize);
 
       if (compression === 0) {
-        // Stored (sin compresión)
         files[fname] = new TextDecoder().decode(compData);
       } else if (compression === 8) {
-        // Deflate — usar DecompressionStream nativo
         try {
-          var ds = new DecompressionStream('deflate-raw');
+          var ds     = new DecompressionStream('deflate-raw');
           var writer = ds.writable.getWriter();
           var reader = ds.readable.getReader();
           writer.write(compData);
           writer.close();
-          var chunks = [];
+          var chunks = [], total = 0;
           while (true) {
             var res = await reader.read();
             if (res.done) break;
             chunks.push(res.value);
+            total += res.value.length;
           }
-          var total = 0;
-          chunks.forEach(function(c){ total += c.length; });
-          var out = new Uint8Array(total);
-          var off = 0;
+          var out = new Uint8Array(total), off = 0;
           chunks.forEach(function(c){ out.set(c, off); off += c.length; });
           files[fname] = new TextDecoder().decode(out);
         } catch(e) {
           files[fname] = '';
         }
       }
+
       i = dataStart + compSize;
     }
     return files;
