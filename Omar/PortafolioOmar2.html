@@ -1254,86 +1254,42 @@ tr:hover td{background:var(--surface2)}
     </div><!-- /page-labimport -->
 
     <!-- ══════════════════════════════════════════════════════════════
-         📋 LAB PORTFOLIO — Vista de posiciones calculadas desde LAB Import
-         Solo muestra confirmados. No afecta el portafolio real.
+         📋 LAB PORTFOLIO — Misma lógica que Portafolio, datos de LAB Import
     ══════════════════════════════════════════════════════════════════ -->
     <div class="page" id="page-labportfolio" style="padding:1.2rem">
 
       <!-- Banner -->
-      <div style="background:linear-gradient(135deg,#0a1a0a,#0d2410);border:1px solid #143a24;border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:1.2rem">📋</span>
+      <div style="background:linear-gradient(135deg,#0a1a0a,#0d2410);border:1px solid #143a24;border-radius:var(--radius);padding:.65rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:1.1rem">📋</span>
         <div style="flex:1;min-width:0">
-          <div style="font-size:.78rem;font-weight:700;color:var(--accent);letter-spacing:.02em">LAB PORTFOLIO — SOLO MOVIMIENTOS CONFIRMADOS</div>
-          <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:2px">Posiciones calculadas a partir de los movimientos confirmados en LAB Import. No afecta el portafolio real.</div>
+          <div style="font-size:.75rem;font-weight:700;color:var(--accent);letter-spacing:.02em">LAB PORTFOLIO — SANDBOX</div>
+          <div id="lp-source-info" style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-top:1px">Sin datos — confirmá movimientos en LAB Import</div>
         </div>
         <button onclick="labPortfolioRender()" class="btn btn-sm">↺ Recalcular</button>
-        <button onclick="showPage('labimport',document.querySelector('[onclick*=labimport]'))" class="btn btn-sm">← Volver al LAB</button>
+        <button onclick="labPortfolioFetchQuotes()" class="btn btn-sm btn-a" id="lp-fetch-btn">⟳ Cotizaciones</button>
       </div>
 
       <!-- Sin datos -->
-      <div id="lab-port-empty" style="display:none" class="empty-state" style="padding:2rem">
+      <div id="lab-port-empty" style="text-align:center;padding:2.5rem;color:var(--text3);font-size:.75rem;font-family:var(--mono)">
         Sin movimientos confirmados — confirmá movimientos en LAB Import primero.
       </div>
 
-      <!-- Métricas resumen -->
       <div id="lab-port-metrics" style="display:none">
+
+        <!-- Métricas -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
-          <div class="metric"><div class="metric-label">Posiciones abiertas</div><div class="metric-value" id="lp-count">—</div></div>
-          <div class="metric"><div class="metric-label">Inversión total ARS</div><div class="metric-value" id="lp-cost-ars">—</div></div>
-          <div class="metric"><div class="metric-label">Inversión total USD</div><div class="metric-value" id="lp-cost-usd">—</div></div>
-          <div class="metric"><div class="metric-label">Compras</div><div class="metric-value" id="lp-buys">—</div></div>
-          <div class="metric"><div class="metric-label">Ventas</div><div class="metric-value" id="lp-sells">—</div></div>
+          <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value" id="lp-val-usd">—</div></div>
+          <div class="metric"><div class="metric-label">Costo USD</div><div class="metric-value" id="lp-cost-usd2">—</div></div>
+          <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="lp-rend">—</div></div>
+          <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="lp-count">—</div></div>
+          <div class="metric" style="border-left:3px solid var(--accent)"><div class="metric-label">↑ rendimiento</div><div class="metric-value" style="font-size:.95rem" id="lp-best">—</div></div>
+          <div class="metric" style="border-left:3px solid var(--red)"><div class="metric-label">↓ rendimiento</div><div class="metric-value" style="font-size:.95rem" id="lp-worst">—</div></div>
         </div>
 
-        <!-- Tabla de posiciones -->
-        <div class="card">
-          <div class="card-header" style="flex-wrap:wrap;gap:8px">
-            <span class="card-title">Posiciones calculadas</span>
-            <span id="lp-source-info" style="font-size:.67rem;font-family:var(--mono);color:var(--text3)"></span>
-            <span style="font-size:.65rem;font-family:var(--mono);color:var(--amber);margin-left:auto">⚠ Precio ARS — sin conversión a USD (requiere tipo de cambio del día)</span>
-          </div>
-          <div style="overflow-x:auto">
-            <table style="font-size:.78rem">
-              <thead>
-                <tr>
-                  <th>Ticker</th>
-                  <th>Sector</th>
-                  <th style="text-align:right">Cantidad</th>
-                  <th style="text-align:right">PPC ARS</th>
-                  <th style="text-align:right">Inversión ARS</th>
-                  <th style="text-align:right">G/P realiz. ARS</th>
-                  <th style="text-align:center">Movimientos</th>
-                </tr>
-              </thead>
-              <tbody id="lab-port-tbody"></tbody>
-            </table>
-          </div>
-        </div>
+        <!-- Paneles por sector (se generan dinámicamente) -->
+        <div id="lp-panels-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;align-items:start;margin-bottom:1rem"></div>
 
-        <!-- Tabla de movimientos confirmados -->
-        <div class="card" style="margin-top:1rem">
-          <div class="card-header">
-            <span class="card-title">Movimientos confirmados</span>
-            <span id="lp-movs-count" style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-left:8px"></span>
-          </div>
-          <div style="overflow-x:auto;max-height:320px;overflow-y:auto">
-            <table style="font-size:.75rem">
-              <thead>
-                <tr>
-                  <th style="position:sticky;top:0;background:var(--surface)">Fecha</th>
-                  <th style="position:sticky;top:0;background:var(--surface)">Ticker</th>
-                  <th style="position:sticky;top:0;background:var(--surface)">Tipo</th>
-                  <th style="position:sticky;top:0;background:var(--surface);text-align:right">Cantidad</th>
-                  <th style="position:sticky;top:0;background:var(--surface);text-align:right">Precio ARS</th>
-                  <th style="position:sticky;top:0;background:var(--surface);text-align:right">Total ARS</th>
-                </tr>
-              </thead>
-              <tbody id="lab-movs-tbody"></tbody>
-            </table>
-          </div>
-        </div>
       </div>
-
     </div><!-- /page-labportfolio -->
 
   </div>
@@ -6621,112 +6577,267 @@ function _btirNumMatch(rawVal, filterStr) {
 
 // ── LAB PORTFOLIO — fuera del scope para acceso global ────────────────────
 function labPortfolioRender() {
-  var confirmed = (window.LAB_GET_CONFIRMED && window.LAB_GET_CONFIRMED()) || [];
-
-  // LAB es un closure — accedemos via función expuesta
-  // Buscar en el estado del LAB a través de la función exportConfirmed
-  // En su lugar leemos desde los elementos DOM ya renderizados
-  // Mejor: exponer LAB.pending directamente
   var pendingAll = window._labPendingRef || [];
-  confirmed = pendingAll.filter(function(p){ return p.estado === 'confirmado'; }).map(function(p){ return p.mov; });
+  var confirmed  = pendingAll.filter(function(p){ return p.estado === 'confirmado'; }).map(function(p){ return p.mov; });
 
-  var empty  = document.getElementById('lab-port-empty');
-  var metrics= document.getElementById('lab-port-metrics');
+  var empty   = document.getElementById('lab-port-empty');
+  var content = document.getElementById('lab-port-metrics');
 
   if (!confirmed.length) {
-    empty.style.display = 'block';
-    metrics.style.display = 'none';
-    return;
+    empty.style.display = 'block'; content.style.display = 'none'; return;
   }
-  empty.style.display = 'none';
-  metrics.style.display = 'block';
+  empty.style.display = 'none'; content.style.display = 'block';
 
-  // ── Calcular posiciones (igual que getPositions pero con datos LAB) ──
+  // ── 1. Calcular posiciones (misma lógica que getPositions) ─────────────
   var pos = {};
   confirmed.forEach(function(m) {
     var tk = m.ticker;
-    if (!pos[tk]) pos[tk] = { ticker:tk, qty:0, costARS:0, realizedARS:0, buys:0, sells:0 };
+    if (!pos[tk]) pos[tk] = { ticker:tk, qty:0, costUSD:0, costARS:0, costUSDpuro:0, realizedPnl:0 };
     var p = pos[tk];
     if (m.tipo === 'compra') {
-      p.costARS += m.cant * m.precio;
-      p.qty     += m.cant;
-      p.buys++;
+      var sector  = getSector(tk);
+      var _tc     = (sector==='bonos'||sector==='on') ? (MEP_HOY||CCL_HOY) : CCL_HOY;
+      var usdPuro = _tc > 0 ? m.cant * m.precio / _tc : 0;
+      p.costARS    += m.cant * m.precio;
+      p.costUSD    += usdPuro;
+      p.costUSDpuro+= usdPuro;
+      p.qty        += m.cant;
     } else if (m.tipo === 'venta') {
-      var avgARS = p.qty > 0 ? p.costARS / p.qty : 0;
-      var proceeds = m.cant * m.precio;
-      var cost     = avgARS * m.cant;
-      p.realizedARS += proceeds - cost;
-      p.costARS     -= cost;
+      var avg        = p.qty > 0 ? p.costUSD     / p.qty : 0;
+      var avgARS     = p.qty > 0 ? p.costARS     / p.qty : 0;
+      var avgUSDpuro = p.qty > 0 ? p.costUSDpuro / p.qty : 0;
+      var sector2    = getSector(tk);
+      var _tcV       = (sector2==='bonos'||sector2==='on') ? (MEP_HOY||CCL_HOY) : CCL_HOY;
+      var ventaUSD   = _tcV > 0 ? m.precio / _tcV : 0;
+      p.realizedPnl += ventaUSD * m.cant - avgUSDpuro * m.cant;
+      p.costUSD     -= avg * m.cant;
+      p.costARS     -= avgARS * m.cant;
+      p.costUSDpuro -= avgUSDpuro * m.cant;
       p.qty         -= m.cant;
-      p.sells++;
     }
   });
 
-  var open = Object.values(pos).filter(function(p){ return p.qty > 0.001; });
+  var open = Object.values(pos).filter(function(p){ return p.qty > 0.000001; });
   open.sort(function(a,b){ return a.ticker.localeCompare(b.ticker); });
 
-  // ── Métricas ────────────────────────────────────────────────────────────
-  var totalCostARS = open.reduce(function(s,p){ return s + p.costARS; }, 0);
-  var totalCostUSD = CCL_HOY > 0 ? totalCostARS / CCL_HOY : null;
-  var totalBuys    = confirmed.filter(function(m){ return m.tipo==='compra'; }).length;
-  var totalSells   = confirmed.filter(function(m){ return m.tipo==='venta'; }).length;
+  // ── 2. Totales y sector grouping (igual que renderPortfolio pasada 1) ──
+  var totalVal = 0, totalCost = 0;
+  var sectorVal  = {nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0};
+  var sectorCost = {nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0};
+  var sectors    = {nyse:[],bonos:[],argentina:[],brasil:[],europa:[],on:[],china:[],cripto:[]};
 
-  document.getElementById('lp-count').textContent     = open.length;
-  document.getElementById('lp-cost-ars').textContent  = '$' + Math.round(totalCostARS).toLocaleString('es-AR');
-  document.getElementById('lp-cost-usd').textContent  = totalCostUSD ? 'USD ' + Math.round(totalCostUSD).toLocaleString('es-AR') : '—';
-  document.getElementById('lp-buys').textContent      = totalBuys;
-  document.getElementById('lp-sells').textContent     = totalSells;
-  document.getElementById('lp-source-info').textContent = confirmed.length + ' movimientos · CCL $' + Math.round(CCL_HOY).toLocaleString('es-AR');
-  document.getElementById('lp-movs-count').textContent  = confirmed.length + ' movimientos';
-
-  // ── Tabla posiciones ────────────────────────────────────────────────────
-  var SECTOR_ICONS = { nyse:'🇺🇸', brasil:'🇧🇷', europa:'🇪🇺', bonos:'🏦', on:'🏢', argentina:'🇦🇷', china:'🇨🇳', cripto:'₿' };
-  var tbody = document.getElementById('lab-port-tbody');
-  tbody.innerHTML = open.map(function(p) {
-    var ppcARS  = p.qty > 0 ? p.costARS / p.qty : 0;
+  open.forEach(function(p) {
+    var q       = quotes[p.ticker];
+    var price   = q ? q.price : null;
+    var ratio   = getRatio(p.ticker);
     var sector  = getSector(p.ticker);
-    var icon    = SECTOR_ICONS[sector] || '•';
-    var rpnlColor = p.realizedARS >= 0 ? 'var(--accent)' : 'var(--red)';
-    var rpnlSign  = p.realizedARS >= 0 ? '+' : '';
-    var movsCount = pos[p.ticker].buys + pos[p.ticker].sells;
-    return '<tr>' +
-      '<td style="padding:5px 10px;font-weight:700;font-family:var(--mono)">' + p.ticker + '</td>' +
-      '<td style="padding:5px 10px;font-size:.68rem;color:var(--text3)">' + icon + ' ' + sector + '</td>' +
-      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono)">' + fmtLP(p.qty, 2) + '</td>' +
-      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono)">$' + fmtLP(ppcARS, 4) + '</td>' +
-      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono);font-weight:600">$' + fmtLP(p.costARS, 0) + '</td>' +
-      '<td style="padding:5px 10px;text-align:right;font-family:var(--mono);color:' + rpnlColor + '">' +
-        (p.realizedARS !== 0 ? rpnlSign + '$' + fmtLP(Math.abs(p.realizedARS), 0) : '<span style="color:var(--text3)">—</span>') +
-      '</td>' +
-      '<td style="padding:5px 10px;text-align:center;font-size:.68rem;color:var(--text3)">' + movsCount + '</td>' +
-    '</tr>';
-  }).join('') + (open.length === 0 ? '<tr><td colspan="7" class="empty-state">Sin posiciones abiertas</td></tr>' : '') +
-  // Fila totales
-  '<tr style="border-top:2px solid var(--border2);background:rgba(255,255,255,.02)">' +
-    '<td colspan="2" style="padding:6px 10px;font-size:.68rem;color:var(--text3);font-family:var(--mono)">TOTAL</td>' +
-    '<td></td>' +
-    '<td></td>' +
-    '<td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent)">$' + fmtLP(totalCostARS, 0) + '</td>' +
-    '<td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--accent)">' +
-      (totalCostUSD ? 'USD ' + fmtLP(totalCostUSD, 0) : '—') +
-    '</td>' +
-    '<td></td>' +
-  '</tr>';
+    var isARS   = (sector==='argentina'||sector==='bonos'||sector==='on');
+    var isBonoON= (sector==='bonos'||sector==='on');
+    var mktARS  = price!=null ? (isARS ? price : (price/ratio)*CCL_HOY) : null;
+    var invARS  = mktARS!=null ? (isBonoON ? mktARS*p.qty/100 : mktARS*p.qty) : p.costARS;
+    var valUSD  = price!=null ? (isARS ? (isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty) : (price/ratio)*p.qty) : null;
+    if (valUSD!=null) { totalVal+=valUSD; sectorVal[sector]=(sectorVal[sector]||0)+valUSD; }
+    totalCost += p.costUSDpuro;
+    sectorCost[sector] = (sectorCost[sector]||0) + p.costUSDpuro;
+    p._mktARS = mktARS;
+    p._invARS = invARS;
+    p._valUSD = valUSD;
+  });
 
-  // ── Tabla movimientos ───────────────────────────────────────────────────
-  var mbody = document.getElementById('lab-movs-tbody');
-  mbody.innerHTML = confirmed.map(function(m) {
-    var isCompra = m.tipo === 'compra';
-    var total    = m.cant * m.precio;
-    return '<tr>' +
-      '<td style="padding:4px 10px;font-family:var(--mono);font-size:.7rem;white-space:nowrap">' + m.fecha + '</td>' +
-      '<td style="padding:4px 10px;font-weight:700;font-family:var(--mono)">' + m.ticker + '</td>' +
-      '<td style="padding:4px 10px"><span style="background:' + (isCompra?'rgba(126,232,162,.1)':'rgba(248,113,113,.1)') + ';color:' + (isCompra?'var(--accent)':'var(--red)') + ';border-radius:4px;padding:1px 7px;font-size:.65rem;font-family:var(--mono);font-weight:600">' + (isCompra?'▲ compra':'▼ venta') + '</span></td>' +
-      '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">' + fmtLP(m.cant, 2) + '</td>' +
-      '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">$' + fmtLP(m.precio, 4) + '</td>' +
-      '<td style="padding:4px 10px;text-align:right;font-family:var(--mono);font-weight:600;color:' + (isCompra?'var(--red)':'var(--accent)') + '">' + (isCompra?'-':'+') + '$' + fmtLP(total, 0) + '</td>' +
-    '</tr>';
-  }).join('');
+  // ── 3. Helpers visuales (copia exacta del portafolio) ──────────────────
+  function pctColor(v) {
+    if (v==null||isNaN(v)) return 'var(--text3)';
+    return v<0?'var(--red)':v<10?'#eab308':'var(--accent)';
+  }
+  function deltaUpCell(pnlPct, upside) {
+    var hasPnl=pnlPct!=null&&!isNaN(pnlPct), hasUp=upside!=null&&!isNaN(upside);
+    if (!hasPnl&&!hasUp) return '<span style="color:var(--text3);font-size:.75rem">—</span>';
+    var base=hasPnl?pnlPct:upside;
+    var col=pctColor(base);
+    var bg=base<0?'rgba(248,113,113,.13)':base<10?'rgba(249,115,22,.13)':'rgba(126,232,162,.13)';
+    var pnlH=hasPnl?'<span style="color:'+pctColor(pnlPct)+';font-size:.82rem;font-weight:700">'+(pnlPct>0?'+':'')+Math.round(pnlPct)+'%</span>'
+                   :'<span style="color:var(--text3);font-size:.82rem">—</span>';
+    var upH =hasUp ?'<span style="color:'+pctColor(upside)+';font-size:.7rem;font-weight:700">'+(upside>0?'+':'')+Math.round(upside)+'%</span>'
+                   :'<span style="color:var(--text3);font-size:.7rem">—</span>';
+    return '<span style="display:inline-block;background:'+bg+';border:1px solid '+col+';border-radius:5px;padding:2px 7px;font-family:var(--mono);letter-spacing:-.01em">'
+      +pnlH+'<span style="color:var(--text3);font-size:.65rem;margin:0 3px">/</span>'+upH+'</span>';
+  }
+
+  // ── 4. Pasada 2: construir filas por sector (igual que renderPortfolio) ─
+  open.forEach(function(p) {
+    var q       = quotes[p.ticker];
+    var price   = q ? q.price : null;
+    var ratio   = getRatio(p.ticker);
+    var sector  = getSector(p.ticker);
+    var isARS   = (sector==='argentina'||sector==='bonos'||sector==='on');
+    var isBonoON= (sector==='bonos'||sector==='on');
+    var _tcHoy  = isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
+
+    var ppcUSD    = p.qty>0 ? p.costUSDpuro/p.qty : 0;
+    var ppcFromARS= p.qty>0 ? p.costARS/p.qty*100 : 0;
+    var ppcFromUSD= ppcUSD*_tcHoy*100;
+    var mkt       = p._mktARS||0;
+    var ppcARS    = isBonoON
+      ? ((mkt>0&&ppcFromARS/mkt<0.15)||(mkt===0&&ppcFromUSD>0&&ppcFromARS/ppcFromUSD<0.15)?ppcFromUSD:ppcFromARS)
+      : ppcUSD*CCL_HOY;
+    var pnlPct  = (p._mktARS!=null&&ppcARS>0) ? (p._mktARS-ppcARS)/ppcARS*100 : null;
+    p._pnlPct   = pnlPct;
+
+    var targetUSD = getTarget(p.ticker);
+    var targetARS = targetUSD!=null ? (targetUSD/ratio)*_tcHoy : null;
+    var priceUSD  = price!=null ? (isBonoON?price*ratio/(_tcHoy||1):(sector==='argentina'?price/(CCL_HOY||1):price)) : null;
+    var upside    = (targetUSD!=null&&priceUSD!=null&&priceUSD>0) ? (targetUSD-priceUSD)/priceUSD*100 : null;
+
+    var mktARSstr = p._mktARS!=null ? '$'+Math.round(p._mktARS).toLocaleString('es-AR') : null;
+    var invARSstr = '$'+Math.round(p._invARS).toLocaleString('es-AR');
+    var ppcARSstr = '$'+Math.round(ppcARS).toLocaleString('es-AR');
+    var targetStr = targetARS!=null ? '$'+Math.round(targetARS).toLocaleString('es-AR') : '<span style="color:var(--text3)">—</span>';
+    var qtyStr    = p.qty%1===0 ? p.qty.toFixed(0) : p.qty.toFixed(2);
+    var noQuote   = price==null ? ' <span style="font-size:.58rem;color:var(--text3)" title="Sin cotización">⏳</span>' : '';
+
+    sectors[sector].push(
+      '<tr>' +
+      '<td style="font-weight:700;font-family:var(--mono)">'+p.ticker+noQuote+'</td>' +
+      '<td style="text-align:center;padding:.38rem .5rem">'+deltaUpCell(pnlPct,upside)+'</td>' +
+      '<td class="mono">'+invARSstr+'</td>' +
+      '<td class="mono">'+(mktARSstr||'<span style="color:var(--text3)">—</span>')+'</td>' +
+      '<td class="mono muted">'+ppcARSstr+'</td>' +
+      '<td class="mono">'+targetStr+'</td>' +
+      '<td class="mono">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>' +
+      '</tr>'
+    );
+  });
+
+  // ── 5. Renderizar paneles por sector ───────────────────────────────────
+  var panelDefs=[
+    {id:'lp-panel-nyse',     key:'nyse',      label:'🇺🇸 USA'},
+    {id:'lp-panel-brasil',   key:'brasil',    label:'🇧🇷 Brasil'},
+    {id:'lp-panel-europa',   key:'europa',    label:'🇪🇺 Europa'},
+    {id:'lp-panel-bonos',    key:'bonos',     label:'🏦 Bonos'},
+    {id:'lp-panel-on',       key:'on',        label:'🏢 ON'},
+    {id:'lp-panel-china',    key:'china',     label:'🇨🇳 China'},
+    {id:'lp-panel-argentina',key:'argentina', label:'🇦🇷 Argentina'},
+    {id:'lp-panel-cripto',   key:'cripto',    label:'₿ Cripto ETF'}
+  ];
+  var grid = document.getElementById('lp-panels-grid');
+  grid.innerHTML = '';
+
+  panelDefs.forEach(function(def) {
+    var rows = sectors[def.key];
+    if (!rows||!rows.length) return;
+    var val    = sectorVal[def.key];
+    var _tc    = (def.key==='bonos'||def.key==='on') ? MEP_HOY : CCL_HOY;
+    var valARS = val>0&&_tc>0 ? Math.round(val*_tc) : null;
+    var meta   = rows.length+' pos.'+(valARS?' · $'+valARS.toLocaleString('es-AR'):'');
+
+    var panel = document.createElement('div');
+    panel.className = 'card';
+    panel.style.marginBottom = '1rem';
+    panel.innerHTML =
+      '<div class="card-header"><span class="card-title">'+def.label+'</span><span class="tag">'+meta+'</span></div>' +
+      '<div class="tw panel-table"><table><thead><tr>' +
+        '<th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th>' +
+      '</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
+    grid.appendChild(panel);
+  });
+
+  // ── 6. Métricas header ─────────────────────────────────────────────────
+  var rendPct = totalCost>0 ? (totalVal-totalCost)/totalCost*100 : null;
+  var rendColor = rendPct==null?'var(--text3)':rendPct<0?'var(--red)':rendPct<10?'#eab308':'var(--accent)';
+  document.getElementById('lp-val-usd').textContent    = '$'+Math.round(totalVal).toLocaleString('es-AR');
+  document.getElementById('lp-cost-usd2').textContent  = '$'+Math.round(totalCost).toLocaleString('es-AR');
+  document.getElementById('lp-count').textContent      = open.length;
+  document.getElementById('lp-rend').innerHTML = rendPct!=null
+    ? '<span style="color:'+rendColor+';font-weight:700">'+(rendPct>=0?'+':'')+Math.round(rendPct)+'%</span>'
+    : '—';
+
+  // Mejor / peor
+  var withPnl = open.filter(function(p){ return p._pnlPct!=null; });
+  var best  = withPnl.slice().sort(function(a,b){return b._pnlPct-a._pnlPct;})[0];
+  var worst = withPnl.slice().sort(function(a,b){return a._pnlPct-b._pnlPct;})[0];
+  document.getElementById('lp-best').innerHTML  = best  ? best.ticker+'  <span style="color:var(--accent);font-size:.75rem">+'+Math.round(best._pnlPct)+'%</span>'  : '—';
+  document.getElementById('lp-worst').innerHTML = worst ? worst.ticker+' <span style="color:var(--red);font-size:.75rem">'+Math.round(worst._pnlPct)+'%</span>' : '—';
+
+  document.getElementById('lp-source-info').textContent =
+    confirmed.length + ' movimientos confirmados · CCL $'+Math.round(CCL_HOY).toLocaleString('es-AR')+
+    (totalVal>0?' · '+open.filter(function(p){return quotes[p.ticker];}).length+'/'+open.length+' con cotización':'');
+}
+
+function labPortfolioFetchQuotes() {
+  var pendingAll = window._labPendingRef || [];
+  var confirmed  = pendingAll.filter(function(p){ return p.estado==='confirmado'; }).map(function(p){ return p.mov; });
+  if (!confirmed.length) return;
+
+  // Calcular qué tickers tienen posición abierta
+  var pos = {};
+  confirmed.forEach(function(m) {
+    if (!pos[m.ticker]) pos[m.ticker] = 0;
+    pos[m.ticker] += (m.tipo==='compra' ? m.cant : -m.cant);
+  });
+  var tickers = Object.keys(pos).filter(function(tk){ return pos[tk] > 0.000001; });
+  if (!tickers.length) return;
+
+  var btn    = document.getElementById('lp-fetch-btn');
+  var info   = document.getElementById('lp-source-info');
+  if (btn) { btn.innerHTML = '<span class="spinner"></span> Cargando…'; btn.disabled = true; }
+
+  // Reusar exactamente los mismos fetchers del portafolio real
+  var total = tickers.length, done = 0, errors = 0;
+  function tick() {
+    done++;
+    if (info) info.textContent = 'Cotizaciones: ' + done + '/' + total + '…';
+    labPortfolioRender(); // re-render parcial mientras llegan
+  }
+  function delay(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+  async function fetchAll() {
+    var finnhubTks = tickers.filter(function(tk){ var s=getSector(tk); return s!=='argentina'&&s!=='bonos'&&s!=='on'; });
+    var yahooTks   = tickers.filter(function(tk){ return getSector(tk)==='argentina'; });
+    var bonosTks   = tickers.filter(function(tk){ return getSector(tk)==='bonos'; });
+    var onTks      = tickers.filter(function(tk){ return getSector(tk)==='on'; });
+
+    async function doFinnhub() {
+      for (var i=0;i<finnhubTks.length;i++) {
+        var tk=finnhubTks[i];
+        try { quotes[tk] = await fetchFinnhub(getFinnhubTicker(tk)); }
+        catch(e) {
+          if (getSector(tk)==='brasil') { try { quotes[tk]=await fetchYahooAR(tk); } catch(e2){ errors++; } }
+          else { errors++; }
+        }
+        tick();
+        if (i<finnhubTks.length-1) await delay(1100);
+      }
+    }
+    async function doYahoo() {
+      await Promise.all(yahooTks.map(async function(tk){
+        try { quotes[tk]=await fetchYahooAR(tk); } catch(e){ errors++; }
+        tick();
+      }));
+    }
+    async function doBonos() {
+      var map={}; try{ map=await fetchBonosAPI(); }catch(e){}
+      await Promise.all(bonosTks.map(async function(tk){
+        try { var q=map[tk.toUpperCase()]; quotes[tk]=(q&&q.price>0)?q:await fetchYahooAR(tk); } catch(e){ errors++; }
+        tick();
+      }));
+    }
+    async function doONs() {
+      var map={}; try{ map=await fetchONsAPI(); }catch(e){}
+      await Promise.all(onTks.map(async function(tk){
+        try { var q=map[tk.toUpperCase()]; quotes[tk]=(q&&q.price>0)?q:await fetchYahooAR(tk); } catch(e){ errors++; }
+        tick();
+      }));
+    }
+
+    await Promise.all([doFinnhub(), doYahoo(), doBonos(), doONs()]);
+
+    if (btn) { btn.innerHTML='⟳ Cotizaciones'; btn.disabled=false; }
+    labPortfolioRender();
+    if (info) info.textContent = info.textContent.replace(/Cotizaciones.*/, '') +
+      (errors ? ' · ⚠ '+errors+' sin datos' : ' · ✓ cotizaciones actualizadas');
+  }
+
+  fetchAll();
 }
 
 function fmtLP(n, dec) {
