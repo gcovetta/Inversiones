@@ -1111,6 +1111,10 @@ tr:hover td{background:var(--surface2)}
           </div>
           <input type="file" id="lab-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="labLoadFile(this.files[0])">
           <div id="lab-file-status" style="margin-top:10px;font-size:.72rem;font-family:var(--mono);color:var(--text3);min-height:18px"></div>
+          <!-- Botón extensión Chrome -->
+          <button id="lab-ext-btn" onclick="labLoadFromExtension()" class="btn btn-sm" style="margin-top:8px;display:none">
+            🧩 Cargar desde extensión BullMarket
+          </button>
         </div>
       </div>
 
@@ -6186,6 +6190,24 @@ function _btirNumMatch(rawVal, filterStr) {
       movs.push({ fecha: fecha, ticker: ticker, tipo: tipo, cant: cant, precio: precio, moneda: 'ARS' });
     });
 
+    // ── Filtrar ventas de tickers sin compras previas en este Excel ──────
+    // Si un ticker aparece SOLO con ventas (posición viene del portafolio real,
+    // probablemente comprado en USD) → descartar todas sus operaciones del LAB
+    var comprasTickers = {};
+    movs.forEach(function(m){ if (m.tipo === 'compra') comprasTickers[m.ticker] = true; });
+    var descartados = {};
+    movs = movs.filter(function(m) {
+      if (m.tipo === 'venta' && !comprasTickers[m.ticker]) {
+        descartados[m.ticker] = (descartados[m.ticker] || 0) + 1;
+        return false;
+      }
+      return true;
+    });
+    var descKeys = Object.keys(descartados);
+    if (descKeys.length) {
+      labStatus('ℹ ' + descKeys.join(', ') + ' descartado(s): ventas sin compras previas en este Excel', 'amber');
+    }
+
     if (!movs.length) {
       labStatus('⚠ No se encontraron filas con COMPRA NORMAL o VENTA.', 'amber');
       return;
@@ -6574,6 +6596,88 @@ function _btirNumMatch(rawVal, filterStr) {
   }
 
 })(); // fin LAB IMPORT scope
+
+// ── Funciones globales para integración con extensión Chrome ──────────────
+
+// Llamada directamente por la extensión via chrome.scripting.executeScript
+window.labInjectMovs = function(movs) {
+  if (!Array.isArray(movs) || !movs.length) return;
+
+  // Navegar al LAB Import si no está visible
+  var labPage = document.getElementById('page-labimport');
+  if (labPage && !labPage.classList.contains('active')) {
+    var labBtn = document.querySelector('[onclick*="labimport"]');
+    if (labBtn) showPage('labimport', labBtn);
+  }
+
+  // Inyectar en el estado del LAB a través de la función expuesta
+  var pendingRef = window._labPendingRef;
+  if (!pendingRef) return;
+
+  // Limpiar pendientes anteriores de esta misma fuente y agregar los nuevos
+  var nextId = (pendingRef.length ? Math.max.apply(null, pendingRef.map(function(p){return p.id;})) + 1 : 0);
+  movs.forEach(function(m) {
+    pendingRef.push({ id: nextId++, mov: m, estado: 'pendiente' });
+  });
+
+  // Render
+  if (typeof renderPending === 'function') renderPending();
+  if (typeof renderAlerts  === 'function') renderAlerts();
+  if (typeof showAnalysis  === 'function') showAnalysis(movs);
+
+  var statusEl = document.getElementById('lab-file-status');
+  if (statusEl) {
+    statusEl.style.color = 'var(--accent)';
+    statusEl.textContent = '🧩 ' + movs.length + ' movimientos cargados desde la extensión BullMarket';
+  }
+};
+
+// Cargar desde sessionStorage (cuando la extensión no encontró la pestaña abierta)
+window.labLoadFromExtension = function() {
+  try {
+    var raw = sessionStorage.getItem('bull_lab_movs');
+    var ts  = sessionStorage.getItem('bull_lab_ts');
+    if (!raw) { alert('No hay datos pendientes de la extensión.'); return; }
+
+    var movs = JSON.parse(raw);
+    var age  = ts ? Math.round((Date.now() - parseInt(ts)) / 60000) : null;
+
+    window.labInjectMovs(movs);
+    sessionStorage.removeItem('bull_lab_movs');
+    sessionStorage.removeItem('bull_lab_ts');
+
+    var statusEl = document.getElementById('lab-file-status');
+    if (statusEl && age !== null) {
+      statusEl.textContent += ' (guardados hace ' + age + ' min)';
+    }
+  } catch(e) {
+    alert('Error al cargar desde extensión: ' + e.message);
+  }
+};
+
+// Mostrar botón de extensión si hay datos pendientes en sessionStorage
+(function checkExtensionData() {
+  var btn = document.getElementById('lab-ext-btn');
+  if (!btn) return;
+  var raw = sessionStorage.getItem('bull_lab_movs');
+  if (raw) {
+    btn.style.display = 'inline-flex';
+    try {
+      var n = JSON.parse(raw).length;
+      btn.textContent = '🧩 Cargar ' + n + ' movimientos desde extensión BullMarket';
+    } catch(e) {}
+  }
+  // También escuchar cambios (por si la extensión escribe después de cargar la página)
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'bull_lab_movs' && e.newValue) {
+      btn.style.display = 'inline-flex';
+      try {
+        var n2 = JSON.parse(e.newValue).length;
+        btn.textContent = '🧩 Cargar ' + n2 + ' movimientos desde extensión BullMarket';
+      } catch(err) {}
+    }
+  });
+})();
 
 // ── LAB PORTFOLIO — fuera del scope para acceso global ────────────────────
 function labPortfolioRender() {
