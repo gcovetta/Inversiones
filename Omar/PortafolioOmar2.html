@@ -6198,18 +6198,23 @@ function _btirNumMatch(rawVal, filterStr) {
       return;
     }
 
-    // ── Capturar saldo de liquidez (última fila del Excel, todas las filas) ─
+    // ── Capturar saldo de liquidez (última fila IMPORTABLE del Excel) ──────
+    // Usamos la última fila con COMPRA NORMAL o VENTA, no la última del archivo completo
+    // porque las cauciones y otros tipos pueden venir después y su saldo no refleja
+    // la liquidez real tras las operaciones de activos
     if (cm.saldo !== undefined) {
-      var allDataRows = rows.slice(hdrIdx + 1).filter(function(r){
-        return r && r.length && r.some(function(c){ return (c||'').toString().trim(); });
+      var importableRows = rows.slice(hdrIdx + 1).filter(function(r) {
+        if (!r || !r.length) return false;
+        var comp = (r[cm.tipo] || '').toString().trim().toUpperCase();
+        return comp === 'COMPRA NORMAL' || comp === 'VENTA';
       });
-      if (allDataRows.length) {
-        var lastRow   = allDataRows[allDataRows.length - 1];
-        var saldoRaw  = parseFloat((lastRow[cm.saldo] || '0').toString().replace(',', '.'));
-        var fechaLiq  = cm.fecha !== undefined ? normFecha((lastRow[cm.fecha] || '').toString().trim()) : '';
+      if (importableRows.length) {
+        var lastImportable = importableRows[importableRows.length - 1];
+        var saldoRaw  = parseFloat((lastImportable[cm.saldo] || '0').toString().replace(',', '.'));
+        var fechaLiq  = cm.fecha !== undefined ? normFecha((lastImportable[cm.fecha] || '').toString().trim()) : '';
         if (!isNaN(saldoRaw)) {
-          LAB.liquidezARS  = saldoRaw;
-          LAB.liquidezFecha= fechaLiq;
+          LAB.liquidezARS   = saldoRaw;
+          LAB.liquidezFecha = fechaLiq;
           var liqEl = document.getElementById('lab-liquidez-ars');
           if (liqEl) {
             liqEl.textContent = '$' + Math.round(saldoRaw).toLocaleString('es-AR');
@@ -6650,6 +6655,19 @@ function _btirNumMatch(rawVal, filterStr) {
     alerts:   function(){ renderAlerts(); },
     analysis: function(m){ showAnalysis(m); }
   };
+  window._labSetLiquidez = function(ars, fecha) {
+    LAB.liquidezARS   = ars;
+    LAB.liquidezFecha = fecha || '';
+    var liqEl = document.getElementById('lab-liquidez-ars');
+    if (liqEl) {
+      liqEl.textContent = '$' + Math.round(ars).toLocaleString('es-AR');
+      liqEl.style.color = ars >= 0 ? 'var(--accent)' : 'var(--red)';
+    }
+    var liqFechaEl = document.getElementById('lab-liquidez-fecha');
+    if (liqFechaEl && fecha) liqFechaEl.textContent = '· al ' + fecha;
+    var liqCard = document.getElementById('lab-liquidez-card');
+    if (liqCard) liqCard.style.display = 'block';
+  };
 
 })(); // fin LAB IMPORT scope
 
@@ -6691,6 +6709,12 @@ window.labInjectMovs = function(movs) {
   if (r.pending)  r.pending();
   if (r.alerts)   r.alerts();
   if (r.analysis) r.analysis(nuevos);
+
+  // Leer metadata de liquidez si viene de la extensión
+  var primerMov = nuevos[0] || movs[0];
+  if (primerMov && primerMov._liquidezARS != null) {
+    window._labSetLiquidez && window._labSetLiquidez(primerMov._liquidezARS, primerMov._liquidezFecha || '');
+  }
 
   var statusEl = document.getElementById('lab-file-status');
   if (statusEl) {
