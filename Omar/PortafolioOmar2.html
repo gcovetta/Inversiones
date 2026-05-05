@@ -332,6 +332,7 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
+    <button class="nav-item" onclick="showPage(&#39;labimport&#39;,this)"><span>🔬</span>LAB Import</button>
     <div class="nav-sec">Links</div>
     <a class="nav-item" href="../GDC/PortafolioGDC.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
     <a class="nav-item" href="../Ana/PortafolioAna2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
@@ -1073,6 +1074,182 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
     </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         🔬 LAB IMPORT — Laboratorio de importación de movimientos Excel
+         AISLADO DEL PORTAFOLIO. No afecta ningún cálculo ni dato real.
+    ══════════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-labimport" style="padding:1.2rem">
+
+      <!-- Banner LAB -->
+      <div style="background:linear-gradient(135deg,#1a120a,#261a08);border:1px solid #4a3010;border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:1.2rem">🔬</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.78rem;font-weight:700;color:#fbbf24;letter-spacing:.02em">LABORATORIO DE IMPORTACIÓN — MODO SANDBOX</div>
+          <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:2px">Los datos cargados aquí <u>no afectan</u> el portafolio principal ni ningún cálculo. Entorno aislado para testear la estructura del Excel exportado por tu broker.</div>
+        </div>
+        <button onclick="labReset()" class="btn btn-sm btn-d" title="Limpiar todo">🗑 Reset LAB</button>
+      </div>
+
+      <!-- Upload area -->
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-header">
+          <span class="card-title">📂 Subir Excel del broker</span>
+          <span style="font-size:.67rem;font-family:var(--mono);color:var(--text3)">Formatos soportados: .xlsx · .xls · .csv</span>
+        </div>
+        <div class="card-body">
+          <div id="lab-drop-zone"
+            onclick="document.getElementById('lab-file-input').click()"
+            ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(126,232,162,.06)'"
+            ondragleave="this.style.borderColor='var(--border2)';this.style.background='var(--surface2)'"
+            ondrop="event.preventDefault();this.style.borderColor='var(--border2)';this.style.background='var(--surface2)';labLoadFile(event.dataTransfer.files[0])"
+            style="border:2px dashed var(--border2);border-radius:var(--radius);padding:2.2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)">
+            <div style="font-size:2.2rem;margin-bottom:.5rem">📊</div>
+            <div style="font-size:.85rem;color:var(--text);font-weight:600">Hacé click o arrastrá el Excel acá</div>
+            <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:5px">Exportá los movimientos desde tu broker y subí el archivo</div>
+          </div>
+          <input type="file" id="lab-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="labLoadFile(this.files[0])">
+          <div id="lab-file-status" style="margin-top:10px;font-size:.72rem;font-family:var(--mono);color:var(--text3);min-height:18px"></div>
+        </div>
+      </div>
+
+      <!-- Selector de hoja (visible si hay varias sheets) -->
+      <div id="lab-sheet-selector" style="display:none;margin-bottom:1rem">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📋 Hojas del archivo</span></div>
+          <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap" id="lab-sheet-btns"></div>
+        </div>
+      </div>
+
+      <!-- Vista cruda del Excel -->
+      <div id="lab-raw-card" class="card" style="display:none;margin-bottom:1rem">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
+          <span class="card-title">👁 Vista Cruda — Datos sin procesar</span>
+          <span id="lab-raw-info" style="font-size:.67rem;font-family:var(--mono);color:var(--text3)"></span>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
+            <label style="font-size:.68rem;font-family:var(--mono);color:var(--text3)">Fila con encabezados:</label>
+            <input type="number" id="lab-header-row" value="1" min="1" max="20"
+              style="width:52px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 6px;text-align:center;outline:none"
+              onchange="labReparse()">
+            <button class="btn btn-sm btn-a" onclick="labAutoDetect()">🔍 Auto-detectar cols</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+          <table id="lab-raw-table" style="font-size:.68rem;min-width:600px">
+            <thead id="lab-raw-thead"></thead>
+            <tbody id="lab-raw-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mapeo de columnas -->
+      <div id="lab-map-card" class="card" style="display:none;margin-bottom:1rem">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
+          <span class="card-title">🗺 Mapeo de Columnas</span>
+          <span style="font-size:.67rem;font-family:var(--mono);color:var(--text3)">Indicá qué columna del Excel corresponde a cada campo del portafolio</span>
+          <button class="btn btn-sm btn-a" onclick="labParseWithMap()" style="margin-left:auto">▶ Interpretar movimientos</button>
+        </div>
+        <div class="card-body">
+          <div id="lab-map-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px"></div>
+          <div style="margin-top:10px;font-size:.67rem;font-family:var(--mono);color:var(--text3)">
+            💡 Los campos marcados con <span style="color:var(--amber)">*</span> son opcionales. Podés dejarlos en "— No usar —" si no existen en tu Excel.
+          </div>
+        </div>
+      </div>
+
+      <!-- ⚠️ ALERTAS — Tickers con cantidad neta negativa -->
+      <div id="lab-alerts-card" class="card" style="display:none;margin-bottom:1rem;border-color:#4a1a1a">
+        <div class="card-header" style="background:linear-gradient(135deg,#1a0a0a,#2a1010);flex-wrap:wrap;gap:8px">
+          <span style="font-size:1rem">⚠️</span>
+          <span class="card-title" style="color:var(--red)">Alertas — Cantidad Neta Negativa</span>
+          <span id="lab-alerts-info" style="font-size:.67rem;font-family:var(--mono);color:#f87171"></span>
+          <span style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-left:auto">Estos tickers quedaron en negativo → probablemente comprados en USD y no importados aún</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="font-size:.75rem;min-width:500px">
+            <thead>
+              <tr>
+                <th style="background:#1a0808;color:var(--red);padding:6px 10px;font-size:.62rem">Ticker</th>
+                <th style="background:#1a0808;color:var(--red);padding:6px 10px;font-size:.62rem;text-align:right">Cant. neta</th>
+                <th style="background:#1a0808;color:var(--red);padding:6px 10px;font-size:.62rem;text-align:right">Compras</th>
+                <th style="background:#1a0808;color:var(--red);padding:6px 10px;font-size:.62rem;text-align:right">Ventas</th>
+                <th style="background:#1a0808;color:var(--red);padding:6px 10px;font-size:.62rem">Posible causa</th>
+              </tr>
+            </thead>
+            <tbody id="lab-alerts-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ⏳ PENDIENTES — Tabla con tilde/descarte -->
+      <div id="lab-pending-card" class="card" style="display:none;margin-bottom:1rem">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
+          <span class="card-title">⏳ Pendientes de Confirmación</span>
+          <span id="lab-pending-info" style="font-size:.72rem;font-family:var(--mono);color:var(--accent)"></span>
+          <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-a" onclick="labConfirmAll()" title="Confirmar todos los pendientes">✓ Confirmar todos</button>
+            <button class="btn btn-sm btn-d" onclick="labDiscardAll()" title="Descartar todos">✕ Descartar todos</button>
+            <button class="btn btn-sm" onclick="labExportConfirmed()" title="Exportar confirmados como JSON">⬇ Exportar confirmados</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+          <table id="lab-pending-table" style="font-size:.78rem;min-width:620px">
+            <thead>
+              <tr>
+                <th style="position:sticky;top:0;background:var(--surface);width:28px"></th>
+                <th style="position:sticky;top:0;background:var(--surface)">Fecha</th>
+                <th style="position:sticky;top:0;background:var(--surface)">Ticker</th>
+                <th style="position:sticky;top:0;background:var(--surface)">Tipo</th>
+                <th style="position:sticky;top:0;background:var(--surface);text-align:right">Cantidad</th>
+                <th style="position:sticky;top:0;background:var(--surface);text-align:right">Precio ARS</th>
+                <th style="position:sticky;top:0;background:var(--surface);text-align:right">Total ARS</th>
+                <th style="position:sticky;top:0;background:var(--surface);width:72px;text-align:center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="lab-pending-tbody"></tbody>
+          </table>
+        </div>
+        <div style="padding:.65rem 1rem;border-top:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+          <div id="lab-pending-stats" style="font-size:.7rem;font-family:var(--mono);color:var(--text3)"></div>
+        </div>
+      </div>
+
+      <!-- ✅ CONFIRMADOS -->
+      <div id="lab-confirmed-card" class="card" style="display:none;margin-bottom:1rem;border-color:#143a24">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
+          <span class="card-title" style="color:var(--accent)">✅ Confirmados</span>
+          <span id="lab-confirmed-info" style="font-size:.72rem;font-family:var(--mono);color:var(--accent)"></span>
+        </div>
+        <div style="overflow-x:auto;max-height:280px;overflow-y:auto">
+          <table style="font-size:.75rem;min-width:580px">
+            <thead>
+              <tr>
+                <th style="position:sticky;top:0;background:var(--surface)">Fecha</th>
+                <th style="position:sticky;top:0;background:var(--surface)">Ticker</th>
+                <th style="position:sticky;top:0;background:var(--surface)">Tipo</th>
+                <th style="position:sticky;top:0;background:var(--surface);text-align:right">Cantidad</th>
+                <th style="position:sticky;top:0;background:var(--surface);text-align:right">Precio ARS</th>
+                <th style="position:sticky;top:0;background:var(--surface);text-align:right">Total ARS</th>
+                <th style="position:sticky;top:0;background:var(--surface);width:44px;text-align:center"></th>
+              </tr>
+            </thead>
+            <tbody id="lab-confirmed-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Análisis de estructura (colapsable) -->
+      <div id="lab-analysis-card" class="card" style="display:none">
+        <div class="card-header" style="cursor:pointer" onclick="var b=document.getElementById('lab-analysis-body');b.style.display=b.style.display==='none'?'block':'none'">
+          <span class="card-title">🧠 Análisis de Estructura</span>
+          <span style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-left:auto">click para expandir/colapsar</span>
+        </div>
+        <div id="lab-analysis-body" style="display:none;padding:1rem">
+          <div id="lab-analysis-content" style="font-size:.72rem;font-family:var(--mono);color:var(--text2);line-height:1.9"></div>
+        </div>
+      </div>
+
+    </div><!-- /page-labimport -->
 
   </div>
 </div>
@@ -5654,6 +5831,459 @@ function _btirNumMatch(rawVal, filterStr) {
   if ((m = s.match(/^([\d.]+)$/)))      return n >= parseFloat(m[1]);
   return true;
 }
+
+// ════════════════════════════════════════════════════════════════════════
+// 🔬 LAB IMPORT — Laboratorio de importación Bull
+// Completamente aislado del portafolio. No escribe en ningún array global.
+// Skill: importacion-bull
+// ════════════════════════════════════════════════════════════════════════
+(function() {
+  'use strict';
+
+  // ── Estado interno ────────────────────────────────────────────────────
+  var LAB = {
+    rawData: [], headers: [], sheets: [], workbook: null,
+    currentSheet: 0, headerRow: 1, fieldMap: {}, fileName: '',
+    pending: [],    // { id, mov, estado: 'pendiente'|'confirmado'|'descartado' }
+    nextId: 0
+  };
+
+  // ── Columnas Bull (mapeo fijo según skill importacion-bull) ───────────
+  var BULL_MAP = { fecha:1, tipo:2, cant:4, ticker:5, precio:6 };
+
+  var LAB_FIELDS = [
+    { key:'fecha',  label:'Fecha (Operado)',  required:true,  hints:['operado','fecha operacion','trade date','date'] },
+    { key:'tipo',   label:'Tipo (Comprobante)',required:true,  hints:['comprobante','tipo','type','operacion'] },
+    { key:'cant',   label:'Cantidad',          required:true,  hints:['cantidad','cant','qty','quantity','nominal'] },
+    { key:'ticker', label:'Ticker (Especie)',  required:true,  hints:['especie','ticker','symbol','instrumento','activo'] },
+    { key:'precio', label:'Precio ARS',        required:true,  hints:['precio','price','cotizacion'] }
+  ];
+
+  // ── SheetJS loader ────────────────────────────────────────────────────
+  function ensureSheetJS(cb) {
+    if (window.XLSX) { cb(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload = cb;
+    s.onerror = function() { labStatus('❌ No se pudo cargar el parser de Excel.', 'red'); };
+    document.head.appendChild(s);
+  }
+
+  // ── Cargar archivo ────────────────────────────────────────────────────
+  window.labLoadFile = function(file) {
+    if (!file) return;
+    LAB.fileName = file.name;
+    labStatus('⏳ Leyendo ' + file.name + '…', 'text3');
+    ensureSheetJS(function() {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var data = new Uint8Array(e.target.result);
+          var wb = XLSX.read(data, { type:'array', cellDates:true });
+          LAB.workbook = wb;
+          LAB.sheets = wb.SheetNames;
+          var sheetSel = document.getElementById('lab-sheet-selector');
+          var sheetBtns = document.getElementById('lab-sheet-btns');
+          if (LAB.sheets.length > 1) {
+            sheetBtns.innerHTML = LAB.sheets.map(function(n,i){
+              return '<button class="btn btn-sm'+(i===0?' btn-a':'')+'" onclick="labSelectSheet('+i+',this)">'+n+'</button>';
+            }).join('');
+            sheetSel.style.display = 'block';
+          } else { sheetSel.style.display = 'none'; }
+          LAB.currentSheet = 0;
+          labParseSheet();
+          labStatus('✓ ' + file.name + ' cargado', 'accent');
+        } catch(err) {
+          labStatus('❌ Error: ' + err.message, 'red');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  window.labSelectSheet = function(idx, btn) {
+    LAB.currentSheet = idx;
+    btn.parentElement.querySelectorAll('.btn').forEach(function(b){ b.classList.remove('btn-a'); });
+    btn.classList.add('btn-a');
+    labParseSheet();
+  };
+
+  function labParseSheet() {
+    if (!LAB.workbook) return;
+    var ws = LAB.workbook.Sheets[LAB.sheets[LAB.currentSheet]];
+    var aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'DD/MM/YYYY' });
+    LAB.rawData = aoa;
+    LAB.headerRow = 1;
+    document.getElementById('lab-header-row').value = 1;
+    renderRawTable();
+    // Auto-aplicar mapeo Bull si el archivo tiene el nombre correcto o las columnas coinciden
+    var hdr = (aoa[0]||[]).map(function(c){ return (c||'').toString().trim().toLowerCase(); });
+    if (hdr.indexOf('operado') >= 0 && hdr.indexOf('especie') >= 0) {
+      // Es un archivo Bull — aplicar mapeo fijo
+      LAB.fieldMap = {};
+      LAB_FIELDS.forEach(function(f){ LAB.fieldMap[f.key] = BULL_MAP[f.key]; });
+      labStatus('✓ Formato Bull detectado — mapeo aplicado automáticamente', 'accent');
+    } else {
+      labAutoDetect();
+    }
+    labBuildMap();
+    // Auto-parsear directamente
+    labParseWithMap();
+  }
+
+  // ── Vista cruda ────────────────────────────────────────────────────────
+  function renderRawTable() {
+    var raw = LAB.rawData;
+    if (!raw || !raw.length) return;
+    var card = document.getElementById('lab-raw-card');
+    card.style.display = 'block';
+    document.getElementById('lab-raw-info').textContent = raw.length + ' filas × ' + (raw[0]?raw[0].length:0) + ' columnas';
+    var PREVIEW = Math.min(raw.length, 10);
+    var colCount = 0;
+    raw.slice(0, PREVIEW).forEach(function(r){ colCount = Math.max(colCount, (r||[]).length); });
+    var cols = []; for (var i=0;i<colCount;i++) cols.push(String.fromCharCode(65+i));
+    var thead = document.getElementById('lab-raw-thead');
+    thead.innerHTML = '<tr><th style="background:var(--surface);padding:3px 6px;font-size:.6rem;color:var(--text3)">#</th>'+
+      cols.map(function(c){ return '<th style="background:var(--surface);padding:3px 8px;font-size:.6rem;color:var(--text3);min-width:70px">'+c+'</th>'; }).join('')+'</tr>';
+    var hdr = parseInt(document.getElementById('lab-header-row').value,10)-1;
+    document.getElementById('lab-raw-tbody').innerHTML = raw.slice(0,PREVIEW).map(function(row,ri){
+      var isH = ri===hdr;
+      var bg = isH?'background:rgba(126,232,162,.07);':(ri%2?'background:rgba(255,255,255,.02);':'');
+      return '<tr style="'+bg+'"><td style="padding:3px 6px;font-family:var(--mono);font-size:.6rem;color:var(--text3)">'+(ri+1)+(isH?' ▶':'')+
+        '</td>'+cols.map(function(_,ci){
+          var v=(row&&row[ci]!=null)?String(row[ci]):'';
+          return '<td style="padding:3px 8px;font-family:var(--mono);font-size:.65rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;'+(isH?'color:var(--accent);font-weight:700':'color:var(--text2)')+'">'+_esc(v)+'</td>';
+        }).join('')+'</tr>';
+    }).join('');
+  }
+
+  window.labReparse = function() { renderRawTable(); labBuildMap(); };
+
+  // ── Auto-detect ─────────────────────────────────────────────────────────
+  window.labAutoDetect = function() {
+    var raw = LAB.rawData; if (!raw||!raw.length) return;
+    var bestRow=0, bestScore=0;
+    raw.slice(0,10).forEach(function(row,ri){
+      var filled=(row||[]).filter(function(c){ return c!=null&&String(c).trim()!==''; }).length;
+      if(filled>bestScore){bestScore=filled;bestRow=ri;}
+    });
+    LAB.headerRow = bestRow+1;
+    document.getElementById('lab-header-row').value = LAB.headerRow;
+    var hdrRow = raw[bestRow]||[];
+    LAB.headers = hdrRow.map(function(c){ return c!=null?String(c).trim():''; });
+    LAB.fieldMap = {};
+    LAB_FIELDS.forEach(function(field){
+      var best=-1, bestSc=-1;
+      LAB.headers.forEach(function(h,hi){
+        var hl=h.toLowerCase();
+        field.hints.forEach(function(hint){
+          if(hl===hint&&5>bestSc){bestSc=5;best=hi;}
+          else if((hl.indexOf(hint)>=0||hint.indexOf(hl)>=0)&&bestSc<3){bestSc=3;best=hi;}
+        });
+      });
+      if(best>=0) LAB.fieldMap[field.key]=best;
+    });
+    renderRawTable();
+    labBuildMap();
+  };
+
+  // ── Mapeo UI ────────────────────────────────────────────────────────────
+  function labBuildMap() {
+    var raw = LAB.rawData; if(!raw||!raw.length) return;
+    var hdrRow = parseInt(document.getElementById('lab-header-row').value,10)-1;
+    LAB.headers = (raw[hdrRow]||[]).map(function(c){ return c!=null?String(c).trim():''; });
+    var mapCard = document.getElementById('lab-map-card');
+    var grid = document.getElementById('lab-map-grid');
+    mapCard.style.display = 'block';
+    var optHTML = '<option value="-1">— No usar —</option>'+
+      LAB.headers.map(function(h,i){ return '<option value="'+i+'">'+String.fromCharCode(65+i)+': '+_esc(h||'(vacío)')+'</option>'; }).join('');
+    grid.innerHTML = LAB_FIELDS.map(function(field){
+      var sel=(LAB.fieldMap[field.key]!=null)?LAB.fieldMap[field.key]:-1;
+      return '<div class="fgrp"><label>'+field.label+'<span style="color:var(--accent);margin-left:2px">●</span></label>'+
+        '<select id="lab-map-'+field.key+'" onchange="labUpdateMap(\''+field.key+'\',this.value)">'+
+        optHTML.replace('value="'+sel+'"','value="'+sel+'" selected')+'</select></div>';
+    }).join('');
+  }
+
+  window.labUpdateMap = function(key, val) { LAB.fieldMap[key]=parseInt(val,10); };
+
+  // ── Parseo principal Bull ───────────────────────────────────────────────
+  window.labParseWithMap = function() {
+    var raw = LAB.rawData; if(!raw||!raw.length) return;
+    LAB_FIELDS.forEach(function(f){
+      var sel=document.getElementById('lab-map-'+f.key);
+      if(sel) LAB.fieldMap[f.key]=parseInt(sel.value,10);
+    });
+    var startRow = parseInt(document.getElementById('lab-header-row').value,10);
+    var dataRows = raw.slice(startRow);
+    var movs = [];
+
+    dataRows.forEach(function(row) {
+      if(!row||!row.length) return;
+      var nonEmpty=row.filter(function(c){ return c!=null&&String(c).trim()!==''; });
+      if(!nonEmpty.length) return;
+
+      function getCol(key) {
+        var idx=LAB.fieldMap[key]; if(idx==null||idx<0) return '';
+        var v=row[idx]; return v!=null?String(v).trim():'';
+      }
+
+      var comprobante = getCol('tipo');
+      var tipoNorm = normTipoBull(comprobante);
+      if (!tipoNorm) return; // descartar cauciones y otros silenciosamente
+
+      var fecha   = normFecha(getCol('fecha'));
+      var ticker  = getCol('ticker').toUpperCase().replace(/\s+/g,'');
+      var cant    = Math.abs(parseFloat(getCol('cant'))||0);
+      var precio  = parseFloat(getCol('precio'))||0;
+      var total   = +(cant * precio).toFixed(2);
+
+      movs.push({
+        fecha: fecha, ticker: ticker, tipo: tipoNorm,
+        cant: cant, precio: precio, total: total, moneda: 'ARS'
+      });
+    });
+
+    // Asignar IDs y estado pendiente
+    LAB.pending = movs.map(function(m) {
+      return { id: LAB.nextId++, mov: m, estado: 'pendiente' };
+    });
+
+    renderPending();
+    renderAlerts();
+    showAnalysis(movs);
+  };
+
+  // ── Render tabla PENDIENTES ─────────────────────────────────────────────
+  function renderPending() {
+    var card = document.getElementById('lab-pending-card');
+    var pending = LAB.pending.filter(function(p){ return p.estado==='pendiente'; });
+    var confirmed = LAB.pending.filter(function(p){ return p.estado==='confirmado'; });
+    var discarded = LAB.pending.filter(function(p){ return p.estado==='descartado'; });
+
+    // Info header
+    document.getElementById('lab-pending-info').textContent =
+      pending.length + ' pendientes · ' + confirmed.length + ' confirmados · ' + discarded.length + ' descartados';
+
+    var tbody = document.getElementById('lab-pending-tbody');
+    if (!pending.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state" style="padding:1.2rem;font-size:.72rem">'+
+        (LAB.pending.length ? '✓ Todos los movimientos fueron procesados' : 'Sin movimientos pendientes')+
+        '</td></tr>';
+    } else {
+      tbody.innerHTML = pending.map(function(p) {
+        var m = p.mov;
+        var isCompra = m.tipo === 'compra';
+        var tipoColor = isCompra ? 'var(--accent)' : 'var(--red)';
+        var tipoBg    = isCompra ? 'rgba(126,232,162,.1)' : 'rgba(248,113,113,.1)';
+        return '<tr id="lab-row-'+p.id+'" style="transition:opacity .2s">'+
+          '<td style="padding:4px 8px;text-align:center">'+
+            '<input type="checkbox" onchange="labToggleCheck('+p.id+',this.checked)" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer">'+
+          '</td>'+
+          '<td style="padding:4px 10px;font-family:var(--mono);font-size:.72rem;white-space:nowrap">'+_esc(m.fecha)+'</td>'+
+          '<td style="padding:4px 10px;font-weight:700;font-family:var(--mono);font-size:.82rem">'+_esc(m.ticker)+'</td>'+
+          '<td style="padding:4px 10px">'+
+            '<span style="background:'+tipoBg+';color:'+tipoColor+';border-radius:4px;padding:2px 8px;font-size:.65rem;font-family:var(--mono);font-weight:600">'+
+              (isCompra?'▲ compra':'▼ venta')+'</span>'+
+          '</td>'+
+          '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">'+fmtNum(m.cant,0)+'</td>'+
+          '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">$'+fmtNum(m.precio,4)+'</td>'+
+          '<td style="padding:4px 10px;text-align:right;font-family:var(--mono);font-weight:600">$'+fmtNum(m.total,2)+'</td>'+
+          '<td style="padding:4px 8px;text-align:center;white-space:nowrap">'+
+            '<button class="btn btn-sm btn-a" style="padding:0 6px;height:22px;margin-right:3px" onclick="labConfirm('+p.id+')" title="Confirmar">✓</button>'+
+            '<button class="btn btn-sm btn-d" style="padding:0 6px;height:22px" onclick="labDiscard('+p.id+')" title="Descartar">✕</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+    }
+
+    card.style.display = 'block';
+    renderConfirmed();
+    renderPendingStats();
+  }
+
+  function renderConfirmed() {
+    var confirmed = LAB.pending.filter(function(p){ return p.estado==='confirmado'; });
+    var card = document.getElementById('lab-confirmed-card');
+    if (!confirmed.length) { card.style.display='none'; return; }
+    card.style.display = 'block';
+    document.getElementById('lab-confirmed-info').textContent = confirmed.length + ' movimientos listos para incorporar';
+    document.getElementById('lab-confirmed-tbody').innerHTML = confirmed.map(function(p){
+      var m = p.mov;
+      var isCompra = m.tipo==='compra';
+      return '<tr style="background:rgba(126,232,162,.03)">'+
+        '<td style="padding:4px 10px;font-family:var(--mono);font-size:.7rem;white-space:nowrap">'+_esc(m.fecha)+'</td>'+
+        '<td style="padding:4px 10px;font-weight:700;font-family:var(--mono)">'+_esc(m.ticker)+'</td>'+
+        '<td style="padding:4px 10px"><span style="color:'+(isCompra?'var(--accent)':'var(--red)')+';font-family:var(--mono);font-size:.68rem;font-weight:600">'+(isCompra?'▲':'▼')+' '+m.tipo+'</span></td>'+
+        '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">'+fmtNum(m.cant,0)+'</td>'+
+        '<td style="padding:4px 10px;text-align:right;font-family:var(--mono)">$'+fmtNum(m.precio,4)+'</td>'+
+        '<td style="padding:4px 10px;text-align:right;font-family:var(--mono);font-weight:600;color:var(--accent)">$'+fmtNum(m.total,2)+'</td>'+
+        '<td style="padding:4px 8px;text-align:center">'+
+          '<button class="btn btn-sm" style="padding:0 5px;height:20px;font-size:.6rem" onclick="labUnconfirm('+p.id+')" title="Volver a pendiente">↩</button>'+
+        '</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  function renderPendingStats() {
+    var confirmed = LAB.pending.filter(function(p){ return p.estado==='confirmado'; });
+    var pending   = LAB.pending.filter(function(p){ return p.estado==='pendiente'; });
+    var discarded = LAB.pending.filter(function(p){ return p.estado==='descartado'; });
+    var totalCompras = confirmed.filter(function(p){ return p.mov.tipo==='compra'; }).length;
+    var totalVentas  = confirmed.filter(function(p){ return p.mov.tipo==='venta'; }).length;
+    document.getElementById('lab-pending-stats').innerHTML =
+      '<span style="color:var(--text3)">Total importados: '+LAB.pending.length+'</span>' +
+      ' &nbsp;·&nbsp; <span style="color:var(--accent)">✓ Confirmados: '+confirmed.length+' ('+totalCompras+' compras / '+totalVentas+' ventas)</span>' +
+      (pending.length?' &nbsp;·&nbsp; <span style="color:var(--amber)">⏳ Pendientes: '+pending.length+'</span>':'') +
+      (discarded.length?' &nbsp;·&nbsp; <span style="color:var(--text3)">✕ Descartados: '+discarded.length+'</span>':'');
+  }
+
+  // ── Render ALERTAS ──────────────────────────────────────────────────────
+  function renderAlerts() {
+    // Calcular posición neta por ticker (compras positivo, ventas negativo)
+    var netPos = {};
+    var compras = {}, ventas = {};
+    LAB.pending.forEach(function(p) {
+      var m = p.mov, tk = m.ticker;
+      if (!netPos[tk]) { netPos[tk]=0; compras[tk]=0; ventas[tk]=0; }
+      if (m.tipo==='compra') { netPos[tk]+=m.cant; compras[tk]+=m.cant; }
+      else                   { netPos[tk]-=m.cant; ventas[tk]+=m.cant; }
+    });
+
+    var alertas = Object.keys(netPos).filter(function(tk){ return netPos[tk] < 0; });
+    var card = document.getElementById('lab-alerts-card');
+
+    if (!alertas.length) { card.style.display='none'; return; }
+    card.style.display = 'block';
+    document.getElementById('lab-alerts-info').textContent = alertas.length + ' ticker' + (alertas.length>1?'s':'') + ' con posición neta negativa';
+
+    document.getElementById('lab-alerts-tbody').innerHTML = alertas.map(function(tk) {
+      var net = netPos[tk];
+      return '<tr style="background:rgba(248,113,113,.05)">'+
+        '<td style="padding:5px 10px;font-weight:700;font-family:var(--mono);color:var(--red)">'+_esc(tk)+'</td>'+
+        '<td style="padding:5px 10px;text-align:right;font-family:var(--mono);color:var(--red);font-weight:700">'+fmtNum(net,0)+'</td>'+
+        '<td style="padding:5px 10px;text-align:right;font-family:var(--mono);color:var(--accent)">+'+fmtNum(compras[tk],0)+'</td>'+
+        '<td style="padding:5px 10px;text-align:right;font-family:var(--mono);color:var(--red)">-'+fmtNum(ventas[tk],0)+'</td>'+
+        '<td style="padding:5px 10px;font-size:.67rem;font-family:var(--mono);color:var(--text3)">Probable compra en USD sin importar aún</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  // ── Acciones de confirmación ────────────────────────────────────────────
+  window.labConfirm = function(id) {
+    var p = LAB.pending.find(function(x){ return x.id===id; });
+    if (p) { p.estado='confirmado'; }
+    renderPending(); renderAlerts();
+  };
+
+  window.labDiscard = function(id) {
+    var p = LAB.pending.find(function(x){ return x.id===id; });
+    if (p) { p.estado='descartado'; }
+    renderPending(); renderAlerts();
+  };
+
+  window.labUnconfirm = function(id) {
+    var p = LAB.pending.find(function(x){ return x.id===id; });
+    if (p) { p.estado='pendiente'; }
+    renderPending(); renderAlerts();
+  };
+
+  window.labToggleCheck = function(id, checked) {
+    // El checkbox actúa como preview — al hacer click en ✓ se confirma
+    var row = document.getElementById('lab-row-'+id);
+    if (row) row.style.background = checked ? 'rgba(126,232,162,.06)' : '';
+  };
+
+  window.labConfirmAll = function() {
+    LAB.pending.filter(function(p){ return p.estado==='pendiente'; })
+      .forEach(function(p){ p.estado='confirmado'; });
+    renderPending(); renderAlerts();
+  };
+
+  window.labDiscardAll = function() {
+    LAB.pending.filter(function(p){ return p.estado==='pendiente'; })
+      .forEach(function(p){ p.estado='descartado'; });
+    renderPending(); renderAlerts();
+  };
+
+  // ── Exportar confirmados ────────────────────────────────────────────────
+  window.labExportConfirmed = function() {
+    var confirmed = LAB.pending.filter(function(p){ return p.estado==='confirmado'; })
+      .map(function(p){ return p.mov; });
+    if (!confirmed.length) { labStatus('⚠ No hay movimientos confirmados aún.','amber'); return; }
+    var blob = new Blob([JSON.stringify(confirmed,null,2)],{type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href=url; a.download='bull_confirmados_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click(); URL.revokeObjectURL(url);
+    labStatus('✓ Exportados ' + confirmed.length + ' movimientos confirmados','accent');
+  };
+
+  // ── Análisis ────────────────────────────────────────────────────────────
+  function showAnalysis(movs) {
+    var card = document.getElementById('lab-analysis-card');
+    var content = document.getElementById('lab-analysis-content');
+    card.style.display = 'block';
+    var descartados = LAB.rawData.length - 1 - movs.length; // -1 por header
+    var tickers = {};
+    movs.forEach(function(m){ tickers[m.ticker]=(tickers[m.ticker]||0)+1; });
+    var lines = [
+      '<b style="color:var(--text)">📄 Archivo:</b> ' + _esc(LAB.fileName),
+      '<b style="color:var(--text)">📊 Procesados:</b> '+movs.length+' movimientos importables · '+descartados+' descartados (cauciones / otros)',
+      '<b style="color:var(--text)">🏷 Tickers operados:</b> ' + Object.keys(tickers).map(function(t){
+        return '<span style="color:var(--accent)">'+t+'</span>('+tickers[t]+')';
+      }).join(' '),
+      '<b style="color:var(--text)">💡 Moneda:</b> ARS (cuenta corriente en pesos)'
+    ];
+    content.innerHTML = lines.join('<br>');
+  }
+
+  // ── Reset ───────────────────────────────────────────────────────────────
+  window.labReset = function() {
+    LAB.rawData=[]; LAB.headers=[]; LAB.sheets=[]; LAB.workbook=null;
+    LAB.fieldMap={}; LAB.pending=[]; LAB.nextId=0; LAB.fileName='';
+    ['lab-raw-card','lab-sheet-selector','lab-map-card','lab-pending-card',
+     'lab-confirmed-card','lab-alerts-card','lab-analysis-card'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.style.display='none';
+    });
+    document.getElementById('lab-file-input').value='';
+    document.getElementById('lab-file-status').textContent='';
+    document.getElementById('lab-header-row').value='1';
+    labStatus('🔬 LAB reiniciado','text3');
+  };
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function labStatus(msg, colorKey) {
+    var el=document.getElementById('lab-file-status'); if(!el) return;
+    var colors={accent:'var(--accent)',red:'var(--red)',amber:'var(--amber)',text3:'var(--text3)'};
+    el.style.color=colors[colorKey]||'var(--text3)'; el.textContent=msg;
+  }
+  function _esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmtNum(n, dec) {
+    if(n===''||n==null) return '—';
+    return Number(n).toLocaleString('es-AR',{minimumFractionDigits:dec||0,maximumFractionDigits:dec||0});
+  }
+  function normFecha(s) {
+    if(!s) return '';
+    s=String(s).trim();
+    var m;
+    if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return m[3].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+m[1];
+    if((m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/))) {
+      var yr=m[3].length===2?'20'+m[3]:m[3];
+      return m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+yr;
+    }
+    return s;
+  }
+  function normTipoBull(s) {
+    var c=(s||'').toUpperCase().trim();
+    if(c==='COMPRA NORMAL') return 'compra';
+    if(c==='VENTA')         return 'venta';
+    return null; // descartar el resto
+  }
+
+})(); // fin LAB IMPORT scope
 
 </script>
 
