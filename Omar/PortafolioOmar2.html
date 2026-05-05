@@ -1111,10 +1111,21 @@ tr:hover td{background:var(--surface2)}
           </div>
           <input type="file" id="lab-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="labLoadFile(this.files[0])">
           <div id="lab-file-status" style="margin-top:10px;font-size:.72rem;font-family:var(--mono);color:var(--text3);min-height:18px"></div>
-          <!-- Botón extensión Chrome -->
           <button id="lab-ext-btn" onclick="labLoadFromExtension()" class="btn btn-sm" style="margin-top:8px;display:none">
             🧩 Cargar desde extensión BullMarket
           </button>
+        </div>
+      </div>
+
+      <!-- Liquidez detectada del Excel -->
+      <div id="lab-liquidez-card" style="display:none;margin-bottom:1rem">
+        <div style="background:linear-gradient(135deg,#0d1a30,#0a1220);border:1px solid #162a50;border-radius:var(--radius);padding:.75rem 1rem;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <span style="font-size:1.1rem">💵</span>
+          <div>
+            <div style="font-size:.6rem;font-family:var(--mono);color:#60a5fa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Liquidez en ARS <span id="lab-liquidez-fecha" style="font-weight:400;opacity:.7"></span></div>
+            <div style="font-size:1.2rem;font-weight:700;font-family:var(--mono)" id="lab-liquidez-ars">—</div>
+          </div>
+          <div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-left:auto">Saldo al cierre del último movimiento del Excel</div>
         </div>
       </div>
 
@@ -1286,6 +1297,7 @@ tr:hover td{background:var(--surface2)}
           <div class="metric"><div class="metric-label">Costo USD</div><div class="metric-value" id="lp-cost-usd2">—</div></div>
           <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="lp-rend">—</div></div>
           <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="lp-count">—</div></div>
+          <div class="metric" style="border-left:3px solid var(--blue)"><div class="metric-label">💵 Liquidez ARS <span id="lp-liq-fecha" style="font-weight:400;opacity:.6;font-size:.58rem"></span></div><div class="metric-value" id="lp-liq-ars" style="font-size:1.1rem">—</div></div>
           <div class="metric" style="border-left:3px solid var(--accent)"><div class="metric-label">↑ rendimiento</div><div class="metric-value" style="font-size:.95rem" id="lp-best">—</div></div>
           <div class="metric" style="border-left:3px solid var(--red)"><div class="metric-label">↓ rendimiento</div><div class="metric-value" style="font-size:.95rem" id="lp-worst">—</div></div>
         </div>
@@ -5890,7 +5902,9 @@ function _btirNumMatch(rawVal, filterStr) {
     rawData: [], headers: [], sheets: [], workbook: null,
     currentSheet: 0, headerRow: 1, fieldMap: {}, fileName: '',
     pending: [],    // { id, mov, estado: 'pendiente'|'confirmado'|'descartado' }
-    nextId: 0
+    nextId: 0,
+    liquidezARS: null,   // saldo de la última fila del Excel
+    liquidezFecha: ''    // fecha de ese saldo
   };
 
   // Exponer referencia global para que labPortfolioRender (fuera del scope) pueda leer LAB.pending
@@ -5898,6 +5912,15 @@ function _btirNumMatch(rawVal, filterStr) {
   // Proxy: siempre apunta al array actual
   Object.defineProperty(window, '_labPendingRef', {
     get: function(){ return LAB.pending; },
+    configurable: true
+  });
+  // Proxy para liquidez
+  Object.defineProperty(window, '_labLiquidezARS', {
+    get: function(){ return LAB.liquidezARS; },
+    configurable: true
+  });
+  Object.defineProperty(window, '_labLiquidezFecha', {
+    get: function(){ return LAB.liquidezFecha; },
     configurable: true
   });
 
@@ -6167,11 +6190,37 @@ function _btirNumMatch(rawVal, filterStr) {
       if (h === 'cantidad')    cm.cant   = i;
       if (h === 'especie')     cm.ticker = i;
       if (h === 'precio')      cm.precio = i;
+      if (h === 'saldo')       cm.saldo  = i;
     });
 
     if (cm.fecha === undefined || cm.tipo === undefined || cm.ticker === undefined) {
       labStatus('⚠ No se detectaron columnas de BullMarket (Operado / Comprobante / Especie). Verificá el archivo.', 'amber');
       return;
+    }
+
+    // ── Capturar saldo de liquidez (última fila del Excel, todas las filas) ─
+    if (cm.saldo !== undefined) {
+      var allDataRows = rows.slice(hdrIdx + 1).filter(function(r){
+        return r && r.length && r.some(function(c){ return (c||'').toString().trim(); });
+      });
+      if (allDataRows.length) {
+        var lastRow   = allDataRows[allDataRows.length - 1];
+        var saldoRaw  = parseFloat((lastRow[cm.saldo] || '0').toString().replace(',', '.'));
+        var fechaLiq  = cm.fecha !== undefined ? normFecha((lastRow[cm.fecha] || '').toString().trim()) : '';
+        if (!isNaN(saldoRaw)) {
+          LAB.liquidezARS  = saldoRaw;
+          LAB.liquidezFecha= fechaLiq;
+          var liqEl = document.getElementById('lab-liquidez-ars');
+          if (liqEl) {
+            liqEl.textContent = '$' + Math.round(saldoRaw).toLocaleString('es-AR');
+            liqEl.style.color = saldoRaw >= 0 ? 'var(--accent)' : 'var(--red)';
+          }
+          var liqFechaEl = document.getElementById('lab-liquidez-fecha');
+          if (liqFechaEl && fechaLiq) liqFechaEl.textContent = '· al ' + fechaLiq;
+          var liqCard = document.getElementById('lab-liquidez-card');
+          if (liqCard) liqCard.style.display = 'block';
+        }
+      }
     }
 
     var movs = [];
@@ -6533,7 +6582,7 @@ function _btirNumMatch(rawVal, filterStr) {
   // ── Reset ───────────────────────────────────────────────────────────────
   window.labReset = function() {
     LAB.rawData=[]; LAB.headers=[]; LAB.sheets=[]; LAB.workbook=null;
-    LAB.fieldMap={}; LAB.pending=[]; LAB.nextId=0; LAB.fileName='';
+    LAB.fieldMap={}; LAB.pending=[]; LAB.nextId=0; LAB.fileName=''; LAB.liquidezARS=null; LAB.liquidezFecha='';
     ['lab-raw-card','lab-sheet-selector','lab-map-card','lab-pending-card',
      'lab-confirmed-card','lab-alerts-card','lab-analysis-card'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.style.display='none';
@@ -6860,6 +6909,17 @@ function labPortfolioRender() {
   document.getElementById('lp-rend').innerHTML = rendPct!=null
     ? '<span style="color:'+rendColor+';font-weight:700">'+(rendPct>=0?'+':'')+Math.round(rendPct)+'%</span>'
     : '—';
+
+  // Liquidez
+  var liqARS   = window._labLiquidezARS;
+  var liqFecha = window._labLiquidezFecha || '';
+  var liqEl    = document.getElementById('lp-liq-ars');
+  var liqFEl   = document.getElementById('lp-liq-fecha');
+  if (liqEl && liqARS != null) {
+    liqEl.textContent = '$' + Math.round(liqARS).toLocaleString('es-AR');
+    liqEl.style.color = liqARS >= 0 ? 'var(--blue)' : 'var(--red)';
+    if (liqFEl && liqFecha) liqFEl.textContent = '· ' + liqFecha;
+  }
 
   // Mejor / peor
   var withPnl = open.filter(function(p){ return p._pnlPct!=null; });
