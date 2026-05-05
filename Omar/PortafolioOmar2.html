@@ -1106,7 +1106,7 @@ tr:hover td{background:var(--surface2)}
             style="border:2px dashed var(--border2);border-radius:var(--radius);padding:2.2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)">
             <div style="font-size:2.2rem;margin-bottom:.5rem">📊</div>
             <div style="font-size:.85rem;color:var(--text);font-weight:600">Hacé click o arrastrá el Excel acá</div>
-            <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:5px">Exportá los movimientos desde tu broker y subí el archivo</div>
+            <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:5px">El archivo se procesa con IA — no requiere librerías externas</div>
           </div>
           <input type="file" id="lab-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="labLoadFile(this.files[0])">
           <div id="lab-file-status" style="margin-top:10px;font-size:.72rem;font-family:var(--mono);color:var(--text3);min-height:18px"></div>
@@ -5859,77 +5859,100 @@ function _btirNumMatch(rawVal, filterStr) {
     { key:'precio', label:'Precio ARS',        required:true,  hints:['precio','price','cotizacion'] }
   ];
 
-  // ── SheetJS loader ────────────────────────────────────────────────────
-  function ensureSheetJS(cb) {
-    if (window.XLSX) { cb(); return; }
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-    s.onload = cb;
-    s.onerror = function() { labStatus('❌ No se pudo cargar el parser de Excel.', 'red'); };
-    document.head.appendChild(s);
-  }
-
-  // ── Cargar archivo ────────────────────────────────────────────────────
+  // ── Cargar archivo — usa API Anthropic para parsear (sin SheetJS) ────
   window.labLoadFile = function(file) {
     if (!file) return;
     LAB.fileName = file.name;
     labStatus('⏳ Leyendo ' + file.name + '…', 'text3');
-    ensureSheetJS(function() {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          var data = new Uint8Array(e.target.result);
-          var wb = XLSX.read(data, { type:'array', cellDates:true });
-          LAB.workbook = wb;
-          LAB.sheets = wb.SheetNames;
-          var sheetSel = document.getElementById('lab-sheet-selector');
-          var sheetBtns = document.getElementById('lab-sheet-btns');
-          if (LAB.sheets.length > 1) {
-            sheetBtns.innerHTML = LAB.sheets.map(function(n,i){
-              return '<button class="btn btn-sm'+(i===0?' btn-a':'')+'" onclick="labSelectSheet('+i+',this)">'+n+'</button>';
-            }).join('');
-            sheetSel.style.display = 'block';
-          } else { sheetSel.style.display = 'none'; }
-          LAB.currentSheet = 0;
-          labParseSheet();
-          labStatus('✓ ' + file.name + ' cargado', 'accent');
-        } catch(err) {
-          labStatus('❌ Error: ' + err.message, 'red');
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    });
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(e.target.result)));
+      labStatus('⏳ Procesando con IA…', 'text3');
+      labParseViaAPI(base64, file.name);
+    };
+    reader.onerror = function() { labStatus('❌ Error al leer el archivo.', 'red'); };
+    reader.readAsArrayBuffer(file);
   };
+
+  function labParseViaAPI(base64, fileName) {
+    var isCSV = fileName.toLowerCase().endsWith('.csv');
+    var mediaType = isCSV ? 'text/plain' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+    var prompt = [
+      'Este es un archivo Excel de cuenta corriente del broker BullMarket Argentina.',
+      'Extraé SOLO las filas donde la columna "Comprobante" sea exactamente "COMPRA NORMAL" o "VENTA".',
+      'Ignorá completamente las filas con CAUCION, RETIRO, DEPOSITO o cualquier otro tipo.',
+      '',
+      'Para cada fila válida devolvé un objeto JSON con estos campos:',
+      '- fecha: string DD/MM/YYYY (columna "Operado")',
+      '- ticker: string en mayúsculas (columna "Especie")',
+      '- tipo: "compra" si Comprobante es "COMPRA NORMAL", "venta" si es "VENTA"',
+      '- cant: número positivo, valor absoluto (columna "Cantidad")',
+      '- precio: número decimal (columna "Precio")',
+      '- moneda: siempre "ARS"',
+      '',
+      'Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, sin markdown, sin explicaciones.',
+      'Ejemplo: [{"fecha":"20/04/2026","ticker":"AL30","tipo":"venta","cant":1557,"precio":898.959,"moneda":"ARS"}]'
+    ].join('\n');
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: mediaType, data: base64 }
+            },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { labStatus('❌ API error: ' + data.error.message, 'red'); return; }
+      var text = (data.content||[]).filter(function(b){ return b.type==='text'; }).map(function(b){ return b.text; }).join('');
+      // Limpiar posibles backticks
+      text = text.replace(/```json|```/g,'').trim();
+      try {
+        var movs = JSON.parse(text);
+        if (!Array.isArray(movs)) throw new Error('No es un array');
+        // Popular LAB con los movimientos
+        LAB.pending = movs.map(function(m) {
+          return { id: LAB.nextId++, mov: m, estado: 'pendiente' };
+        });
+        LAB.rawData = []; // no hay vista cruda en este modo
+        // Ocultar cards de raw/map
+        ['lab-raw-card','lab-sheet-selector','lab-map-card'].forEach(function(id){
+          var el=document.getElementById(id); if(el) el.style.display='none';
+        });
+        renderPending();
+        renderAlerts();
+        showAnalysis(movs);
+        labStatus('✓ ' + movs.length + ' movimientos importados desde ' + fileName, 'accent');
+      } catch(err) {
+        labStatus('❌ Error al interpretar respuesta: ' + err.message, 'red');
+        console.error('Respuesta cruda:', text);
+      }
+    })
+    .catch(function(err) {
+      labStatus('❌ Error de conexión: ' + err.message, 'red');
+    });
+  }
 
   window.labSelectSheet = function(idx, btn) {
     LAB.currentSheet = idx;
     btn.parentElement.querySelectorAll('.btn').forEach(function(b){ b.classList.remove('btn-a'); });
     btn.classList.add('btn-a');
-    labParseSheet();
   };
 
-  function labParseSheet() {
-    if (!LAB.workbook) return;
-    var ws = LAB.workbook.Sheets[LAB.sheets[LAB.currentSheet]];
-    var aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, dateNF:'DD/MM/YYYY' });
-    LAB.rawData = aoa;
-    LAB.headerRow = 1;
-    document.getElementById('lab-header-row').value = 1;
-    renderRawTable();
-    // Auto-aplicar mapeo Bull si el archivo tiene el nombre correcto o las columnas coinciden
-    var hdr = (aoa[0]||[]).map(function(c){ return (c||'').toString().trim().toLowerCase(); });
-    if (hdr.indexOf('operado') >= 0 && hdr.indexOf('especie') >= 0) {
-      // Es un archivo Bull — aplicar mapeo fijo
-      LAB.fieldMap = {};
-      LAB_FIELDS.forEach(function(f){ LAB.fieldMap[f.key] = BULL_MAP[f.key]; });
-      labStatus('✓ Formato Bull detectado — mapeo aplicado automáticamente', 'accent');
-    } else {
-      labAutoDetect();
-    }
-    labBuildMap();
-    // Auto-parsear directamente
-    labParseWithMap();
-  }
+  function labParseSheet() { /* no usado en modo API */ }
 
   // ── Vista cruda ────────────────────────────────────────────────────────
   function renderRawTable() {
