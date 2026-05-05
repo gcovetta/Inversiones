@@ -6663,7 +6663,6 @@ window.labInjectMovs = function(movs) {
   var labBtn = document.querySelector('[onclick*="labimport"]');
   if (labBtn) showPage('labimport', labBtn);
 
-  // Pushear al array interno del LAB (el getter _labPendingRef siempre devuelve LAB.pending actual)
   var pendingRef = window._labPendingRef;
   if (!pendingRef) { console.error('LAB no inicializado'); return; }
 
@@ -6674,7 +6673,6 @@ window.labInjectMovs = function(movs) {
     pendingRef.push({ id: nextId++, mov: m, estado: 'pendiente' });
   });
 
-  // Llamar renders via proxy expuesto
   var r = window._labRender || {};
   if (r.pending)  r.pending();
   if (r.alerts)   r.alerts();
@@ -6686,6 +6684,13 @@ window.labInjectMovs = function(movs) {
     statusEl.textContent = '🧩 ' + movs.length + ' movimientos cargados desde la extensión BullMarket';
   }
 };
+
+// Escuchar postMessage del content.js de la extensión
+window.addEventListener('message', function(event) {
+  if (!event.data || event.data.type !== 'BULL_LAB_MOVS') return;
+  if (!Array.isArray(event.data.movs) || !event.data.movs.length) return;
+  window.labInjectMovs(event.data.movs);
+});
 
 // Cargar desde sessionStorage (cuando la extensión no encontró la pestaña abierta)
 window.labLoadFromExtension = function() {
