@@ -6595,6 +6595,13 @@ function _btirNumMatch(rawVal, filterStr) {
     }
   }
 
+  // ── Exponer renders al scope global (para labInjectMovs) ───────────────
+  window._labRender = {
+    pending:  function(){ renderPending(); },
+    alerts:   function(){ renderAlerts(); },
+    analysis: function(m){ showAnalysis(m); }
+  };
+
 })(); // fin LAB IMPORT scope
 
 // ── Funciones globales para integración con extensión Chrome ──────────────
@@ -6603,27 +6610,26 @@ function _btirNumMatch(rawVal, filterStr) {
 window.labInjectMovs = function(movs) {
   if (!Array.isArray(movs) || !movs.length) return;
 
-  // Navegar al LAB Import si no está visible
-  var labPage = document.getElementById('page-labimport');
-  if (labPage && !labPage.classList.contains('active')) {
-    var labBtn = document.querySelector('[onclick*="labimport"]');
-    if (labBtn) showPage('labimport', labBtn);
-  }
+  // Navegar al LAB Import automáticamente
+  var labBtn = document.querySelector('[onclick*="labimport"]');
+  if (labBtn) showPage('labimport', labBtn);
 
-  // Inyectar en el estado del LAB a través de la función expuesta
+  // Pushear al array interno del LAB (el getter _labPendingRef siempre devuelve LAB.pending actual)
   var pendingRef = window._labPendingRef;
-  if (!pendingRef) return;
+  if (!pendingRef) { console.error('LAB no inicializado'); return; }
 
-  // Limpiar pendientes anteriores de esta misma fuente y agregar los nuevos
-  var nextId = (pendingRef.length ? Math.max.apply(null, pendingRef.map(function(p){return p.id;})) + 1 : 0);
+  var nextId = pendingRef.length
+    ? Math.max.apply(null, pendingRef.map(function(p){ return p.id; })) + 1
+    : 0;
   movs.forEach(function(m) {
     pendingRef.push({ id: nextId++, mov: m, estado: 'pendiente' });
   });
 
-  // Render
-  if (typeof renderPending === 'function') renderPending();
-  if (typeof renderAlerts  === 'function') renderAlerts();
-  if (typeof showAnalysis  === 'function') showAnalysis(movs);
+  // Llamar renders via proxy expuesto
+  var r = window._labRender || {};
+  if (r.pending)  r.pending();
+  if (r.alerts)   r.alerts();
+  if (r.analysis) r.analysis(movs);
 
   var statusEl = document.getElementById('lab-file-status');
   if (statusEl) {
