@@ -1106,7 +1106,7 @@ tr:hover td{background:var(--surface2)}
             style="border:2px dashed var(--border2);border-radius:var(--radius);padding:2.2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)">
             <div style="font-size:2.2rem;margin-bottom:.5rem">📊</div>
             <div style="font-size:.85rem;color:var(--text);font-weight:600">Hacé click o arrastrá el Excel acá</div>
-            <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:5px">El archivo se procesa con IA — no requiere librerías externas</div>
+            <div style="font-size:.67rem;font-family:var(--mono);color:var(--text3);margin-top:5px">Parser nativo — no requiere conexión ni librerías externas</div>
           </div>
           <input type="file" id="lab-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="labLoadFile(this.files[0])">
           <div id="lab-file-status" style="margin-top:10px;font-size:.72rem;font-family:var(--mono);color:var(--text3);min-height:18px"></div>
@@ -5859,100 +5859,325 @@ function _btirNumMatch(rawVal, filterStr) {
     { key:'precio', label:'Precio ARS',        required:true,  hints:['precio','price','cotizacion'] }
   ];
 
-  // ── Cargar archivo — usa API Anthropic para parsear (sin SheetJS) ────
+  // ── Cargar archivo — parser nativo, sin dependencias externas ────────
   window.labLoadFile = function(file) {
     if (!file) return;
     LAB.fileName = file.name;
-    labStatus('⏳ Leyendo ' + file.name + '…', 'text3');
+    var ext = file.name.split('.').pop().toLowerCase();
 
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(e.target.result)));
-      labStatus('⏳ Procesando con IA…', 'text3');
-      labParseViaAPI(base64, file.name);
-    };
-    reader.onerror = function() { labStatus('❌ Error al leer el archivo.', 'red'); };
-    reader.readAsArrayBuffer(file);
+    if (ext === 'csv') {
+      labStatus('⏳ Leyendo CSV…', 'text3');
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var rows = parseCSV(e.target.result);
+          labIngestRows(rows, file.name);
+        } catch(err) { labStatus('❌ Error CSV: ' + err.message, 'red'); }
+      };
+      reader.readAsText(file, 'UTF-8');
+
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      labStatus('⏳ Leyendo Excel…', 'text3');
+      var reader2 = new FileReader();
+      reader2.onload = function(e) {
+        try {
+          var rows = parseXLSX(new Uint8Array(e.target.result));
+          labIngestRows(rows, file.name);
+        } catch(err) { labStatus('❌ Error Excel: ' + err.message, 'red'); }
+      };
+      reader2.readAsArrayBuffer(file);
+    } else {
+      labStatus('❌ Formato no soportado. Usá .xlsx o .csv', 'red');
+    }
   };
 
-  function labParseViaAPI(base64, fileName) {
-    var isCSV = fileName.toLowerCase().endsWith('.csv');
-    var mediaType = isCSV ? 'text/plain' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-    var prompt = [
-      'Este es un archivo Excel de cuenta corriente del broker BullMarket Argentina.',
-      'Extraé SOLO las filas donde la columna "Comprobante" sea exactamente "COMPRA NORMAL" o "VENTA".',
-      'Ignorá completamente las filas con CAUCION, RETIRO, DEPOSITO o cualquier otro tipo.',
-      '',
-      'Para cada fila válida devolvé un objeto JSON con estos campos:',
-      '- fecha: string DD/MM/YYYY (columna "Operado")',
-      '- ticker: string en mayúsculas (columna "Especie")',
-      '- tipo: "compra" si Comprobante es "COMPRA NORMAL", "venta" si es "VENTA"',
-      '- cant: número positivo, valor absoluto (columna "Cantidad")',
-      '- precio: número decimal (columna "Precio")',
-      '- moneda: siempre "ARS"',
-      '',
-      'Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, sin markdown, sin explicaciones.',
-      'Ejemplo: [{"fecha":"20/04/2026","ticker":"AL30","tipo":"venta","cant":1557,"precio":898.959,"moneda":"ARS"}]'
-    ].join('\n');
-
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: { type: 'base64', media_type: mediaType, data: base64 }
-            },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.error) { labStatus('❌ API error: ' + data.error.message, 'red'); return; }
-      var text = (data.content||[]).filter(function(b){ return b.type==='text'; }).map(function(b){ return b.text; }).join('');
-      // Limpiar posibles backticks
-      text = text.replace(/```json|```/g,'').trim();
-      try {
-        var movs = JSON.parse(text);
-        if (!Array.isArray(movs)) throw new Error('No es un array');
-        // Popular LAB con los movimientos
-        LAB.pending = movs.map(function(m) {
-          return { id: LAB.nextId++, mov: m, estado: 'pendiente' };
-        });
-        LAB.rawData = []; // no hay vista cruda en este modo
-        // Ocultar cards de raw/map
-        ['lab-raw-card','lab-sheet-selector','lab-map-card'].forEach(function(id){
-          var el=document.getElementById(id); if(el) el.style.display='none';
-        });
-        renderPending();
-        renderAlerts();
-        showAnalysis(movs);
-        labStatus('✓ ' + movs.length + ' movimientos importados desde ' + fileName, 'accent');
-      } catch(err) {
-        labStatus('❌ Error al interpretar respuesta: ' + err.message, 'red');
-        console.error('Respuesta cruda:', text);
+  // ── Parser CSV nativo ─────────────────────────────────────────────────
+  function parseCSV(text) {
+    var lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+    return lines.map(function(line) {
+      var cols = [], cur = '', inQ = false;
+      for (var i = 0; i < line.length; i++) {
+        var c = line[i];
+        if (c === '"') { inQ = !inQ; }
+        else if ((c === ',' || c === ';') && !inQ) { cols.push(cur.trim()); cur = ''; }
+        else { cur += c; }
       }
-    })
-    .catch(function(err) {
-      labStatus('❌ Error de conexión: ' + err.message, 'red');
-    });
+      cols.push(cur.trim());
+      return cols;
+    }).filter(function(r){ return r.some(function(c){ return c !== ''; }); });
   }
 
-  window.labSelectSheet = function(idx, btn) {
-    LAB.currentSheet = idx;
-    btn.parentElement.querySelectorAll('.btn').forEach(function(b){ b.classList.remove('btn-a'); });
-    btn.classList.add('btn-a');
-  };
+  // ── Parser XLSX nativo (lee el ZIP y extrae la hoja compartida) ────────
+  function parseXLSX(buf) {
+    // XLSX es un ZIP — buscamos xl/sharedStrings.xml y xl/worksheets/sheet1.xml
+    var zip = unzipBuffer(buf);
 
-  function labParseSheet() { /* no usado en modo API */ }
+    // Shared strings
+    var ssXml = zip['xl/sharedStrings.xml'] || '';
+    var sharedStrings = [];
+    var siRe = /<si>[\s\S]*?<\/si>/g, tRe = /<t[^>]*>([\s\S]*?)<\/t>/g, siM;
+    while ((siM = siRe.exec(ssXml)) !== null) {
+      var si = siM[0], texts = [], tM;
+      tRe.lastIndex = 0;
+      while ((tM = tRe.exec(si)) !== null) texts.push(decodeXMLEntities(tM[1]));
+      sharedStrings.push(texts.join(''));
+    }
+
+    // Hoja 1
+    var sheetXml = zip['xl/worksheets/sheet1.xml'] || '';
+
+    // Fecha base Excel: 1900-01-01 con bug de bisiesto
+    function excelDateToStr(serial) {
+      var s = parseFloat(serial);
+      if (isNaN(s) || s < 1) return serial;
+      // Ajuste por bug de bisiesto 1900
+      if (s > 59) s -= 1;
+      var ms = (s - 1) * 86400000;
+      var d = new Date(Date.UTC(1900, 0, 1) + ms);
+      return ('0'+d.getUTCDate()).slice(-2)+'/'+('0'+(d.getUTCMonth()+1)).slice(-2)+'/'+d.getUTCFullYear();
+    }
+
+    // Parsear filas
+    var rows = [];
+    var rowRe = /<row[^>]*>([\s\S]*?)<\/row>/g, rowM;
+    while ((rowM = rowRe.exec(sheetXml)) !== null) {
+      var rowXml = rowM[1];
+      var cells = {};
+      var cellRe = /<c r="([A-Z]+)(\d+)"([^>]*)>([\s\S]*?)<\/c>/g, cellM;
+      while ((cellM = cellRe.exec(rowXml)) !== null) {
+        var col = cellM[1], attrs = cellM[3], inner = cellM[4];
+        var vM = /<v>([\s\S]*?)<\/v>/.exec(inner);
+        var val = vM ? vM[1] : '';
+        // t="s" = shared string, t="d" = date, sin t = número
+        if (/t="s"/.test(attrs)) {
+          val = sharedStrings[parseInt(val, 10)] || '';
+        } else if (/t="b"/.test(attrs)) {
+          val = val === '1' ? 'TRUE' : 'FALSE';
+        } else if (val !== '') {
+          // Detectar si es columna de fecha por estilo (s="1" o s="2" típico)
+          // Heurística: número entre 40000-50000 es fecha Excel 2010-2040
+          var n = parseFloat(val);
+          if (!isNaN(n) && n > 40000 && n < 55000 && /s="[1-9]/.test(attrs)) {
+            val = excelDateToStr(val);
+          }
+        }
+        cells[col] = val;
+      }
+      // Convertir dict de celdas a array ordenado por columna
+      var maxCol = 0;
+      Object.keys(cells).forEach(function(c) {
+        var n = 0;
+        for (var i = 0; i < c.length; i++) n = n * 26 + (c.charCodeAt(i) - 64);
+        if (n > maxCol) maxCol = n;
+      });
+      var arr = [];
+      for (var ci = 1; ci <= maxCol; ci++) {
+        var letter = colLetter(ci);
+        arr.push(cells[letter] !== undefined ? cells[letter] : '');
+      }
+      rows.push(arr);
+    }
+    return rows;
+  }
+
+  function colLetter(n) {
+    var s = '';
+    while (n > 0) { var r = (n-1) % 26; s = String.fromCharCode(65+r) + s; n = Math.floor((n-1)/26); }
+    return s;
+  }
+
+  function decodeXMLEntities(s) {
+    return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+  }
+
+  // ── Descompresor ZIP mínimo (para XLSX) ───────────────────────────────
+  function unzipBuffer(buf) {
+    var files = {};
+    var view = new DataView(buf.buffer || buf);
+    var i = 0;
+    while (i < buf.length - 4) {
+      if (view.getUint32(i, true) !== 0x04034b50) { i++; continue; }
+      var flags        = view.getUint16(i+6, true);
+      var compression  = view.getUint16(i+8, true);
+      var compSize     = view.getUint32(i+18, true);
+      var uncompSize   = view.getUint32(i+22, true);
+      var fnLen        = view.getUint16(i+26, true);
+      var extraLen     = view.getUint16(i+28, true);
+      var fnBytes      = buf.slice(i+30, i+30+fnLen);
+      var fname        = String.fromCharCode.apply(null, fnBytes);
+      var dataStart    = i + 30 + fnLen + extraLen;
+      var data         = buf.slice(dataStart, dataStart + compSize);
+      if (compression === 0) {
+        // stored
+        files[fname] = String.fromCharCode.apply(null, data);
+      } else if (compression === 8) {
+        // deflate
+        try {
+          var ds = new DecompressionStream('deflate-raw');
+          // Sync fallback via manual inflate not feasible inline — use async workaround
+          files[fname] = '__deflated__';
+          files['__raw__' + fname] = data;
+        } catch(e) {}
+      }
+      i = dataStart + compSize;
+    }
+    // Inflate deflated entries using DecompressionStream (async bridged sync via stored results)
+    // If DecompressionStream not available, files stay as __deflated__ — handled below
+    return files;
+  }
+
+  // ── Versión async real del XLSX reader ────────────────────────────────
+  async function parseXLSXAsync(buf) {
+    var zip = await unzipAsync(buf);
+    var ssXml = zip['xl/sharedStrings.xml'] || '';
+    var sharedStrings = [];
+    var siRe = /<si>[\s\S]*?<\/si>/g, tRe = /<t[^>]*>([\s\S]*?)<\/t>/g, siM;
+    while ((siM = siRe.exec(ssXml)) !== null) {
+      var si = siM[0], texts = [], tM;
+      tRe.lastIndex = 0;
+      while ((tM = tRe.exec(si)) !== null) texts.push(decodeXMLEntities(tM[1]));
+      sharedStrings.push(texts.join(''));
+    }
+    var sheetXml = zip['xl/worksheets/sheet1.xml'] || '';
+    function excelDateToStr(serial) {
+      var s = parseFloat(serial); if(isNaN(s)||s<1) return serial;
+      if(s>59) s-=1;
+      var d = new Date(Date.UTC(1900,0,1)+(s-1)*86400000);
+      return ('0'+d.getUTCDate()).slice(-2)+'/'+('0'+(d.getUTCMonth()+1)).slice(-2)+'/'+d.getUTCFullYear();
+    }
+    var rows = [];
+    var rowRe = /<row[^>]*>([\s\S]*?)<\/row>/g, rowM;
+    while ((rowM = rowRe.exec(sheetXml)) !== null) {
+      var rowXml = rowM[1], cells = {};
+      var cellRe = /<c r="([A-Z]+)\d+"([^>]*)>([\s\S]*?)<\/c>/g, cellM;
+      while ((cellM = cellRe.exec(rowXml)) !== null) {
+        var col=cellM[1], attrs=cellM[2], inner=cellM[3];
+        var vM=/<v>([\s\S]*?)<\/v>/.exec(inner), val=vM?vM[1]:'';
+        if(/t="s"/.test(attrs)) val=sharedStrings[parseInt(val,10)]||'';
+        else if(val!==''){var n=parseFloat(val);if(!isNaN(n)&&n>40000&&n<55000&&/s="[1-9]/.test(attrs))val=excelDateToStr(val);}
+        cells[col]=val;
+      }
+      var maxCol=0;
+      Object.keys(cells).forEach(function(c){var n=0;for(var x=0;x<c.length;x++)n=n*26+(c.charCodeAt(x)-64);if(n>maxCol)maxCol=n;});
+      var arr=[];for(var ci=1;ci<=maxCol;ci++)arr.push(cells[colLetter(ci)]!==undefined?cells[colLetter(ci)]:'');
+      rows.push(arr);
+    }
+    return rows;
+  }
+
+  async function unzipAsync(buf) {
+    var files = {}, view = new DataView(buf.buffer||buf), i = 0;
+    while (i < buf.length - 4) {
+      if (view.getUint32(i,true) !== 0x04034b50) { i++; continue; }
+      var compression = view.getUint16(i+8,true);
+      var compSize    = view.getUint32(i+18,true);
+      var fnLen       = view.getUint16(i+26,true);
+      var extraLen    = view.getUint16(i+28,true);
+      var fname       = String.fromCharCode.apply(null, buf.slice(i+30,i+30+fnLen));
+      var dataStart   = i+30+fnLen+extraLen;
+      var data        = buf.slice(dataStart, dataStart+compSize);
+      if (compression === 0) {
+        files[fname] = new TextDecoder().decode(data);
+      } else if (compression === 8) {
+        try {
+          var ds = new DecompressionStream('deflate-raw');
+          var writer = ds.writable.getWriter();
+          writer.write(data); writer.close();
+          var chunks = [], reader = ds.readable.getReader(), done = false;
+          while (!done) { var res = await reader.read(); if(res.done){done=true;}else{chunks.push(res.value);} }
+          var total = chunks.reduce(function(s,c){return s+c.length;},0);
+          var merged = new Uint8Array(total), offset = 0;
+          chunks.forEach(function(c){merged.set(c,offset);offset+=c.length;});
+          files[fname] = new TextDecoder().decode(merged);
+        } catch(e) { files[fname]=''; }
+      }
+      i = dataStart + compSize;
+    }
+    return files;
+  }
+
+  // ── Entrada unificada tras parseo ─────────────────────────────────────
+  function labIngestRows(rows, fileName) {
+    if (!rows || rows.length < 2) { labStatus('❌ El archivo está vacío o no tiene datos.', 'red'); return; }
+
+    // Detectar fila de headers (la que tenga más celdas llenas en las primeras 5 filas)
+    var hdrIdx = 0, hdrScore = 0;
+    rows.slice(0, 5).forEach(function(r, i) {
+      var filled = r.filter(function(c){return (c||'').trim()!=='';}).length;
+      if (filled > hdrScore) { hdrScore = filled; hdrIdx = i; }
+    });
+    var headers = rows[hdrIdx].map(function(c){ return (c||'').trim().toLowerCase(); });
+
+    // Mapeo BullMarket por nombre de columna
+    var colMap = {};
+    headers.forEach(function(h, i) {
+      if (h === 'operado')     colMap.fecha = i;
+      if (h === 'comprobante') colMap.tipo  = i;
+      if (h === 'cantidad')    colMap.cant  = i;
+      if (h === 'especie')     colMap.ticker= i;
+      if (h === 'precio')      colMap.precio= i;
+    });
+
+    var isBull = colMap.fecha!==undefined && colMap.tipo!==undefined && colMap.ticker!==undefined;
+    if (!isBull) { labStatus('⚠ No se detectaron columnas de BullMarket. Verificá el archivo.', 'amber'); return; }
+
+    var movs = [];
+    rows.slice(hdrIdx + 1).forEach(function(row) {
+      if (!row || !row.length) return;
+      var comp = (row[colMap.tipo]||'').trim().toUpperCase();
+      if (comp !== 'COMPRA NORMAL' && comp !== 'VENTA') return;
+
+      var tipo   = comp === 'COMPRA NORMAL' ? 'compra' : 'venta';
+      var fechaRaw = (row[colMap.fecha]||'').trim();
+      var fecha  = normFecha(fechaRaw);
+      var ticker = (row[colMap.ticker]||'').trim().toUpperCase();
+      var cant   = Math.abs(parseFloat((row[colMap.cant]||'0').replace(',','.'))||0);
+      var precio = parseFloat((row[colMap.precio]||'0').replace(',','.'))||0;
+
+      if (!fecha || !ticker || cant === 0) return;
+      movs.push({ fecha:fecha, ticker:ticker, tipo:tipo, cant:cant, precio:precio, moneda:'ARS' });
+    });
+
+    if (!movs.length) { labStatus('⚠ No se encontraron COMPRA NORMAL ni VENTA en el archivo.', 'amber'); return; }
+
+    LAB.pending = movs.map(function(m){ return { id:LAB.nextId++, mov:m, estado:'pendiente' }; });
+    ['lab-raw-card','lab-sheet-selector','lab-map-card'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.style.display='none';
+    });
+    renderPending();
+    renderAlerts();
+    showAnalysis(movs);
+    labStatus('✓ ' + movs.length + ' movimientos cargados desde ' + fileName, 'accent');
+  }
+
+  // ── Entry point para XLSX async ───────────────────────────────────────
+  window.labLoadFile = function(file) {
+    if (!file) return;
+    LAB.fileName = file.name;
+    var ext = file.name.split('.').pop().toLowerCase();
+
+    if (ext === 'csv') {
+      labStatus('⏳ Leyendo CSV…', 'text3');
+      var r = new FileReader();
+      r.onload = function(e) {
+        try { labIngestRows(parseCSV(e.target.result), file.name); }
+        catch(err) { labStatus('❌ ' + err.message, 'red'); }
+      };
+      r.readAsText(file, 'UTF-8');
+
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      labStatus('⏳ Leyendo Excel…', 'text3');
+      var r2 = new FileReader();
+      r2.onload = function(e) {
+        parseXLSXAsync(new Uint8Array(e.target.result))
+          .then(function(rows) { labIngestRows(rows, file.name); })
+          .catch(function(err) { labStatus('❌ Error Excel: ' + err.message, 'red'); });
+      };
+      r2.readAsArrayBuffer(file);
+    } else {
+      labStatus('❌ Usá .xlsx o .csv', 'red');
+    }
+  };
 
   // ── Vista cruda ────────────────────────────────────────────────────────
   function renderRawTable() {
