@@ -1400,7 +1400,7 @@ function getSector(ticker){
   return 'nyse';
 }
 
-var TICKER_MAP = {'DISN':'DIS','GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
+var TICKER_MAP = {'GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
 function getFinnhubTicker(ticker){return TICKER_MAP[ticker]||ticker;}
 
 var TARGET_TABLE = {"CLSIO": null,"LECAO": null,"LECHO": null,"MR36O": null,"MRCAO": null,"MRCPO": null,"MRCZO": null,"SNEAO": null,"TZV27": null, "BC37D": null,"CUAP": null,"DICP": null,"ERF25": null,"GD29": null,"GD38": null,"GD41": null,"PARP": null,"PBY26": null,"SA24D": null,"TVPA": null,"TX31": null,"TZXM7": null,"TZXS7": null,"TZXS8": null, "ADBE": 573, "AMZN": 258.6, "AVGO": null, "CRM": null, "DEO": null, "DOCU": null, "FSLR": null, "HOG": null, "IBIT": null, "JD": null, "LAC": null, "META": null, "MSFT": null, "NFLX": null, "NKE": null, "NVDA": null, "SPOT": null, "STLA": null, "TEAM": null, "UBER": null, "UNH": null, "UPST": null, "GGB": null, "MELI": null, "NU": null, "PAGS": null, "SID": null, "XP": null};
@@ -1591,7 +1591,7 @@ function addMov(){
   var finishEl=document.getElementById('m-finish');
   movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false});
   saveAndRender();
-  ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
+  ['m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   if(finishEl)finishEl.checked=false;
   flash(sel,'Movimiento registrado',false);
 }
@@ -2433,7 +2433,7 @@ function renderPortfolio(){
     var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
     // Para Argentina: price ya viene en ARS. Para NYSE: price en USD → convertir
     // Para Bonos/ON: price es por 100 nominales → qty se divide por 100 para el total
-    var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on'||p.ticker==='BBAS3');
+    var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var mercadoCedearARS=price!=null?(_sectorIsARS?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
