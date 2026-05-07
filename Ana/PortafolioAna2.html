@@ -2431,7 +2431,7 @@ function renderPortfolio(){
     var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
     // Para Argentina: price ya viene en ARS. Para NYSE: price en USD → convertir
     // Para Bonos/ON: price es por 100 nominales → qty se divide por 100 para el total
-    var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on');
+    var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on'||p.ticker==='BBAS3');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var mercadoCedearARS=price!=null?(_sectorIsARS?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
