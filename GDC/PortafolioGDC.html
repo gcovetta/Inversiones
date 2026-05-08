@@ -185,7 +185,10 @@ tr:hover td{background:var(--surface2)}
 .pin-lock-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.75rem}
 
 /* page-tracker layout */
-#page-tracker{position:relative;min-height:200px}
+#page-tracker{min-height:200px}
+.card-toggle{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.82rem;padding:0 2px;line-height:1;flex-shrink:0;transition:transform .15s;margin-left:auto}
+.card-toggle:hover{color:var(--text)}
+.card-collapsed>.card-body,.card-collapsed>.tw,.card-collapsed>div:not(.card-header),.card-collapsed>.empty-state{display:none!important}
 
 @media(max-width:680px){
   .main{flex-direction:column;flex:1;min-height:0;overflow:hidden}
@@ -611,6 +614,40 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
 
+      <!-- Importar movimientos en tabla -->
+      <div class="card" id="imp-mov-card">
+        <div class="card-header" style="cursor:pointer" onclick="impMovToggle()">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="card-title">Importar movimientos</span>
+            <span id="imp-mov-arrow" style="font-size:.9rem;color:var(--text3)">▸</span>
+          </div>
+        </div>
+        <div id="imp-mov-body" style="display:none">
+          <div class="card-body">
+            <div class="ibox" style="margin-bottom:10px">
+              Copiá filas desde Excel/Sheets y pegá acá. Orden de columnas:<br>
+              <span style="font-family:var(--mono);font-size:.68rem;color:var(--accent)">Fecha &nbsp;·&nbsp; Tipo &nbsp;·&nbsp; Mercado &nbsp;·&nbsp; Ticker &nbsp;·&nbsp; Cantidad &nbsp;·&nbsp; Precio ARS &nbsp;·&nbsp; CCL (opc.) &nbsp;·&nbsp; Comisión % (opc.) &nbsp;·&nbsp; Notas (opc.)</span><br>
+              <span style="font-size:.63rem;color:var(--text3)">Fecha: DD/MM/AAAA &nbsp;·&nbsp; Tipo: compra / venta &nbsp;·&nbsp; Mercado: USA, ETF, ARGENTINA, BONOS, ON, BRASIL, CRIPTO &nbsp;·&nbsp; Precio BONOS/ON: por 100 nominales</span>
+            </div>
+            <textarea id="imp-mov-text" rows="5" placeholder="Pegá las filas acá (Tab entre columnas)..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:8px;resize:vertical;outline:none" oninput="impMovParse()"></textarea>
+            <div id="imp-mov-preview" style="display:none;margin-top:12px">
+              <div id="imp-mov-preview-label" style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px"></div>
+              <div class="tw" style="max-height:260px;overflow-y:auto">
+                <table>
+                  <thead><tr><th>Fecha</th><th>Tipo</th><th>Mercado</th><th>Ticker</th><th>Cant.</th><th>Precio ARS</th><th>CCL</th><th>Com.%</th><th>Notas</th><th>Estado</th></tr></thead>
+                  <tbody id="imp-mov-tbody"></tbody>
+                </table>
+              </div>
+              <div class="gap-row" style="margin-top:10px">
+                <button class="btn btn-a" id="imp-mov-confirm-btn" onclick="impMovConfirm()">✓ Importar</button>
+                <button class="btn" onclick="impMovCancel()">Cancelar</button>
+                <span id="imp-mov-status" class="smsg"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card" id="mov-card">
         <div class="card-header">
           <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="movHistorialToggle()">
@@ -725,7 +762,7 @@ tr:hover td{background:var(--surface2)}
 
         <!-- Form -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Cargar dividendo</span></div>
+          <div class="card-header"><span class="card-title">Cargar dividendo</span><button class="card-toggle" onclick="cardToggle(this)">▾</button></div>
           <div class="card-body">
             <div class="fg">
               <div class="fgrp"><label>Ticker / Empresa</label><input type="text" id="trk-ticker" placeholder="YPF, GGAL..." style="text-transform:uppercase"></div>
@@ -746,6 +783,7 @@ tr:hover td{background:var(--surface2)}
           <div class="card-header">
             <span class="card-title">Importar desde broker</span>
             <span id="trk-imp-badge" class="smsg"></span>
+            <button class="card-toggle" onclick="cardToggle(this)">▾</button>
           </div>
           <div class="card-body">
             <div class="ibox" style="margin-bottom:10px">
@@ -779,6 +817,7 @@ tr:hover td{background:var(--surface2)}
           <div class="card-header">
             <span class="card-title">Historial de dividendos CCL</span>
             <span id="trk-total-badge" class="smsg">Total: USD 2.453,72</span>
+            <button class="card-toggle" onclick="cardToggle(this)">▾</button>
           </div>
           <div id="trk-empty" class="empty-state" style="display: none;">No hay dividendos cargados.</div>
           <div class="tw" id="trk-table-wrap" style="">
@@ -786,24 +825,6 @@ tr:hover td{background:var(--surface2)}
               <thead><tr><th>Ticker</th><th>Fecha</th><th>Mon.</th><th style="text-align:right">Monto orig.</th><th style="text-align:right">Equiv. USD</th><th style="text-align:right">CCL usado</th><th style="text-align:right">Acciones</th><th></th></tr></thead>
               <tbody id="trk-tbody"><tr><td style="font-weight:700">ARCO</td><td class="mono">07/04/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 0,25</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 0,25</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">2</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.4402">x</button></td></tr><tr><td style="font-weight:700">NKE</td><td class="mono">06/04/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 7,11</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 7,11</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">321</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.4363">x</button></td></tr><tr><td style="font-weight:700">NVDA</td><td class="mono">06/04/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 0,16</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 0,16</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">609</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.9243">x</button></td></tr><tr><td style="font-weight:700">AVGO</td><td class="mono">01/04/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 3,15</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 3,15</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">295</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.7678">x</button></td></tr><tr><td style="font-weight:700">PARP</td><td class="mono">31/03/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 729.053,69</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 490,05</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">165.781</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.131">x</button></td></tr><tr><td style="font-weight:700">BHIP</td><td class="mono">30/03/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 35.002,56</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 23,53</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">6.081</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.242">x</button></td></tr><tr><td style="font-weight:700">PETR3</td><td class="mono">30/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 23,30</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 23,30</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">765</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.1326">x</button></td></tr><tr><td style="font-weight:700">META</td><td class="mono">27/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 1,97</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 1,97</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">139</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.5208">x</button></td></tr><tr><td style="font-weight:700">GGB</td><td class="mono">26/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 1,96</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 1,96</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">37</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.085">x</button></td></tr><tr><td style="font-weight:700">MOS</td><td class="mono">20/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 6,74</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 6,74</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">219</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.586">x</button></td></tr><tr><td style="font-weight:700">HOG</td><td class="mono">18/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 4,34</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 4,34</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">110</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.2014">x</button></td></tr><tr><td style="font-weight:700">UNH</td><td class="mono">18/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 4,65</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 4,65</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">107</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.674">x</button></td></tr><tr><td style="font-weight:700">MSFT</td><td class="mono">13/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 4,43</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 4,43</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">225</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.9224">x</button></td></tr><tr><td style="font-weight:700">PETR3</td><td class="mono">12/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 58,93</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 58,93</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">765</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.6196">x</button></td></tr><tr><td style="font-weight:700">BC37D</td><td class="mono">03/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 268,43</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 268,43</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">10.226</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.451">x</button></td></tr><tr><td style="font-weight:700">PAGS</td><td class="mono">02/03/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 15,17</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 15,17</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">409</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.1118">x</button></td></tr><tr><td style="font-weight:700">BHIP</td><td class="mono">26/02/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 34.017,31</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 22,87</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">6.081</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.7136">x</button></td></tr><tr><td style="font-weight:700">ERF25</td><td class="mono">11/02/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 90,00</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 90,00</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">1.000</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.9233">x</button></td></tr><tr><td style="font-weight:700">BBD</td><td class="mono">11/02/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 1,06</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 1,06</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">508</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.0422">x</button></td></tr><tr><td style="font-weight:700">ERF25</td><td class="mono">10/02/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 22,27</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 22,27</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">1.000</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.0825">x</button></td></tr><tr><td style="font-weight:700">PBY26</td><td class="mono">05/02/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 496.541,54</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 333,76</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">5.121.260</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.795">x</button></td></tr><tr><td style="font-weight:700">MRVL</td><td class="mono">30/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 0,16</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 0,16</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">62</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.703">x</button></td></tr><tr><td style="font-weight:700">BMA</td><td class="mono">29/01/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 2.468,89</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 1,66</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">40</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.189">x</button></td></tr><tr><td style="font-weight:700">BHIP</td><td class="mono">29/01/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 29.845,60</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 20,06</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">5.489</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.9011">x</button></td></tr><tr><td style="font-weight:700">OXY</td><td class="mono">16/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 0,16</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 0,16</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">5</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.4827">x</button></td></tr><tr><td style="font-weight:700">ALUA</td><td class="mono">15/01/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 13.867,60</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 9,32</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">4.685</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.434">x</button></td></tr><tr><td style="font-weight:700">BBAS3</td><td class="mono">13/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 5,80</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 5,80</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">1.608</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.7979">x</button></td></tr><tr><td style="font-weight:700">GD41</td><td class="mono">12/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 39,14</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 39,14</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">2.237</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.4736">x</button></td></tr><tr><td style="font-weight:700">AL30</td><td class="mono">09/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 14,55</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 14,55</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">4.853</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.5652">x</button></td></tr><tr><td style="font-weight:700">AL30</td><td class="mono">09/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 388,24</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 388,24</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">4.853</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.4688">x</button></td></tr><tr><td style="font-weight:700">AE38</td><td class="mono">09/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 190,42</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 190,42</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">7.617</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.5515">x</button></td></tr><tr><td style="font-weight:700">EWZ</td><td class="mono">07/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 6,05</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 6,05</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">163</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.106">x</button></td></tr><tr><td style="font-weight:700">NKE</td><td class="mono">05/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 7,11</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 7,11</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">321</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.4639">x</button></td></tr><tr><td style="font-weight:700">AVGO</td><td class="mono">05/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 2,59</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 2,59</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">243</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.5815">x</button></td></tr><tr><td style="font-weight:700">DIP0</td><td class="mono">02/01/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 48.047,05</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 32,30</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">3.325</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.986">x</button></td></tr><tr><td style="font-weight:700">DIP0</td><td class="mono">02/01/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 96.957,03</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 65,17</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">3.325</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.6313">x</button></td></tr><tr><td style="font-weight:700">CUAP</td><td class="mono">02/01/2026</td><td><span class="badge badge-ars">ARS</span></td><td class="mono trk-sensitive" style="text-align:right">$ 424.494,54</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 285,34</td><td class="mono trk-sensitive muted" style="text-align:right">$1.488</td><td class="mono trk-sensitive muted" style="text-align:right">40.222</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.724">x</button></td></tr><tr><td style="font-weight:700">UNP</td><td class="mono">02/01/2026</td><td><span class="badge badge-usd">USD</span></td><td class="mono trk-sensitive" style="text-align:right">USD 1,52</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">USD 1,52</td><td class="mono trk-sensitive muted" style="text-align:right">—</td><td class="mono trk-sensitive muted" style="text-align:right">35</td><td><button class="btn btn-d btn-sm" data-id="1775655789620.698">x</button></td></tr></tbody>
             </table>
-          </div>
-        </div>
-
-        <!-- CCL implícito -->
-        <div class="card">
-          <div class="card-header"><span class="card-title">Calculadora CCL implícito</span></div>
-          <div class="card-body">
-            <div class="ibox" style="margin-bottom:10px">Precio ARS ÷ Precio USD del mismo activo = CCL implícito. Útil para bonos, CEDEARs y acciones con doble cotización.</div>
-            <div class="fg">
-              <div class="fgrp"><label>Precio ARS</label><input type="number" id="trk-calc-ars" placeholder="Ej: 18500" min="0" step="0.01"></div>
-              <div class="fgrp"><label>Precio USD</label><input type="number" id="trk-calc-usd" placeholder="Ej: 14.80" min="0" step="0.01"></div>
-              <div class="fgrp"><label>Activo (opc.)</label><input type="text" id="trk-calc-activo" placeholder="GD30, YPF..."></div>
-            </div>
-            <div class="trk-ccl-result" id="trk-ccl-result" style="display: none;">
-              <div class="trk-ccl-result-label" id="trk-ccl-result-label">CCL implícito</div>
-              <div class="trk-ccl-result-val" id="trk-ccl-result-val">—</div>
-              <div class="trk-ccl-result-sub" id="trk-ccl-result-sub"></div>
-            </div>
           </div>
         </div>
 
@@ -1508,6 +1529,11 @@ function tcLoadPersist(){
     if(sm) Object.assign(MEP_TABLE,JSON.parse(sm));
   }catch(e){}
 }
+function cardToggle(btn){
+  var card=btn.closest('.card');
+  var collapsed=card.classList.toggle('card-collapsed');
+  btn.textContent=collapsed?'▸':'▾';
+}
 // ─────────────────────────────────────────────────────────────────────────
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
@@ -1630,6 +1656,106 @@ function addMov(){
 }
 
 function flash(el,msg,isErr){el.className=isErr?'emsg':'smsg';el.textContent=msg;setTimeout(function(){el.textContent='';},3000);}
+
+// ── Importar movimientos en tabla ──────────────────────────────────────────
+var _impMovRows=[];
+function impMovToggle(){
+  var body=document.getElementById('imp-mov-body');
+  var arrow=document.getElementById('imp-mov-arrow');
+  var open=body.style.display==='none';
+  body.style.display=open?'':'none';
+  arrow.textContent=open?'▾':'▸';
+}
+function _parseArgNum(s){
+  if(!s&&s!==0)return NaN;
+  s=String(s).trim().replace(/\$/g,'').replace(/\s/g,'');
+  if(!s)return NaN;
+  var hasDot=s.indexOf('.')>=0, hasCom=s.indexOf(',')>=0;
+  if(hasDot&&hasCom){
+    if(s.indexOf('.')<s.indexOf(','))s=s.replace(/\./g,'').replace(',','.');
+    else s=s.replace(/,/g,'');
+  } else if(hasCom){
+    s=s.replace(',','.');
+  }
+  return parseFloat(s);
+}
+function impMovParse(){
+  var raw=document.getElementById('imp-mov-text').value;
+  var preview=document.getElementById('imp-mov-preview');
+  var tbody=document.getElementById('imp-mov-tbody');
+  var label=document.getElementById('imp-mov-preview-label');
+  _impMovRows=[];
+  if(!raw.trim()){preview.style.display='none';return;}
+  var validMkt=['USA','ETF','ARGENTINA','BONOS','ON','BRASIL','EUROPA','CHINA','CRIPTO'];
+  var lines=raw.trim().split('\n').filter(function(l){return l.trim();});
+  lines.forEach(function(line){
+    var cols=line.split('\t');
+    if(cols.length<4)cols=line.split(';');
+    var fecha=(cols[0]||'').trim();
+    var tipo=(cols[1]||'').trim().toLowerCase();
+    var mercado=(cols[2]||'').trim().toUpperCase();
+    var ticker=(cols[3]||'').trim().toUpperCase();
+    var qty=_parseArgNum(cols[4]);
+    var precioARSInput=_parseArgNum(cols[5]);
+    var ccl=cols[6]?(isNaN(_parseArgNum(cols[6]))?null:_parseArgNum(cols[6])):null;
+    var comPct=cols[7]?(_parseArgNum(cols[7])||0):0;
+    var notas=(cols[8]||'').trim();
+    var errors=[];
+    if(!fecha||!/^\d{2}\/\d{2}\/\d{4}$/.test(fecha))errors.push('fecha (DD/MM/AAAA)');
+    if(['compra','venta','dividendo'].indexOf(tipo)<0)errors.push('tipo');
+    if(validMkt.indexOf(mercado)<0)errors.push('mercado');
+    if(!ticker)errors.push('ticker');
+    if(isNaN(qty)||qty<=0)errors.push('cantidad');
+    if(isNaN(precioARSInput)||precioARSInput<0)errors.push('precio');
+    _impMovRows.push({fecha:fecha,tipo:tipo,mercado:mercado,ticker:ticker,qty:qty,precioARSInput:precioARSInput,ccl:ccl,comPct:comPct,notas:notas,ok:errors.length===0,errors:errors});
+  });
+  var okCount=_impMovRows.filter(function(r){return r.ok;}).length;
+  label.textContent=_impMovRows.length+' fila'+((_impMovRows.length!==1)?'s':'')+' · '+okCount+' válida'+(okCount!==1?'s':'')+' para importar'+(_impMovRows.length-okCount?' · '+(_impMovRows.length-okCount)+' con error':'');
+  tbody.innerHTML=_impMovRows.map(function(r){
+    var statusCell=r.ok
+      ?'<span style="color:var(--accent)">✓</span>'
+      :'<span style="color:var(--red);font-size:.65rem" title="'+r.errors.join(', ')+'">✕ '+r.errors.join(', ')+'</span>';
+    return '<tr style="'+(r.ok?'':'opacity:.5')+'">'+
+      '<td class="mono">'+r.fecha+'</td>'+
+      '<td><span class="badge badge-'+(r.tipo||'compra')+'">'+r.tipo+'</span></td>'+
+      '<td><span class="mkt">'+r.mercado+'</span></td>'+
+      '<td style="font-weight:600">'+r.ticker+'</td>'+
+      '<td class="mono">'+(isNaN(r.qty)?'—':r.qty)+'</td>'+
+      '<td class="mono">'+(isNaN(r.precioARSInput)?'—':'$'+r.precioARSInput.toLocaleString('es-AR'))+'</td>'+
+      '<td class="mono muted">'+(r.ccl?Math.round(r.ccl):'auto')+'</td>'+
+      '<td class="mono muted">'+(r.comPct?r.comPct+'%':'0%')+'</td>'+
+      '<td class="muted" style="max-width:80px;overflow:hidden;text-overflow:ellipsis">'+r.notas+'</td>'+
+      '<td>'+statusCell+'</td>'+
+    '</tr>';
+  }).join('');
+  preview.style.display='';
+  var btn=document.getElementById('imp-mov-confirm-btn');
+  if(btn)btn.disabled=(okCount===0);
+}
+function impMovConfirm(){
+  var valid=_impMovRows.filter(function(r){return r.ok;});
+  if(!valid.length)return;
+  var base=Date.now();
+  valid.forEach(function(r,i){
+    var esBonoON=(r.mercado==='BONOS'||r.mercado==='ON');
+    var precioARS=esBonoON?(r.precioARSInput/100):r.precioARSInput;
+    var cclEff=r.ccl||getTC(r.fecha,r.mercado);
+    var ratio=getRatio(r.ticker);
+    var precioUSD=cclEff?precioARS*ratio/cclEff:null;
+    var comAbsoluta=r.qty*precioARS*r.comPct/100;
+    movimientos.push({id:base+i,fecha:r.fecha,tipo:r.tipo,mercado:r.mercado,ticker:r.ticker,qty:r.qty,precioARS:precioARS,ccl:cclEff,ratio:ratio,precioUSD:precioUSD,comision:comAbsoluta,comisionPct:r.comPct,notas:r.notas,finish:false});
+  });
+  saveAndRender();
+  flash(document.getElementById('imp-mov-status'),valid.length+' movimiento'+(valid.length!==1?'s':'')+' importado'+(valid.length!==1?'s':''),false);
+  document.getElementById('imp-mov-text').value='';
+  document.getElementById('imp-mov-preview').style.display='none';
+  _impMovRows=[];
+}
+function impMovCancel(){
+  document.getElementById('imp-mov-text').value='';
+  document.getElementById('imp-mov-preview').style.display='none';
+  _impMovRows=[];
+}
 
 function deleteMov(id){
   var m=movimientos.find(function(x){return x.id==id;});
@@ -2339,7 +2465,7 @@ function renderMovimientos(){
       '<td><span class="mkt">'+mLabel+'</span></td>'+
       '<td style="font-weight:600">'+m.ticker+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
-      '<td class="mono">'+(m.precioARS?'$'+m.precioARS.toLocaleString('es-AR'):'')+'</td>'+
+      '<td class="mono">'+(m.precioARS?'$'+(_mEsBonoON?m.precioARS*100:m.precioARS).toLocaleString('es-AR'):'')+'</td>'+
       '<td class="mono muted">'+_mCCLstr+'</td>'+
       '<td class="mono">'+(_mPrecioUSD?'$'+_mPrecioUSD.toFixed(4):'—')+'</td>'+
       '<td class="mono muted">'+(m.comisionPct?m.comisionPct.toFixed(2)+'%':'0%')+'</td>'+
