@@ -1529,6 +1529,7 @@ function showPage(id,btn){
   }
 }
 
+function isBonoONForm(){var mkt=document.getElementById('m-mkt');return mkt&&(mkt.value==='BONOS'||mkt.value==='ON');}
 function onTipo(){
   var t=document.getElementById('m-tipo').value;
   var isA=t==='aporte';
@@ -1536,7 +1537,7 @@ function onTipo(){
   document.getElementById('row-aporte').style.display=isA?'':'none';
   document.getElementById('g-mkt').style.display=isA?'none':'';
   document.getElementById('g-ticker').style.display=isA?'none':'';
-  document.getElementById('lbl-precio').textContent=t==='dividendo'?'Monto ARS':'Precio ARS';
+  document.getElementById('lbl-precio').textContent=t==='dividendo'?'Monto ARS':(isBonoONForm()?'Precio / 100N':'Precio ARS');
 }
 
 document.getElementById('m-fecha').value=new Date().toISOString().split('T')[0];
@@ -1555,6 +1556,9 @@ document.getElementById('m-mkt').addEventListener('change',function(){
     if(tc){document.getElementById('m-ccl').value=tc;calcUSD();}
   }
   updateTCLabel();
+  var t=document.getElementById('m-tipo').value;
+  document.getElementById('lbl-precio').textContent=t==='dividendo'?'Monto ARS':(isBonoONForm()?'Precio / 100N':'Precio ARS');
+  calcUSD();
 });
 document.getElementById('m-precio-ars').addEventListener('input',calcUSD);
 document.getElementById('m-ccl').addEventListener('input',calcUSD);
@@ -1572,13 +1576,14 @@ function calcUSD(){
   var qty=parseFloat(document.getElementById('m-qty').value)||0;
   var comPct=parseFloat(document.getElementById('m-comision').value)||0;
   var rt=getRatio(document.getElementById('m-ticker').value.trim().toUpperCase()||'');
-  document.getElementById('m-precio-usd').value=(ars&&ccl)?(ars*rt/ccl).toFixed(4):'—';
+  var arsCalc=isBonoONForm()?(ars/100):ars;
+  document.getElementById('m-precio-usd').value=(ars&&ccl)?(arsCalc*rt/ccl).toFixed(4):'—';
   // Calcular comisión $ y totales
   var resumen=document.getElementById('row-calc-resumen');
   if(ars>0&&qty>0){
-    var comAbs=qty*ars*comPct/100;
-    var totalARS=qty*ars+comAbs;
-    var totalUSD=(ccl&&ccl>0)?totalARS/ccl:((ars&&ccl)?totalARS/(ccl):null);
+    var comAbs=qty*arsCalc*comPct/100;
+    var totalARS=qty*arsCalc+comAbs;
+    var totalUSD=(ccl&&ccl>0)?totalARS/ccl:null;
     document.getElementById('m-comision-abs').value=comAbs>0?'$'+comAbs.toLocaleString('es-AR',{maximumFractionDigits:0}):'$0';
     document.getElementById('m-total-ars').value='$'+totalARS.toLocaleString('es-AR',{maximumFractionDigits:0});
     document.getElementById('m-total-usd').value=totalUSD?'U$S '+totalUSD.toFixed(2):'—';
@@ -1601,14 +1606,15 @@ function addMov(){
   var fechaInput=document.getElementById('m-fecha').value;
   var fecha=fechaInput.split('-').reverse().join('/');
   var qty=parseFloat(document.getElementById('m-qty').value);
-  var precioARS=parseFloat(document.getElementById('m-precio-ars').value);
+  var precioARSInput=parseFloat(document.getElementById('m-precio-ars').value);
   var mkt=document.getElementById('m-mkt').value;
-  // Bonos/ONs: dividir por MEP. Resto: por CCL.
+  // Bonos/ONs: el usuario ingresa precio por 100 nominales → dividir por 100 para almacenar por nominal
+  var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
   var cclVal=parseFloat(document.getElementById('m-ccl').value)||getTC(fecha,mkt);
   var comisionPct=parseFloat(document.getElementById('m-comision').value)||0;
   if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
   if(!qty||qty<=0){flash(sel,'Cantidad invalida',true);return;}
-  if(isNaN(precioARS)||precioARS<0){flash(sel,'Precio invalido',true);return;}
+  if(isNaN(precioARSInput)||precioARSInput<0){flash(sel,'Precio invalido',true);return;}
   var ratio=getRatio(ticker);
   var precioUSD=cclVal?precioARS*ratio/cclVal:null;
   // Calcular comisión absoluta: (qty * precioARS * % / 100)
@@ -1981,7 +1987,7 @@ function movModalOpen(id){
     '</select></div>'+
     '<div class="fgrp"><label>Ticker</label><input type="text" id="me-ticker" value="'+(m.ticker||'')+'" style="text-transform:uppercase"></div>'+
     '<div class="fgrp"><label>Cantidad</label><input type="number" id="me-qty" value="'+(m.qty||'')+'" min="0" step="any"></div>'+
-    '<div class="fgrp"><label>Precio ARS</label><input type="number" id="me-ars" value="'+(m.precioARS||'')+'" min="0" step="any"></div>'+
+    '<div class="fgrp"><label id="me-precio-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'Precio / 100N':'Precio ARS')+'</label><input type="number" id="me-ars" value="'+((m.mercado==='BONOS'||m.mercado==='ON')?(m.precioARS*100||''):(m.precioARS||''))+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label id="me-ccl-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'MEP':'CCL')+'</label><input type="number" id="me-ccl" value="'+(m.ccl||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label>Comisión %</label><input type="number" id="me-com" value="'+(m.comisionPct||0)+'" min="0" max="100" step="0.01"></div>'+
     '<div class="fgrp" style="grid-column:1/-1"><label>Notas</label><input type="text" id="me-notas" value="'+(m.notas||'')+'"></div>'+
@@ -1998,6 +2004,8 @@ function movModalOpen(id){
       var lbl=document.getElementById('me-ccl-label');
       var esBonoON=(this.value==='BONOS'||this.value==='ON');
       if(lbl)lbl.textContent=esBonoON?'MEP':'CCL';
+      var lblP=document.getElementById('me-precio-label');
+      if(lblP)lblP.textContent=esBonoON?'Precio / 100N':'Precio ARS';
       var fechaVal=document.getElementById('me-fecha').value;
       if(fechaVal){
         var fecha=fechaVal.split('-').reverse().join('/');
@@ -2017,9 +2025,11 @@ function movModalCalcUSD(){
   var ccl=parseFloat(document.getElementById('me-ccl').value);
   var ticker=(document.getElementById('me-ticker').value||'').trim().toUpperCase();
   var rt=getRatio(ticker)||1;
-  // Mostrar en el campo de notas (read-only hint)
+  var mktEl=document.getElementById('me-mkt');
+  var esBonoON=mktEl&&(mktEl.value==='BONOS'||mktEl.value==='ON');
+  var arsCalc=esBonoON?(ars/100):ars;
   var hint=document.getElementById('me-usd-hint');
-  if(hint){hint.textContent=(ars&&ccl)?'≈ USD '+(ars*rt/ccl).toFixed(4):'';}
+  if(hint){hint.textContent=(ars&&ccl)?'≈ USD '+(arsCalc*rt/ccl).toFixed(4):'';}
 }
 
 function movModalSave(){
@@ -2045,7 +2055,9 @@ function movModalSave(){
   }
   if(ticker)m.ticker=ticker;
   if(!isNaN(qty)&&qty>=0)m.qty=qty;
-  if(!isNaN(ars)&&ars>=0)m.precioARS=ars;
+  var mktSaveEl=document.getElementById('me-mkt');
+  var esBonoONSave=mktSaveEl&&(mktSaveEl.value==='BONOS'||mktSaveEl.value==='ON');
+  if(!isNaN(ars)&&ars>=0)m.precioARS=esBonoONSave?(ars/100):ars;
   if(!isNaN(ccl)&&ccl>0){m.ccl=ccl;}
   if(m.ccl&&m.precioARS){
     var rt=getRatio(m.ticker)||1;
