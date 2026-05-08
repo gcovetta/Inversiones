@@ -1676,6 +1676,13 @@ function _parseArgNum(s){
     else s=s.replace(/,/g,'');
   } else if(hasCom){
     s=s.replace(',','.');
+  } else if(hasDot){
+    // Solo tiene punto: si todos los segmentos post-punto tienen exactamente 3 dígitos
+    // es separador de miles (ej: "15.478" → 15478, "1.234.567" → 1234567)
+    var parts=s.split('.');
+    if(parts.length>=2&&/^\d+$/.test(parts[0])&&parts.slice(1).every(function(p){return /^\d{3}$/.test(p);})){
+      s=parts.join('');
+    }
   }
   return parseFloat(s);
 }
