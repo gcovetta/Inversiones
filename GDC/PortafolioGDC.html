@@ -1679,6 +1679,16 @@ function _parseArgNum(s){
   }
   return parseFloat(s);
 }
+function _normFecha(s){
+  s=(s||'').trim();
+  var parts=s.split('/');
+  if(parts.length!==3)return null;
+  var d=parts[0].padStart(2,'0');
+  var m=parts[1].padStart(2,'0');
+  var y=parts[2].length===2?'20'+parts[2]:parts[2];
+  if(!/^\d{2}$/.test(d)||!/^\d{2}$/.test(m)||!/^\d{4}$/.test(y))return null;
+  return d+'/'+m+'/'+y;
+}
 function impMovParse(){
   var raw=document.getElementById('imp-mov-text').value;
   var preview=document.getElementById('imp-mov-preview');
@@ -1691,7 +1701,10 @@ function impMovParse(){
   lines.forEach(function(line){
     var cols=line.split('\t');
     if(cols.length<4)cols=line.split(';');
-    var fecha=(cols[0]||'').trim();
+    var fechaRaw=(cols[0]||'').trim();
+    // Saltar fila de encabezado (primera columna no empieza con dígito)
+    if(!/^\d/.test(fechaRaw))return;
+    var fecha=_normFecha(fechaRaw);
     var tipo=(cols[1]||'').trim().toLowerCase();
     var mercado=(cols[2]||'').trim().toUpperCase();
     var ticker=(cols[3]||'').trim().toUpperCase();
@@ -1701,13 +1714,13 @@ function impMovParse(){
     var comPct=cols[7]?(_parseArgNum(cols[7])||0):0;
     var notas=(cols[8]||'').trim();
     var errors=[];
-    if(!fecha||!/^\d{2}\/\d{2}\/\d{4}$/.test(fecha))errors.push('fecha (DD/MM/AAAA)');
+    if(!fecha)errors.push('fecha (D/M/AA o DD/MM/AAAA)');
     if(['compra','venta','dividendo'].indexOf(tipo)<0)errors.push('tipo');
     if(validMkt.indexOf(mercado)<0)errors.push('mercado');
     if(!ticker)errors.push('ticker');
     if(isNaN(qty)||qty<=0)errors.push('cantidad');
     if(isNaN(precioARSInput)||precioARSInput<0)errors.push('precio');
-    _impMovRows.push({fecha:fecha,tipo:tipo,mercado:mercado,ticker:ticker,qty:qty,precioARSInput:precioARSInput,ccl:ccl,comPct:comPct,notas:notas,ok:errors.length===0,errors:errors});
+    _impMovRows.push({fecha:fecha||fechaRaw,tipo:tipo,mercado:mercado,ticker:ticker,qty:qty,precioARSInput:precioARSInput,ccl:ccl,comPct:comPct,notas:notas,ok:errors.length===0,errors:errors});
   });
   var okCount=_impMovRows.filter(function(r){return r.ok;}).length;
   label.textContent=_impMovRows.length+' fila'+((_impMovRows.length!==1)?'s':'')+' · '+okCount+' válida'+(okCount!==1?'s':'')+' para importar'+(_impMovRows.length-okCount?' · '+(_impMovRows.length-okCount)+' con error':'');
