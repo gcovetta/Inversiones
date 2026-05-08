@@ -223,6 +223,23 @@ tr:hover td{background:var(--surface2)}
 .nt-tk-pbar-fill{height:100%;background:var(--amber);border-radius:2px;transition:width .2s}
 .nt-tk-falta{font-family:var(--mono);font-size:.58rem;color:var(--amber);font-weight:700;white-space:nowrap;align-self:flex-end}
 .nt-empty{color:var(--text3);font-family:var(--mono);font-size:.75rem;text-align:center;padding:14px}
+/* Tickers en la mira */
+.wl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:0;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.wl-title{font-weight:700;font-size:.9rem;color:var(--text);display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.wl-add-row{display:flex;gap:5px;align-items:center}
+.wl-input{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:4px 7px;outline:none;height:27px}
+.wl-input:focus{border-color:var(--blue)}
+.wl-input-tk{width:72px;text-transform:uppercase}
+.wl-input-cm{flex:1;min-width:0}
+.wl-add-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--blue);font-family:var(--mono);font-size:.72rem;padding:4px 9px;cursor:pointer;height:27px;white-space:nowrap;transition:background .12s,border-color .12s}
+.wl-add-btn:hover{background:var(--border);border-color:var(--blue)}
+.wl-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:130px}
+.wl-item{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm)}
+.wl-item-sym{font-weight:800;font-size:.7rem;color:var(--blue);min-width:44px;font-family:var(--mono)}
+.wl-item-note{font-size:.68rem;color:var(--text2);font-family:var(--mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wl-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:.75rem;padding:0 2px;line-height:1;transition:color .12s;margin-left:auto;flex-shrink:0}
+.wl-del:hover{color:var(--red)}
+.wl-empty{color:var(--text3);font-family:var(--mono);font-size:.7rem;text-align:center;padding:12px 0}
 .jvm-tooltip{background:#1e2026!important;color:#e8eaf0!important;border:1px solid #363a45!important;font-family:'DM Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
 .jvm-zoom-btn{display:none!important}
 </style>
@@ -411,7 +428,7 @@ tr:hover td{background:var(--surface2)}
       </div>
       <!-- Tickers cerca del objetivo + CCL implícito -->
       <div style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
-        <div class="nt-card" id="near-target-card" style="flex:3;margin-bottom:0">
+        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0">
           <div class="nt-header">
             <span class="nt-title">🎯 Tickers cerca del objetivo</span>
             <span class="nt-label">Faltan menos de</span>
@@ -420,6 +437,16 @@ tr:hover td{background:var(--surface2)}
             <span class="nt-pct" id="nt-pct-label">2.5%</span>
           </div>
           <div class="nt-grid" id="nt-grid"><div class="nt-ticker-card"><span class="nt-tk-sym">PARP</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:98.5%"></div></div><span class="nt-tk-falta">Falta 1.5%</span></div></div></div><div class="nt-ticker-card"><span class="nt-tk-sym">TX31</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:97.6%"></div></div><span class="nt-tk-falta">Falta 2.5%</span></div></div></div></div>
+        </div>
+        <!-- Tickers en la mira -->
+        <div class="wl-card" id="watchlist-card">
+          <div class="wl-title">👁 Tickers en la mira</div>
+          <div class="wl-add-row">
+            <input class="wl-input wl-input-tk" id="wl-ticker" type="text" maxlength="10" placeholder="Ticker" oninput="this.value=this.value.toUpperCase()">
+            <input class="wl-input wl-input-cm" id="wl-comment" type="text" maxlength="80" placeholder="Comentario…" onkeydown="if(event.key==='Enter')wlAdd()">
+            <button class="wl-add-btn" onclick="wlAdd()">+ Agregar</button>
+          </div>
+          <div class="wl-list" id="wl-list"></div>
         </div>
         <!-- CCL implícito -->
         <div class="card" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;padding:.6rem .9rem;gap:.45rem">
@@ -1095,7 +1122,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<script>(function(){try{Object.keys(localStorage).forEach(function(k){localStorage.removeItem(k);});}catch(e){}})();</script>
+<script>(function(){try{var keep='wl_ana2_v1';Object.keys(localStorage).forEach(function(k){if(k!==keep)localStorage.removeItem(k);});}catch(e){}})();</script>
 <script>
 // ── Soporte coma como separador decimal ──────────────────────────────────
 (function(){
@@ -5654,6 +5681,41 @@ function _btirNumMatch(rawVal, filterStr) {
   if ((m = s.match(/^([\d.]+)$/)))      return n >= parseFloat(m[1]);
   return true;
 }
+
+/* ── Watchlist "Tickers en la mira" ─────────────────────────────── */
+const WL_KEY = 'wl_ana2_v1';
+function wlLoad(){ try{ return JSON.parse(localStorage.getItem(WL_KEY))||[]; }catch(e){ return []; } }
+function wlSave(arr){ localStorage.setItem(WL_KEY, JSON.stringify(arr)); }
+function wlRender(){
+  const arr = wlLoad();
+  const el = document.getElementById('wl-list');
+  if(!el) return;
+  if(!arr.length){ el.innerHTML='<div class="wl-empty">Sin tickers cargados</div>'; return; }
+  el.innerHTML = arr.map((item,i)=>`
+    <div class="wl-item">
+      <span class="wl-item-sym">${item.tk}</span>
+      <span class="wl-item-note" title="${item.cm||''}">${item.cm||'<span style="color:var(--text3);font-style:italic">sin comentario</span>'}</span>
+      <button class="wl-del" onclick="wlDel(${i})" title="Eliminar">✕</button>
+    </div>`).join('');
+}
+function wlAdd(){
+  const tkEl = document.getElementById('wl-ticker');
+  const cmEl = document.getElementById('wl-comment');
+  const tk = (tkEl.value||'').trim().toUpperCase();
+  if(!tk) { tkEl.focus(); return; }
+  const arr = wlLoad();
+  arr.push({ tk, cm: (cmEl.value||'').trim() });
+  wlSave(arr);
+  tkEl.value=''; cmEl.value=''; tkEl.focus();
+  wlRender();
+}
+function wlDel(i){
+  const arr = wlLoad();
+  arr.splice(i,1);
+  wlSave(arr);
+  wlRender();
+}
+wlRender();
 
 </script>
 
