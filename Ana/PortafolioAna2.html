@@ -2549,7 +2549,7 @@ function renderPortfolio(){
     var ppcFromUSD=ppcUSD*_tcHoy*100;
     var mkt=p._mktARS||0;  // usar _mktARS de Pasada 1 (mercadoCedearARS aún no está declarada)
     var ppcCedearARS=_isBonoON
-      ?((mkt>0&&ppcFromARS/mkt<0.15)||(mkt===0&&ppcFromUSD>0&&ppcFromARS/ppcFromUSD<0.15)?ppcFromUSD:ppcFromARS)
+      ?ppcFromUSD
       :(_isARS2?ppcUSD*CCL_HOY:ppcUSD*CCL_HOY);
     var mercadoCedearARS=p._mktARS;
     var inversionCedearARS=p._invARS;
