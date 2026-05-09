@@ -1143,7 +1143,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<script>(function(){try{var keep='wl_omar2_v1';Object.keys(localStorage).forEach(function(k){if(k!==keep)localStorage.removeItem(k);});}catch(e){}})();</script>
+
 <script>
 // ── Soporte coma como separador decimal ──────────────────────────────────
 (function(){
@@ -1648,7 +1648,7 @@ function addMov(){
   var finishEl=document.getElementById('m-finish');
   movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false});
   saveAndRender();
-  ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
+  ['m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   if(finishEl)finishEl.checked=false;
   flash(sel,'Movimiento registrado',false);
 }
@@ -2599,6 +2599,11 @@ function renderPortfolio(){
     ['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     ['m-val','m-ganancia','m-divs','m-count'].forEach(function(id){document.getElementById(id).textContent='—';});document.getElementById('m-rend').innerHTML='—';
     renderDivsCard();
+    var liqARS=getRawNum('liq-ars');var liqUSD=getRawNum('liq-usd');
+    var _liqMEP=liqUSD+((MEP_HOY||CCL_HOY)>0?liqARS/(MEP_HOY||CCL_HOY):0);
+    renderMiniPie(0,0,_liqMEP>0?_liqMEP:0);
+    renderSectorPie({});
+    renderRVPie({});
     return;
   }
   empty.style.display='none';
@@ -2614,7 +2619,7 @@ function renderPortfolio(){
     var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
     // Para Argentina: price ya viene en ARS. Para NYSE: price en USD → convertir
     // Para Bonos/ON: price es por 100 nominales → qty se divide por 100 para el total
-    var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on'||p.ticker==='BBAS3'||p.ticker==='ANA'||p.ticker==='GDC');
+    var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var mercadoCedearARS=price!=null?(_sectorIsARS?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
@@ -2762,7 +2767,6 @@ function renderPortfolio(){
   var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'}];
   panelDefs.forEach(function(def){
     var rows=sectors[def.key];var panel=document.getElementById('panel-'+def.id);var body=document.getElementById('body-'+def.id);var meta=document.getElementById('panel-'+def.id+'-meta');
-    if(!panel||!body){return;}
     if(!panel||!body){return;}
     if(!rows||!rows.length){panel.style.display='none';return;}
     panel.style.display='';body.innerHTML=rows.join('');
@@ -5839,7 +5843,7 @@ function _btirNumMatch(rawVal, filterStr) {
 }
 
 /* ── Watchlist "Tickers en la mira" ─────────────────────────────── */
-const WL_KEY = 'wl_omar2_v1';
+const WL_KEY = 'wl_hilda_v1';
 function wlLoad(){ try{ return JSON.parse(localStorage.getItem(WL_KEY))||[]; }catch(e){ return []; } }
 function wlSave(arr){ localStorage.setItem(WL_KEY, JSON.stringify(arr)); }
 function wlRender(){
