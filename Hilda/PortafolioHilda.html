@@ -2452,8 +2452,11 @@ function renderMovimientos(){
 
   var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas;
   document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
+  var histBody=document.getElementById('mov-historial-body');
+  var histArrow=document.getElementById('mov-historial-arrow');
   if(!lista.length){empty.style.display='';wrap.style.display='none';return;}
   empty.style.display='none';wrap.style.display='';
+  if(histBody&&histBody.style.display==='none'){histBody.style.display='block';if(histArrow)histArrow.textContent='▾';}
 
   body.innerHTML=lista.map(function(m){
     var mLabel=m.mercado==='USA'?'NYSE':m.mercado==='ETF'?'ETF':(m.mercado||'—');
