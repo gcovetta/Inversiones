@@ -2106,7 +2106,7 @@ function portCheckSession(){portUnblur();return; // PIN desactivadoportUnblur();
 // ─────────────────────────────────────────────────────────────────────────
 
 function saveAndRender(){
-  try{localStorage.setItem('ptHilda_mov2',JSON.stringify(movimientos));}catch(e){}
+  try{localStorage.setItem('ptHilda_mov2',JSON.stringify(movimientos));localStorage.setItem('ptHilda_version',DATA_VERSION);}catch(e){}
   sbSaveArray('movimientos', movimientos);
   renderMovimientos();renderPortfolio();renderDivsCard();simPopulateSelect();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
@@ -4251,6 +4251,19 @@ function trkCalcCCL(){
         movimientos=PRELOADED;
         sbSaveArray('movimientos',movimientos);
         try{localStorage.setItem('ptHilda_mov2',JSON.stringify(movimientos));localStorage.setItem('ptHilda_version',DATA_VERSION);}catch(e){}
+      } else {
+        // Sin PRELOADED: intentar recuperar desde localStorage (datos ingresados antes de que Supabase los guardara)
+        var _storedVer=null;try{_storedVer=localStorage.getItem('ptHilda_version');}catch(e){}
+        var _savedMov=null;try{_savedMov=localStorage.getItem('ptHilda_mov2');}catch(e){}
+        if(_savedMov&&_savedMov!=='[]'&&(!_storedVer||_storedVer===DATA_VERSION)){
+          try{
+            var _recovered=JSON.parse(_savedMov).filter(function(m){return m!=null;});
+            if(_recovered.length){
+              movimientos=_recovered;
+              sbSaveArray('movimientos',movimientos); // sincronizar a Supabase para que quede persistido
+            }
+          }catch(e){}
+        }
       }
     }
 
