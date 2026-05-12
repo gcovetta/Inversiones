@@ -4259,6 +4259,8 @@ function trkCalcCCL(){
       try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
     } else {
       try{var sd=localStorage.getItem('ptNYSE_divs');if(sd)dividendos=JSON.parse(sd);}catch(e){}
+      // Sincronizar a Supabase si hay datos en localStorage que nunca se guardaron
+      if(dividendos.length) sbSetConfig('dividendos', dividendos);
     }
     // Aplicar borrados pendientes (protección ante datos stale de Supabase)
     try{
