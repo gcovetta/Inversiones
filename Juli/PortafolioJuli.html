@@ -348,7 +348,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;rubros&#39;,this)"><span>🏷</span>Rubros</button>
     <button class="nav-item" onclick="showPage(&#39;tipocambio&#39;,this)"><span>$</span>Tipo de Cambio</button>
     <button class="nav-item" onclick="showPage(&#39;ratios&#39;,this)"><span>⚙</span>Ratios</button>
-    <button class="nav-item" onclick="showPage(&#39;tracker&#39;,this)"><span>◎</span>Dividendos</button>
+
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
@@ -525,10 +525,7 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
 </div>
-      <div class="card" style="overflow:visible;display:inline-block;width:fit-content">
-        <div class="card-header"><span class="card-title">Dividendos cobrados</span></div>
-        <div id="divs-content" class=""></div>
-      </div>
+
       </div><!-- /port-content -->
     </div>
 
@@ -689,18 +686,6 @@ tr:hover td{background:var(--surface2)}
 
     </div>
 
-    <!-- DIVIDENDOS (portafolio) -->
-    <div class="page" id="page-dividendos">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Registrar dividendo</span></div>
-        <div class="card-body">
-          <div class="fg">
-            <div class="fgrp"><label>Ticker</label><select id="d-ticker" style="text-transform:uppercase"><option value="">— seleccioná ticker —</option></select></div>
-            <div class="fgrp"><label>Fecha cobro</label><input id="d-fecha" type="date"></div>
-            <div class="fgrp"><label>Monto ARS</label><input id="d-ars" type="number" min="0" step="any" placeholder="0"></div>
-            <div class="fgrp"><label>CCL del día</label><input id="d-ccl" type="number" min="0" step="any" placeholder="auto"></div>
-            <div class="fgrp"><label>Monto USD (calc.)</label><input id="d-usd" type="text" readonly="" placeholder="—" style="color:var(--accent)"></div>
-          </div>
           <div class="fgrp" style="margin-top:4px"><label>Notas</label><input id="d-notas" type="text" placeholder="ej: Q1 2026"></div>
           <div class="gap-row" style="margin-top:10px">
             <button class="btn btn-a" onclick="addDividendo()">+ Registrar</button>
@@ -724,112 +709,6 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
-    <!-- TRACKER DE DIVIDENDOS CCL -->
-    <div class="page" id="page-tracker">
-
-      <!-- PIN overlay -->
-
-      <!-- App content -->
-      <div id="trk-app" style="display: block;">
-
-        <div class="pin-lock-bar">
-          <button class="trk-eye-btn" id="trk-eye-btn">
-            <svg id="trk-eye-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            <span id="trk-eye-label">Ocultar valores</span>
-          </button>
-          
-        </div>
-
-        <!-- CCL bar -->
-        <div class="trk-bar">
-          <span class="trk-bar-label">CCL hoy</span>
-          <span class="trk-bar-val" id="trk-ccl-display">$1.470,80</span>
-          <span class="trk-bar-src" id="trk-ccl-src">(dolarapi.com)</span>
-          <span class="trk-edit" id="trk-ccl-toggle">Editar</span>
-        </div>
-        <div class="trk-manual-row" id="trk-manual-row">
-          <span style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">CCL manual:</span>
-          <input type="number" id="trk-ccl-inp" style="width:100px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:4px 8px;height:28px" placeholder="Ej: 1483">
-          <button class="btn btn-a btn-sm" id="trk-ccl-save-btn">Guardar</button>
-        </div>
-
-        <!-- Metrics -->
-        <div class="trk-metrics">
-          <div class="trk-metric"><div class="trk-metric-label">Total (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-usd">—</div><div class="trk-metric-sub trk-sensitive" id="trk-m-ars-sub"></div></div>
-          <div class="trk-metric"><div class="trk-metric-label">Este mes (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-mes">—</div></div>
-          <div class="trk-metric"><div class="trk-metric-label">Registros</div><div class="trk-metric-val" id="trk-m-count">38</div></div>
-        </div>
-
-        <!-- Form -->
-        <div class="card">
-          <div class="card-header"><span class="card-title">Cargar dividendo</span><button class="card-toggle" onclick="cardToggle(this)">▾</button></div>
-          <div class="card-body">
-            <div class="fg">
-              <div class="fgrp"><label>Ticker / Empresa</label><input type="text" id="trk-ticker" placeholder="YPF, GGAL..." style="text-transform:uppercase"></div>
-              <div class="fgrp"><label>Fecha de cobro</label><input type="date" id="trk-fecha"></div>
-              <div class="fgrp"><label>Moneda</label><select id="trk-moneda"><option value="USD">USD (dólares)</option><option value="ARS">ARS (pesos)</option></select></div>
-              <div class="fgrp"><label>Monto recibido</label><input type="number" id="trk-monto" placeholder="0.00" min="0" step="0.01"></div>
-              <div class="fgrp"><label>Acciones (opc.)</label><input type="number" id="trk-acc" placeholder="—" min="0" step="1"></div>
-            </div>
-            <div class="gap-row" style="margin-top:8px">
-              <button class="btn btn-a" id="trk-add-btn">+ Agregar</button>
-              <span id="trk-add-status" class="smsg"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Importar XLS del broker -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Importar desde broker</span>
-            <span id="trk-imp-badge" class="smsg"></span>
-            <button class="card-toggle" onclick="cardToggle(this)">▾</button>
-          </div>
-          <div class="card-body">
-            <div class="ibox" style="margin-bottom:10px">
-              Descargá el reporte <b>Movimientos Dividendos y Rentas Cobradas</b> desde tu broker en formato XLS y subilo acá. Se importan los tipos <b>DIV</b> y <b>RTA</b>; los rescates (RESC) se omiten. Los registros ya existentes no se duplican.
-            </div>
-            <div class="gap-row">
-              <label style="cursor:pointer;display:inline-flex;align-items:center">
-                <input type="file" id="trk-imp-file" accept=".xls,.xlsx,.htm,.html" style="display:none">
-                <span class="btn btn-a">↑ Subir archivo XLS</span>
-              </label>
-              <span id="trk-imp-status" class="smsg"></span>
-            </div>
-            <div id="trk-imp-preview" style="display:none;margin-top:12px">
-              <div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px" id="trk-imp-preview-label"></div>
-              <div class="tw" style="max-height:220px;overflow-y:auto">
-                <table>
-                  <thead><tr><th>Ticker</th><th>Fecha</th><th>Tipo</th><th>Mon.</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th><th style="text-align:center">Estado</th></tr></thead>
-                  <tbody id="trk-imp-tbody"></tbody>
-                </table>
-              </div>
-              <div class="gap-row" style="margin-top:10px">
-                <button class="btn btn-a" id="trk-imp-confirm-btn">✓ Confirmar importación</button>
-                <button class="btn" id="trk-imp-cancel-btn">Cancelar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Table -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Historial de dividendos CCL</span>
-            <span id="trk-total-badge" class="smsg">Total: USD 0</span>
-            <button class="card-toggle" onclick="cardToggle(this)">▾</button>
-          </div>
-          <div id="trk-empty" class="empty-state" style="display: none;">No hay dividendos cargados.</div>
-          <div class="tw" id="trk-table-wrap" style="">
-            <table>
-              <thead><tr><th>Ticker</th><th>Fecha</th><th>Mon.</th><th style="text-align:right">Monto orig.</th><th style="text-align:right">Equiv. USD</th><th style="text-align:right">CCL usado</th><th style="text-align:right">Acciones</th><th></th></tr></thead>
-              <tbody id="trk-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-      </div><!-- /trk-app -->
-    </div><!-- /page-tracker -->
 
     <!-- RATIOS -->
     <div class="page" id="page-ratios">
@@ -2108,7 +1987,7 @@ function portCheckSession(){portUnblur();return; // PIN desactivadoportUnblur();
 function saveAndRender(){
   try{localStorage.setItem('ptJuli_mov2',JSON.stringify(movimientos));localStorage.setItem('ptJuli_version',DATA_VERSION);}catch(e){}
   sbSaveArray('movimientos', movimientos);
-  renderMovimientos();renderPortfolio();renderDivsCard();simPopulateSelect();
+  renderMovimientos();renderPortfolio();simPopulateSelect();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
 }
 
@@ -2797,14 +2676,7 @@ function renderPortfolio(){
   // RV pie por país
   renderRVPie(sectorVal);
 
-  // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
-  var trkDivsTotal=0;
-  try{var td=TRK.divs&&TRK.divs.length?TRK.divs:(function(){var s=localStorage.getItem('trk_divs_v1');return s?JSON.parse(s):[];}());
-  if(true){td.forEach(function(d){var u=d.moneda==='USD'?(d.montoUSD||d.monto||0):(d.monto||0)/(CCL_TABLE[d.fecha]||CCL_HOY);trkDivsTotal+=u||0;});}}catch(e){}
-  var movDivsTotal=movimientos.filter(function(m){return m.tipo==='dividendo';}).reduce(function(a,m){return a+(m.precioUSD||0);},0);
-  var regDivsTotal=(dividendos||[]).reduce(function(a,d){return a+(d.usd||0);},0);
-  var allDivs=trkDivsTotal+movDivsTotal+regDivsTotal;
-  document.getElementById('m-divs').textContent=allDivs>0?'$'+Math.round(allDivs).toLocaleString('es-AR'):'—';
+  document.getElementById('m-divs').textContent='—';
 
   // Rendimiento = (ValTotal - CostoTotal) / CostoTotal * 100
   // Rendimiento: usa inversión inicial si está cargada, si no usa costUSD
@@ -3009,8 +2881,7 @@ function vmRender(){
 }
 
 function renderDivsCard(){
-  var divsEl=document.getElementById('divs-content');
-  if(!divsEl)return;
+  return; // dividendos no usado en este portafolio
 
   // Fuente 1: movimientos tipo dividendo
   var movDivs=movimientos.filter(function(m){return m.tipo==='dividendo';}).map(function(m){
@@ -3025,7 +2896,7 @@ function renderDivsCard(){
   // Fuente 3: TRK.divs — ya cargado desde Supabase en init
   var trkRaw=[];
   trkRaw=TRK.divs||[];
-  try{if(!trkRaw.length){var s=localStorage.getItem('trk_divs_v1');if(s)trkRaw=JSON.parse(s);}}catch(e){}
+  try{var _lsTrkR=localStorage.getItem('trk_divs_v1');if(_lsTrkR){var _lsTrkD=JSON.parse(_lsTrkR);if(_lsTrkD.length>trkRaw.length)trkRaw=_lsTrkD;}}catch(e){}
   var trkDivs=trkRaw.map(function(d){
     var usd=0;
     if(d.moneda==='USD'){
@@ -3410,7 +3281,7 @@ function addDividendo(){
   dividendos.push({id:Date.now(),fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas});
   try{localStorage.setItem('ptJuli_divs',JSON.stringify(dividendos));}catch(e){}
   sbSetConfig('dividendos', dividendos);
-  renderDividendos();renderPortfolio();renderDivsCard();
+  renderPortfolio();
   document.getElementById('d-ars').value='';document.getElementById('d-ccl').value='';document.getElementById('d-usd').value='';document.getElementById('d-notas').value='';
   flash(sel,'Dividendo registrado',false);
 }
@@ -3425,7 +3296,7 @@ function deleteDividendo(id){
     localStorage.setItem('ptJuli_divs_del',JSON.stringify(pd));
   }catch(e){}
   try{localStorage.setItem('ptJuli_divs',JSON.stringify(dividendos));}catch(e){}
-  renderDividendos();renderPortfolio();renderDivsCard();
+  renderPortfolio();
   sbSetConfig('dividendos',dividendos).then(function(ok){
     if(ok){
       try{localStorage.removeItem('ptJuli_divs_del');}catch(e){}
@@ -3440,7 +3311,7 @@ function clearDividendos(){
   if(!confirm('Borrar todos los dividendos?'))return;
   dividendos=[];try{localStorage.removeItem('ptJuli_divs');}catch(e){}
   sbSetConfig('dividendos', []);
-  renderDividendos();renderPortfolio();renderDivsCard();
+  renderPortfolio();
 }
 
 function renderDividendos(){
@@ -4291,6 +4162,8 @@ function trkCalcCCL(){
     var sbTrkDivs = await sbLoadArray('trk_divs');
     if(sbTrkDivs && sbTrkDivs.length){
       TRK.divs = sbTrkDivs;
+      // Recuperar desde localStorage si tiene más entradas (Supabase pudo haber sido limpiado)
+      try{var _lsTrk=localStorage.getItem(TRK.DKEY);if(_lsTrk){var _lsTrkData=JSON.parse(_lsTrk);if(_lsTrkData.length>TRK.divs.length){TRK.divs=_lsTrkData;sbSaveArray('trk_divs',TRK.divs);}}}catch(e){}
       try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
     } else {
       try{var td=localStorage.getItem(TRK.DKEY);if(td)TRK.divs=JSON.parse(td);}catch(e){}
@@ -4425,7 +4298,7 @@ function trkCalcCCL(){
     });
     if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptJuli_mov2',JSON.stringify(movimientos));}catch(e){} }
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portUnblur();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();portUnblur();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     if(initFromSupabase._done) initFromSupabase._done();
 
