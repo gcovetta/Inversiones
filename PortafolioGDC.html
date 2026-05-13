@@ -3017,7 +3017,13 @@ function renderDivsCard(){
 
   // Fuente 2: array dividendos (sección Dividendos)
   var regDivs=(dividendos||[]).map(function(d){
-    return {fecha:d.fecha, ticker:d.ticker, usd:d.usd||0, notas:d.notas||''};
+    var usd=d.usd||0;
+    // Si usd es 0/null pero hay monto ARS, calcular desde CCL de la tabla
+    if(!usd&&(d.ars||0)>0){
+      var tc=getCCL(d.fecha)||d.ccl||CCL_HOY;
+      if(tc>0)usd=(d.ars||0)/tc;
+    }
+    return {fecha:d.fecha, ticker:d.ticker, usd:usd, notas:d.notas||''};
   });
 
   // Fuente 3: TRK.divs — ya cargado desde Supabase en init
