@@ -2494,6 +2494,7 @@ function getPositions(){
 function renderPortfolio(){
   var all=getPositions();
   var open=all.filter(function(p){return p.qty>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
+  console.log('[renderPortfolio] movimientos:'+movimientos.length+' all:'+all.length+' open:'+open.length+(open.length?(' → '+open.slice(0,3).map(function(p){return p.ticker+'='+p.qty;}).join(',')):''));
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
   var totalRpnl=all.reduce(function(a,p){return a+p.realizedPnl;},0);
@@ -4307,8 +4308,17 @@ function trkCalcCCL(){
     });
     if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptHilda_mov2',JSON.stringify(movimientos));}catch(e){} }
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();portUnblur();
-    document.getElementById('lupd').textContent='Datos cargados ✓';
+    var _dbgPos=typeof getPositions==='function'?getPositions():[];
+    var _dbgOpen=_dbgPos.filter(function(p){return p.qty>0.000001;});
+    console.log('[Hilda init] movimientos:',movimientos.length,'getPositions:',_dbgPos.length,'open(qty>0):',_dbgOpen.length,_dbgOpen.map(function(p){return p.ticker+'='+p.qty;}).join(','));
+    try{ renderMovimientos(); }catch(e){ console.error('renderMovimientos crash',e); }
+    try{ renderPortfolio(); }catch(e){ console.error('renderPortfolio crash',e); document.getElementById('lupd').textContent='⚠️ Error render: '+String(e).slice(0,60); }
+    try{ renderRatios(); }catch(e){ console.error('renderRatios crash',e); }
+    try{ renderTargets(); }catch(e){ console.error('renderTargets crash',e); }
+    portUnblur();
+    var _loadMsg = movimientos.length ? ('✓ '+movimientos.length+' movimientos cargados') : '⚠️ Sin datos — Supabase vacío y localStorage vacío';
+    document.getElementById('lupd').dataset.lastupd = _loadMsg;
+    document.getElementById('lupd').textContent = _loadMsg;
     if(initFromSupabase._done) initFromSupabase._done();
 
     // Si no hay quotes en caché, lanzar fetch inmediato (no esperar 5 min)
