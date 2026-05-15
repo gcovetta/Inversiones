@@ -388,9 +388,21 @@ tr:hover td{background:var(--surface2)}
       <div style="display:none"><div id="m-divs">$2.652</div></div>
       <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
         <!-- Izquierda: 2 filas de métricas -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex-shrink:0">
           <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">$230.121</div></div>
           <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="m-rend"><span style="color:var(--accent);font-weight:700">+21%</span></div></div>
+          <div class="metric" style="position:relative">
+            <div class="metric-label" style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+              <span>% Dolarizado</span>
+              <span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;font-size:.72rem;opacity:.55;line-height:1;user-select:none">⚙️</span>
+            </div>
+            <div class="metric-value" id="m-dolz">—</div>
+            <div id="dolz-popover" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:300;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:.8rem;min-width:230px;box-shadow:0 8px 28px rgba(0,0,0,.45)">
+              <div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Activos extra dolarizados</div>
+              <div style="font-size:.6rem;color:var(--text3);margin-bottom:.55rem;line-height:1.4">NYSE · Brasil · Europa · Cripto se suman automáticamente. Marcá posiciones adicionales:</div>
+              <div id="dolz-list" style="display:flex;flex-direction:column;gap:5px;max-height:210px;overflow-y:auto"></div>
+            </div>
+          </div>
           <div class="metric"><div class="metric-label">Ganancia Neta USD</div><div class="metric-value port-sensitive" id="m-ganancia"><span style="color:var(--accent);font-weight:700">+$40.187</span></div></div>
           <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="m-count">75</div></div>
         </div>
@@ -2797,7 +2809,7 @@ function renderPortfolio(){
 
   // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
   var trkDivsTotal=0;
-  try{var td=TRK.divs&&TRK.divs.length?TRK.divs:(function(){var s=localStorage.getItem('trk_divs_v1');return s?JSON.parse(s):[];}());
+  try{var td=TRK.divs||[];try{var _lsTrkP=localStorage.getItem('trk_divs_v1');if(_lsTrkP){var _lsTrkPD=JSON.parse(_lsTrkP);if(_lsTrkPD.length>td.length)td=_lsTrkPD;}}catch(_e){}
   if(true){td.forEach(function(d){var u=d.moneda==='USD'?(d.montoUSD||d.monto||0):(d.monto||0)/(CCL_TABLE[d.fecha]||CCL_HOY);trkDivsTotal+=u||0;});}}catch(e){}
   var movDivsTotal=movimientos.filter(function(m){return m.tipo==='dividendo';}).reduce(function(a,m){return a+(m.precioUSD||0);},0);
   var regDivsTotal=(dividendos||[]).reduce(function(a,d){return a+(d.usd||0);},0);
@@ -2816,6 +2828,24 @@ function renderPortfolio(){
     var rendSign=rendPct>=0?'+':'';
     rendEl.innerHTML='<span style="color:'+rendColor+';font-weight:700">'+rendSign+Math.round(rendPct)+'%</span>';
   } else { rendEl.textContent='—'; }
+
+  // % Dolarizado
+  var dolzAutoSectors=['nyse','brasil','europa','cripto'];
+  var dolzInv=dolzAutoSectors.reduce(function(s,sec){return s+(sectorTotalMktARS[sec]||0);},0);
+  var allInv=Object.keys(sectorTotalMktARS).reduce(function(s,sec){return s+(sectorTotalMktARS[sec]||0);},0);
+  open.forEach(function(p){
+    var sec=getSector(p.ticker);
+    if(DOLZ_EXTRA.has(p.ticker)&&dolzAutoSectors.indexOf(sec)===-1) dolzInv+=(p._invARS||0);
+  });
+  var dolzPct=allInv>0?dolzInv/allInv*100:null;
+  var dolzEl=document.getElementById('m-dolz');
+  if(dolzEl){
+    if(dolzPct!==null){
+      var dolzColor=dolzPct>=70?'var(--accent)':dolzPct>=50?'#eab308':'var(--red)';
+      dolzEl.innerHTML='<span style="color:'+dolzColor+';font-weight:700">'+Math.round(dolzPct)+'%</span>';
+    } else { dolzEl.textContent='—'; }
+  }
+  dolzBuildList(open);
 
   // Ganancia Neta = Valor Total USD - Inv. Inicial USD
   var gananciaEl=document.getElementById('m-ganancia');
@@ -3017,13 +3047,19 @@ function renderDivsCard(){
 
   // Fuente 2: array dividendos (sección Dividendos)
   var regDivs=(dividendos||[]).map(function(d){
-    return {fecha:d.fecha, ticker:d.ticker, usd:d.usd||0, notas:d.notas||''};
+    var usd=d.usd||0;
+    // Si usd es 0/null pero hay monto ARS, calcular desde CCL de la tabla
+    if(!usd&&(d.ars||0)>0){
+      var tc=getCCL(d.fecha)||d.ccl||CCL_HOY;
+      if(tc>0)usd=(d.ars||0)/tc;
+    }
+    return {fecha:d.fecha, ticker:d.ticker, usd:usd, notas:d.notas||''};
   });
 
   // Fuente 3: TRK.divs — ya cargado desde Supabase en init
   var trkRaw=[];
   trkRaw=TRK.divs||[];
-  try{if(!trkRaw.length){var s=localStorage.getItem('trk_divs_v1');if(s)trkRaw=JSON.parse(s);}}catch(e){}
+  try{var _lsTrkR=localStorage.getItem('trk_divs_v1');if(_lsTrkR){var _lsTrkD=JSON.parse(_lsTrkR);if(_lsTrkD.length>trkRaw.length)trkRaw=_lsTrkD;}}catch(e){}
   var trkDivs=trkRaw.map(function(d){
     var usd=0;
     if(d.moneda==='USD'){
@@ -4259,6 +4295,8 @@ function trkCalcCCL(){
       try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
     } else {
       try{var sd=localStorage.getItem('ptNYSE_divs');if(sd)dividendos=JSON.parse(sd);}catch(e){}
+      // Sincronizar a Supabase si hay datos en localStorage que nunca se guardaron
+      if(dividendos.length) sbSetConfig('dividendos', dividendos);
     }
     // Aplicar borrados pendientes (protección ante datos stale de Supabase)
     try{
@@ -4276,6 +4314,8 @@ function trkCalcCCL(){
     var sbTrkDivs = await sbLoadArray('trk_divs');
     if(sbTrkDivs && sbTrkDivs.length){
       TRK.divs = sbTrkDivs;
+      // Recuperar desde localStorage si tiene más entradas (Supabase pudo haber sido limpiado)
+      try{var _lsTrk=localStorage.getItem(TRK.DKEY);if(_lsTrk){var _lsTrkData=JSON.parse(_lsTrk);if(_lsTrkData.length>TRK.divs.length){TRK.divs=_lsTrkData;sbSaveArray('trk_divs',TRK.divs);}}}catch(e){}
       try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
     } else {
       try{var td=localStorage.getItem(TRK.DKEY);if(td)TRK.divs=JSON.parse(td);}catch(e){}
@@ -4409,6 +4449,10 @@ function trkCalcCCL(){
       }
     });
     if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){} }
+
+    // Dolz extra desde Supabase
+    var sbDolz = await sbGetConfig('dolz_extra');
+    if(Array.isArray(sbDolz)) DOLZ_EXTRA = new Set(sbDolz);
 
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portUnblur();
     document.getElementById('lupd').textContent='Datos cargados ✓';
@@ -5877,6 +5921,58 @@ function wlDel(i){
   wlRender();
 }
 wlRender();
+
+// ── % Dolarizado ──────────────────────────────────────────────────────────
+var DOLZ_EXTRA = new Set();
+async function dolzSave(){
+  var arr=Array.from(DOLZ_EXTRA);
+  await sbSetConfig('dolz_extra', arr);
+}
+
+function dolzTogglePopover(e){
+  e.stopPropagation();
+  var p=document.getElementById('dolz-popover');
+  if(!p) return;
+  p.style.display = p.style.display==='none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e){
+  var p=document.getElementById('dolz-popover');
+  if(!p||p.style.display==='none') return;
+  if(!p.parentElement.contains(e.target)) p.style.display='none';
+});
+
+function dolzBuildList(open){
+  var list=document.getElementById('dolz-list');
+  if(!list) return;
+  var auto=new Set(['nyse','brasil','europa','cripto']);
+  var seen=new Set(); var candidates=[];
+  open.forEach(function(p){
+    var sec=getSector(p.ticker);
+    if(!auto.has(sec)&&!seen.has(p.ticker)){
+      seen.add(p.ticker);
+      candidates.push({ticker:p.ticker,sector:sec,inv:p._invARS||0});
+    }
+  });
+  candidates.sort(function(a,b){return b.inv-a.inv;});
+  if(!candidates.length){
+    list.innerHTML='<span style="font-size:.65rem;color:var(--text3)">Sin posiciones en otros sectores</span>';
+    return;
+  }
+  list.innerHTML=candidates.map(function(c){
+    var chk=DOLZ_EXTRA.has(c.ticker)?'checked':'';
+    return '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.72rem;color:var(--text)">'
+      +'<input type="checkbox" '+chk+' onchange="dolzToggleTicker(\''+c.ticker+'\')" style="accent-color:var(--accent);cursor:pointer">'
+      +'<span style="font-family:var(--mono);font-weight:700;flex:0 0 auto">'+c.ticker+'</span>'
+      +'<span style="color:var(--text3);font-size:.62rem">('+c.sector+')</span>'
+      +'</label>';
+  }).join('');
+}
+
+async function dolzToggleTicker(ticker){
+  if(DOLZ_EXTRA.has(ticker)) DOLZ_EXTRA.delete(ticker); else DOLZ_EXTRA.add(ticker);
+  await dolzSave();
+  renderPortfolio();
+}
 
 </script>
 
