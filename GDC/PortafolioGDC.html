@@ -3970,6 +3970,13 @@ function trkResetAll(){
   initTracker();
 }
 
+function trkDeleteDiv(idx){
+  TRK.divs.splice(idx,1);
+  trkSave();
+  trkRender();
+  renderDivsCard();
+}
+
 function trkToggleEye(){
   TRK.hidden=!TRK.hidden;
   var icon=document.getElementById('trk-eye-icon');
@@ -4001,17 +4008,8 @@ function trkRender(){
       var cclF=d.cclUsado?'$'+Math.round(d.cclUsado).toLocaleString('es-AR'):'—';
       var accF=d.acciones?d.acciones.toLocaleString('es-AR'):'—';
       var fechaF=d.fecha.split('-').reverse().join('/');
-      tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" data-idx="'+idx+'">x</button></td>';
+      tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" onclick="trkDeleteDiv('+idx+')">x</button></td>';
       tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll('.btn-d').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        var idx=parseInt(btn.dataset.idx,10);
-        TRK.divs.splice(idx,1);
-        trkSave();
-        trkRender();
-        renderDivsCard();
-      });
     });
   }
   var totalUSD=TRK.divs.reduce(function(s,d){return s+d.montoUSD;},0);
@@ -4461,7 +4459,7 @@ function trkCalcCCL(){
     var sbDolz = await sbGetConfig('dolz_extra');
     if(Array.isArray(sbDolz)) DOLZ_EXTRA = new Set(sbDolz);
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();portUnblur();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();trkRender();portUnblur();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     if(initFromSupabase._done) initFromSupabase._done();
 
