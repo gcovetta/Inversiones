@@ -391,9 +391,9 @@ tr:hover td{background:var(--surface2)}
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex-shrink:0">
           <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">$230.121</div></div>
           <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="m-rend"><span style="color:var(--accent);font-weight:700">+21%</span></div></div>
-          <div class="metric" style="position:relative">
+          <div class="metric" style="position:relative;max-width:90px">
             <div class="metric-label" style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-              <span>% Dolarizado</span>
+              <span>% USD</span>
               <span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;font-size:.72rem;opacity:.55;line-height:1;user-select:none">⚙️</span>
             </div>
             <div class="metric-value" id="m-dolz">—</div>
