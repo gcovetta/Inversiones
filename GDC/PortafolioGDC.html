@@ -1372,7 +1372,8 @@ async function sbSaveArray(table, arr){
     var delRes=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gte.0',{method:'DELETE',headers:sbHeaders()});
     if(!delRes.ok) throw new Error('DEL '+delRes.status);
     if(!arr||!arr.length) return true;
-    var rows=arr.map(function(item){return{id:item.id,data:item,updated_at:new Date().toISOString()};});
+    // Usar IDs secuenciales enteros para evitar problemas con bigint en Supabase
+    var rows=arr.map(function(item,i){return{id:i+1,data:item,updated_at:new Date().toISOString()};});
     var insRes=await fetch(SUPABASE_URL+'/rest/v1/'+table,{
       method:'POST',
       headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
@@ -3993,18 +3994,24 @@ function trkRender(){
   if(!TRK.divs.length){empty.style.display='block';wrap.style.display='none';}
   else{
     empty.style.display='none';wrap.style.display='';
-    TRK.divs.forEach(function(d){
+    TRK.divs.forEach(function(d,idx){
       var tr=document.createElement('tr');
       var mOrig=d.moneda==='USD'?'USD '+trkFmt2(d.monto):'$ '+trkFmt2(d.monto);
       var mUSD='USD '+trkFmt2(d.montoUSD);
       var cclF=d.cclUsado?'$'+Math.round(d.cclUsado).toLocaleString('es-AR'):'—';
       var accF=d.acciones?d.acciones.toLocaleString('es-AR'):'—';
       var fechaF=d.fecha.split('-').reverse().join('/');
-      tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" data-id="'+d.id+'">x</button></td>';
+      tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" data-idx="'+idx+'">x</button></td>';
       tbody.appendChild(tr);
     });
     tbody.querySelectorAll('.btn-d').forEach(function(btn){
-      btn.addEventListener('click',function(){TRK.divs=TRK.divs.filter(function(x){return String(x.id)!==btn.dataset.id;});trkSave();trkRender();});
+      btn.addEventListener('click',function(){
+        var idx=parseInt(btn.dataset.idx,10);
+        TRK.divs.splice(idx,1);
+        trkSave();
+        trkRender();
+        renderDivsCard();
+      });
     });
   }
   var totalUSD=TRK.divs.reduce(function(s,d){return s+d.montoUSD;},0);
