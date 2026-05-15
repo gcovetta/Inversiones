@@ -316,6 +316,11 @@ tr:hover td{background:var(--surface2)}
     <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
     <img src="Juli.png" style="width:42px;height:42px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;flex-shrink:0" alt="Juli">
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Juli</span>
+    <div id="aniv-box" style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:3px 8px;font-family:var(--mono);font-size:.63rem;margin-left:4px;white-space:nowrap">
+      <span style="color:var(--text3)">Inicio</span>
+      <input type="date" id="aniv-fecha" onchange="anivUpdate()" style="background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:.63rem;outline:none;width:105px;cursor:pointer">
+      <span id="aniv-display" style="font-weight:600"></span>
+    </div>
   </div>
   <div class="hright">
     <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
@@ -5775,4 +5780,44 @@ wlRender();
 
 
 
+<script>
+(function(){
+  var LS_KEY='ptJuli_inicio';
+  var SB_KEY='aniv_inicio';
+  function anivRender(val){
+    var el=document.getElementById('aniv-display');
+    if(!el)return;
+    if(!val){el.textContent='';return;}
+    var start=new Date(val+'T12:00:00');
+    var aniv=new Date(start);aniv.setFullYear(aniv.getFullYear()+1);
+    var now=new Date();now.setHours(12,0,0,0);
+    if(now>=aniv){el.innerHTML='<span style="color:var(--accent)">✓ 1 año</span>';return;}
+    var y=aniv.getFullYear()-now.getFullYear();
+    var m=aniv.getMonth()-now.getMonth();
+    var total=y*12+m;
+    if(aniv.getDate()<now.getDate())total--;
+    if(total<0)total=0;
+    var label=total===1?'1 mes':total+' meses';
+    el.innerHTML='<span style="color:#eab308">'+label+' para el año</span>';
+  }
+  window.anivUpdate=function(){
+    var val=document.getElementById('aniv-fecha').value;
+    try{if(val)localStorage.setItem(LS_KEY,val);else localStorage.removeItem(LS_KEY);}catch(e){}
+    anivRender(val);
+    if(typeof sbSetConfig==='function') sbSetConfig(SB_KEY, val||null);
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    try{var s=localStorage.getItem(LS_KEY);if(s){document.getElementById('aniv-fecha').value=s;anivRender(s);}}catch(e){}
+    if(typeof sbGetConfig==='function'){
+      sbGetConfig(SB_KEY).then(function(val){
+        if(val){
+          document.getElementById('aniv-fecha').value=val;
+          anivRender(val);
+          try{localStorage.setItem(LS_KEY,val);}catch(e){}
+        }
+      }).catch(function(){});
+    }
+  });
+})();
+</script>
 </body></html>
