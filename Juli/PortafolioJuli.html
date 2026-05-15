@@ -353,6 +353,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;rubros&#39;,this)"><span>🏷</span>Rubros</button>
     <button class="nav-item" onclick="showPage(&#39;tipocambio&#39;,this)"><span>$</span>Tipo de Cambio</button>
     <button class="nav-item" onclick="showPage(&#39;ratios&#39;,this)"><span>⚙</span>Ratios</button>
+    <button class="nav-item" onclick="showPage(&#39;dividendos&#39;,this)"><span>💰</span>Dividendos</button>
 
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
@@ -691,6 +692,18 @@ tr:hover td{background:var(--surface2)}
 
     </div>
 
+    <!-- DIVIDENDOS -->
+    <div class="page" id="page-dividendos">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Registrar dividendo</span></div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="fgrp"><label>Ticker</label><select id="d-ticker" style="text-transform:uppercase"><option value="">— seleccioná ticker —</option></select></div>
+            <div class="fgrp"><label>Fecha cobro</label><input id="d-fecha" type="date"></div>
+            <div class="fgrp"><label>Monto ARS</label><input id="d-ars" type="number" min="0" step="any" placeholder="0"></div>
+            <div class="fgrp"><label>CCL del día</label><input id="d-ccl" type="number" min="0" step="any" placeholder="auto"></div>
+            <div class="fgrp"><label>Monto USD (calc.)</label><input id="d-usd" type="text" readonly placeholder="—" style="color:var(--accent)"></div>
+          </div>
           <div class="fgrp" style="margin-top:4px"><label>Notas</label><input id="d-notas" type="text" placeholder="ej: Q1 2026"></div>
           <div class="gap-row" style="margin-top:10px">
             <button class="btn btn-a" onclick="addDividendo()">+ Registrar</button>
