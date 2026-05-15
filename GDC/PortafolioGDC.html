@@ -2124,9 +2124,11 @@ function portCheckSession(){portUnblur();return; // PIN desactivado
 }
 // ─────────────────────────────────────────────────────────────────────────
 
+var _gdcInitDone = false;
 function saveAndRender(){
   try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){}
-  sbSaveArray('movimientos', movimientos);
+  if(_gdcInitDone){ sbSaveArray('movimientos', movimientos); }
+  else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
   renderMovimientos();renderPortfolio();renderDivsCard();simPopulateSelect();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
 }
@@ -4341,6 +4343,16 @@ function trkCalcCCL(){
     if(sbRubros){Object.assign(USER_RUBRO_TABLE, sbRubros);try{localStorage.setItem('ptNYSE_rubros',JSON.stringify(USER_RUBRO_TABLE));}catch(e){}}
     else{try{var sru=localStorage.getItem('ptNYSE_rubros');if(sru){Object.assign(USER_RUBRO_TABLE,JSON.parse(sru));}}catch(e){}}
 
+    // 5c. Watchlist
+    var sbWl = await sbGetConfig('wl_gdc');
+    if(sbWl && Array.isArray(sbWl) && sbWl.length){
+      try{localStorage.setItem(WL_KEY, JSON.stringify(sbWl));}catch(e){}
+      wlRender();
+    } else {
+      var _lsWl = wlLoad();
+      if(_lsWl.length){ sbSetConfig('wl_gdc', _lsWl); }
+    }
+
 
     // 6. CCL/MEP override
     var sbCclOvr = await sbGetConfig('ccl_override');
@@ -4461,6 +4473,7 @@ function trkCalcCCL(){
 
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();trkRender();portUnblur();
     document.getElementById('lupd').textContent='Datos cargados ✓';
+    _gdcInitDone = true;
     if(initFromSupabase._done) initFromSupabase._done();
 
     // Si no hay quotes en caché, lanzar fetch inmediato (no esperar 5 min)
@@ -5895,7 +5908,10 @@ function _btirNumMatch(rawVal, filterStr) {
 /* ── Watchlist "Tickers en la mira" ─────────────────────────────── */
 const WL_KEY = 'wl_gdc_v1';
 function wlLoad(){ try{ return JSON.parse(localStorage.getItem(WL_KEY))||[]; }catch(e){ return []; } }
-function wlSave(arr){ localStorage.setItem(WL_KEY, JSON.stringify(arr)); }
+function wlSave(arr){
+  try{ localStorage.setItem(WL_KEY, JSON.stringify(arr)); }catch(e){}
+  sbSetConfig('wl_gdc', arr);
+}
 function wlRender(){
   const arr = wlLoad();
   const el = document.getElementById('wl-list');
