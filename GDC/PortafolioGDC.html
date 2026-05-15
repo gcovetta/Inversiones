@@ -3137,7 +3137,7 @@ function renderDivsCard(){
         '<div style="font-size:1.5rem;font-weight:700;font-family:var(--mono);color:var(--accent);letter-spacing:-.02em">USD '+totUSD.toFixed(2)+'</div>'+
         '<div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);margin-top:3px">'+all.length+' cobros · '+months.length+' mes'+(months.length!==1?'es':'')+'</div>'+
       '</div>'+
-      '<div style="flex-shrink:0">'+svg+'</div>'+
+      '<div style="flex:1;min-width:0;overflow-x:auto">'+svg+'</div>'+
     '</div>';
 }
 
@@ -4004,7 +4004,7 @@ function trkRender(){
       tbody.appendChild(tr);
     });
     tbody.querySelectorAll('.btn-d').forEach(function(btn){
-      btn.addEventListener('click',function(){TRK.divs=TRK.divs.filter(function(x){return x.id!==parseInt(btn.dataset.id);});trkSave();trkRender();});
+      btn.addEventListener('click',function(){TRK.divs=TRK.divs.filter(function(x){return String(x.id)!==btn.dataset.id;});trkSave();trkRender();});
     });
   }
   var totalUSD=TRK.divs.reduce(function(s,d){return s+d.montoUSD;},0);
