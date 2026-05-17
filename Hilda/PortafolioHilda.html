@@ -315,7 +315,7 @@ tr:hover td{background:var(--surface2)}
   <div class="logo">
     <div class="logo-dot"></div>
     <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
-    <img src="PerfilHilda.png" style="width:42px;height:42px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;flex-shrink:0" alt="Hilda">
+    <img src="PerfilHilda.png" style="width:58px;height:58px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;flex-shrink:0" alt="Hilda">
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Hilda</span>
     <div id="aniv-box" style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:3px 8px;font-family:var(--mono);font-size:.63rem;margin-left:4px;white-space:nowrap">
       <span style="color:var(--text3)">Inicio</span>
@@ -1642,7 +1642,7 @@ function importBMXLSX(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+    var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
     var ws=wb.Sheets[wb.SheetNames[0]];
     var ref=ws['!ref'];
     if(!ref){alert('Hoja vacía o formato no reconocido.');return;}
@@ -1711,7 +1711,7 @@ function importBMXLSX(input){
     document.getElementById('bm-import-overlay').style.display='flex';
     }catch(err){alert('Error al leer el archivo XLSX:\n'+err.message);}
   };
-  reader.readAsArrayBuffer(file);
+  reader.readAsBinaryString(file);
 }
 function bmXlsxConfirm(){
   var valid=_bmXlsxRows.filter(function(r){return r.ok;});
