@@ -1642,8 +1642,7 @@ function importBMXLSX(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-    var b64=e.target.result.split(',')[1];
-    var wb=XLSX.read(b64,{type:'base64'});
+    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
     var ws=wb.Sheets[wb.SheetNames[0]];
     var ref=ws['!ref'];
     if(!ref){alert('Hoja vacía o formato no reconocido.');return;}
@@ -1651,15 +1650,11 @@ function importBMXLSX(input){
     _bmXlsxRows=[];
     var tipoMap={'COMPRA NORMAL':'compra','VENTA':'venta'};
     var _mepTickers=['AL30','AL35','GD30'];
-    var totalRows=range.e.r; // excluding header row 0
+    var totalRows=range.e.r;
     function gc(r,c){
       var cell=ws[XLSX.utils.encode_cell({r:r,c:c})];
       if(!cell)return'';
-      // For dates: cellDates:true makes type 'd' with Date object
-      if(cell.t==='d')return cell.v;
-      // For numbers used as date serials (fallback)
-      if(cell.t==='n'&&c===1)return cell.v;
-      return cell.w!==undefined?cell.w:cell.v;
+      return cell.v!==undefined?cell.v:'';
     }
     for(var ri=1;ri<=range.e.r;ri++){
       var comprobante=String(gc(ri,2)).trim();
@@ -1667,12 +1662,9 @@ function importBMXLSX(input){
       var tipo=tipoMap[comprobante];
       var fechaVal=gc(ri,1);
       var fecha=_bmXlsxDateFmt(fechaVal);
-      var qtyRaw=ws[XLSX.utils.encode_cell({r:ri,c:4})];
-      var qty=qtyRaw?Math.abs(parseFloat(qtyRaw.v)||0):0;
-      var tickerCell=ws[XLSX.utils.encode_cell({r:ri,c:5})];
-      var ticker=tickerCell?String(tickerCell.v||'').trim().toUpperCase():'';
-      var precioCell=ws[XLSX.utils.encode_cell({r:ri,c:6})];
-      var precio=precioCell?parseFloat(precioCell.v)||0:0;
+      var qty=Math.abs(parseFloat(gc(ri,4))||0);
+      var ticker=String(gc(ri,5)).trim().toUpperCase();
+      var precio=parseFloat(gc(ri,6))||0;
       if(!ticker||ticker==='VARIAS'||_mepTickers.indexOf(ticker)>=0)continue;
       var mercado=_bmDetectMercado(ticker);
       var rowErrors=[];
@@ -1712,7 +1704,7 @@ function importBMXLSX(input){
     document.getElementById('bm-import-overlay').style.display='flex';
     }catch(err){alert('Error: '+err.message+'\n\nStack:\n'+(err.stack||'n/a').substring(0,400));}
   };
-  reader.readAsDataURL(file);
+  reader.readAsArrayBuffer(file);
 }
 function bmXlsxConfirm(){
   var valid=_bmXlsxRows.filter(function(r){return r.ok;});
