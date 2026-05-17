@@ -1682,8 +1682,10 @@ function importBMXLSX(input){
     }
     var ok=_bmXlsxRows.filter(function(r){return r.ok;}).length;
     var skipped=totalRows-_bmXlsxRows.length;
+    var dbgCell=ws[XLSX.utils.encode_cell({r:1,c:2})];
+    var dbgVal=dbgCell?(dbgCell.t+'='+JSON.stringify(dbgCell.v)):'(vacía)';
     document.getElementById('bm-import-summary').textContent=
-      _bmXlsxRows.length+' operaciones · '+ok+' válidas · '+skipped+' filas ignoradas (cobranzas/cauciones)';
+      _bmXlsxRows.length+' operaciones · '+ok+' válidas · '+skipped+' ignoradas | filas SheetJS:'+range.e.r+' col2fila1:'+dbgVal;
     document.getElementById('bm-import-confirm-btn').disabled=(ok===0);
     document.getElementById('bm-import-status').textContent='';
     document.getElementById('bm-import-tbody').innerHTML=_bmXlsxRows.map(function(r){
