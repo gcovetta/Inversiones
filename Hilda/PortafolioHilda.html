@@ -1642,7 +1642,8 @@ function importBMXLSX(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-    var wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+    var b64=e.target.result.split(',')[1];
+    var wb=XLSX.read(b64,{type:'base64',cellDates:true});
     var ws=wb.Sheets[wb.SheetNames[0]];
     var ref=ws['!ref'];
     if(!ref){alert('Hoja vacía o formato no reconocido.');return;}
@@ -1711,7 +1712,7 @@ function importBMXLSX(input){
     document.getElementById('bm-import-overlay').style.display='flex';
     }catch(err){alert('Error al leer el archivo XLSX:\n'+err.message);}
   };
-  reader.readAsBinaryString(file);
+  reader.readAsDataURL(file);
 }
 function bmXlsxConfirm(){
   var valid=_bmXlsxRows.filter(function(r){return r.ok;});
