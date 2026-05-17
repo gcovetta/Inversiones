@@ -1710,7 +1710,7 @@ function importBMXLSX(input){
         +'</tr>';
     }).join('');
     document.getElementById('bm-import-overlay').style.display='flex';
-    }catch(err){alert('Error al leer el archivo XLSX:\n'+err.message);}
+    }catch(err){alert('Error: '+err.message+'\n\nStack:\n'+(err.stack||'n/a').substring(0,400));}
   };
   reader.readAsDataURL(file);
 }
