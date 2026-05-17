@@ -1642,7 +1642,7 @@ function importBMXLSX(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-    var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
     var ws=wb.Sheets[wb.SheetNames[0]];
     var ref=ws['!ref'];
     if(!ref){alert('Hoja vacía o formato no reconocido.');return;}
