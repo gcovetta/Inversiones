@@ -1644,9 +1644,15 @@ function importBMXLSX(input){
     try{
     var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
     var ws=wb.Sheets[wb.SheetNames[0]];
-    var ref=ws['!ref'];
-    if(!ref){alert('Hoja vacía o formato no reconocido.');return;}
-    var range=XLSX.utils.decode_range(ref);
+    if(!ws){alert('Hoja vacía o formato no reconocido.');return;}
+    // Recalculate real range — some brokers export XLSX with wrong <dimension> tag
+    var range={s:{r:0,c:0},e:{r:0,c:0}};
+    Object.keys(ws).filter(function(k){return k[0]!=='!';}).forEach(function(k){
+      var coord=XLSX.utils.decode_cell(k);
+      if(coord.r>range.e.r)range.e.r=coord.r;
+      if(coord.c>range.e.c)range.e.c=coord.c;
+    });
+    ws['!ref']=XLSX.utils.encode_range(range);
     _bmXlsxRows=[];
     var tipoMap={'COMPRA NORMAL':'compra','VENTA':'venta'};
     var _mepTickers=['AL30','AL35','GD30'];
