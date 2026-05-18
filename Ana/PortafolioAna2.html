@@ -1862,6 +1862,7 @@ function perfCalcUpdate(){
   var el  = document.getElementById('perf-result-usd');
   if(!inp||!el) return;
   try{localStorage.setItem('ptAna_perf_target', inp.value);}catch(e){}
+  if(typeof sbSetConfig==='function') sbSetConfig('perf_target', inp.value||null);
   var target    = parseFloat(inp.value)||0;
   var invInicial = getRawNum('inv-sidebar-usd');
   if(!target||!invInicial){el.textContent='—';el.style.color='var(--text2)';return;}
@@ -4414,6 +4415,14 @@ function trkCalcCCL(){
       if(di)di.textContent='$'+Math.round(parseFloat(sbInv)).toLocaleString('es-AR');
       try{localStorage.setItem('ptAna_inv_inicial',String(sbInv));}catch(e){}
     } else{loadInvInicial();}
+
+    // 9a. Objetivo rendimiento
+    var sbPerfTarget = await sbGetConfig('perf_target');
+    if(sbPerfTarget){
+      var ptInp=document.getElementById('perf-target-usd');
+      if(ptInp){ptInp.value=sbPerfTarget;perfCalcUpdate();}
+      try{localStorage.setItem('ptAna_perf_target',String(sbPerfTarget));}catch(e){}
+    }
 
     // 9. Quotes cache (solo localStorage - datos volátiles)
     try{
