@@ -267,6 +267,7 @@ tr:hover td{background:var(--surface2)}
 .ra-pct-auto{font-weight:700;text-align:right;padding-right:6px!important}
 .ra-val-big{font-size:1.05rem;font-weight:700;font-family:var(--mono)}
 .ra-sublabel{font-size:.56rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
+.ra-th-cell{background:#3a2200!important;color:rgba(255,255,255,.9)!important;border:1px solid #5c3800!important;font-size:.65rem!important;font-family:var(--mono)!important;font-weight:600!important;text-align:center!important;vertical-align:middle!important}
 .ra-no-border{border:none!important;background:transparent!important;vertical-align:middle;padding:.2rem .3rem!important}
 </style>
 </head>
@@ -380,13 +381,13 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Herramientas</div>
     <button class="nav-item" onclick="showPage(&#39;arbitraje&#39;,this)"><span>⇄</span>Arbitraje</button>
     <button class="nav-item" onclick="showPage(&#39;dashboard&#39;,this)"><span>📊</span>DashBoard</button>
+    <button class="nav-item" onclick="showPage(&#39;rendanual&#39;,this)"><span>📈</span>Rend. Anual</button>
     <div class="nav-sec">Cambios</div>
     <button class="nav-item" onclick="showPage(&#39;targets&#39;,this)"><span>◎</span>P. Venta</button>
     <button class="nav-item" onclick="showPage(&#39;rubros&#39;,this)"><span>🏷</span>Rubros</button>
     <button class="nav-item" onclick="showPage(&#39;tipocambio&#39;,this)"><span>$</span>Tipo de Cambio</button>
     <button class="nav-item" onclick="showPage(&#39;ratios&#39;,this)"><span>⚙</span>Ratios</button>
     <button class="nav-item" onclick="showPage(&#39;tracker&#39;,this)"><span>◎</span>Dividendos</button>
-    <button class="nav-item" onclick="showPage(&#39;rendanual&#39;,this)"><span>📈</span>Rend. Anual</button>
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
@@ -6176,9 +6177,7 @@ wlRender();
             '<td class="ra-label">Tenes</td>'+
             '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.tenes||'')+'" placeholder="—"'+
             ' onchange="raPatch('+idx+',\'tenes\',this.value);raUpdateCalc('+idx+')" /></td>'+
-            '<td style="text-align:right;padding:.38rem .55rem">'+
-              '<span class="ra-sublabel" style="display:block;text-align:right">Ganaste neto</span>'+
-            '</td>'+
+            '<td class="ra-th-cell">Ganaste neto</td>'+
             '<td class="ra-no-border"></td>'+
           '</tr>'+
           '<tr class="ra-row-pct">'+
