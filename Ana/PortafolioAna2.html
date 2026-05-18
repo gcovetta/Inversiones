@@ -247,21 +247,22 @@ tr:hover td{background:var(--surface2)}
 .jvm-tooltip{background:#1e2026!important;color:#e8eaf0!important;border:1px solid #363a45!important;font-family:'DM Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
 .jvm-zoom-btn{display:none!important}
 /* ── RENDIMIENTO ANUAL ── */
-.ra-period-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:0}
-.ra-table{width:100%;border-collapse:collapse;font-size:.8rem}
-.ra-table th{text-align:center;padding:.42rem .55rem;font-size:.63rem;font-family:var(--mono);color:rgba(255,255,255,.9);background:#3a2200;border:1px solid #5c3800;white-space:normal;line-height:1.35;font-weight:600}
-.ra-table td{padding:.38rem .55rem;border:1px solid var(--border2);font-size:.78rem;font-family:var(--mono);color:var(--text);background:var(--surface2);white-space:nowrap}
-.ra-label{font-weight:700;color:var(--text)!important;background:var(--surface)!important;font-size:.75rem!important;width:16%;min-width:72px}
-.ra-date-th{background:#2a1700!important;color:var(--amber)!important;text-align:left!important;width:20%}
-.ra-meses-th{background:var(--surface)!important;border:1px solid var(--border)!important;width:16%}
+.ra-period-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:inline-block}
+.ra-table{width:auto;border-collapse:collapse;font-size:.75rem}
+.ra-table th{text-align:center;padding:.32rem .45rem;font-size:.58rem;font-family:var(--mono);color:rgba(255,255,255,.9);background:#3a2200;border:1px solid #5c3800;white-space:nowrap;font-weight:600}
+.ra-table td{padding:.3rem .45rem;border:1px solid var(--border2);font-size:.75rem;font-family:var(--mono);color:var(--text);background:var(--surface2);white-space:nowrap}
+.ra-label{font-weight:700;color:var(--text)!important;background:var(--surface)!important;font-size:.72rem!important}
+.ra-date-th{background:#2a1700!important;color:var(--amber)!important;text-align:left!important}
+.ra-meses-th{background:var(--surface)!important;border:1px solid var(--border)!important}
+.ra-subhdr{background:#1e1400!important;color:var(--text3)!important;font-size:.55rem!important;letter-spacing:.04em;text-transform:uppercase}
 .ra-row-ganas td{background:rgba(251,146,60,.13)!important}
 .ra-row-pct td{background:rgba(251,146,60,.07)!important}
-.ra-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--mono);font-size:.78rem;width:100%;text-align:right;outline:none;padding:1px 3px;transition:border-color .12s}
+.ra-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--mono);font-size:.75rem;width:68px;text-align:right;outline:none;padding:1px 2px;transition:border-color .12s}
 .ra-input:hover{border-bottom-color:var(--border2)}
 .ra-input:focus{border-bottom-color:var(--amber);background:rgba(255,255,255,.04)}
-.ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.8rem!important;min-width:90px}
+.ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.76rem!important;width:110px}
 .ra-pos-val{color:var(--accent)!important}
-.ra-del-btn{height:20px;padding:0 6px;font-size:.6rem;line-height:1}
+.ra-del-btn{height:18px;padding:0 5px;font-size:.58rem;line-height:1}
 </style>
 </head>
 <body>
@@ -6084,6 +6085,11 @@ wlRender();
 
   function v(val){return val||'';}
 
+  function inp(idx,key,val,extra){
+    return '<input class="ra-input'+(extra?' '+extra:'')+'" value="'+v(val)+'" placeholder="—"'+
+           ' onchange="raPatch('+idx+',\''+key+'\',this.value)" />';
+  }
+
   function raCreateEl(p,idx){
     var wrap=document.createElement('div');
     wrap.className='ra-period-wrap';
@@ -6091,55 +6097,54 @@ wlRender();
       '<table class="ra-table">'+
         '<thead>'+
           '<tr>'+
-            '<th class="ra-date-th">'+
-              '<input class="ra-input ra-input-date" value="'+v(p.fecha)+'" placeholder="Fecha (ej: 07/08/2025)"'+
+            '<th class="ra-date-th" rowspan="2">'+
+              '<input class="ra-input ra-input-date" value="'+v(p.fecha)+'" placeholder="Fecha"'+
               ' onchange="raPatch('+idx+',\'fecha\',this.value)" />'+
             '</th>'+
-            '<th style="width:22%">Total</th>'+
-            '<th style="width:22%">Te cobro 20% sobre lo ganado (anual)</th>'+
-            '<th style="width:22%">Ganaste descontando lo mío</th>'+
-            '<th class="ra-meses-th">'+
-              '<div style="display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:wrap">'+
-                '<span style="font-size:.6rem;color:var(--text3)">Meses:</span>'+
-                '<input class="ra-input" style="width:38px;text-align:center" value="'+v(p.meses)+'" placeholder="—"'+
+            '<th colspan="2">Total</th>'+
+            '<th rowspan="2">Te cobro 20%<br>sobre lo ganado</th>'+
+            '<th rowspan="2">Ganaste<br>descontando lo mío</th>'+
+            '<th class="ra-meses-th" rowspan="2">'+
+              '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
+                '<span style="font-size:.55rem;color:var(--text3)">Meses</span>'+
+                '<input class="ra-input" style="width:34px;text-align:center" value="'+v(p.meses)+'"'+
                 ' onchange="raPatch('+idx+',\'meses\',this.value)" />'+
-                '<button class="btn btn-sm btn-d ra-del-btn" onclick="raDelete('+idx+')" title="Eliminar período">🗑</button>'+
+                '<button class="btn btn-sm btn-d ra-del-btn" onclick="raDelete('+idx+')" title="Eliminar">🗑</button>'+
               '</div>'+
             '</th>'+
+          '</tr>'+
+          '<tr>'+
+            '<th class="ra-subhdr">Ana</th>'+
+            '<th class="ra-subhdr">Juli</th>'+
           '</tr>'+
         '</thead>'+
         '<tbody>'+
           '<tr>'+
             '<td class="ra-label">Pusiste</td>'+
-            '<td colspan="2"><input class="ra-input" value="'+v(p.pusiste)+'" placeholder="u$s —"'+
-            ' onchange="raPatch('+idx+',\'pusiste\',this.value)" /></td>'+
-            '<td></td><td></td>'+
+            '<td>'+inp(idx,'pusiste_ana',p.pusiste_ana)+'</td>'+
+            '<td>'+inp(idx,'pusiste_juli',p.pusiste_juli)+'</td>'+
+            '<td></td><td></td><td></td>'+
           '</tr>'+
           '<tr>'+
             '<td class="ra-label">Tenes</td>'+
-            '<td colspan="2"><input class="ra-input" value="'+v(p.tenes)+'" placeholder="u$s —"'+
-            ' onchange="raPatch('+idx+',\'tenes\',this.value)" /></td>'+
-            '<td><input class="ra-input" value="'+v(p.tenes_col4)+'" placeholder="u$s —"'+
-            ' onchange="raPatch('+idx+',\'tenes_col4\',this.value)" /></td>'+
-            '<td></td>'+
+            '<td>'+inp(idx,'tenes_ana',p.tenes_ana)+'</td>'+
+            '<td>'+inp(idx,'tenes_juli',p.tenes_juli)+'</td>'+
+            '<td></td><td></td><td></td>'+
           '</tr>'+
           '<tr class="ra-row-ganas">'+
             '<td class="ra-label">Ganas</td>'+
-            '<td><input class="ra-input" value="'+v(p.ganas_bruto)+'" placeholder="u$s —"'+
-            ' onchange="raPatch('+idx+',\'ganas_bruto\',this.value)" /></td>'+
-            '<td><input class="ra-input" value="'+v(p.ganas_comision)+'" placeholder="u$s —"'+
-            ' onchange="raPatch('+idx+',\'ganas_comision\',this.value)" /></td>'+
-            '<td><input class="ra-input ra-pos-val" value="'+v(p.ganas_neto)+'" placeholder="u$s —"'+
-            ' onchange="raPatch('+idx+',\'ganas_neto\',this.value)" /></td>'+
+            '<td>'+inp(idx,'ganas_ana',p.ganas_ana)+'</td>'+
+            '<td>'+inp(idx,'ganas_juli',p.ganas_juli)+'</td>'+
+            '<td>'+inp(idx,'ganas_comision',p.ganas_comision)+'</td>'+
+            '<td>'+inp(idx,'ganas_neto',p.ganas_neto,'ra-pos-val')+'</td>'+
             '<td></td>'+
           '</tr>'+
           '<tr class="ra-row-pct">'+
             '<td class="ra-label">Ganas %</td>'+
-            '<td><input class="ra-input" value="'+v(p.pct_bruto)+'" placeholder="—%"'+
-            ' onchange="raPatch('+idx+',\'pct_bruto\',this.value)" /></td>'+
+            '<td>'+inp(idx,'pct_ana',p.pct_ana)+'</td>'+
+            '<td>'+inp(idx,'pct_juli',p.pct_juli)+'</td>'+
             '<td></td>'+
-            '<td><input class="ra-input ra-pos-val" value="'+v(p.pct_neto)+'" placeholder="—%"'+
-            ' onchange="raPatch('+idx+',\'pct_neto\',this.value)" /></td>'+
+            '<td>'+inp(idx,'pct_neto',p.pct_neto,'ra-pos-val')+'</td>'+
             '<td></td>'+
           '</tr>'+
         '</tbody>'+
@@ -6149,7 +6154,8 @@ wlRender();
 
   window.raPatch=function(idx,key,val){if(periodos[idx])periodos[idx][key]=val;raSave();};
   window.raAddPeriodo=function(){
-    periodos.push({fecha:'',meses:'',pusiste:'',tenes:'',tenes_col4:'',ganas_bruto:'',ganas_comision:'',ganas_neto:'',pct_bruto:'',pct_neto:''});
+    periodos.push({fecha:'',meses:'',pusiste_ana:'',pusiste_juli:'',tenes_ana:'',tenes_juli:'',
+                   ganas_ana:'',ganas_juli:'',ganas_comision:'',ganas_neto:'',pct_ana:'',pct_juli:'',pct_neto:''});
     raSave();raRender();
   };
   window.raDelete=function(idx){
