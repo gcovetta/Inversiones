@@ -6169,10 +6169,6 @@ wlRender();
             ' onchange="raPatch('+idx+',\'pusiste\',this.value);raUpdateCalc('+idx+')" /></td>'+
             '<td style="text-align:right;padding:.38rem .55rem">'+
               '<span class="ra-val-big" id="ra-com-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+comisionUsd+'</span>'+
-              '<div style="margin-top:5px">'+
-                '<span class="ra-sublabel">Ganaste neto</span>'+
-                '<span class="ra-val-big" id="ra-neto-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+netoPct+'</span>'+
-              '</div>'+
             '</td>'+
             '<td class="ra-no-border"></td>'+
           '</tr>'+
@@ -6180,13 +6176,17 @@ wlRender();
             '<td class="ra-label">Tenes</td>'+
             '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.tenes||'')+'" placeholder="—"'+
             ' onchange="raPatch('+idx+',\'tenes\',this.value);raUpdateCalc('+idx+')" /></td>'+
-            '<td></td>'+
+            '<td style="text-align:right;padding:.38rem .55rem">'+
+              '<span class="ra-sublabel" style="display:block;text-align:right">Ganaste neto</span>'+
+            '</td>'+
             '<td class="ra-no-border"></td>'+
           '</tr>'+
           '<tr class="ra-row-pct">'+
             '<td class="ra-label">Ganas %</td>'+
             '<td class="ra-pct-auto" id="ra-pct-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+ganasPct+'</td>'+
-            '<td></td>'+
+            '<td style="text-align:right;padding:.38rem .55rem">'+
+              '<span class="ra-val-big" id="ra-neto-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+netoPct+'</span>'+
+            '</td>'+
             '<td class="ra-no-border"></td>'+
           '</tr>'+
         '</tbody>'+
