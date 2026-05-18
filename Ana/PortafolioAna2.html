@@ -322,6 +322,15 @@ tr:hover td{background:var(--surface2)}
       <input type="date" id="aniv-fecha" onchange="anivUpdate()" style="background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:.63rem;outline:none;width:105px;cursor:pointer">
       <span id="aniv-display" style="font-weight:600"></span>
     </div>
+    <div style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:3px 8px;font-family:var(--mono);font-size:.63rem;margin-left:4px;white-space:nowrap">
+      <span style="color:var(--text3)">Objetivo</span>
+      <input type="number" id="perf-target-usd" placeholder="0" min="0" step="any" oninput="perfCalcUpdate()" style="background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:.63rem;outline:none;width:90px;text-align:right;cursor:pointer">
+      <span style="color:var(--text3)">USD</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:3px 8px;font-family:var(--mono);font-size:.63rem;margin-left:4px;white-space:nowrap">
+      <span style="color:var(--text3)">20%</span>
+      <span id="perf-result-usd" style="font-weight:600">—</span>
+    </div>
   </div>
   <div class="hright">
     <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
@@ -1820,6 +1829,11 @@ function loadInvInicial(){
     if(v){ setFmtNum('inv-sidebar-usd', v, 0); }
     if(disp){disp.textContent=v?'$'+Math.round(parseFloat(v)).toLocaleString('es-AR'):'—';}
   }catch(e){}
+  try{
+    var t=localStorage.getItem('ptAna_perf_target');
+    var inp=document.getElementById('perf-target-usd');
+    if(t&&inp){inp.value=t;perfCalcUpdate();}
+  }catch(e){}
 }
 // ── Thousand-separator formatting for text inputs ──────────────────────────
 function fmtNumInput(el, decimals){
@@ -1842,6 +1856,18 @@ function getRawNum(id){
   if(!el) return 0;
   var v = el.value.replace(/\./g,'').replace(/,/g,'.');
   return parseFloat(v)||0;
+}
+function perfCalcUpdate(){
+  var inp = document.getElementById('perf-target-usd');
+  var el  = document.getElementById('perf-result-usd');
+  if(!inp||!el) return;
+  try{localStorage.setItem('ptAna_perf_target', inp.value);}catch(e){}
+  var target    = parseFloat(inp.value)||0;
+  var invInicial = getRawNum('inv-sidebar-usd');
+  if(!target||!invInicial){el.textContent='—';el.style.color='var(--text2)';return;}
+  var result = (target - invInicial) * 0.20;
+  el.textContent = (result>=0?'+':'')+Math.round(result).toLocaleString('es-AR')+' USD';
+  el.style.color = result>=0?'var(--accent)':'var(--red)';
 }
 function setFmtNum(id, num, decimals){
   var el = document.getElementById(id);
@@ -1876,6 +1902,7 @@ function rvConfirm(){ renderPortfolio(); }
 function invConfirm(){
   var v=getRawNum('inv-sidebar-usd');
   saveInvInicial(v);
+  perfCalcUpdate();
   var btn=document.querySelector('[onclick="invConfirm()"]');
   if(btn){var orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--accent)';setTimeout(function(){btn.textContent=orig;},1000);}
 }
