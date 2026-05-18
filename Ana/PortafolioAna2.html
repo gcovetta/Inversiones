@@ -263,6 +263,8 @@ tr:hover td{background:var(--surface2)}
 .ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.76rem!important;width:110px}
 .ra-pos-val{color:var(--accent)!important}
 .ra-del-btn{height:18px;padding:0 5px;font-size:.58rem;line-height:1}
+.ra-curr{font-size:.62rem;color:var(--text3);margin-right:2px;vertical-align:middle;user-select:none}
+.ra-pct-auto{font-weight:700;text-align:right;padding-right:6px!important}
 </style>
 </head>
 <body>
@@ -6067,84 +6069,101 @@ wlRender();
 <script>
 /* ── RENDIMIENTO ANUAL ── */
 (function(){
-  var RA_KEY='ra_periodos_ana_juli';
-  var periodos=[];
+  var RA_SBKEY = 'rendanual_periodos';
+  var periodos = [];
+  var saveTimer = null;
 
-  function raSave(){try{localStorage.setItem(RA_KEY,JSON.stringify(periodos));}catch(e){}}
-  function raLoad(){try{periodos=JSON.parse(localStorage.getItem(RA_KEY)||'[]');}catch(e){periodos=[];}raRender();}
+  function parseNum(s){
+    return parseFloat(String(s||'').replace(/[^0-9.\-]/g,''));
+  }
+
+  function raSaveDebounced(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      var json = JSON.stringify(periodos);
+      try{ localStorage.setItem('ra_backup', json); }catch(e){}
+      if(typeof sbSetConfig==='function') sbSetConfig(RA_SBKEY, json);
+    }, 800);
+  }
+
+  async function raLoad(){
+    var data = null;
+    if(typeof sbGetConfig==='function') data = await sbGetConfig(RA_SBKEY);
+    if(data){
+      try{
+        if(typeof data==='string') data = JSON.parse(data);
+        if(Array.isArray(data)) periodos = data;
+      }catch(e){}
+    } else {
+      try{
+        var ls = localStorage.getItem('ra_backup');
+        if(ls){ var p=JSON.parse(ls); if(Array.isArray(p)) periodos=p; }
+      }catch(e){}
+    }
+    raRender();
+  }
 
   function raRender(){
-    var cont=document.getElementById('ra-container');
-    var emp=document.getElementById('ra-empty');
-    if(!cont)return;
-    cont.querySelectorAll('.ra-period-wrap').forEach(function(el){el.remove();});
-    if(!periodos.length){if(emp)emp.style.display='';return;}
-    if(emp)emp.style.display='none';
-    periodos.forEach(function(p,i){cont.appendChild(raCreateEl(p,i));});
+    var cont = document.getElementById('ra-container');
+    var emp  = document.getElementById('ra-empty');
+    if(!cont) return;
+    cont.querySelectorAll('.ra-period-wrap').forEach(function(el){ el.remove(); });
+    if(!periodos.length){ if(emp) emp.style.display=''; return; }
+    if(emp) emp.style.display='none';
+    periodos.forEach(function(p,i){ cont.appendChild(raCreateEl(p,i)); });
   }
 
-  function v(val){return val||'';}
-
-  function inp(idx,key,val,extra){
-    return '<input class="ra-input'+(extra?' '+extra:'')+'" value="'+v(val)+'" placeholder="—"'+
-           ' onchange="raPatch('+idx+',\''+key+'\',this.value)" />';
+  function calcPct(p){
+    var pu = parseNum(p.pusiste), te = parseNum(p.tenes);
+    if(isNaN(pu)||isNaN(te)||pu===0) return null;
+    return ((te-pu)/pu*100);
   }
 
-  function raCreateEl(p,idx){
-    var wrap=document.createElement('div');
-    wrap.className='ra-period-wrap';
-    wrap.innerHTML=
+  function raCreateEl(p, idx){
+    var pct = calcPct(p);
+    var pctTxt = pct!==null ? pct.toFixed(2)+'%' : '—';
+    var pctCol = pct!==null ? 'var(--accent)' : 'var(--text3)';
+    var wrap = document.createElement('div');
+    wrap.className = 'ra-period-wrap';
+    wrap.innerHTML =
       '<table class="ra-table">'+
-        '<thead>'+
-          '<tr>'+
-            '<th class="ra-date-th" rowspan="2">'+
-              '<input class="ra-input ra-input-date" value="'+v(p.fecha)+'" placeholder="Fecha"'+
-              ' onchange="raPatch('+idx+',\'fecha\',this.value)" />'+
-            '</th>'+
-            '<th colspan="2">Total</th>'+
-            '<th rowspan="2">Te cobro 20%<br>sobre lo ganado</th>'+
-            '<th rowspan="2">Ganaste<br>descontando lo mío</th>'+
-            '<th class="ra-meses-th" rowspan="2">'+
-              '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
-                '<span style="font-size:.55rem;color:var(--text3)">Meses</span>'+
-                '<input class="ra-input" style="width:34px;text-align:center" value="'+v(p.meses)+'"'+
-                ' onchange="raPatch('+idx+',\'meses\',this.value)" />'+
-                '<button class="btn btn-sm btn-d ra-del-btn" onclick="raDelete('+idx+')" title="Eliminar">🗑</button>'+
-              '</div>'+
-            '</th>'+
-          '</tr>'+
-          '<tr>'+
-            '<th class="ra-subhdr">Ana</th>'+
-            '<th class="ra-subhdr">Juli</th>'+
-          '</tr>'+
-        '</thead>'+
+        '<thead><tr>'+
+          '<th class="ra-date-th">'+
+            '<input class="ra-input ra-input-date" value="'+(p.fecha||'')+'" placeholder="Fecha"'+
+            ' onchange="raPatch('+idx+',\'fecha\',this.value)" />'+
+          '</th>'+
+          '<th>Total</th>'+
+          '<th>Te cobro 20%<br>sobre lo ganado</th>'+
+          '<th>Ganaste<br>descontando lo mío</th>'+
+          '<th class="ra-meses-th">'+
+            '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
+              '<span style="font-size:.55rem;color:var(--text3)">Meses</span>'+
+              '<input class="ra-input" style="width:34px;text-align:center" value="'+(p.meses||'')+'"'+
+              ' onchange="raPatch('+idx+',\'meses\',this.value)" />'+
+              '<button class="btn btn-sm btn-d ra-del-btn" onclick="raDelete('+idx+')" title="Eliminar">🗑</button>'+
+            '</div>'+
+          '</th>'+
+        '</tr></thead>'+
         '<tbody>'+
           '<tr>'+
             '<td class="ra-label">Pusiste</td>'+
-            '<td>'+inp(idx,'pusiste_ana',p.pusiste_ana)+'</td>'+
-            '<td>'+inp(idx,'pusiste_juli',p.pusiste_juli)+'</td>'+
+            '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.pusiste||'')+'" placeholder="—"'+
+            ' onchange="raPatch('+idx+',\'pusiste\',this.value);raUpdatePct('+idx+')" /></td>'+
             '<td></td><td></td><td></td>'+
           '</tr>'+
           '<tr>'+
             '<td class="ra-label">Tenes</td>'+
-            '<td>'+inp(idx,'tenes_ana',p.tenes_ana)+'</td>'+
-            '<td>'+inp(idx,'tenes_juli',p.tenes_juli)+'</td>'+
+            '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.tenes||'')+'" placeholder="—"'+
+            ' onchange="raPatch('+idx+',\'tenes\',this.value);raUpdatePct('+idx+')" /></td>'+
             '<td></td><td></td><td></td>'+
-          '</tr>'+
-          '<tr class="ra-row-ganas">'+
-            '<td class="ra-label">Ganas</td>'+
-            '<td>'+inp(idx,'ganas_ana',p.ganas_ana)+'</td>'+
-            '<td>'+inp(idx,'ganas_juli',p.ganas_juli)+'</td>'+
-            '<td>'+inp(idx,'ganas_comision',p.ganas_comision)+'</td>'+
-            '<td>'+inp(idx,'ganas_neto',p.ganas_neto,'ra-pos-val')+'</td>'+
-            '<td></td>'+
           '</tr>'+
           '<tr class="ra-row-pct">'+
             '<td class="ra-label">Ganas %</td>'+
-            '<td>'+inp(idx,'pct_ana',p.pct_ana)+'</td>'+
-            '<td>'+inp(idx,'pct_juli',p.pct_juli)+'</td>'+
-            '<td></td>'+
-            '<td>'+inp(idx,'pct_neto',p.pct_neto,'ra-pos-val')+'</td>'+
+            '<td class="ra-pct-auto" id="ra-pct-'+idx+'" style="color:'+pctCol+'">'+pctTxt+'</td>'+
+            '<td><input class="ra-input" value="'+(p.pct_comision||'')+'" placeholder="—"'+
+            ' onchange="raPatch('+idx+',\'pct_comision\',this.value)" /></td>'+
+            '<td><input class="ra-input ra-pos-val" value="'+(p.pct_neto||'')+'" placeholder="—"'+
+            ' onchange="raPatch('+idx+',\'pct_neto\',this.value)" /></td>'+
             '<td></td>'+
           '</tr>'+
         '</tbody>'+
@@ -6152,18 +6171,30 @@ wlRender();
     return wrap;
   }
 
-  window.raPatch=function(idx,key,val){if(periodos[idx])periodos[idx][key]=val;raSave();};
-  window.raAddPeriodo=function(){
-    periodos.push({fecha:'',meses:'',pusiste_ana:'',pusiste_juli:'',tenes_ana:'',tenes_juli:'',
-                   ganas_ana:'',ganas_juli:'',ganas_comision:'',ganas_neto:'',pct_ana:'',pct_juli:'',pct_neto:''});
-    raSave();raRender();
-  };
-  window.raDelete=function(idx){
-    if(!confirm('¿Eliminar este período?'))return;
-    periodos.splice(idx,1);raSave();raRender();
+  window.raPatch = function(idx, key, val){
+    if(periodos[idx]) periodos[idx][key] = val;
+    raSaveDebounced();
   };
 
-  document.addEventListener('DOMContentLoaded',raLoad);
+  window.raUpdatePct = function(idx){
+    var cell = document.getElementById('ra-pct-'+idx);
+    if(!cell || !periodos[idx]) return;
+    var pct = calcPct(periodos[idx]);
+    cell.textContent = pct!==null ? pct.toFixed(2)+'%' : '—';
+    cell.style.color  = pct!==null ? 'var(--accent)' : 'var(--text3)';
+  };
+
+  window.raAddPeriodo = function(){
+    periodos.push({fecha:'',meses:'',pusiste:'',tenes:'',pct_comision:'',pct_neto:''});
+    raSaveDebounced(); raRender();
+  };
+
+  window.raDelete = function(idx){
+    if(!confirm('¿Eliminar este período?')) return;
+    periodos.splice(idx,1); raSaveDebounced(); raRender();
+  };
+
+  document.addEventListener('DOMContentLoaded', raLoad);
 })();
 </script>
 </body></html>
