@@ -6077,6 +6077,26 @@ wlRender();
     return parseFloat(String(s||'').replace(/[^0-9.\-]/g,''));
   }
 
+  function fmtPct(n){
+    return parseFloat(n.toFixed(2)) + '%';
+  }
+
+  function fmtUsd(n){
+    return 'u$s ' + Math.round(n).toLocaleString('es-AR');
+  }
+
+  function calc(p){
+    var pu = parseNum(p.pusiste), te = parseNum(p.tenes);
+    if(isNaN(pu)||isNaN(te)||pu===0) return null;
+    var diff = te - pu;
+    var comision = diff * 0.20;
+    return {
+      ganas_pct:       diff / pu * 100,
+      comision_usd:    comision,
+      neto_pct:        (diff - comision) / pu * 100
+    };
+  }
+
   function raSaveDebounced(){
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function(){
@@ -6113,16 +6133,14 @@ wlRender();
     periodos.forEach(function(p,i){ cont.appendChild(raCreateEl(p,i)); });
   }
 
-  function calcPct(p){
-    var pu = parseNum(p.pusiste), te = parseNum(p.tenes);
-    if(isNaN(pu)||isNaN(te)||pu===0) return null;
-    return ((te-pu)/pu*100);
-  }
+  function cellCalc(c, color){ return '<td class="ra-pct-auto" style="color:'+color+'">'+c+'</td>'; }
 
   function raCreateEl(p, idx){
-    var pct = calcPct(p);
-    var pctTxt = pct!==null ? pct.toFixed(2)+'%' : '—';
-    var pctCol = pct!==null ? 'var(--accent)' : 'var(--text3)';
+    var c = calc(p);
+    var ganasPct   = c ? fmtPct(c.ganas_pct)    : '—';
+    var comisionUsd= c ? fmtUsd(c.comision_usd)  : '—';
+    var netoPct    = c ? fmtPct(c.neto_pct)      : '—';
+    var colPos = 'var(--accent)', colNone = 'var(--text3)';
     var wrap = document.createElement('div');
     wrap.className = 'ra-period-wrap';
     wrap.innerHTML =
@@ -6133,8 +6151,7 @@ wlRender();
             ' onchange="raPatch('+idx+',\'fecha\',this.value)" />'+
           '</th>'+
           '<th>Total</th>'+
-          '<th>Te cobro 20%<br>sobre lo ganado</th>'+
-          '<th>Ganaste<br>descontando lo mío</th>'+
+          '<th>20% s/Ganancia</th>'+
           '<th class="ra-meses-th">'+
             '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
               '<span style="font-size:.55rem;color:var(--text3)">Meses</span>'+
@@ -6147,24 +6164,25 @@ wlRender();
         '<tbody>'+
           '<tr>'+
             '<td class="ra-label">Pusiste</td>'+
-            '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.pusiste||'')+'" placeholder="—"'+
-            ' onchange="raPatch('+idx+',\'pusiste\',this.value);raUpdatePct('+idx+')" /></td>'+
-            '<td></td><td></td><td></td>'+
+            '<td><span class="ra-curr">u$s</span><input class="ra-input" id="ra-pu-'+idx+'" value="'+(p.pusiste||'')+'" placeholder="—"'+
+            ' onchange="raPatch('+idx+',\'pusiste\',this.value);raUpdateCalc('+idx+')" /></td>'+
+            '<td class="ra-pct-auto" id="ra-com-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+comisionUsd+'</td>'+
+            '<td></td>'+
           '</tr>'+
           '<tr>'+
             '<td class="ra-label">Tenes</td>'+
-            '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.tenes||'')+'" placeholder="—"'+
-            ' onchange="raPatch('+idx+',\'tenes\',this.value);raUpdatePct('+idx+')" /></td>'+
-            '<td></td><td></td><td></td>'+
+            '<td><span class="ra-curr">u$s</span><input class="ra-input" id="ra-te-'+idx+'" value="'+(p.tenes||'')+'" placeholder="—"'+
+            ' onchange="raPatch('+idx+',\'tenes\',this.value);raUpdateCalc('+idx+')" /></td>'+
+            '<td style="padding:.25rem .45rem">'+
+              '<div style="font-size:.55rem;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Ganaste neto</div>'+
+              '<span class="ra-pct-auto" id="ra-neto-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+netoPct+'</span>'+
+            '</td>'+
+            '<td></td>'+
           '</tr>'+
           '<tr class="ra-row-pct">'+
             '<td class="ra-label">Ganas %</td>'+
-            '<td class="ra-pct-auto" id="ra-pct-'+idx+'" style="color:'+pctCol+'">'+pctTxt+'</td>'+
-            '<td><input class="ra-input" value="'+(p.pct_comision||'')+'" placeholder="—"'+
-            ' onchange="raPatch('+idx+',\'pct_comision\',this.value)" /></td>'+
-            '<td><input class="ra-input ra-pos-val" value="'+(p.pct_neto||'')+'" placeholder="—"'+
-            ' onchange="raPatch('+idx+',\'pct_neto\',this.value)" /></td>'+
-            '<td></td>'+
+            '<td class="ra-pct-auto" id="ra-pct-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+ganasPct+'</td>'+
+            '<td></td><td></td>'+
           '</tr>'+
         '</tbody>'+
       '</table>';
@@ -6176,16 +6194,23 @@ wlRender();
     raSaveDebounced();
   };
 
-  window.raUpdatePct = function(idx){
-    var cell = document.getElementById('ra-pct-'+idx);
-    if(!cell || !periodos[idx]) return;
-    var pct = calcPct(periodos[idx]);
-    cell.textContent = pct!==null ? pct.toFixed(2)+'%' : '—';
-    cell.style.color  = pct!==null ? 'var(--accent)' : 'var(--text3)';
+  window.raUpdateCalc = function(idx){
+    if(!periodos[idx]) return;
+    var c = calc(periodos[idx]);
+    var colPos = 'var(--accent)', colNone = 'var(--text3)';
+    var set = function(id, txt, hasVal){
+      var el = document.getElementById(id);
+      if(!el) return;
+      el.textContent = txt;
+      el.style.color = hasVal ? colPos : colNone;
+    };
+    set('ra-pct-'+idx,  c ? fmtPct(c.ganas_pct)   : '—', !!c);
+    set('ra-com-'+idx,  c ? fmtUsd(c.comision_usd) : '—', !!c);
+    set('ra-neto-'+idx, c ? fmtPct(c.neto_pct)     : '—', !!c);
   };
 
   window.raAddPeriodo = function(){
-    periodos.push({fecha:'',meses:'',pusiste:'',tenes:'',pct_comision:'',pct_neto:''});
+    periodos.push({fecha:'',meses:'',pusiste:'',tenes:''});
     raSaveDebounced(); raRender();
   };
 
