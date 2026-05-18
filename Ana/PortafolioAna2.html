@@ -248,23 +248,25 @@ tr:hover td{background:var(--surface2)}
 .jvm-zoom-btn{display:none!important}
 /* ── RENDIMIENTO ANUAL ── */
 .ra-period-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:inline-block}
-.ra-table{width:auto;border-collapse:collapse;font-size:.75rem}
-.ra-table th{text-align:center;padding:.32rem .45rem;font-size:.58rem;font-family:var(--mono);color:rgba(255,255,255,.9);background:#3a2200;border:1px solid #5c3800;white-space:nowrap;font-weight:600}
-.ra-table td{padding:.3rem .45rem;border:1px solid var(--border2);font-size:.75rem;font-family:var(--mono);color:var(--text);background:var(--surface2);white-space:nowrap}
-.ra-label{font-weight:700;color:var(--text)!important;background:var(--surface)!important;font-size:.72rem!important}
+.ra-table{width:auto;border-collapse:collapse;font-size:.85rem}
+.ra-table th{text-align:center;padding:.38rem .55rem;font-size:.65rem;font-family:var(--mono);color:rgba(255,255,255,.9);background:#3a2200;border:1px solid #5c3800;white-space:nowrap;font-weight:600}
+.ra-table td{padding:.38rem .55rem;border:1px solid var(--border2);font-size:.85rem;font-family:var(--mono);color:var(--text);background:var(--surface2);white-space:nowrap}
+.ra-label{font-weight:700;color:var(--text)!important;background:var(--surface)!important;font-size:.82rem!important}
 .ra-date-th{background:#2a1700!important;color:var(--amber)!important;text-align:left!important}
 .ra-meses-th{background:var(--surface)!important;border:1px solid var(--border)!important}
 .ra-subhdr{background:#1e1400!important;color:var(--text3)!important;font-size:.55rem!important;letter-spacing:.04em;text-transform:uppercase}
 .ra-row-ganas td{background:rgba(251,146,60,.13)!important}
 .ra-row-pct td{background:rgba(251,146,60,.07)!important}
-.ra-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--mono);font-size:.75rem;width:68px;text-align:right;outline:none;padding:1px 2px;transition:border-color .12s}
+.ra-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--mono);font-size:.85rem;width:75px;text-align:right;outline:none;padding:1px 2px;transition:border-color .12s}
 .ra-input:hover{border-bottom-color:var(--border2)}
 .ra-input:focus{border-bottom-color:var(--amber);background:rgba(255,255,255,.04)}
-.ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.76rem!important;width:110px}
+.ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.86rem!important;width:115px}
 .ra-pos-val{color:var(--accent)!important}
 .ra-del-btn{height:18px;padding:0 5px;font-size:.58rem;line-height:1}
-.ra-curr{font-size:.62rem;color:var(--text3);margin-right:2px;vertical-align:middle;user-select:none}
+.ra-curr{font-size:.68rem;color:var(--text3);margin-right:2px;vertical-align:middle;user-select:none}
 .ra-pct-auto{font-weight:700;text-align:right;padding-right:6px!important}
+.ra-val-big{font-size:1.05rem;font-weight:700;font-family:var(--mono)}
+.ra-sublabel{font-size:.56rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
 .ra-no-border{border:none!important;background:transparent!important;vertical-align:middle;padding:.2rem .3rem!important}
 </style>
 </head>
@@ -6151,10 +6153,9 @@ wlRender();
           '</th>'+
           '<th>Total</th>'+
           '<th>20% s/Ganancia</th>'+
-          '<th>Ganaste neto</th>'+
           '<th class="ra-no-border">'+
             '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
-              '<span style="font-size:.55rem;color:var(--text3)">Meses</span>'+
+              '<span style="font-size:.58rem;color:var(--text3)">Meses</span>'+
               '<input class="ra-input" style="width:34px;text-align:center" value="'+(p.meses||'')+'"'+
               ' onchange="raPatch('+idx+',\'meses\',this.value)" />'+
               '<button class="btn btn-sm btn-d ra-del-btn" onclick="raDelete('+idx+')" title="Eliminar">🗑</button>'+
@@ -6166,8 +6167,13 @@ wlRender();
             '<td class="ra-label">Pusiste</td>'+
             '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.pusiste||'')+'" placeholder="—"'+
             ' onchange="raPatch('+idx+',\'pusiste\',this.value);raUpdateCalc('+idx+')" /></td>'+
-            '<td class="ra-pct-auto" id="ra-com-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+comisionUsd+'</td>'+
-            '<td></td>'+
+            '<td style="text-align:right;padding:.38rem .55rem">'+
+              '<span class="ra-val-big" id="ra-com-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+comisionUsd+'</span>'+
+              '<div style="margin-top:5px">'+
+                '<span class="ra-sublabel">Ganaste neto</span>'+
+                '<span class="ra-val-big" id="ra-neto-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+netoPct+'</span>'+
+              '</div>'+
+            '</td>'+
             '<td class="ra-no-border"></td>'+
           '</tr>'+
           '<tr>'+
@@ -6175,13 +6181,12 @@ wlRender();
             '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.tenes||'')+'" placeholder="—"'+
             ' onchange="raPatch('+idx+',\'tenes\',this.value);raUpdateCalc('+idx+')" /></td>'+
             '<td></td>'+
-            '<td class="ra-pct-auto" id="ra-neto-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+netoPct+'</td>'+
             '<td class="ra-no-border"></td>'+
           '</tr>'+
           '<tr class="ra-row-pct">'+
             '<td class="ra-label">Ganas %</td>'+
             '<td class="ra-pct-auto" id="ra-pct-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+ganasPct+'</td>'+
-            '<td></td><td></td>'+
+            '<td></td>'+
             '<td class="ra-no-border"></td>'+
           '</tr>'+
         '</tbody>'+
