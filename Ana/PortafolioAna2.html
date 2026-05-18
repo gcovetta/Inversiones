@@ -246,6 +246,22 @@ tr:hover td{background:var(--surface2)}
 .wl-empty{color:var(--text3);font-family:var(--mono);font-size:.7rem;text-align:center;padding:12px 0}
 .jvm-tooltip{background:#1e2026!important;color:#e8eaf0!important;border:1px solid #363a45!important;font-family:'DM Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
 .jvm-zoom-btn{display:none!important}
+/* ── RENDIMIENTO ANUAL ── */
+.ra-period-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:0}
+.ra-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.ra-table th{text-align:center;padding:.42rem .55rem;font-size:.63rem;font-family:var(--mono);color:rgba(255,255,255,.9);background:#3a2200;border:1px solid #5c3800;white-space:normal;line-height:1.35;font-weight:600}
+.ra-table td{padding:.38rem .55rem;border:1px solid var(--border2);font-size:.78rem;font-family:var(--mono);color:var(--text);background:var(--surface2);white-space:nowrap}
+.ra-label{font-weight:700;color:var(--text)!important;background:var(--surface)!important;font-size:.75rem!important;width:16%;min-width:72px}
+.ra-date-th{background:#2a1700!important;color:var(--amber)!important;text-align:left!important;width:20%}
+.ra-meses-th{background:var(--surface)!important;border:1px solid var(--border)!important;width:16%}
+.ra-row-ganas td{background:rgba(251,146,60,.13)!important}
+.ra-row-pct td{background:rgba(251,146,60,.07)!important}
+.ra-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--mono);font-size:.78rem;width:100%;text-align:right;outline:none;padding:1px 3px;transition:border-color .12s}
+.ra-input:hover{border-bottom-color:var(--border2)}
+.ra-input:focus{border-bottom-color:var(--amber);background:rgba(255,255,255,.04)}
+.ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.8rem!important;min-width:90px}
+.ra-pos-val{color:var(--accent)!important}
+.ra-del-btn{height:20px;padding:0 6px;font-size:.6rem;line-height:1}
 </style>
 </head>
 <body>
@@ -364,6 +380,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;tipocambio&#39;,this)"><span>$</span>Tipo de Cambio</button>
     <button class="nav-item" onclick="showPage(&#39;ratios&#39;,this)"><span>⚙</span>Ratios</button>
     <button class="nav-item" onclick="showPage(&#39;tracker&#39;,this)"><span>◎</span>Dividendos</button>
+    <button class="nav-item" onclick="showPage(&#39;rendanual&#39;,this)"><span>📈</span>Rend. Anual</button>
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
@@ -1129,6 +1146,21 @@ tr:hover td{background:var(--surface2)}
               <tr><td colspan="10" class="empty-state" style="padding:1.5rem">Sin movimientos cargados — usá "+ Fila" o esperá a que mapeemos la estructura de importación</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RENDIMIENTO ANUAL -->
+    <div class="page" id="page-rendanual">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📈 Rendimiento Anual — Ana &amp; Juli</span>
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+            <button class="btn btn-a btn-sm" onclick="raAddPeriodo()">+ Período</button>
+          </div>
+        </div>
+        <div class="card-body" id="ra-container" style="display:flex;flex-direction:column;gap:1.1rem;padding:.85rem 1rem">
+          <div class="empty-state" id="ra-empty" style="padding:2rem">No hay períodos cargados — usá "+ Período" para agregar uno</div>
         </div>
       </div>
     </div>
@@ -6028,6 +6060,104 @@ wlRender();
       }).catch(function(){});
     }
   });
+})();
+</script>
+
+<script>
+/* ── RENDIMIENTO ANUAL ── */
+(function(){
+  var RA_KEY='ra_periodos_ana_juli';
+  var periodos=[];
+
+  function raSave(){try{localStorage.setItem(RA_KEY,JSON.stringify(periodos));}catch(e){}}
+  function raLoad(){try{periodos=JSON.parse(localStorage.getItem(RA_KEY)||'[]');}catch(e){periodos=[];}raRender();}
+
+  function raRender(){
+    var cont=document.getElementById('ra-container');
+    var emp=document.getElementById('ra-empty');
+    if(!cont)return;
+    cont.querySelectorAll('.ra-period-wrap').forEach(function(el){el.remove();});
+    if(!periodos.length){if(emp)emp.style.display='';return;}
+    if(emp)emp.style.display='none';
+    periodos.forEach(function(p,i){cont.appendChild(raCreateEl(p,i));});
+  }
+
+  function v(val){return val||'';}
+
+  function raCreateEl(p,idx){
+    var wrap=document.createElement('div');
+    wrap.className='ra-period-wrap';
+    wrap.innerHTML=
+      '<table class="ra-table">'+
+        '<thead>'+
+          '<tr>'+
+            '<th class="ra-date-th">'+
+              '<input class="ra-input ra-input-date" value="'+v(p.fecha)+'" placeholder="Fecha (ej: 07/08/2025)"'+
+              ' onchange="raPatch('+idx+',\'fecha\',this.value)" />'+
+            '</th>'+
+            '<th style="width:22%">Total</th>'+
+            '<th style="width:22%">Te cobro 20% sobre lo ganado (anual)</th>'+
+            '<th style="width:22%">Ganaste descontando lo mío</th>'+
+            '<th class="ra-meses-th">'+
+              '<div style="display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:wrap">'+
+                '<span style="font-size:.6rem;color:var(--text3)">Meses:</span>'+
+                '<input class="ra-input" style="width:38px;text-align:center" value="'+v(p.meses)+'" placeholder="—"'+
+                ' onchange="raPatch('+idx+',\'meses\',this.value)" />'+
+                '<button class="btn btn-sm btn-d ra-del-btn" onclick="raDelete('+idx+')" title="Eliminar período">🗑</button>'+
+              '</div>'+
+            '</th>'+
+          '</tr>'+
+        '</thead>'+
+        '<tbody>'+
+          '<tr>'+
+            '<td class="ra-label">Pusiste</td>'+
+            '<td colspan="2"><input class="ra-input" value="'+v(p.pusiste)+'" placeholder="u$s —"'+
+            ' onchange="raPatch('+idx+',\'pusiste\',this.value)" /></td>'+
+            '<td></td><td></td>'+
+          '</tr>'+
+          '<tr>'+
+            '<td class="ra-label">Tenes</td>'+
+            '<td colspan="2"><input class="ra-input" value="'+v(p.tenes)+'" placeholder="u$s —"'+
+            ' onchange="raPatch('+idx+',\'tenes\',this.value)" /></td>'+
+            '<td><input class="ra-input" value="'+v(p.tenes_col4)+'" placeholder="u$s —"'+
+            ' onchange="raPatch('+idx+',\'tenes_col4\',this.value)" /></td>'+
+            '<td></td>'+
+          '</tr>'+
+          '<tr class="ra-row-ganas">'+
+            '<td class="ra-label">Ganas</td>'+
+            '<td><input class="ra-input" value="'+v(p.ganas_bruto)+'" placeholder="u$s —"'+
+            ' onchange="raPatch('+idx+',\'ganas_bruto\',this.value)" /></td>'+
+            '<td><input class="ra-input" value="'+v(p.ganas_comision)+'" placeholder="u$s —"'+
+            ' onchange="raPatch('+idx+',\'ganas_comision\',this.value)" /></td>'+
+            '<td><input class="ra-input ra-pos-val" value="'+v(p.ganas_neto)+'" placeholder="u$s —"'+
+            ' onchange="raPatch('+idx+',\'ganas_neto\',this.value)" /></td>'+
+            '<td></td>'+
+          '</tr>'+
+          '<tr class="ra-row-pct">'+
+            '<td class="ra-label">Ganas %</td>'+
+            '<td><input class="ra-input" value="'+v(p.pct_bruto)+'" placeholder="—%"'+
+            ' onchange="raPatch('+idx+',\'pct_bruto\',this.value)" /></td>'+
+            '<td></td>'+
+            '<td><input class="ra-input ra-pos-val" value="'+v(p.pct_neto)+'" placeholder="—%"'+
+            ' onchange="raPatch('+idx+',\'pct_neto\',this.value)" /></td>'+
+            '<td></td>'+
+          '</tr>'+
+        '</tbody>'+
+      '</table>';
+    return wrap;
+  }
+
+  window.raPatch=function(idx,key,val){if(periodos[idx])periodos[idx][key]=val;raSave();};
+  window.raAddPeriodo=function(){
+    periodos.push({fecha:'',meses:'',pusiste:'',tenes:'',tenes_col4:'',ganas_bruto:'',ganas_comision:'',ganas_neto:'',pct_bruto:'',pct_neto:''});
+    raSave();raRender();
+  };
+  window.raDelete=function(idx){
+    if(!confirm('¿Eliminar este período?'))return;
+    periodos.splice(idx,1);raSave();raRender();
+  };
+
+  document.addEventListener('DOMContentLoaded',raLoad);
 })();
 </script>
 </body></html>
