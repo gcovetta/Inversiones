@@ -3281,13 +3281,15 @@ async function fetchAllQuotes(){
     }));
   }
 
-  // ── ONs corporativas: data912 arg_corp → fallback Yahoo ──
+  // ── ONs corporativas: data912 arg_corp → fallback arg_bonds → fallback Yahoo ──
   async function fetchONsAll(){
     var map={};
     try{map=await fetchONsAPI();}catch(e){}
+    var mapBonds={};
+    try{mapBonds=await fetchBonosAPI();}catch(e){}
     await Promise.all(onPos.map(async function(p){
       try{
-        var q=map[p.ticker.toUpperCase()];
+        var q=map[p.ticker.toUpperCase()]||mapBonds[p.ticker.toUpperCase()];
         if(q&&q.price>0){quotes[p.ticker]=q;}
         else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
       }catch(e){errors++;}
