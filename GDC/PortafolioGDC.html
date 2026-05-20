@@ -3069,6 +3069,16 @@ function cmpLoadFile(who,input){
   };
   reader.readAsArrayBuffer(f);
 }
+var _cmpChecked=new Set();
+function cmpToggleCheck(t,cb){
+  if(cb.checked)_cmpChecked.add(t);else _cmpChecked.delete(t);
+  var row=cb.closest('tr');
+  row.style.opacity=cb.checked?'0.35':'';
+  row.style.textDecoration=cb.checked?'line-through':'';
+  var total=document.querySelectorAll('#cmp-result input[type=checkbox]').length;
+  var el=document.getElementById('cmp-resolved-count');
+  if(el)el.textContent=_cmpChecked.size+' / '+total+' resueltos';
+}
 function runComparacion(){
   var el=document.getElementById('cmp-result');
   if(!_cmpData.gdc||!_cmpData.veta){
@@ -3088,12 +3098,24 @@ function runComparacion(){
   if(!diffs.length){
     el.innerHTML='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias — los portafolios coinciden.</div>';return;
   }
-  var html='<div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px">'+diffs.length+' diferencia(s) encontrada(s)</div>';
-  html+='<div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>GDC</th><th>Veta</th><th>Diferencia</th><th>Estado</th></tr></thead><tbody>';
+  var html='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
+    +'<span style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">'+diffs.length+' diferencia(s)</span>'
+    +'<span id="cmp-resolved-count" style="font-size:.65rem;font-family:var(--mono);color:var(--accent)">'+_cmpChecked.size+' / '+diffs.length+' resueltos</span>'
+    +'</div>';
+  html+='<div class="tw panel-table"><table><thead><tr>'
+    +'<th style="width:28px"></th>'
+    +'<th>Ticker</th><th>GDC</th>'
+    +'<th><img src="../Veta.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
+    +'<th>Diferencia</th><th>Estado</th>'
+    +'</tr></thead><tbody>';
   diffs.forEach(function(d){
     var sc=d.status==='Solo GDC'?'var(--accent)':d.status==='Solo Veta'?'#60a5fa':'#f59e0b';
     var diffStr=d.g>0&&d.v>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
-    html+='<tr>'
+    var done=_cmpChecked.has(d.t);
+    html+='<tr style="'+(done?'opacity:.35;text-decoration:line-through':'')+'">'
+      +'<td style="text-align:center;padding:.25rem .35rem">'
+      +'<input type="checkbox"'+(done?' checked':'')+' onchange="cmpToggleCheck(\''+d.t+'\',this)" style="accent-color:var(--accent);cursor:pointer;width:13px;height:13px">'
+      +'</td>'
       +'<td style="font-weight:700;font-family:var(--mono)">'+d.t+'</td>'
       +'<td class="mono">'+(d.g?d.g.toLocaleString('es-AR'):'—')+'</td>'
       +'<td class="mono">'+(d.v?d.v.toLocaleString('es-AR'):'—')+'</td>'
