@@ -354,6 +354,8 @@ tr:hover td{background:var(--surface2)}
       <span id="sync-icon" style="font-size:.85rem;line-height:1;">⟳</span><span id="sync-label">Sync</span>
     </button>
     <button class="btn-sidebar-toggle" onclick="exportPortfolioXLS()" title="Exportar portafolio a Excel" style="width:auto;padding:0 8px;font-size:.72rem;">XLS</button>
+    <div id="file-ver" title="Versión del archivo" style="font-size:.6rem;font-family:var(--mono);color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;cursor:default;white-space:nowrap"></div>
+    <script>!function(){var d=new Date(document.lastModified),p=function(n){return String(n).padStart(2,'0')};document.getElementById('file-ver').textContent='v '+d.getDate()+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}();</script>
   </div>
 </header>
 <div class="main" id="main">
