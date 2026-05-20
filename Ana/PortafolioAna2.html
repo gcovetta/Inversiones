@@ -4519,12 +4519,12 @@ function trkCalcCCL(){
 
     // 4. Ratios
     var sbRatios = await sbGetConfig('ratios');
-    if(sbRatios){Object.keys(sbRatios).forEach(function(t){if(!RATIOS_TABLE_DEFAULT[t])RATIOS_TABLE[t]=sbRatios[t];});try{localStorage.setItem('ptAna_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}}
-    else{try{var sr=localStorage.getItem('ptAna_ratios');if(sr){var lsr=JSON.parse(sr);Object.keys(lsr).forEach(function(t){if(!RATIOS_TABLE_DEFAULT[t])RATIOS_TABLE[t]=lsr[t];});}}catch(e){}}
+    if(sbRatios){Object.keys(sbRatios).forEach(function(t){RATIOS_TABLE[t]=sbRatios[t];});try{localStorage.setItem('ptAna_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}}
+    else{try{var sr=localStorage.getItem('ptAna_ratios');if(sr){var lsr=JSON.parse(sr);Object.keys(lsr).forEach(function(t){RATIOS_TABLE[t]=lsr[t];});}}catch(e){}}
 
     // Ratios meta (nombre, mercado, país, rubro)
     var sbRatiosMeta = await sbGetConfig('ratios_meta');
-    if(sbRatiosMeta){Object.keys(sbRatiosMeta).forEach(function(t){if(!RATIOS_TABLE_DEFAULT[t])RATIOS_META[t]=sbRatiosMeta[t];});}
+    if(sbRatiosMeta){Object.keys(sbRatiosMeta).forEach(function(t){RATIOS_META[t]=sbRatiosMeta[t];});}
     else{sbSetConfig('ratios_meta', RATIOS_META);}
 
     // 5. Targets
