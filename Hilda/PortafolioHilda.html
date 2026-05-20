@@ -357,6 +357,7 @@ tr:hover td{background:var(--surface2)}
     <button class="btn" id="sync-btn" onclick="syncPortfolios()" title="Sincronizar Ana y Omar con GDC" style="border-color:#4a5568;gap:5px;">
       <span id="sync-icon" style="font-size:.85rem;line-height:1;">⟳</span><span id="sync-label">Sync</span>
     </button>
+    <button class="btn-sidebar-toggle" onclick="exportPortfolioXLS()" title="Exportar portafolio a Excel" style="width:auto;padding:0 8px;font-size:.72rem;">XLS</button>
   </div>
 </header>
 <div class="main" id="main">
@@ -3101,6 +3102,32 @@ function renderPortfolio(){
 
   renderDivsCard();
   renderNearTarget();
+}
+
+// ─── Exportar portafolio a XLS ───
+function exportPortfolioXLS(){
+  var all=getPositions();
+  var open=all.filter(function(p){return p.qty>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
+  var rows=[['Ticker','Sector','Cantidad','PPC ARS','Mercado ARS','Inversión ARS','Δ%']];
+  open.forEach(function(p){
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
+    var _isBonoON=(sector==='bonos'||sector==='on');
+    var _sectorIsARS=(sector==='argentina'||_isBonoON);
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var mktARS=price!=null?(_sectorIsARS||_isBRL?price:(price/ratio)*CCL_HOY):null;
+    var invARS=mktARS!=null?(_isBonoON?mktARS*p.qty/100:mktARS*p.qty):p.costARS;
+    var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
+    var _tc=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
+    var ppcARS=_isBonoON?ppcUSD*_tc*100:ppcUSD*CCL_HOY;
+    var pnl=mktARS!=null&&ppcARS>0?(mktARS-ppcARS)/ppcARS*100:null;
+    rows.push([p.ticker,sector,p.qty,ppcARS>0?Math.round(ppcARS):null,mktARS!=null?Math.round(mktARS):null,Math.round(invARS),pnl!=null?Math.round(pnl*10)/10:null]);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Portafolio');
+  var d=new Date(),ds=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
+  XLSX.writeFile(wb,'Portafolio_'+ds+'.xlsx');
 }
 
 // ─── CCL Implícito ───
