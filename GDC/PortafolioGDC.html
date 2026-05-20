@@ -3018,20 +3018,52 @@ function cmpLoadFile(who,input){
   document.getElementById('cmp-'+who+'-name').textContent=f.name;
   var reader=new FileReader();
   reader.onload=function(e){
-    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
-    var ws=wb.Sheets[wb.SheetNames[0]];
-    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-    var hdrIdx=rows.findIndex(function(r){return r.some(function(c){return String(c).toLowerCase()==='ticker';});});
-    if(hdrIdx<0){alert('No se encontró columna Ticker en el archivo.');return;}
-    var hdr=rows[hdrIdx].map(function(c){return String(c).toLowerCase();});
+    var ab=e.target.result;
+    var rows;
+    // Broker Veta exporta HTML disfrazado de .xls — intentar XLSX primero, fallback HTML
+    try{
+      var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    }catch(ex){
+      var txt=new TextDecoder('utf-8').decode(ab);
+      var doc=new DOMParser().parseFromString(txt,'text/html');
+      rows=[];
+      doc.querySelectorAll('tr').forEach(function(tr){
+        var row=[];tr.querySelectorAll('td,th').forEach(function(td){row.push(td.textContent.trim());});
+        if(row.some(function(c){return c;}))rows.push(row);
+      });
+    }
+    // Buscar fila de cabecera: tiene 'ticker' O 'nombre de la especie'
+    var hdrIdx=rows.findIndex(function(r){
+      return r.some(function(c){return String(c).toLowerCase()==='ticker';}) ||
+             r.some(function(c){return String(c).toLowerCase().includes('nombre de la especie');});
+    });
+    if(hdrIdx<0){alert('No se encontró columna Ticker o Nombre de la Especie.');return;}
+    var hdr=rows[hdrIdx].map(function(c){return String(c).toLowerCase().trim();});
     var tCol=hdr.indexOf('ticker');
-    var qCol=hdr.findIndex(function(c){return c.includes('cantidad');});
-    if(qCol<0){alert('No se encontró columna Cantidad en el archivo.');return;}
+    var nCol=hdr.findIndex(function(c){return c.includes('nombre de la especie');});
+    var qCol=hdr.findIndex(function(c){return c==='cantidad';});
+    var isVeta=tCol<0&&nCol>=0;
+    var keyCol=isVeta?nCol:tCol;
+    if(qCol<0){alert('No se encontró columna Cantidad.');return;}
     var map={};
     rows.slice(hdrIdx+1).forEach(function(r){
-      var t=String(r[tCol]||'').trim().toUpperCase();
-      var q=parseFloat(r[qCol]);
-      if(t&&!isNaN(q))map[t]=q;
+      var raw=String(r[keyCol]||'').trim();
+      if(!raw)return;
+      var ticker;
+      if(isVeta){
+        // Formato broker: "TICKER Descripción completa" — primer token = ticker
+        var first=raw.split(/\s+/)[0].toUpperCase();
+        if(/^(SUBTOTAL|USD|VENCIMIENTO|VENCIDO|GTIA)/i.test(first))return;
+        ticker=first;
+      }else{
+        ticker=raw.toUpperCase();
+      }
+      // Números en formato argentino: 1.234,56 → 1234.56
+      var qRaw=String(r[qCol]||'').trim().replace(/\./g,'').replace(',','.');
+      var q=parseFloat(qRaw);
+      if(ticker&&!isNaN(q)&&q>0)map[ticker]=q;
     });
     _cmpData[who]=map;
   };
