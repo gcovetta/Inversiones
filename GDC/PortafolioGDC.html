@@ -3013,28 +3013,30 @@ function exportPortfolioXLS(){
 
 // ─── Comparación de portafolios ───
 var _cmpData={gdc:null,veta:null};
+var _cmpNombres={gdc:{},veta:{}};
+function cmpParseRows(ab){
+  try{
+    var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  }catch(ex){
+    var txt=new TextDecoder('utf-8').decode(ab);
+    var doc=new DOMParser().parseFromString(txt,'text/html');
+    var rows=[];
+    doc.querySelectorAll('tr').forEach(function(tr){
+      var row=[];tr.querySelectorAll('td,th').forEach(function(td){row.push(td.textContent.trim());});
+      if(row.some(function(c){return c;}))rows.push(row);
+    });
+    return rows;
+  }
+}
 function cmpLoadFile(who,input){
   var f=input.files[0];if(!f)return;
   document.getElementById('cmp-'+who+'-name').textContent=f.name;
   var reader=new FileReader();
   reader.onload=function(e){
-    var ab=e.target.result;
-    var rows;
-    // Broker Veta exporta HTML disfrazado de .xls — intentar XLSX primero, fallback HTML
-    try{
-      var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
-      var ws=wb.Sheets[wb.SheetNames[0]];
-      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-    }catch(ex){
-      var txt=new TextDecoder('utf-8').decode(ab);
-      var doc=new DOMParser().parseFromString(txt,'text/html');
-      rows=[];
-      doc.querySelectorAll('tr').forEach(function(tr){
-        var row=[];tr.querySelectorAll('td,th').forEach(function(td){row.push(td.textContent.trim());});
-        if(row.some(function(c){return c;}))rows.push(row);
-      });
-    }
-    // Buscar fila de cabecera: tiene 'ticker' O 'nombre de la especie'
+    var rows=cmpParseRows(e.target.result);
+    // Detectar fila de cabecera: tiene 'ticker' O 'nombre de la especie'
     var hdrIdx=rows.findIndex(function(r){
       return r.some(function(c){return String(c).toLowerCase()==='ticker';}) ||
              r.some(function(c){return String(c).toLowerCase().includes('nombre de la especie');});
@@ -3045,27 +3047,28 @@ function cmpLoadFile(who,input){
     var nCol=hdr.findIndex(function(c){return c.includes('nombre de la especie');});
     var qCol=hdr.findIndex(function(c){return c==='cantidad';});
     var isVeta=tCol<0&&nCol>=0;
-    var keyCol=isVeta?nCol:tCol;
     if(qCol<0){alert('No se encontró columna Cantidad.');return;}
-    var map={};
+    var map={},nombres={};
     rows.slice(hdrIdx+1).forEach(function(r){
-      var raw=String(r[keyCol]||'').trim();
+      var raw=String(r[isVeta?nCol:tCol]||'').trim();
       if(!raw)return;
-      var ticker;
+      var ticker,nombre='';
       if(isVeta){
-        // Formato broker: "TICKER Descripción completa" — primer token = ticker
-        var first=raw.split(/\s+/)[0].toUpperCase();
+        // Broker: "TICKER Descripción completa" — primer token = ticker
+        var parts=raw.split(/\s+/);
+        var first=parts[0].toUpperCase();
         if(/^(SUBTOTAL|USD|VENCIMIENTO|VENCIDO|GTIA)/i.test(first))return;
         ticker=first;
+        nombre=parts.slice(1).join(' '); // descripción sin el ticker
       }else{
         ticker=raw.toUpperCase();
       }
-      // Números en formato argentino: 1.234,56 → 1234.56
-      var qRaw=String(r[qCol]||'').trim().replace(/\./g,'').replace(',','.');
-      var q=parseFloat(qRaw);
-      if(ticker&&!isNaN(q)&&q>0)map[ticker]=q;
+      // Número en formato argentino: 1.234,56 → 1234.56
+      var q=parseFloat(String(r[qCol]||'').trim().replace(/\./g,'').replace(',','.'));
+      if(ticker&&!isNaN(q)&&q>0){map[ticker]=q;if(nombre)nombres[ticker]=nombre;}
     });
     _cmpData[who]=map;
+    _cmpNombres[who]=nombres;
   };
   reader.readAsArrayBuffer(f);
 }
@@ -3112,11 +3115,14 @@ function runComparacion(){
     var sc=d.status==='Solo GDC'?'var(--accent)':d.status==='Solo Veta'?'#60a5fa':'#f59e0b';
     var diffStr=d.g>0&&d.v>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
     var done=_cmpChecked.has(d.t);
+    var nombre=(_cmpNombres.veta&&_cmpNombres.veta[d.t])||(_cmpNombres.gdc&&_cmpNombres.gdc[d.t])||'';
     html+='<tr style="'+(done?'opacity:.35;text-decoration:line-through':'')+'">'
       +'<td style="text-align:center;padding:.25rem .35rem">'
       +'<input type="checkbox"'+(done?' checked':'')+' onchange="cmpToggleCheck(\''+d.t+'\',this)" style="accent-color:var(--accent);cursor:pointer;width:13px;height:13px">'
       +'</td>'
-      +'<td style="font-weight:700;font-family:var(--mono)">'+d.t+'</td>'
+      +'<td><span style="font-weight:700;font-family:var(--mono)">'+d.t+'</span>'
+      +(nombre?'<br><span style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">'+nombre+'</span>':'')
+      +'</td>'
       +'<td class="mono">'+(d.g?d.g.toLocaleString('es-AR'):'—')+'</td>'
       +'<td class="mono">'+(d.v?d.v.toLocaleString('es-AR'):'—')+'</td>'
       +'<td class="mono" style="color:'+sc+'">'+diffStr+'</td>'
