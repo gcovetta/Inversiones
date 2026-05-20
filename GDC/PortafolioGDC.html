@@ -370,6 +370,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;arbitraje&#39;,this)"><span>⇄</span>Arbitraje</button>
     <button class="nav-item" onclick="showPage(&#39;dashboard&#39;,this)"><span>📊</span>DashBoard</button>
     <button class="nav-item" onclick="showPage(&#39;rendanual&#39;,this)"><span>📈</span>Rend. Anual</button>
+    <button class="nav-item" onclick="showPage(&#39;comparacion&#39;,this)"><span>⇔</span>Comparación</button>
     <div class="nav-sec">Cambios</div>
     <button class="nav-item" onclick="showPage(&#39;targets&#39;,this)"><span>◎</span>P. Venta</button>
     <button class="nav-item" onclick="showPage(&#39;rubros&#39;,this)"><span>🏷</span>Rubros</button>
@@ -1171,6 +1172,29 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div class="card-body" id="ra-container" style="display:flex;flex-wrap:wrap;gap:1rem;padding:.85rem 1rem;align-items:flex-start">
           <div class="empty-state" id="ra-empty" style="padding:2rem">No hay períodos cargados — usá "+ Período" para agregar uno</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-comparacion">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⇔ Comparación de Portafolios</span>
+          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Subí los XLS exportados desde cada portafolio</span>
+        </div>
+        <div class="card-body" style="padding:.85rem 1rem">
+          <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
+            <div>
+              <div style="font-size:.63rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">GDC</div>
+              <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 <span id="cmp-gdc-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span><input type="file" id="cmp-gdc-file" accept=".xlsx,.xls" style="display:none" onchange="cmpLoadFile('gdc',this)"></label>
+            </div>
+            <div>
+              <div style="font-size:.63rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">Veta</div>
+              <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 <span id="cmp-veta-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span><input type="file" id="cmp-veta-file" accept=".xlsx,.xls" style="display:none" onchange="cmpLoadFile('veta',this)"></label>
+            </div>
+            <button class="btn btn-a btn-sm" onclick="runComparacion()" style="margin-left:auto">Comparar</button>
+          </div>
+          <div id="cmp-result"></div>
         </div>
       </div>
     </div>
@@ -2985,6 +3009,68 @@ function exportPortfolioXLS(){
   XLSX.utils.book_append_sheet(wb,ws,'Portafolio');
   var d=new Date(),ds=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
   XLSX.writeFile(wb,'Portafolio_'+ds+'.xlsx');
+}
+
+// ─── Comparación de portafolios ───
+var _cmpData={gdc:null,veta:null};
+function cmpLoadFile(who,input){
+  var f=input.files[0];if(!f)return;
+  document.getElementById('cmp-'+who+'-name').textContent=f.name;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    var hdrIdx=rows.findIndex(function(r){return r.some(function(c){return String(c).toLowerCase()==='ticker';});});
+    if(hdrIdx<0){alert('No se encontró columna Ticker en el archivo.');return;}
+    var hdr=rows[hdrIdx].map(function(c){return String(c).toLowerCase();});
+    var tCol=hdr.indexOf('ticker');
+    var qCol=hdr.findIndex(function(c){return c.includes('cantidad');});
+    if(qCol<0){alert('No se encontró columna Cantidad en el archivo.');return;}
+    var map={};
+    rows.slice(hdrIdx+1).forEach(function(r){
+      var t=String(r[tCol]||'').trim().toUpperCase();
+      var q=parseFloat(r[qCol]);
+      if(t&&!isNaN(q))map[t]=q;
+    });
+    _cmpData[who]=map;
+  };
+  reader.readAsArrayBuffer(f);
+}
+function runComparacion(){
+  var el=document.getElementById('cmp-result');
+  if(!_cmpData.gdc||!_cmpData.veta){
+    el.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:.6rem 0">Cargá los dos archivos primero.</div>';return;
+  }
+  var gdc=_cmpData.gdc,veta=_cmpData.veta;
+  var tickers=new Set(Object.keys(gdc).concat(Object.keys(veta)));
+  var diffs=[];
+  tickers.forEach(function(t){
+    var g=gdc[t]||0,v=veta[t]||0;
+    var diff=g-v;
+    var status=g>0&&!veta[t]?'Solo GDC':!gdc[t]&&v>0?'Solo Veta':Math.abs(diff)<0.0001?'Igual':'Diferente';
+    if(status!=='Igual')diffs.push({t:t,g:g,v:v,diff:diff,status:status});
+  });
+  var order={'Solo Veta':0,'Solo GDC':1,'Diferente':2};
+  diffs.sort(function(a,b){return (order[a.status]-order[b.status])||a.t.localeCompare(b.t);});
+  if(!diffs.length){
+    el.innerHTML='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias — los portafolios coinciden.</div>';return;
+  }
+  var html='<div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px">'+diffs.length+' diferencia(s) encontrada(s)</div>';
+  html+='<div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>GDC</th><th>Veta</th><th>Diferencia</th><th>Estado</th></tr></thead><tbody>';
+  diffs.forEach(function(d){
+    var sc=d.status==='Solo GDC'?'var(--accent)':d.status==='Solo Veta'?'#60a5fa':'#f59e0b';
+    var diffStr=d.g>0&&d.v>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
+    html+='<tr>'
+      +'<td style="font-weight:700;font-family:var(--mono)">'+d.t+'</td>'
+      +'<td class="mono">'+(d.g?d.g.toLocaleString('es-AR'):'—')+'</td>'
+      +'<td class="mono">'+(d.v?d.v.toLocaleString('es-AR'):'—')+'</td>'
+      +'<td class="mono" style="color:'+sc+'">'+diffStr+'</td>'
+      +'<td><span style="font-size:.65rem;color:'+sc+'">'+d.status+'</span></td>'
+      +'</tr>';
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
 }
 
 // ─── CCL Implícito ───
