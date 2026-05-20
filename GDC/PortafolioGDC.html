@@ -3014,21 +3014,27 @@ function exportPortfolioXLS(){
 // ─── Comparación de portafolios ───
 var _cmpData={gdc:null,veta:null};
 var _cmpNombres={gdc:{},veta:{}};
+function cmpNorm(s){return String(s).replace(/[\s   ​]+/g,' ').toLowerCase().trim();}
 function cmpParseRows(ab){
+  // Intentar XLSX — buscar la hoja que tenga la cabecera real
   try{
     var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
-    var ws=wb.Sheets[wb.SheetNames[0]];
-    return XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  }catch(ex){
-    var txt=new TextDecoder('utf-8').decode(ab);
-    var doc=new DOMParser().parseFromString(txt,'text/html');
-    var rows=[];
-    doc.querySelectorAll('tr').forEach(function(tr){
-      var row=[];tr.querySelectorAll('td,th').forEach(function(td){row.push(td.textContent.trim());});
-      if(row.some(function(c){return c;}))rows.push(row);
-    });
-    return rows;
-  }
+    for(var i=0;i<wb.SheetNames.length;i++){
+      var ws=wb.Sheets[wb.SheetNames[i]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      var ok=rows.some(function(r){return r.some(function(c){var s=cmpNorm(c);return s==='ticker'||s.includes('nombre de la especie');});});
+      if(ok)return rows;
+    }
+  }catch(ex){}
+  // Fallback HTML (broker exporta HTML disfrazado de .xls)
+  var txt=new TextDecoder('utf-8').decode(ab);
+  var doc=new DOMParser().parseFromString(txt,'text/html');
+  var rows=[];
+  doc.querySelectorAll('tr').forEach(function(tr){
+    var row=[];tr.querySelectorAll('td,th').forEach(function(td){row.push(td.textContent.trim());});
+    if(row.some(function(c){return c;}))rows.push(row);
+  });
+  return rows;
 }
 function cmpLoadFile(who,input){
   var f=input.files[0];if(!f)return;
@@ -3038,14 +3044,13 @@ function cmpLoadFile(who,input){
     var rows=cmpParseRows(e.target.result);
     // Detectar fila de cabecera: tiene 'ticker' O 'nombre de la especie'
     var hdrIdx=rows.findIndex(function(r){
-      return r.some(function(c){return String(c).toLowerCase()==='ticker';}) ||
-             r.some(function(c){return String(c).toLowerCase().includes('nombre de la especie');});
+      return r.some(function(c){var s=cmpNorm(c);return s==='ticker'||s.includes('nombre de la especie');});
     });
     if(hdrIdx<0){alert('No se encontró columna Ticker o Nombre de la Especie.');return;}
-    var hdr=rows[hdrIdx].map(function(c){return String(c).toLowerCase().trim();});
+    var hdr=rows[hdrIdx].map(cmpNorm);
     var tCol=hdr.indexOf('ticker');
     var nCol=hdr.findIndex(function(c){return c.includes('nombre de la especie');});
-    var qCol=hdr.findIndex(function(c){return c==='cantidad';});
+    var qCol=hdr.findIndex(function(c){return c.includes('cantidad');});
     var isVeta=tCol<0&&nCol>=0;
     if(qCol<0){alert('No se encontró columna Cantidad.');return;}
     var map={},nombres={};
