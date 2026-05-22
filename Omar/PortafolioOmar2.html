@@ -2233,7 +2233,6 @@ function saveAndRender(){
   if(_gdcInitDone){ sbSaveArray('movimientos', movimientos); }
   else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
   renderMovimientos();renderPortfolio();renderDivsCard();simPopulateSelect();
-  (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
 }
 
@@ -2757,10 +2756,10 @@ function renderPortfolio(){
     var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var _isBRL=BRL_TICKERS.has(p.ticker);
-    var fromByma=q&&q.fromByma;
-    var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
+    var _fromByma=q&&q.fromByma;
+    var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL||_fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
-    var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
+    var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:_fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
     sectorCost[sector]=(sectorCost[sector]||0)+p.costUSDpuro;
@@ -2857,13 +2856,12 @@ function renderPortfolio(){
     // ΔUP: (P.Venta USD - Precio mercado USD) / Precio mercado USD
     // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya está en USD
     var _rawPrice=q?q.price:null;
-    var fromByma=q&&q.fromByma;
     var _isArgentina=(sector==='argentina');
     var priceUSD=_rawPrice!=null?(
       _isBonoON    ? _rawPrice*ratio/(_tcHoy||1) :
       _isArgentina ? _rawPrice/(CCL_HOY||1) :
       BRL_TICKERS.has(p.ticker) ? _rawPrice/(CCL_HOY||1) :
-      fromByma ? _rawPrice/(CCL_HOY||1) :
+      (q&&q.fromByma)           ? _rawPrice/(CCL_HOY||1) :
       _rawPrice
     ):null;
     var upside=targetUSD!=null&&priceUSD!=null&&priceUSD>0?(targetUSD-priceUSD)/priceUSD*100:null;
@@ -3023,8 +3021,8 @@ function exportPortfolioXLS(){
     var _isBonoON=(sector==='bonos'||sector==='on');
     var _sectorIsARS=(sector==='argentina'||_isBonoON);
     var _isBRL=BRL_TICKERS.has(p.ticker);
-    var fromByma=q&&q.fromByma;
-    var mktARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
+    var _fromBymaXLS=q&&q.fromByma;
+    var mktARS=price!=null?(_sectorIsARS||_isBRL||_fromBymaXLS?price:(price/ratio)*CCL_HOY):null;
     var invARS=mktARS!=null?(_isBonoON?mktARS*p.qty/100:mktARS*p.qty):p.costARS;
     var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
     var _tc=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
@@ -3313,12 +3311,12 @@ function renderNearTarget(){
     var _isARS=(sector==='argentina'||sector==='bonos'||sector==='on');
     var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
     // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
-    var _vigFromByma=q.fromByma;
-    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_vigFromByma?q.price/(CCL_HOY||1):q.price);
+    var _ntFromByma=q&&q.fromByma;
+    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price/(CCL_HOY||1):q.price);
     if(!(priceUSD>0))return;
     var upside=(targetUSD-priceUSD)/priceUSD*100;
     if(!(upside>=0)||upside>NT_THRESHOLD)return;
-    var mercadoARS=_isARS?q.price:BRL_TICKERS.has(p.ticker)?q.price:_vigFromByma?q.price:(q.price/ratio)*_tcHoy;
+    var mercadoARS=_isARS?q.price:BRL_TICKERS.has(p.ticker)?q.price:_ntFromByma?q.price:(q.price/ratio)*_tcHoy;
     var targetARS=(targetUSD/ratio)*_tcHoy;
     items.push({ticker:p.ticker,priceARS:mercadoARS,targetARS:targetARS,upside:upside});
   });
@@ -3636,9 +3634,8 @@ async function fetchAllQuotes(){
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
 
   // Separar por fuente: Finnhub (NYSE/Brasil/etc), Yahoo AR (Argentina), data912 (Bonos/ON)
-  // Brasil sector → siempre Yahoo .BA para obtener el precio real del CEDEAR en BYMA (no el NYSE en USD)
-  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&s!=='brasil'&&!BRL_TICKERS.has(p.ticker);});
-  var yahooPos=pos.filter(function(p){return getSector(p.ticker)==='argentina'||getSector(p.ticker)==='brasil'||BRL_TICKERS.has(p.ticker);});
+  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&!BRL_TICKERS.has(p.ticker);});
+  var yahooPos=pos.filter(function(p){return getSector(p.ticker)==='argentina'||BRL_TICKERS.has(p.ticker);});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
 
@@ -3660,7 +3657,18 @@ async function fetchAllQuotes(){
       try{
         quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
       }catch(e){
-        errors++;
+        // Fallback Yahoo para tickers Brasil (NU, PAGS, MELI, etc.)
+        // Yahoo .BA devuelve precio ARS (CEDEAR BYMA). Normalizar a USD-equiv para que
+        // renderPortfolio aplique (price/ratio)*CCL_HOY correctamente sin doble conversión.
+        if(getSector(p.ticker)==='brasil'){
+          try{
+            var _fbq=await fetchYahooAR(p.ticker);
+            if(CCL_HOY>0){_fbq.price=_fbq.price*getRatio(p.ticker)/CCL_HOY;}
+            quotes[p.ticker]=_fbq;
+          }catch(e2){errors++;}
+        } else {
+          errors++;
+        }
       }
       updateProgress();
       if(i<finnhubPos.length-1)await delay(1100);
@@ -3672,12 +3680,10 @@ async function fetchAllQuotes(){
     await Promise.all(yahooPos.map(async function(p){
       try{
         var fbq=await fetchYahooAR(p.ticker);
-        // Brasil CEDEARs (no BRL_TICKERS): Yahoo .BA devuelve ARS → normalizar a USD-equiv
-        if(getSector(p.ticker)==='brasil'&&!BRL_TICKERS.has(p.ticker)){
-          fbq.fromByma=true;
-        }
+        if(getSector(p.ticker)==='brasil'&&!BRL_TICKERS.has(p.ticker)){fbq.fromByma=true;}
         quotes[p.ticker]=fbq;
-      }catch(e){errors++;}
+      }
+      catch(e){errors++;}
       updateProgress();
     }));
   }
@@ -5611,21 +5617,21 @@ function renderDashboard(){
   var posData=[];
   open.forEach(function(p){
     var q=quotes[p.ticker];
+    if(!q||!q.price)return;
     var sector=getSector(p.ticker);
     var isBonoON=(sector==='bonos'||sector==='on');
     var isArgentina=(sector==='argentina');
     var ratio=RATIOS_TABLE[p.ticker]||1;
     var mep=mepHoy||tcHoy;
-    var valUSD;
-    if(q&&q.price){
-      valUSD=isBonoON ? (q.price/mep)*p.qty/100
-            :isArgentina ? (q.price/tcHoy)*p.qty
-            :(q.price/ratio)*p.qty;
-    } else {
-      valUSD=p.costUSDpuro||0;
-    }
-    if(!valUSD)return;
-    var costUSDtotal=p.costUSDpuro||0;
+    // Misma lógica que renderPortfolio línea ~1930:
+    // NYSE/Brasil/Europa/China/Cripto: price en USD, qty en CEDEARs → (price/ratio)*qty
+    // Argentina: price en ARS → (price/CCL)*qty
+    // Bonos/ON: price en ARS por 100 nominales → (price/MEP)*qty/100
+    var valUSD=isBonoON ? (q.price/mep)*p.qty/100
+              :isArgentina ? (q.price/tcHoy)*p.qty
+              :(q.price/ratio)*p.qty;
+    // costo promedio USD por unidad = costUSDpuro / qty
+    var costUSDtotal=p.costUSDpuro; // USD pagado real; para bonos valUSD y costUSDpuro son consistentes entre sí
     var gainUSD=valUSD-costUSDtotal;
     posData.push({ticker:p.ticker,sector:sector,valUSD:valUSD,gainUSD:gainUSD,costUSD:costUSDtotal});
   });
