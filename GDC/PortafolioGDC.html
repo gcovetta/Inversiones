@@ -3372,11 +3372,12 @@ function renderNearTarget(){
     var _isARS=(sector==='argentina'||sector==='bonos'||sector==='on');
     var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
     // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
-    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):q.price);
+    var _ntFromByma=q.fromByma;
+    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price/(CCL_HOY||1):q.price);
     if(!(priceUSD>0))return;
     var upside=(targetUSD-priceUSD)/priceUSD*100;
     if(!(upside>=0)||upside>NT_THRESHOLD)return;
-    var mercadoARS=_isARS?q.price:BRL_TICKERS.has(p.ticker)?q.price:(q.price/ratio)*_tcHoy;
+    var mercadoARS=_isARS?q.price:BRL_TICKERS.has(p.ticker)?q.price:_ntFromByma?q.price:(q.price/ratio)*_tcHoy;
     var targetARS=(targetUSD/ratio)*_tcHoy;
     items.push({ticker:p.ticker,priceARS:mercadoARS,targetARS:targetARS,upside:upside});
   });
@@ -4025,12 +4026,13 @@ function renderTargets(){
   if(countEl){countEl.textContent=tickers.length<allTickers.length?(tickers.length+' de '+allTickers.length+' tickers'):(allTickers.length+' tickers');}
   body.innerHTML=tickers.map(function(t){
     var targetUSD=TARGET_TABLE[t];var ratio=getRatio(t);var sector=getSector(t);var _isBonoON=(sector==='bonos'||sector==='on');var _tcHoyT=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;var targetARS=targetUSD!=null?(targetUSD/ratio)*_tcHoyT:null;var pos=pos_map[t];var q=quotes[t];
-    // Para bonos/ON q.price viene en ARS (precio CEDEAR en $); para NYSE viene en USD
-    var mercadoARS=q?(_isBonoON?q.price:(q.price/ratio)*_tcHoyT):null;
+    var _tIsARS=(sector==='argentina'||sector==='bonos'||sector==='on');
+    var _tFromByma=q&&q.fromByma;
+    var mercadoARS=q?(_tIsARS||_tFromByma?q.price:(q.price/ratio)*_tcHoyT):null;
     var targetPct=null;
     if(targetUSD!=null&&q&&q.price>0){
       if(_isBonoON){targetPct=targetARS!=null&&mercadoARS>0?((targetARS-mercadoARS)/mercadoARS*100):null;}
-      else{targetPct=((targetUSD-q.price)/q.price*100);}
+      else{var _tPriceUSD=_tIsARS||_tFromByma?q.price/(CCL_HOY||1):q.price;targetPct=_tPriceUSD>0?((targetUSD-_tPriceUSD)/_tPriceUSD*100):null;}
     }
     var pctHtml=targetPct!=null?'<span class="'+(targetPct>=0?'pos':'neg')+'">'+(targetPct>=0?'+':'')+targetPct.toFixed(1)+'%</span>':'—';
     var _useMEP=(sector==='bonos'||sector==='on');var _tcLabel=_useMEP?'MEP':'CCL';var _arsColor=_useMEP?'var(--blue)':'var(--text2)';
@@ -4789,7 +4791,7 @@ function trkCalcCCL(){
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (function(){
-  var DATA_VERSION='v18_cache_fix';
+  var DATA_VERSION='v19_ghost_fix';
 
   // ── Carga inicial desde Supabase (con fallback a localStorage) ──
   async function initFromSupabase(){
@@ -5706,6 +5708,7 @@ function renderDashboard(){
       // Bonos/ON: price en ARS por 100 nominales → (price/MEP)*qty/100
       valUSD=isBonoON ? (q.price/mep)*p.qty/100
             :isArgentina ? (q.price/tcHoy)*p.qty
+            :q.fromByma ? (q.price/tcHoy)*p.qty
             :(q.price/ratio)*p.qty;
     } else {
       // Sin cotización: usar costo USD como proxy para que la distribución sea correcta
