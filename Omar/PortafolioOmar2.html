@@ -3122,6 +3122,7 @@ function cargarGDCEnComparacion(){
   if(el)el.textContent='Portafolio actual';
   showPage('comparacion',document.querySelector('[onclick*="comparacion"]'));
 }
+function cargarOmarEnComparacion(){cargarGDCEnComparacion();}
 function cmpNorm(s){return String(s).replace(/[\s ​]+/g,' ').toLowerCase().trim();}
 function cmpParseHTML(ab){
   var txt=new TextDecoder('utf-8').decode(ab);
