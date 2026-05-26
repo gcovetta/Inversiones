@@ -6840,7 +6840,24 @@ function paseCalc(tipo) {
   var gv = function(id) {
     var el = document.getElementById(id);
     if (!el) return 0;
-    return parseFloat(el.value.replace(/\./g,'').replace(',','.')) || 0;
+    var s = el.value.trim();
+    if (!s) return 0;
+    // Si tiene coma → formato argentino: puntos=miles, coma=decimal
+    if (s.indexOf(',') >= 0) {
+      return parseFloat(s.replace(/\./g,'').replace(',','.')) || 0;
+    }
+    // Sin coma: detectar si el punto es decimal o de miles
+    var parts = s.split('.');
+    if (parts.length > 1) {
+      var last = parts[parts.length - 1];
+      if (last.length <= 2) {
+        // Ej: "199.5" → decimal
+        return parseFloat(parts.slice(0,-1).join('') + '.' + last) || 0;
+      }
+      // Ej: "10.226" → miles → quitar puntos
+      return parseFloat(parts.join('')) || 0;
+    }
+    return parseFloat(s) || 0;
   };
   var sv = function(id, html) {
     var el = document.getElementById(id);
