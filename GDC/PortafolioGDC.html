@@ -954,6 +954,155 @@ tr:hover td{background:var(--surface2)}
           <div id="arb-container"><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD29" onchange="arbUpdate(0,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(0,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AL30" onchange="arbUpdate(0,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(0,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.5%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(0,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(0)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="92310" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88600" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-0-0"><span class="arb-ratio-amber">104.19%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.025" placeholder="$1.00" oninput="arbUpdate(0,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD29" placeholder="ticker" oninput="arbUpdate(0,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(0,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="91390" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88660" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-0-1"><span class="arb-ratio-red">103.08%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.040" placeholder="$1.00" oninput="arbUpdate(0,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AL30" placeholder="ticker" oninput="arbUpdate(0,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.213" placeholder="—" oninput="arbUpdate(0,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(0)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD41" onchange="arbUpdate(1,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(1,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(1,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(1,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="107%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(1,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(1)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104540" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112720" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-1-0"><span class="arb-ratio-red">92.74%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.085" placeholder="$1.00" oninput="arbUpdate(1,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD41" placeholder="ticker" oninput="arbUpdate(1,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(1,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104350" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112900" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-1-1"><span class="arb-ratio-red">92.43%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.080" placeholder="$1.00" oninput="arbUpdate(1,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(1,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="934" placeholder="—" oninput="arbUpdate(1,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(1)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="TXAR" onchange="arbUpdate(2,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(2,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="ALUA" onchange="arbUpdate(2,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(2,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="130%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(2,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(2)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="873" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="668" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-2-0"><span class="arb-ratio-green">130.69%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.033" placeholder="$1.00" oninput="arbUpdate(2,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(2,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="284.40" placeholder="—" oninput="arbUpdate(2,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="878" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="674" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-2-1"><span class="arb-ratio-amber">130.27%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.270" placeholder="$1.00" oninput="arbUpdate(2,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="ALUAR" placeholder="ticker" oninput="arbUpdate(2,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(2,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(2)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD38" onchange="arbUpdate(3,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(3,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(3,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(3,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.3%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(3,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(3)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116620" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111790" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-3-0"><span class="arb-ratio-amber">104.32%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="" placeholder="$1.00" oninput="arbUpdate(3,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="ticker" oninput="arbUpdate(3,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(3,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116690" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111870" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-3-1"><span class="arb-ratio-amber">104.31%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.044" placeholder="$1.00" oninput="arbUpdate(3,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD38" placeholder="ticker" oninput="arbUpdate(3,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.000" placeholder="—" oninput="arbUpdate(3,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(3)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div></div>
         </div>
       </div>
+
+      <div class="card" style="margin-top:.6rem">
+        <div class="card-header" style="gap:8px">
+          <span class="card-title">⇅ Pases</span>
+        </div>
+        <div class="card-body" style="padding:.45rem;display:flex;flex-direction:column;gap:.65rem">
+
+          <!-- ===== CEDEAR ===== -->
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:.6rem;font-family:var(--mono);min-width:620px">
+              <tr>
+                <td style="width:55px;border:1px solid #6b3fa0;padding:3px 5px;background:linear-gradient(135deg,#2d1b5a,#1a1040)"></td>
+                <td colspan="9" style="border:1px solid #6b3fa0;padding:4px 8px;text-align:center;background:linear-gradient(135deg,#2d1b5a,#1a1040);color:#fff;font-weight:700;letter-spacing:.08em;font-size:.65rem">CEDEAR</td>
+              </tr>
+              <tr style="background:#1e1540">
+                <th style="border:1px solid #4a3575;padding:3px 5px;color:rgba(255,255,255,.4);font-size:.5rem;font-weight:400"></th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Cantidad</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Precio</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Total</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400">D Mercado<br>0,02%</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400">D Negociacion<br>0,03%</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400">IVA<br>21,00%</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">DD Tot</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Neto</th>
+                <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Neto</th>
+              </tr>
+              <tr style="background:#16161e">
+                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#2a1f4a;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Venta</td>
+                <td rowspan="2" style="border:1px solid #2a2d35;padding:2px 3px;text-align:center;background:#1e1828;vertical-align:middle">
+                  <input id="pce-qty" value="10000" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1828">
+                  <input id="pce-pv" value="0" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td id="pce-tv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pce-dmv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-dnv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ivav" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ddv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-nv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pce-diff" rowspan="2" style="border:1px solid #2a2d35;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700;vertical-align:middle">—</td>
+              </tr>
+              <tr style="background:#1a1826">
+                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#2a1f4a;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Compra</td>
+                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1828">
+                  <input id="pce-pc" value="0" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td id="pce-tc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pce-dmc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-dnc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ivac" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ddc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-nc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+              </tr>
+              <tr style="background:#0d1f28">
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.3);font-size:.48rem;text-transform:uppercase"></td>
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Dias</td>
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Tasa</td>
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Comision</td>
+                <td colspan="4" style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Gan Caucion</td>
+                <td colspan="2" style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Neto</td>
+              </tr>
+              <tr style="background:#0f222e">
+                <td style="border:1px solid #1a3040;padding:4px 6px;text-align:center;background:#0a2535;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Caucion</td>
+                <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
+                  <input id="pce-dias" value="1" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
+                  <input id="pce-tasa" value="20" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px" placeholder="%">
+                </td>
+                <td id="pce-comcau" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-gancau" colspan="4" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--accent);font-size:.63rem;font-weight:600">—</td>
+                <td id="pce-netocau" colspan="2" style="border:1px solid #1a3040;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700">—</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- ===== BONOS ===== -->
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:.6rem;font-family:var(--mono);min-width:620px">
+              <tr>
+                <td style="width:55px;border:1px solid #7a4000;padding:3px 5px;background:linear-gradient(135deg,#5a3000,#2a1500)"></td>
+                <td colspan="9" style="border:1px solid #7a4000;padding:4px 8px;text-align:center;background:linear-gradient(135deg,#5a3000,#2a1500);color:#fbbf24;font-weight:700;letter-spacing:.08em;font-size:.65rem">BONOS</td>
+              </tr>
+              <tr style="background:#1e1408">
+                <th style="border:1px solid #503520;padding:3px 5px;color:rgba(255,200,100,.4);font-size:.5rem;font-weight:400"></th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Cantidad</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Precio</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Total</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400">D Mercado<br>0,01%</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400">D Negociacion<br>0,03%</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400">IVA<br>0,00%</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">DD Tot</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Neto</th>
+                <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Neto</th>
+              </tr>
+              <tr style="background:#16161e">
+                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#3a2000;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Venta</td>
+                <td rowspan="2" style="border:1px solid #2a2d35;padding:2px 3px;text-align:center;background:#1e1508;vertical-align:middle">
+                  <input id="pbo-qty" value="100000" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1508">
+                  <input id="pbo-pv" value="0" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td id="pbo-tv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pbo-dmv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-dnv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ivav" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ddv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-nv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pbo-diff" rowspan="2" style="border:1px solid #2a2d35;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700;vertical-align:middle">—</td>
+              </tr>
+              <tr style="background:#1a1806">
+                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#3a2000;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Compra</td>
+                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1508">
+                  <input id="pbo-pc" value="0" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td id="pbo-tc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pbo-dmc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-dnc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ivac" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ddc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-nc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+              </tr>
+              <tr style="background:#0d1f28">
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.3);font-size:.48rem;text-transform:uppercase"></td>
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Dias</td>
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Tasa</td>
+                <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Comision</td>
+                <td colspan="4" style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Gan Caucion</td>
+                <td colspan="2" style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.45);font-size:.48rem;text-transform:uppercase;letter-spacing:.04em">Neto</td>
+              </tr>
+              <tr style="background:#0f222e">
+                <td style="border:1px solid #1a3040;padding:4px 6px;text-align:center;background:#0a2535;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Caucion</td>
+                <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
+                  <input id="pbo-dias" value="1" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                </td>
+                <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
+                  <input id="pbo-tasa" value="29" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px" placeholder="%">
+                </td>
+                <td id="pbo-comcau" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-gancau" colspan="4" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--accent);font-size:.63rem;font-weight:600">—</td>
+                <td id="pbo-netocau" colspan="2" style="border:1px solid #1a3040;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700">—</td>
+              </tr>
+            </table>
+          </div>
+
+        </div>
+      </div>
     </div>
 
     <div class="page" id="page-tipocambio">
@@ -6681,13 +6830,83 @@ async function dolzToggleTicker(ticker){
 
   document.addEventListener('DOMContentLoaded', raLoad);
 })();
+
+function paseCalc(tipo) {
+  var p = tipo === 'ced' ? 'pce' : 'pbo';
+  var dm = tipo === 'ced' ? 0.0002 : 0.0001;
+  var dn = 0.0003;
+  var ivaR = tipo === 'ced' ? 0.21 : 0.0;
+
+  var gv = function(id) {
+    var el = document.getElementById(id);
+    if (!el) return 0;
+    return parseFloat(el.value.replace(/\./g,'').replace(',','.')) || 0;
+  };
+  var sv = function(id, html) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  };
+  var fmt = function(n) {
+    return '$' + Math.round(n).toLocaleString('es-AR');
+  };
+
+  var qty  = gv(p+'-qty');
+  var pv   = gv(p+'-pv');
+  var pc   = gv(p+'-pc');
+  var dias = gv(p+'-dias');
+  var tasa = gv(p+'-tasa');
+
+  // Venta
+  var tv   = qty * pv;
+  var dmv  = tv * dm;
+  var dnv  = tv * dn;
+  var ivav = (dmv + dnv) * ivaR;
+  var ddv  = dmv + dnv + ivav;
+  var nv   = tv - ddv;
+
+  // Compra
+  var tc   = qty * pc;
+  var dmc  = tc * dm;
+  var dnc  = tc * dn;
+  var ivac = (dmc + dnc) * ivaR;
+  var ddc  = dmc + dnc + ivac;
+  var nc   = tc + ddc;
+
+  var diff    = nv - nc;
+  var ganCau  = nv * (tasa / 100) * (dias / 365);
+  var comCau  = nv * 0.0000025;
+  var netoCau = diff + ganCau - comCau;
+
+  sv(p+'-tv',   fmt(tv));
+  sv(p+'-dmv',  fmt(dmv));
+  sv(p+'-dnv',  fmt(dnv));
+  sv(p+'-ivav', fmt(ivav));
+  sv(p+'-ddv',  fmt(ddv));
+  sv(p+'-nv',   fmt(nv));
+
+  sv(p+'-tc',   fmt(tc));
+  sv(p+'-dmc',  fmt(dmc));
+  sv(p+'-dnc',  fmt(dnc));
+  sv(p+'-ivac', fmt(ivac));
+  sv(p+'-ddc',  fmt(ddc));
+  sv(p+'-nc',   fmt(nc));
+
+  var diffEl = document.getElementById(p+'-diff');
+  if (diffEl) {
+    diffEl.innerHTML = fmt(diff);
+    diffEl.style.color      = diff >= 0 ? 'var(--accent)' : 'var(--red)';
+    diffEl.style.background = diff >= 0 ? 'rgba(126,232,162,.1)' : 'rgba(248,113,113,.12)';
+  }
+
+  sv(p+'-comcau', fmt(comCau));
+  sv(p+'-gancau', fmt(ganCau));
+
+  var netoEl = document.getElementById(p+'-netocau');
+  if (netoEl) {
+    netoEl.innerHTML = fmt(netoCau);
+    netoEl.style.color      = netoCau >= 0 ? 'var(--accent)' : 'var(--red)';
+    netoEl.style.background = netoCau >= 0 ? 'rgba(126,232,162,.15)' : 'rgba(248,113,113,.15)';
+  }
+}
+
 </script>
-
-
-
-
-
-
-
-
-</body></html>
