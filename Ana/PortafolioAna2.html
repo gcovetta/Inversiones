@@ -430,6 +430,7 @@ tr:hover td{background:var(--surface2)}
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.5rem">
         <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
         <button id="port-summary-toggle-btn" onclick="portToggleSummary()" title="Colapsar/expandir resumen" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar resumen</button>
+        <button id="port-watchzone-toggle-btn" onclick="portToggleWatchzone()" title="Colapsar/expandir zona de seguimiento" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar mira</button>
       </div>
       <div id="port-content" class="">
       <!-- Elemento oculto para mantener el cálculo de dividendos -->
@@ -492,8 +493,8 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
       <!-- Tickers cerca del objetivo + CCL implícito -->
-      <div style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
-        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0">
+      <div id="port-watchzone-section" style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
+        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0;min-width:0">
           <div class="nt-header">
             <span class="nt-title">🎯 Tickers cerca del objetivo</span>
             <span class="nt-label">Faltan menos de</span>
@@ -2227,7 +2228,7 @@ function portToggleSummary(){
   var btn=document.getElementById('port-summary-toggle-btn');
   if(!el||!btn) return;
   var collapsed=el.style.display==='none';
-  el.style.display=collapsed?'':'none';
+  el.style.display=collapsed?'flex':'none';
   btn.textContent=collapsed?'▲ Ocultar resumen':'▼ Mostrar resumen';
   try{localStorage.setItem('port_summary_collapsed',collapsed?'0':'1');}catch(e){}
 }
@@ -2238,6 +2239,26 @@ function portToggleSummary(){
       var btn=document.getElementById('port-summary-toggle-btn');
       if(el) el.style.display='none';
       if(btn) btn.textContent='▼ Mostrar resumen';
+    }
+  }catch(e){}
+})();
+
+function portToggleWatchzone(){
+  var el=document.getElementById('port-watchzone-section');
+  var btn=document.getElementById('port-watchzone-toggle-btn');
+  if(!el||!btn) return;
+  var collapsed=el.style.display==='none';
+  el.style.display=collapsed?'flex':'none';
+  btn.textContent=collapsed?'▲ Ocultar mira':'▼ Mostrar mira';
+  try{localStorage.setItem('port_watchzone_collapsed',collapsed?'0':'1');}catch(e){}
+}
+(function(){
+  try{
+    if(localStorage.getItem('port_watchzone_collapsed')==='1'){
+      var el=document.getElementById('port-watchzone-section');
+      var btn=document.getElementById('port-watchzone-toggle-btn');
+      if(el) el.style.display='none';
+      if(btn) btn.textContent='▼ Mostrar mira';
     }
   }catch(e){}
 })();
@@ -6470,6 +6491,8 @@ wlRender();
     var el = document.getElementById('perf-result-usd');
     if(!periodos.length){ if(el){ el.textContent='—'; el.style.color='var(--text3)'; } return; }
     var lastIdx = periodos.length - 1;
+    // Calcular desde los datos guardados ANTES de cualquier sync (para coincidir con la tabla)
+    var cHeader = calc(periodos[lastIdx]);
     // Sync pusiste del último período con INV. INICIAL USD
     var invVal = typeof getRawNum==='function' ? getRawNum('inv-sidebar-usd') : 0;
     if(invVal > 0){
@@ -6483,10 +6506,9 @@ wlRender();
       if(typeof raUpdateCalc==='function') raUpdateCalc(lastIdx);
     }
     if(!el) return;
-    var c = calc(periodos[lastIdx]);
-    if(!c){ el.textContent='—'; el.style.color='var(--text3)'; return; }
-    el.textContent = 'u$s ' + Math.round(c.comision_usd).toLocaleString('es-AR');
-    el.style.color = c.comision_usd >= 0 ? 'var(--accent)' : 'var(--red)';
+    if(!cHeader){ el.textContent='—'; el.style.color='var(--text3)'; return; }
+    el.textContent = 'u$s ' + Math.round(cHeader.comision_usd).toLocaleString('es-AR');
+    el.style.color = cHeader.comision_usd >= 0 ? 'var(--accent)' : 'var(--red)';
   }
 
   function raRender(){
