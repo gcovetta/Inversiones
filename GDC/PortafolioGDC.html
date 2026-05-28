@@ -526,20 +526,7 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Posiciones abiertas</span>
-          <div class="gap-row">
-            <label class="qty-toggle" title="Mostrar/ocultar columna Cantidad">
-              <input type="checkbox" id="qty-toggle" onchange="toggleQtyCol(this.checked)"> Mostrar Cant.
-            </label>
-            <span id="ref-status" class="emsg">57/74...</span>
-            <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
-          </div>
-        </div>
-        <div id="pos-prog" style="padding: 4px 0px;"><div class="pbar"><div class="pfill" id="pfill" style="width: 77%;"></div></div></div>
-        <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
-      </div>
+      <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
             <div class="panels-grid hide-qty" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="">
@@ -594,6 +581,18 @@ tr:hover td{background:var(--surface2)}
           <thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead>
           <tbody id="body-cristian"></tbody>
         </table></div>
+      </div>
+      <!-- Barra sticky inferior: Posiciones abiertas -->
+      <div id="pos-footer-bar" style="position:sticky;bottom:0;z-index:50;background:var(--surface);border-top:1px solid var(--border);padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;overflow:hidden;margin-top:1.2rem">
+        <span class="card-title">Posiciones abiertas</span>
+        <div class="gap-row">
+          <label class="qty-toggle" title="Mostrar/ocultar columna Cantidad">
+            <input type="checkbox" id="qty-toggle" onchange="toggleQtyCol(this.checked)"> Mostrar Cant.
+          </label>
+          <span id="ref-status" class="emsg"></span>
+          <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
+        </div>
+        <div id="pos-prog" style="position:absolute;bottom:0;left:0;right:0;line-height:0"><div class="pbar" style="border-radius:0;height:3px;background:var(--border)"><div class="pfill" id="pfill" style="width:0%"></div></div></div>
       </div>
       </div><!-- /port-content -->
     </div>
