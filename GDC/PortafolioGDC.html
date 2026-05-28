@@ -343,6 +343,9 @@ tr:hover td{background:var(--surface2)}
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Gastón</span>
     <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;margin-left:4px">
     <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;margin-left:-2px">✕</button>
+    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:2px;cursor:pointer;margin-left:6px"><input type="checkbox" id="port-filter-green" onchange="renderPortfolio()" style="accent-color:#7ee8a2;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#7ee8a2;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% amarillo (0–9%)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#f87171;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#f87171;display:inline-block;flex-shrink:0"></span></label>
   </div>
   <div class="hright">
     <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
@@ -3062,9 +3065,13 @@ function renderPortfolio(){
       +'</span>';
   }
 
-  // Filtro por ticker (input en header)
+  // Filtro por ticker y color Δ% (inputs en header)
   var _portTkFilterEl=document.getElementById('port-ticker-filter');
   var _portTkFilter=_portTkFilterEl?_portTkFilterEl.value.trim().toUpperCase():'';
+  var _fGreen=document.getElementById('port-filter-green');
+  var _fYellow=document.getElementById('port-filter-yellow');
+  var _fRed=document.getElementById('port-filter-red');
+  var _colorFilterOn=(_fGreen&&_fGreen.checked)||(_fYellow&&_fYellow.checked)||(_fRed&&_fRed.checked);
 
   // Pasada 2: construir filas
   open.forEach(function(p){
@@ -3138,7 +3145,8 @@ function renderPortfolio(){
       '<td class="mono">'+targetCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
-    if(!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1) sectors[sector].push(row);
+    var _passColor=!_colorFilterOn||((_fGreen&&_fGreen.checked)&&pnlPct!==null&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct!==null&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct!==null&&pnlPct<0);
+    if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor) sectors[sector].push(row);
   });
   var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'}];
   panelDefs.forEach(function(def){
