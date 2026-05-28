@@ -488,7 +488,7 @@ tr:hover td{background:var(--surface2)}
       </div>
       <!-- Tickers cerca del objetivo + CCL implícito -->
       <div id="port-watchzone-section" style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
-        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0">
+        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0;min-width:0">
           <div class="nt-header">
             <span class="nt-title">🎯 Tickers cerca del objetivo</span>
             <span class="nt-label">Faltan menos de</span>
@@ -2421,7 +2421,7 @@ function portToggleSummary(){
   var btn=document.getElementById('port-summary-toggle-btn');
   if(!el||!btn) return;
   var collapsed=el.style.display==='none';
-  el.style.display=collapsed?'':'none';
+  el.style.display=collapsed?'flex':'none';
   btn.textContent=collapsed?'▲ Ocultar resumen':'▼ Mostrar resumen';
   try{localStorage.setItem('port_summary_collapsed',collapsed?'0':'1');}catch(e){}
 }
@@ -2441,7 +2441,7 @@ function portToggleWatchzone(){
   var btn=document.getElementById('port-watchzone-toggle-btn');
   if(!el||!btn) return;
   var collapsed=el.style.display==='none';
-  el.style.display=collapsed?'':'none';
+  el.style.display=collapsed?'flex':'none';
   btn.textContent=collapsed?'▲ Ocultar mira':'▼ Mostrar mira';
   try{localStorage.setItem('port_watchzone_collapsed',collapsed?'0':'1');}catch(e){}
 }
