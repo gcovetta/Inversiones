@@ -337,6 +337,15 @@ tr:hover td{background:var(--surface2)}
     <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
     <img src="Juli.png" style="width:58px;height:58px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;flex-shrink:0" alt="Juli">
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Juli</span>
+    <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;margin-left:4px">
+    <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;margin-left:-2px">✕</button>
+    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:2px;cursor:pointer;margin-left:6px"><input type="checkbox" id="port-filter-green" onchange="renderPortfolio()" style="accent-color:#7ee8a2;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#7ee8a2;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% amarillo (0–9%)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#f87171;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#f87171;display:inline-block;flex-shrink:0"></span></label>
+    <span style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-left:7px;border-left:1px solid var(--border2);padding-left:7px;line-height:1;align-self:center">RV</span>
+    <label title="Inv. $ sobre umbral rojo (>3% RV)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-red" onchange="renderPortfolio()" style="accent-color:#f87171;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#f87171;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Inv. $ sobre umbral amarillo (>2% RV)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Inv. $ bajo umbral (normal)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-white" onchange="renderPortfolio()" style="accent-color:#e8eaf0;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#e8eaf0;display:inline-block;flex-shrink:0"></span></label>
     <div id="aniv-box" style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:3px 8px;font-family:var(--mono);font-size:.63rem;margin-left:4px;white-space:nowrap">
       <span style="color:var(--text3)">Inicio</span>
       <input type="date" id="aniv-fecha" onchange="anivUpdate()" style="background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:.63rem;outline:none;width:105px;cursor:pointer">
@@ -417,11 +426,13 @@ tr:hover td{background:var(--surface2)}
       </div>
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.5rem">
         <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
+        <button id="port-summary-toggle-btn" onclick="portToggleSummary()" title="Colapsar/expandir resumen" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar resumen</button>
+        <button id="port-watchzone-toggle-btn" onclick="portToggleWatchzone()" title="Colapsar/expandir zona de seguimiento" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar mira</button>
       </div>
       <div id="port-content" class="">
       <!-- Elemento oculto para mantener el cálculo de dividendos -->
       <div style="display:none"><div id="m-divs">—</div></div>
-      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
+      <div id="port-summary-section" style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
         <!-- Izquierda: 2 filas de métricas -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex-shrink:0">
           <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">—</div></div>
@@ -479,8 +490,8 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
       <!-- Tickers cerca del objetivo + CCL implícito -->
-      <div style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
-        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0">
+      <div id="port-watchzone-section" style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
+        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0;min-width:0">
           <div class="nt-header">
             <span class="nt-title">🎯 Tickers cerca del objetivo</span>
             <span class="nt-label">Faltan menos de</span>
@@ -519,20 +530,7 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Posiciones abiertas</span>
-          <div class="gap-row">
-            <label class="qty-toggle" title="Mostrar/ocultar columna Cantidad">
-              <input type="checkbox" id="qty-toggle" onchange="toggleQtyCol(this.checked)"> Mostrar Cant.
-            </label>
-            <span id="ref-status" class="emsg">57/74...</span>
-            <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
-          </div>
-        </div>
-        <div id="pos-prog" style="padding: 4px 0px;"><div class="pbar"><div class="pfill" id="pfill" style="width: 77%;"></div></div></div>
         <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
-      </div>
             <div class="panels-grid hide-qty" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="display:none">
@@ -575,6 +573,17 @@ tr:hover td{background:var(--surface2)}
       </div>
 </div>
 
+      <div id="pos-footer-bar" style="position:sticky;bottom:0;z-index:50;background:var(--surface);border-top:1px solid var(--border);padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;overflow:hidden;margin-top:1.2rem">
+        <span class="card-title">Posiciones abiertas</span>
+        <div class="gap-row">
+          <label class="qty-toggle" title="Mostrar/ocultar columna Cantidad">
+            <input type="checkbox" id="qty-toggle" onchange="toggleQtyCol(this.checked)"> Mostrar Cant.
+          </label>
+          <span id="ref-status" class="emsg"></span>
+          <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
+        </div>
+        <div id="pos-prog" style="position:absolute;bottom:0;left:0;right:0;line-height:0"><div class="pbar" style="border-radius:0;height:3px;background:var(--border)"><div class="pfill" id="pfill" style="width:0%"></div></div></div>
+      </div>
       </div><!-- /port-content -->
     </div>
 
@@ -2103,6 +2112,46 @@ function portBlur(){
   if(btn)btn.style.color='var(--text3)';
 }
 
+function portToggleSummary(){
+  var el=document.getElementById('port-summary-section');
+  var btn=document.getElementById('port-summary-toggle-btn');
+  if(!el||!btn) return;
+  var collapsed=el.style.display==='none';
+  el.style.display=collapsed?'flex':'none';
+  btn.textContent=collapsed?'▲ Ocultar resumen':'▼ Mostrar resumen';
+  try{localStorage.setItem('port_summary_collapsed',collapsed?'0':'1');}catch(e){}
+}
+(function(){
+  try{
+    if(localStorage.getItem('port_summary_collapsed')==='1'){
+      var el=document.getElementById('port-summary-section');
+      var btn=document.getElementById('port-summary-toggle-btn');
+      if(el) el.style.display='none';
+      if(btn) btn.textContent='▼ Mostrar resumen';
+    }
+  }catch(e){}
+})();
+
+function portToggleWatchzone(){
+  var el=document.getElementById('port-watchzone-section');
+  var btn=document.getElementById('port-watchzone-toggle-btn');
+  if(!el||!btn) return;
+  var collapsed=el.style.display==='none';
+  el.style.display=collapsed?'flex':'none';
+  btn.textContent=collapsed?'▲ Ocultar mira':'▼ Mostrar mira';
+  try{localStorage.setItem('port_watchzone_collapsed',collapsed?'0':'1');}catch(e){}
+}
+(function(){
+  try{
+    if(localStorage.getItem('port_watchzone_collapsed')==='1'){
+      var el=document.getElementById('port-watchzone-section');
+      var btn=document.getElementById('port-watchzone-toggle-btn');
+      if(el) el.style.display='none';
+      if(btn) btn.textContent='▼ Mostrar mira';
+    }
+  }catch(e){}
+})();
+
 function portToggleBlur(){
   if(!_portBlurred){portBlur();return;}
   // Verificar sesión activa
@@ -2739,6 +2788,18 @@ function renderPortfolio(){
       +'</span>';
   }
 
+  // Filtro por ticker y color Δ% (inputs en header)
+  var _portTkFilterEl=document.getElementById('port-ticker-filter');
+  var _portTkFilter=_portTkFilterEl?_portTkFilterEl.value.trim().toUpperCase():'';
+  var _fGreen=document.getElementById('port-filter-green');
+  var _fYellow=document.getElementById('port-filter-yellow');
+  var _fRed=document.getElementById('port-filter-red');
+  var _colorFilterOn=(_fGreen&&_fGreen.checked)||(_fYellow&&_fYellow.checked)||(_fRed&&_fRed.checked);
+  var _fRVRed=document.getElementById('port-filter-rv-red');
+  var _fRVYellow=document.getElementById('port-filter-rv-yellow');
+  var _fRVWhite=document.getElementById('port-filter-rv-white');
+  var _rvFilterOn=(_fRVRed&&_fRVRed.checked)||(_fRVYellow&&_fRVYellow.checked)||(_fRVWhite&&_fRVWhite.checked);
+
   // Pasada 2: construir filas
   open.forEach(function(p){
     var q=quotes[p.ticker];var price=q?q.price:null;
@@ -2809,7 +2870,9 @@ function renderPortfolio(){
       '<td class="mono">'+targetCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
-    sectors[sector].push(row);
+    var _passColor=!_colorFilterOn||((_fGreen&&_fGreen.checked)&&pnlPct!==null&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct!==null&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct!==null&&pnlPct<0);
+    var _passRV=!_rvFilterOn||((_fRVRed&&_fRVRed.checked)&&invColor==='var(--red)')||((_fRVYellow&&_fRVYellow.checked)&&invColor==='#eab308')||((_fRVWhite&&_fRVWhite.checked)&&invColor==='var(--text)');
+    if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor&&_passRV) sectors[sector].push(row);
   });
   var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'}];
   panelDefs.forEach(function(def){
@@ -6316,6 +6379,9 @@ wlRender();
     var el = document.getElementById('perf-result-usd');
     if(!periodos.length){ if(el){ el.textContent='—'; el.style.color='var(--text3)'; } return; }
     var lastIdx = periodos.length - 1;
+    // Calcular desde los datos guardados ANTES de cualquier sync (para coincidir con la tabla)
+    var cHeader = calc(periodos[lastIdx]);
+    // Sync pusiste del último período con INV. INICIAL USD
     var invVal = typeof getRawNum==='function' ? getRawNum('inv-sidebar-usd') : 0;
     if(invVal > 0){
       periodos[lastIdx].pusiste = String(Math.round(invVal));
@@ -6328,10 +6394,9 @@ wlRender();
       if(typeof raUpdateCalc==='function') raUpdateCalc(lastIdx);
     }
     if(!el) return;
-    var c = calc(periodos[lastIdx]);
-    if(!c){ el.textContent='—'; el.style.color='var(--text3)'; return; }
-    el.textContent = 'u$s ' + Math.round(c.comision_usd).toLocaleString('es-AR');
-    el.style.color = c.comision_usd >= 0 ? 'var(--accent)' : 'var(--red)';
+    if(!cHeader){ el.textContent='—'; el.style.color='var(--text3)'; return; }
+    el.textContent = 'u$s ' + Math.round(cHeader.comision_usd).toLocaleString('es-AR');
+    el.style.color = cHeader.comision_usd >= 0 ? 'var(--accent)' : 'var(--red)';
   }
 
   function raRender(){
