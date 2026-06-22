@@ -4,7 +4,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GDC</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css">
@@ -12,8 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
 <style>
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px;--rsm:6px}
-*{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;overflow:hidden;display:flex;flex-direction:column;height:100vh}
+*{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;overflow:hidden;display:flex;flex-direction:column;height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .app{display:flex;flex-direction:column;flex:1;min-height:0}
 .arb-wrap{margin-bottom:6px}
 .arb-pair-header{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;background:linear-gradient(135deg,#0d2545,#091830);border-radius:var(--rsm) var(--rsm) 0 0;border:1px solid #1e4080}
@@ -63,8 +63,8 @@ tr.marked-watch{background:rgba(251,191,36,.04)}
 .mark-note-input:focus{border-color:var(--accent)}
 .mark-pop-actions{display:flex;gap:5px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
-.logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
+.logo{font-weight:700;font-size:1rem;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;font-family:var(--sans)}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
 .hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .tag{font-family:var(--mono);font-size:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text3)}
@@ -84,8 +84,8 @@ header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border);display:flex;
 .mgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:1.2rem;align-items:flex-start}
 .mgrid .metric{flex:0 1 auto;min-width:0;white-space:nowrap}
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem}
-.metric-label{font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-.metric-value{font-size:1.35rem;font-weight:600;letter-spacing:-.02em;font-family:var(--mono)}
+.metric-label{font-size:.6rem;font-family:var(--sans);color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:500}
+.metric-value{font-size:1.35rem;font-weight:700;letter-spacing:-.03em;font-family:var(--sans)}
 .metric-sub{font-size:.62rem;font-family:var(--mono);color:var(--text3);margin-top:2px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;overflow:hidden}
 .card-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -339,7 +339,7 @@ tr:hover td{background:var(--surface2)}
   <div class="logo">
     <div class="logo-dot"></div>
     <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
-    <img src="PerfilGaston.png" style="width:58px;height:58px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;flex-shrink:0" alt="GDC">
+    <img src="PerfilGaston.png" style="width:42px;height:42px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;object-position:center top;flex-shrink:0;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;box-shadow:0 0 0 3px rgba(0,230,118,0.15),0 2px 12px rgba(0,0,0,0.5)" alt="GDC">
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Gastón</span>
     <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;margin-left:4px">
     <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;margin-left:-2px">✕</button>
