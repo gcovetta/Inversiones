@@ -4,19 +4,19 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GDC</title>
-<link href="./Portafolio Tracker — NYSE_files/css2" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
 <style>
-:root{--bg:#0e0f11;--surface:#16181c;--surface2:#1e2026;--border:#2a2d35;--border2:#363a45;--text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;--accent:#7ee8a2;--accent2:#4ade80;--red:#f87171;--amber:#fbbf24;--blue:#60a5fa;--mono:'DM Mono',monospace;--sans:'Syne',sans-serif;--radius:10px;--rsm:6px}
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px;--rsm:6px}
 *{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;overflow:hidden;display:flex;flex-direction:column;height:100vh}
 .app{display:flex;flex-direction:column;flex:1;min-height:0}
 .arb-wrap{margin-bottom:6px}
-.arb-pair-header{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;background:linear-gradient(135deg,#2d1b5a,#1a1040);border-radius:var(--rsm) var(--rsm) 0 0;border:1px solid #6b3fa0}
+.arb-pair-header{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;background:linear-gradient(135deg,#0d2545,#091830);border-radius:var(--rsm) var(--rsm) 0 0;border:1px solid #1e4080}
 .arb-row{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;border-left:1px solid var(--border2);border-right:1px solid var(--border2);border-bottom:1px solid var(--border2)}
 .arb-row:last-child{border-radius:0 0 var(--rsm) var(--rsm)}
 .arb-cell{padding:3px 4px;font-size:.61rem;font-family:var(--mono);display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);text-align:center}
@@ -24,9 +24,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .arb-cell.left{justify-content:flex-start}
 .arb-label{font-size:.5rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.5);padding:3px 4px;display:flex;align-items:center;justify-content:center}
 .arb-plazo{background:rgba(0,0,0,.35);font-weight:700;font-size:.59rem;color:var(--text3);min-width:32px}
-.arb-ratio-green{background:#1a4d1a;color:#5dde5d;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
-.arb-ratio-amber{background:#3d2a00;color:#f0a800;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
-.arb-ratio-red{background:#3d0e0e;color:#e05555;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
+.arb-ratio-green{background:#0d3320;color:#00e676;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
+.arb-ratio-amber{background:#2a3000;color:#ffd600;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
+.arb-ratio-red{background:#1a0d0d;color:#ff5252;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
 .arb-op{font-size:.78rem;font-weight:900;color:var(--text3)}
 .arb-op.buy{color:var(--green)}
 .arb-op.sell{color:var(--red)}
@@ -127,7 +127,7 @@ tr:hover td{background:var(--surface2)}
 .gap-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .smsg{font-size:.7rem;font-family:var(--mono);color:var(--accent)}
 .emsg{font-size:.7rem;font-family:var(--mono);color:var(--red)}
-#warn-sin-tc{display:none;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.38);border-radius:6px;padding:5px 10px;font-size:.65rem;font-family:var(--mono);color:#fbbf24;margin:4px 1rem 2px}
+#warn-sin-tc{display:none;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.38);border-radius:6px;padding:5px 10px;font-size:.65rem;font-family:var(--mono);color:#ffd600;margin:4px 1rem 2px}
 .empty-state{text-align:center;padding:2.5rem;color:var(--text3);font-size:.75rem;font-family:var(--mono)}
 .spinner{display:inline-block;width:10px;height:10px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -245,7 +245,7 @@ tr:hover td{background:var(--surface2)}
 .wl-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:.75rem;padding:0 2px;line-height:1;transition:color .12s;margin-left:auto;flex-shrink:0}
 .wl-del:hover{color:var(--red)}
 .wl-empty{color:var(--text3);font-family:var(--mono);font-size:.7rem;text-align:center;padding:12px 0}
-.jvm-tooltip{background:#1e2026!important;color:#e8eaf0!important;border:1px solid #363a45!important;font-family:'DM Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
+.jvm-tooltip{background:#172035!important;color:#e8f0ff!important;border:1px solid #264070!important;font-family:'JetBrains Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
 .jvm-zoom-btn{display:none!important}
 /* ── RENDIMIENTO ANUAL ── */
 .ra-period-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:inline-block}
@@ -343,13 +343,13 @@ tr:hover td{background:var(--surface2)}
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Gastón</span>
     <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;margin-left:4px">
     <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;margin-left:-2px">✕</button>
-    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:2px;cursor:pointer;margin-left:6px"><input type="checkbox" id="port-filter-green" onchange="renderPortfolio()" style="accent-color:#7ee8a2;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#7ee8a2;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:2px;cursor:pointer;margin-left:6px"><input type="checkbox" id="port-filter-green" onchange="renderPortfolio()" style="accent-color:#00e676;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#00e676;display:inline-block;flex-shrink:0"></span></label>
     <label title="Solo Δ% amarillo (0–9%)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#f87171;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#f87171;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
     <span style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-left:7px;border-left:1px solid var(--border2);padding-left:7px;line-height:1;align-self:center">RV</span>
-    <label title="Inv. $ sobre umbral rojo (>3% RV)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-red" onchange="renderPortfolio()" style="accent-color:#f87171;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#f87171;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Inv. $ sobre umbral rojo (>3% RV)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
     <label title="Inv. $ sobre umbral amarillo (>2% RV)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Inv. $ bajo umbral (normal)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-white" onchange="renderPortfolio()" style="accent-color:#e8eaf0;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#e8eaf0;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Inv. $ bajo umbral (normal)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-white" onchange="renderPortfolio()" style="accent-color:#e8f0ff;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#e8f0ff;display:inline-block;flex-shrink:0"></span></label>
   </div>
   <div class="hright">
     <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
@@ -571,7 +571,7 @@ tr:hover td{background:var(--surface2)}
 </div>
       <div class="card" style="overflow:visible;display:inline-block;width:fit-content">
         <div class="card-header"><span class="card-title">Dividendos cobrados</span></div>
-        <div id="divs-content" class=""><div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;padding:.9rem 1rem"><div style="min-width:120px"><div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Total cobrado</div><div style="font-size:1.5rem;font-weight:700;font-family:var(--mono);color:var(--accent);letter-spacing:-.02em">USD 2616.61</div><div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);margin-top:3px">39 cobros · 4 meses</div></div><div style="flex-shrink:0"><svg viewBox="0 0 182 100" xmlns="http://www.w3.org/2000/svg" style="width:182px;height:auto;display:block;overflow:visible"><line x1="38" y1="54" x2="174" y2="54" stroke="var(--border)" stroke-width="1"></line><text x="34" y="57" text-anchor="end" font-family="DM Mono,monospace" font-size="6.5" fill="var(--text3)">263</text><line x1="38" y1="36" x2="174" y2="36" stroke="var(--border)" stroke-width="1"></line><text x="34" y="39" text-anchor="end" font-family="DM Mono,monospace" font-size="6.5" fill="var(--text3)">527</text><line x1="38" y1="0" x2="174" y2="0" stroke="var(--border)" stroke-width="1"></line><text x="34" y="3" text-anchor="end" font-family="DM Mono,monospace" font-size="6.5" fill="var(--text3)">1054</text><g><rect x="38" y="0" width="28" height="72" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="52" y="-4" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--accent)">$1054</text><text x="52" y="90" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--text3)">Ene'26</text></g><g><rect x="72" y="39" width="28" height="33" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="86" y="35" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--accent)">$478</text><text x="86" y="90" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--text3)">Feb'26</text></g><g><rect x="106" y="10" width="28" height="62" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="120" y="6" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--accent)">$908</text><text x="120" y="90" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--text3)">Mar'26</text></g><g><rect x="140" y="60" width="28" height="12" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="154" y="56" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--accent)">$176</text><text x="154" y="90" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--text3)">Abr'26</text></g></svg></div></div></div>
+        <div id="divs-content" class=""><div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;padding:.9rem 1rem"><div style="min-width:120px"><div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Total cobrado</div><div style="font-size:1.5rem;font-weight:700;font-family:var(--mono);color:var(--accent);letter-spacing:-.02em">USD 2616.61</div><div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);margin-top:3px">39 cobros · 4 meses</div></div><div style="flex-shrink:0"><svg viewBox="0 0 182 100" xmlns="http://www.w3.org/2000/svg" style="width:182px;height:auto;display:block;overflow:visible"><line x1="38" y1="54" x2="174" y2="54" stroke="var(--border)" stroke-width="1"></line><text x="34" y="57" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="6.5" fill="var(--text3)">263</text><line x1="38" y1="36" x2="174" y2="36" stroke="var(--border)" stroke-width="1"></line><text x="34" y="39" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="6.5" fill="var(--text3)">527</text><line x1="38" y1="0" x2="174" y2="0" stroke="var(--border)" stroke-width="1"></line><text x="34" y="3" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="6.5" fill="var(--text3)">1054</text><g><rect x="38" y="0" width="28" height="72" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="52" y="-4" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--accent)">$1054</text><text x="52" y="90" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--text3)">Ene'26</text></g><g><rect x="72" y="39" width="28" height="33" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="86" y="35" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--accent)">$478</text><text x="86" y="90" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--text3)">Feb'26</text></g><g><rect x="106" y="10" width="28" height="62" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="120" y="6" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--accent)">$908</text><text x="120" y="90" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--text3)">Mar'26</text></g><g><rect x="140" y="60" width="28" height="12" rx="3" fill="var(--accent)" opacity="0.85"></rect><text x="154" y="56" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--accent)">$176</text><text x="154" y="90" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--text3)">Abr'26</text></g></svg></div></div></div>
       </div>
       <div class="card" id="panel-cristian" style="display:none;margin-top:1rem">
         <div class="card-header">
@@ -959,9 +959,9 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div class="card-body" style="padding:.45rem">
           <div class="ibox" style="margin-bottom:6px;font-size:.6rem;padding:.3rem .6rem">
-            <b>Ratio</b> = Precio A ÷ Precio B × 100 &nbsp;·&nbsp; El color indica si el ratio está <span style="color:#5dde5d">por encima</span>, en zona <span style="color:#f0a800">neutral</span> o <span style="color:#e05555">por debajo</span> del % objetivo. Editá cualquier celda directamente.
+            <b>Ratio</b> = Precio A ÷ Precio B × 100 &nbsp;·&nbsp; El color indica si el ratio está <span style="color:#00e676">por encima</span>, en zona <span style="color:#ffd600">neutral</span> o <span style="color:#ff5252">por debajo</span> del % objetivo. Editá cualquier celda directamente.
           </div>
-          <div id="arb-container"><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD29" onchange="arbUpdate(0,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(0,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AL30" onchange="arbUpdate(0,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(0,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.5%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(0,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(0)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="92310" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88600" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-0-0"><span class="arb-ratio-amber">104.19%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.025" placeholder="$1.00" oninput="arbUpdate(0,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD29" placeholder="ticker" oninput="arbUpdate(0,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(0,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="91390" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88660" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-0-1"><span class="arb-ratio-red">103.08%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.040" placeholder="$1.00" oninput="arbUpdate(0,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AL30" placeholder="ticker" oninput="arbUpdate(0,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.213" placeholder="—" oninput="arbUpdate(0,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(0)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD41" onchange="arbUpdate(1,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(1,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(1,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(1,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="107%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(1,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(1)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104540" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112720" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-1-0"><span class="arb-ratio-red">92.74%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.085" placeholder="$1.00" oninput="arbUpdate(1,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD41" placeholder="ticker" oninput="arbUpdate(1,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(1,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104350" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112900" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-1-1"><span class="arb-ratio-red">92.43%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.080" placeholder="$1.00" oninput="arbUpdate(1,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(1,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="934" placeholder="—" oninput="arbUpdate(1,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(1)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="TXAR" onchange="arbUpdate(2,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(2,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="ALUA" onchange="arbUpdate(2,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(2,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="130%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(2,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(2)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="873" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="668" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-2-0"><span class="arb-ratio-green">130.69%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.033" placeholder="$1.00" oninput="arbUpdate(2,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(2,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="284.40" placeholder="—" oninput="arbUpdate(2,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="878" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="674" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-2-1"><span class="arb-ratio-amber">130.27%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.270" placeholder="$1.00" oninput="arbUpdate(2,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="ALUAR" placeholder="ticker" oninput="arbUpdate(2,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(2,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(2)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD38" onchange="arbUpdate(3,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(3,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(3,-1,&#39;b&#39;,this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate(3,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.3%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate(3,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(3)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116620" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111790" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-3-0"><span class="arb-ratio-amber">104.32%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="" placeholder="$1.00" oninput="arbUpdate(3,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="ticker" oninput="arbUpdate(3,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(3,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116690" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111870" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioB&#39;,this.value)" style="color:#60a5fa"></div><div class="arb-cell" id="arb-ratio-3-1"><span class="arb-ratio-amber">104.31%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.044" placeholder="$1.00" oninput="arbUpdate(3,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD38" placeholder="ticker" oninput="arbUpdate(3,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.000" placeholder="—" oninput="arbUpdate(3,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(3)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div></div>
+          <div id="arb-container"><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD29" onchange="arbUpdate(0,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(0,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AL30" onchange="arbUpdate(0,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(0,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.5%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(0,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(0)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="92310" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88600" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-0"><span class="arb-ratio-amber">104.19%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.025" placeholder="$1.00" oninput="arbUpdate(0,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD29" placeholder="ticker" oninput="arbUpdate(0,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(0,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="91390" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88660" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-1"><span class="arb-ratio-red">103.08%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.040" placeholder="$1.00" oninput="arbUpdate(0,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AL30" placeholder="ticker" oninput="arbUpdate(0,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.213" placeholder="—" oninput="arbUpdate(0,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(0)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD41" onchange="arbUpdate(1,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(1,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(1,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(1,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="107%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(1,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(1)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104540" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112720" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-0"><span class="arb-ratio-red">92.74%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.085" placeholder="$1.00" oninput="arbUpdate(1,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD41" placeholder="ticker" oninput="arbUpdate(1,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(1,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104350" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112900" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-1"><span class="arb-ratio-red">92.43%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.080" placeholder="$1.00" oninput="arbUpdate(1,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(1,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="934" placeholder="—" oninput="arbUpdate(1,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(1)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="TXAR" onchange="arbUpdate(2,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(2,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="ALUA" onchange="arbUpdate(2,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(2,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="130%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(2,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(2)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="873" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="668" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-0"><span class="arb-ratio-green">130.69%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.033" placeholder="$1.00" oninput="arbUpdate(2,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(2,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="284.40" placeholder="—" oninput="arbUpdate(2,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="878" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="674" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-1"><span class="arb-ratio-amber">130.27%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.270" placeholder="$1.00" oninput="arbUpdate(2,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="ALUAR" placeholder="ticker" oninput="arbUpdate(2,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(2,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(2)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD38" onchange="arbUpdate(3,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(3,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(3,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(3,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.3%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(3,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(3)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116620" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111790" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-0"><span class="arb-ratio-amber">104.32%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="" placeholder="$1.00" oninput="arbUpdate(3,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="ticker" oninput="arbUpdate(3,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(3,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116690" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111870" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-1"><span class="arb-ratio-amber">104.31%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.044" placeholder="$1.00" oninput="arbUpdate(3,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD38" placeholder="ticker" oninput="arbUpdate(3,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.000" placeholder="—" oninput="arbUpdate(3,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(3)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div></div>
         </div>
       </div>
 
@@ -975,8 +975,8 @@ tr:hover td{background:var(--surface2)}
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:.6rem;font-family:var(--mono);min-width:620px">
               <tr>
-                <td style="width:55px;border:1px solid #6b3fa0;padding:3px 5px;background:linear-gradient(135deg,#2d1b5a,#1a1040)"></td>
-                <td colspan="9" style="border:1px solid #6b3fa0;padding:4px 8px;text-align:center;background:linear-gradient(135deg,#2d1b5a,#1a1040);color:#fff;font-weight:700;letter-spacing:.08em;font-size:.65rem">CEDEAR</td>
+                <td style="width:55px;border:1px solid #1e4080;padding:3px 5px;background:linear-gradient(135deg,#0d2545,#091830)"></td>
+                <td colspan="9" style="border:1px solid #1e4080;padding:4px 8px;text-align:center;background:linear-gradient(135deg,#0d2545,#091830);color:#fff;font-weight:700;letter-spacing:.08em;font-size:.65rem">CEDEAR</td>
               </tr>
               <tr style="background:#1e1540">
                 <th style="border:1px solid #4a3575;padding:3px 5px;color:rgba(255,255,255,.4);font-size:.5rem;font-weight:400"></th>
@@ -991,32 +991,32 @@ tr:hover td{background:var(--surface2)}
                 <th style="border:1px solid #4a3575;padding:3px 5px;text-align:center;color:rgba(255,255,255,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Neto</th>
               </tr>
               <tr style="background:#16161e">
-                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#2a1f4a;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Venta</td>
-                <td rowspan="2" style="border:1px solid #2a2d35;padding:2px 3px;text-align:center;background:#1e1828;vertical-align:middle">
-                  <input id="pce-qty" value="10000" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                <td style="border:1px solid #1e3050;padding:4px 6px;text-align:center;background:#162040;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Venta</td>
+                <td rowspan="2" style="border:1px solid #1e3050;padding:2px 3px;text-align:center;background:#12192e;vertical-align:middle">
+                  <input id="pce-qty" value="10000" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
-                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1828">
-                  <input id="pce-pv" value="0" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                <td style="border:1px solid #1e3050;padding:2px 3px;background:#12192e">
+                  <input id="pce-pv" value="0" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
-                <td id="pce-tv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
-                <td id="pce-dmv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-dnv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-ivav" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-ddv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-nv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
-                <td id="pce-diff" rowspan="2" style="border:1px solid #2a2d35;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700;vertical-align:middle">—</td>
+                <td id="pce-tv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pce-dmv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-dnv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ivav" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ddv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-nv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pce-diff" rowspan="2" style="border:1px solid #1e3050;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700;vertical-align:middle">—</td>
               </tr>
               <tr style="background:#1a1826">
-                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#2a1f4a;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Compra</td>
-                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1828">
-                  <input id="pce-pc" value="0" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                <td style="border:1px solid #1e3050;padding:4px 6px;text-align:center;background:#162040;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Compra</td>
+                <td style="border:1px solid #1e3050;padding:2px 3px;background:#12192e">
+                  <input id="pce-pc" value="0" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
-                <td id="pce-tc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
-                <td id="pce-dmc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-dnc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-ivac" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-ddc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pce-nc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pce-tc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pce-dmc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-dnc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ivac" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-ddc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pce-nc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
               </tr>
               <tr style="background:#0d1f28">
                 <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.3);font-size:.48rem;text-transform:uppercase"></td>
@@ -1029,10 +1029,10 @@ tr:hover td{background:var(--surface2)}
               <tr style="background:#0f222e">
                 <td style="border:1px solid #1a3040;padding:4px 6px;text-align:center;background:#0a2535;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Caucion</td>
                 <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
-                  <input id="pce-dias" value="1" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                  <input id="pce-dias" value="1" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
                 <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
-                  <input id="pce-tasa" value="20" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px" placeholder="%">
+                  <input id="pce-tasa" value="20" oninput="paseCalc('ced')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px" placeholder="%">
                 </td>
                 <td id="pce-comcau" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
                 <td id="pce-gancau" colspan="4" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--accent);font-size:.63rem;font-weight:600">—</td>
@@ -1045,8 +1045,8 @@ tr:hover td{background:var(--surface2)}
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:.6rem;font-family:var(--mono);min-width:620px">
               <tr>
-                <td style="width:55px;border:1px solid #7a4000;padding:3px 5px;background:linear-gradient(135deg,#5a3000,#2a1500)"></td>
-                <td colspan="9" style="border:1px solid #7a4000;padding:4px 8px;text-align:center;background:linear-gradient(135deg,#5a3000,#2a1500);color:#fbbf24;font-weight:700;letter-spacing:.08em;font-size:.65rem">BONOS</td>
+                <td style="width:55px;border:1px solid #2a5a20;padding:3px 5px;background:linear-gradient(135deg,#1a3a10,#0d2008)"></td>
+                <td colspan="9" style="border:1px solid #2a5a20;padding:4px 8px;text-align:center;background:linear-gradient(135deg,#1a3a10,#0d2008);color:#ffd600;font-weight:700;letter-spacing:.08em;font-size:.65rem">BONOS</td>
               </tr>
               <tr style="background:#1e1408">
                 <th style="border:1px solid #503520;padding:3px 5px;color:rgba(255,200,100,.4);font-size:.5rem;font-weight:400"></th>
@@ -1061,32 +1061,32 @@ tr:hover td{background:var(--surface2)}
                 <th style="border:1px solid #503520;padding:3px 5px;text-align:center;color:rgba(255,200,100,.55);font-size:.5rem;font-weight:400;text-transform:uppercase;letter-spacing:.04em">Neto</th>
               </tr>
               <tr style="background:#16161e">
-                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#3a2000;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Venta</td>
-                <td rowspan="2" style="border:1px solid #2a2d35;padding:2px 3px;text-align:center;background:#1e1508;vertical-align:middle">
-                  <input id="pbo-qty" value="100000" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                <td style="border:1px solid #1e3050;padding:4px 6px;text-align:center;background:#1a2a10;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Venta</td>
+                <td rowspan="2" style="border:1px solid #1e3050;padding:2px 3px;text-align:center;background:#121a1a;vertical-align:middle">
+                  <input id="pbo-qty" value="100000" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
-                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1508">
-                  <input id="pbo-pv" value="0" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                <td style="border:1px solid #1e3050;padding:2px 3px;background:#121a1a">
+                  <input id="pbo-pv" value="0" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
-                <td id="pbo-tv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
-                <td id="pbo-dmv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-dnv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-ivav" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-ddv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-nv" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
-                <td id="pbo-diff" rowspan="2" style="border:1px solid #2a2d35;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700;vertical-align:middle">—</td>
+                <td id="pbo-tv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pbo-dmv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-dnv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ivav" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ddv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-nv" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pbo-diff" rowspan="2" style="border:1px solid #1e3050;padding:3px 5px;text-align:center;font-size:.65rem;font-weight:700;vertical-align:middle">—</td>
               </tr>
               <tr style="background:#1a1806">
-                <td style="border:1px solid #2a2d35;padding:4px 6px;text-align:center;background:#3a2000;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Compra</td>
-                <td style="border:1px solid #2a2d35;padding:2px 3px;background:#1e1508">
-                  <input id="pbo-pc" value="0" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                <td style="border:1px solid #1e3050;padding:4px 6px;text-align:center;background:#1a2a10;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Compra</td>
+                <td style="border:1px solid #1e3050;padding:2px 3px;background:#121a1a">
+                  <input id="pbo-pc" value="0" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
-                <td id="pbo-tc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
-                <td id="pbo-dmc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-dnc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-ivac" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-ddc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
-                <td id="pbo-nc" style="border:1px solid #2a2d35;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pbo-tc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
+                <td id="pbo-dmc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-dnc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ivac" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-ddc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
+                <td id="pbo-nc" style="border:1px solid #1e3050;padding:3px 5px;text-align:right;color:var(--text);font-size:.6rem">—</td>
               </tr>
               <tr style="background:#0d1f28">
                 <td style="border:1px solid #1a3040;padding:3px 5px;text-align:center;color:rgba(255,255,255,.3);font-size:.48rem;text-transform:uppercase"></td>
@@ -1099,10 +1099,10 @@ tr:hover td{background:var(--surface2)}
               <tr style="background:#0f222e">
                 <td style="border:1px solid #1a3040;padding:4px 6px;text-align:center;background:#0a2535;color:rgba(255,255,255,.75);font-size:.58rem;font-weight:600">Caucion</td>
                 <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
-                  <input id="pbo-dias" value="1" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
+                  <input id="pbo-dias" value="1" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px">
                 </td>
                 <td style="border:1px solid #1a3040;padding:2px 3px;background:#132535">
-                  <input id="pbo-tasa" value="29" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#fbbf24;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px" placeholder="%">
+                  <input id="pbo-tasa" value="29" oninput="paseCalc('bon')" style="width:100%;text-align:center;background:transparent;border:none;color:#ffd600;font-family:var(--mono);font-size:.6rem;outline:none;padding:2px" placeholder="%">
                 </td>
                 <td id="pbo-comcau" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--text2);font-size:.6rem">—</td>
                 <td id="pbo-gancau" colspan="4" style="border:1px solid #1a3040;padding:3px 5px;text-align:right;color:var(--accent);font-size:.63rem;font-weight:600">—</td>
@@ -1167,7 +1167,7 @@ tr:hover td{background:var(--surface2)}
             <div style="display:flex;gap:1.2rem;align-items:flex-start">
               <div style="position:relative;height:300px;flex:0 0 340px"><canvas id="db-chart-rubros" width="340" height="300"></canvas></div>
               <div id="db-rubros-detail" style="flex: 1 1 0%; min-width: 0px; display: block; padding-top: 4px;">
-                <div id="db-rubros-detail-title" style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px;font-family:var(--mono)"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#60a5fa;margin-right:6px;vertical-align:middle"></span>Tecnología <span style="color:var(--text3);font-weight:400">— $27.022 USD</span></div>
+                <div id="db-rubros-detail-title" style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px;font-family:var(--mono)"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#448aff;margin-right:6px;vertical-align:middle"></span>Tecnología <span style="color:var(--text3);font-weight:400">— $27.022 USD</span></div>
                 <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.72rem">
                   <thead>
                     <tr style="border-bottom:1px solid var(--border2)">
@@ -1176,7 +1176,7 @@ tr:hover td{background:var(--surface2)}
                       <th style="text-align:right;padding:3px 6px;color:var(--text3);font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em">% del rubro</th>
                     </tr>
                   </thead>
-                  <tbody id="db-rubros-detail-tbody"><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">MSFT</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$6.868</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:25%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">25.4%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">NVDA</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$5.048</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:19%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">18.7%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">META</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$3.897</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:14%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">14.4%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">AVGO</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$3.008</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:11%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">11.1%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">ADBE</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$1.664</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:6%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">6.2%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">SPOT</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$1.571</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:6%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">5.8%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">MIRG</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$1.515</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:6%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">5.6%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">SNOW</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$924</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:3%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">3.4%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">STNE</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$788</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:3%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">2.9%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">CRM</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$617</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">2.3%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">DOCU</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$486</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">1.8%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">GLOB</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$310</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">1.1%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">TEAM</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$260</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">1.0%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">FSLR</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$64</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#60a5fa;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">0.2%</span></div></td></tr></tbody>
+                  <tbody id="db-rubros-detail-tbody"><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">MSFT</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$6.868</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:25%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">25.4%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">NVDA</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$5.048</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:19%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">18.7%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">META</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$3.897</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:14%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">14.4%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">AVGO</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$3.008</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:11%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">11.1%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">ADBE</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$1.664</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:6%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">6.2%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">SPOT</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$1.571</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:6%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">5.8%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">MIRG</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$1.515</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:6%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">5.6%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">SNOW</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$924</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:3%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">3.4%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">STNE</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$788</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:3%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">2.9%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">CRM</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$617</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">2.3%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">DOCU</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$486</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">1.8%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">GLOB</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$310</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">1.1%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">TEAM</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$260</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">1.0%</span></div></td></tr><tr style="border-bottom: 1px solid var(--border);"><td style="padding:4px 6px;font-weight:700;color:var(--text)">FSLR</td><td style="padding:4px 6px;text-align:right;color:var(--text2)">$64</td><td style="padding:4px 6px;min-width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="width:2%;background:#448aff;height:100%;border-radius:3px"></div></div><span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">0.2%</span></div></td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -3511,7 +3511,7 @@ function runComparacion(){
     +'<th>Diferencia</th><th>Estado</th>'
     +'</tr></thead><tbody>';
   diffs.forEach(function(d){
-    var sc=d.status==='Solo GDC'?'var(--accent)':d.status==='Solo Veta'?'#60a5fa':'#f59e0b';
+    var sc=d.status==='Solo GDC'?'var(--accent)':d.status==='Solo Veta'?'#448aff':'#f59e0b';
     var diffStr=d.g>0&&d.v>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
     var done=_cmpChecked.has(d.t);
     var nombre=(_cmpNombres.veta&&_cmpNombres.veta[d.t])||(_cmpNombres.gdc&&_cmpNombres.gdc[d.t])||'';
@@ -3766,15 +3766,15 @@ function renderDivsCard(){
     var vlbl=val>=1?'$'+Math.round(val):'<$1';
     return '<g>'+
       '<rect x="'+x+'" y="'+y+'" width="'+BW+'" height="'+bh+'" rx="3" fill="var(--accent)" opacity="0.85"/>'+
-      (bh>=12?'<text x="'+(x+BW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--accent)">'+vlbl+'</text>':'')+
-      '<text x="'+(x+BW/2)+'" y="'+(CH+LH)+'" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--text3)">'+lbl+'</text>'+
+      (bh>=12?'<text x="'+(x+BW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--accent)">'+vlbl+'</text>':'')+
+      '<text x="'+(x+BW/2)+'" y="'+(CH+LH)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="var(--text3)">'+lbl+'</text>'+
     '</g>';
   }).join('');
 
   var guides=[0.25,0.5,1].map(function(pct){
     var y=CH-Math.round(pct*CH);
     return '<line x1="'+PL+'" y1="'+y+'" x2="'+(SW-PR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/>'+
-           '<text x="'+(PL-4)+'" y="'+(y+3)+'" text-anchor="end" font-family="DM Mono,monospace" font-size="6.5" fill="var(--text3)">'+Math.round(pct*maxVal)+'</text>';
+           '<text x="'+(PL-4)+'" y="'+(y+3)+'" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="6.5" fill="var(--text3)">'+Math.round(pct*maxVal)+'</text>';
   }).join('');
 
   var svg='<svg viewBox="0 0 '+SW+' '+SH+'" xmlns="http://www.w3.org/2000/svg" style="width:'+SW+'px;height:auto;display:block;overflow:visible">'+guides+bars+'</svg>';
@@ -4563,9 +4563,9 @@ function arbRender(){
     html+='<input class="arb-input arb-input-name" value="'+pair.a+'" onchange="arbUpdate('+pi+',-1,\'a\',this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate('+pi+',-1,\'a\',this.value)">';
     html+='</div>';
     html+='<div class="arb-label" style="flex-direction:column;gap:2px">';
-    html+='<input class="arb-input arb-input-name" value="'+pair.b+'" onchange="arbUpdate('+pi+',-1,\'b\',this.value)" style="color:#60a5fa;width:90px" oninput="arbUpdate('+pi+',-1,\'b\',this.value)">';
+    html+='<input class="arb-input arb-input-name" value="'+pair.b+'" onchange="arbUpdate('+pi+',-1,\'b\',this.value)" style="color:#448aff;width:90px" oninput="arbUpdate('+pi+',-1,\'b\',this.value)">';
     html+='</div>';
-    html+='<div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="'+pair.pctObj+'%" style="width:72px;color:#f0a800;font-weight:700" oninput="arbUpdate('+pi+',-1,\'pctObj\',this.value.replace(\'%\',\'\'))"></div>';
+    html+='<div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="'+pair.pctObj+'%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate('+pi+',-1,\'pctObj\',this.value.replace(\'%\',\'\'))"></div>';
     html+='<div class="arb-label"></div>';
     html+='<div class="arb-label">Condición</div>';
     html+='<div class="arb-label">Voy</div>';
@@ -4585,7 +4585,7 @@ function arbRender(){
       // Precio A
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioA||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioA\',this.value)" style="color:#a78bfa"></div>';
       // Precio B
-      html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioB||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioB\',this.value)" style="color:#60a5fa"></div>';
+      html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioB||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioB\',this.value)" style="color:#448aff"></div>';
       // Ratio calculado
       html+='<div class="arb-cell" id="arb-ratio-'+pi+'-'+ri+'"><span class="'+cls+'">'+(ratio>0?ratio.toFixed(2)+'%':'—')+'</span></div>';
       // Flecha
@@ -5419,7 +5419,7 @@ var SECTOR_PIE_COLORS={
 var SECTOR_PIE_BORDER={
   nyse:'#ef4444',bonos:'#f97316',on:'#9ca3af',
   argentina:'#38bdf8',brasil:'#facc15',
-  europa:'#fb923c',china:'#f87171',cripto:'#c084fc'
+  europa:'#fb923c',china:'#ff5252',cripto:'#c084fc'
 };
 var SECTOR_PIE_LABEL={
   nyse:'USA',bonos:'Bonos',on:'ON',
@@ -5439,7 +5439,7 @@ function renderSectorPie(sectorVal){
   var labels=keys.map(function(k){return SECTOR_PIE_LABEL[k]||k;});
   var data=keys.map(function(k){return Math.round(sectorVal[k]||0);});
   var bgColors=keys.map(function(k){return SECTOR_PIE_COLORS[k]||'rgba(139,143,168,.7)';});
-  var bdColors=keys.map(function(k){return SECTOR_PIE_BORDER[k]||'#8b8fa8';});
+  var bdColors=keys.map(function(k){return SECTOR_PIE_BORDER[k]||'#7a9cc5';});
   var pieLabelPlugin2={
     id:'pieLabels2',
     afterDatasetDraw:function(chart){
@@ -5456,7 +5456,7 @@ function renderSectorPie(sectorVal){
           var y=arc.y+Math.sin(angle)*r;
           ctx2.save();
           ctx2.textAlign='center';ctx2.textBaseline='middle';
-          ctx2.font='700 13px DM Mono, monospace';
+          ctx2.font='700 13px JetBrains Mono, monospace';
           ctx2.fillStyle='#fff';
           ctx2.fillText(pct.toFixed(0)+'%',x,y);
           ctx2.restore();
@@ -5493,7 +5493,7 @@ var RV_PIE_COLORS={
 };
 var RV_PIE_BORDER={
   nyse:'#ef4444',argentina:'#38bdf8',brasil:'#facc15',
-  europa:'#fb923c',china:'#f87171',cripto:'#c084fc'
+  europa:'#fb923c',china:'#ff5252',cripto:'#c084fc'
 };
 
 function renderRVPie(sectorVal){
@@ -5521,7 +5521,7 @@ function renderRVPie(sectorVal){
           var y=arc.y+Math.sin(angle)*r;
           ctx2.save();
           ctx2.textAlign='center';ctx2.textBaseline='middle';
-          ctx2.font='700 13px DM Mono, monospace';
+          ctx2.font='700 13px JetBrains Mono, monospace';
           ctx2.fillStyle='#fff';
           ctx2.fillText(pct.toFixed(0)+'%',x,y);
           ctx2.restore();
@@ -5536,7 +5536,7 @@ function renderRVPie(sectorVal){
       datasets:[{
         data:keys.map(function(k){return Math.round(sectorVal[k]||0);}),
         backgroundColor:keys.map(function(k){return RV_PIE_COLORS[k]||'rgba(139,143,168,.7)';}),
-        borderColor:keys.map(function(k){return RV_PIE_BORDER[k]||'#8b8fa8';}),
+        borderColor:keys.map(function(k){return RV_PIE_BORDER[k]||'#7a9cc5';}),
         borderWidth:1.5,hoverOffset:4
       }]
     },
@@ -5581,7 +5581,7 @@ function renderMiniPie(fija,variable,liquidez){
           var y=arc.y+Math.sin(angle)*r;
           ctx2.save();
           ctx2.textAlign='center';ctx2.textBaseline='middle';
-          ctx2.font='700 13px DM Mono, monospace';
+          ctx2.font='700 13px JetBrains Mono, monospace';
           ctx2.fillStyle='#fff';
           ctx2.fillText(pct.toFixed(0)+'%',x,y);
           ctx2.restore();
@@ -5596,7 +5596,7 @@ function renderMiniPie(fija,variable,liquidez){
       datasets:[{
         data:[Math.round(fija),Math.round(variable),Math.round(liquidez)],
         backgroundColor:['rgba(120,53,15,.85)','rgba(232,121,249,.85)','rgba(74,222,128,.85)'],
-        borderColor:['#92400e','#e879f9','#4ade80'],
+        borderColor:['#92400e','#e879f9','#00c853'],
         borderWidth:1.5,hoverOffset:4
       }]
     },
@@ -5778,7 +5778,7 @@ function renderRubros(){
   open.sort(function(a,b){return a.ticker.localeCompare(b.ticker);}).forEach(function(p){
     var sector=getSector(p.ticker);
     var segLabel=(DB_SECTOR_LABEL&&DB_SECTOR_LABEL[sector])||sector;
-    var segColor=(DB_SECTOR_COLOR&&DB_SECTOR_COLOR[sector])||'#8b8fa8';
+    var segColor=(DB_SECTOR_COLOR&&DB_SECTOR_COLOR[sector])||'#7a9cc5';
     var currentRubro=getRubro(p.ticker);
     // Asegurar que el rubro actual esté en el catálogo (puede ser uno legado)
     var opts=RUBRO_OPTIONS.slice();
@@ -5893,7 +5893,7 @@ var DB_SECTOR_LABEL={
 var DB_SECTOR_COLOR={
   nyse:'#ef4444',bonos:'#f97316',on:'#9ca3af',
   argentina:'#38bdf8',brasil:'#facc15',
-  europa:'#fb923c',china:'#f87171',cripto:'#c084fc'
+  europa:'#fb923c',china:'#ff5252',cripto:'#c084fc'
 };
 
 function renderDashboard(){
@@ -5942,7 +5942,7 @@ function renderDashboard(){
 
   // ── Gráfico 1: Top 10 posiciones por valor ───────────────
   var sorted=[].concat(posData).sort(function(a,b){return b.valUSD-a.valUSD;}).slice(0,10);
-  var topColors=sorted.map(function(d){return DB_SECTOR_COLOR[d.sector]||'#60a5fa';});
+  var topColors=sorted.map(function(d){return DB_SECTOR_COLOR[d.sector]||'#448aff';});
 
   dbMakeChart('db-chart-top',{
     type:'bar',
@@ -5960,15 +5960,15 @@ function renderDashboard(){
       responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' $'+ctx.parsed.y.toLocaleString('es-AR');}}}},
       scales:{
-        x:{ticks:{color:'#8b8fa8',font:{family:'DM Mono, monospace',size:10}},grid:{color:'#2a2d35'}},
-        y:{ticks:{color:'#8b8fa8',font:{family:'DM Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#2a2d35'}}
+        x:{ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10}},grid:{color:'#1e3050'}},
+        y:{ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#1e3050'}}
       }
     }
   });
 
   // ── Gráfico 1b: Top 10 posiciones por valor sin Bonos y ONs ──
   var sortedRV=[].concat(posData).filter(function(d){return d.sector!=='bonos'&&d.sector!=='on';}).sort(function(a,b){return b.valUSD-a.valUSD;}).slice(0,10);
-  var topRVColors=sortedRV.map(function(d){return DB_SECTOR_COLOR[d.sector]||'#60a5fa';});
+  var topRVColors=sortedRV.map(function(d){return DB_SECTOR_COLOR[d.sector]||'#448aff';});
 
   dbMakeChart('db-chart-top-rv',{
     type:'bar',
@@ -5986,8 +5986,8 @@ function renderDashboard(){
       responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' $'+ctx.parsed.y.toLocaleString('es-AR');}}}},
       scales:{
-        x:{ticks:{color:'#8b8fa8',font:{family:'DM Mono, monospace',size:10}},grid:{color:'#2a2d35'}},
-        y:{ticks:{color:'#8b8fa8',font:{family:'DM Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#2a2d35'}}
+        x:{ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10}},grid:{color:'#1e3050'}},
+        y:{ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#1e3050'}}
       }
     }
   });
@@ -6003,7 +6003,7 @@ function renderDashboard(){
         label:'Ganancia USD',
         data:gainsSorted.map(function(d){return Math.round(d.gainUSD);}),
         backgroundColor:'rgba(126,232,162,.25)',
-        borderColor:'#7ee8a2',
+        borderColor:'#00e676',
         borderWidth:1,borderRadius:4
       }]
     },
@@ -6014,8 +6014,8 @@ function renderDashboard(){
         return ' '+(v>=0?'+':'')+'$'+Math.round(v).toLocaleString('es-AR');
       }}}},
       scales:{
-        x:{ticks:{color:'#8b8fa8',font:{family:'DM Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#2a2d35'}},
-        y:{ticks:{color:'#e8eaf0',font:{family:'DM Mono, monospace',size:10}},grid:{color:'#2a2d35'}}
+        x:{ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#1e3050'}},
+        y:{ticks:{color:'#e8f0ff',font:{family:'JetBrains Mono, monospace',size:10}},grid:{color:'#1e3050'}}
       }
     }
   });
@@ -6031,7 +6031,7 @@ function renderDashboard(){
         label:'Pérdida USD',
         data:lossesSorted.map(function(d){return Math.round(d.gainUSD);}),
         backgroundColor:'rgba(248,113,113,.2)',
-        borderColor:'#f87171',
+        borderColor:'#ff5252',
         borderWidth:1,borderRadius:4
       }]
     },
@@ -6042,8 +6042,8 @@ function renderDashboard(){
         return ' '+(v>=0?'+':'')+'$'+Math.round(v).toLocaleString('es-AR');
       }}}},
       scales:{
-        x:{ticks:{color:'#8b8fa8',font:{family:'DM Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#2a2d35'}},
-        y:{ticks:{color:'#e8eaf0',font:{family:'DM Mono, monospace',size:10}},grid:{color:'#2a2d35'}}
+        x:{ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}},grid:{color:'#1e3050'}},
+        y:{ticks:{color:'#e8f0ff',font:{family:'JetBrains Mono, monospace',size:10}},grid:{color:'#1e3050'}}
       }
     }
   });
@@ -6099,10 +6099,10 @@ function renderDashboard(){
         }}}
       },
       scales:{
-        x:{ticks:{color:'#e8eaf0',font:{family:'DM Mono, monospace',size:11}},grid:{color:'#2a2d35'}},
+        x:{ticks:{color:'#e8f0ff',font:{family:'JetBrains Mono, monospace',size:11}},grid:{color:'#1e3050'}},
         y:{
-          ticks:{color:'#8b8fa8',font:{family:'DM Mono, monospace',size:10},callback:function(v){return v+'%';}},
-          grid:{color:'#2a2d35'},
+          ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10},callback:function(v){return v+'%';}},
+          grid:{color:'#1e3050'},
           border:{dash:[4,4]}
         }
       }
@@ -6127,7 +6127,7 @@ function renderDashboard(){
   rubroTop.forEach(function(k){rubroFinal[k]=rubroVal[k];});
   if(rubroOtrosVal>0){rubroKeys.push('Otros');rubroFinal['Otros']=rubroOtrosVal;}
   var rubroTotal=rubroKeys.reduce(function(s,k){return s+(rubroFinal[k]||0);},0);
-  var RUBRO_COLORS=['#60a5fa','#f97316','#4ade80','#f87171','#facc15','#c084fc','#38bdf8',
+  var RUBRO_COLORS=['#448aff','#f97316','#00c853','#ff5252','#facc15','#c084fc','#38bdf8',
     '#fb923c','#a78bfa','#34d399','#9ca3af'];
 
   // Función para mostrar detalle al hacer clic
@@ -6189,7 +6189,7 @@ function renderDashboard(){
           var y=arc.y+Math.sin(angle)*r;
           ctx2.save();
           ctx2.textAlign='center';ctx2.textBaseline='middle';
-          ctx2.font='700 13px DM Mono, monospace';
+          ctx2.font='700 13px JetBrains Mono, monospace';
           ctx2.fillStyle='#fff';
           var label=chart.data.labels[i]||'';
           ctx2.fillText(label,x,y-7);
@@ -6290,14 +6290,14 @@ function renderWorldMap(posData) {
   _dbWorldMap = new jsVectorMap({
     selector: '#db-worldmap',
     map: 'world',
-    backgroundColor: '#0e0f11',
+    backgroundColor: '#0b1120',
     zoomOnScroll: false,
     zoomButtons: false,
     regionStyle: {
       initial: {
-        fill: '#1e2026',
+        fill: '#172035',
         fillOpacity: 1,
-        stroke: '#0e0f11',
+        stroke: '#0b1120',
         strokeWidth: 0.35,
         strokeOpacity: 1
       },
@@ -6369,12 +6369,12 @@ function renderPerfChart() {
           {
             label: 'Mi cartera',
             data: myReturns,
-            borderColor: '#60a5fa',
+            borderColor: '#448aff',
             backgroundColor: 'rgba(96,165,250,.12)',
             borderWidth: 2,
             pointRadius: 5,
-            pointBackgroundColor: '#60a5fa',
-            pointBorderColor: '#0e0f11',
+            pointBackgroundColor: '#448aff',
+            pointBorderColor: '#0b1120',
             pointBorderWidth: 2,
             tension: 0.35,
             fill: true,
@@ -6383,12 +6383,12 @@ function renderPerfChart() {
           {
             label: 'S&P 500',
             data: spReturns,
-            borderColor: '#7ee8a2',
+            borderColor: '#00e676',
             backgroundColor: 'rgba(126,232,162,.08)',
             borderWidth: 2,
             pointRadius: 5,
-            pointBackgroundColor: '#7ee8a2',
-            pointBorderColor: '#0e0f11',
+            pointBackgroundColor: '#00e676',
+            pointBorderColor: '#0b1120',
             pointBorderWidth: 2,
             tension: 0.35,
             fill: true,
@@ -6401,7 +6401,7 @@ function renderPerfChart() {
         plugins: {
           legend: {
             display: true, position: 'top',
-            labels: { color: '#8b8fa8', font: { family: 'DM Mono,monospace', size: 10 }, boxWidth: 10, padding: 10 }
+            labels: { color: '#7a9cc5', font: { family: 'JetBrains Mono,monospace', size: 10 }, boxWidth: 10, padding: 10 }
           },
           tooltip: {
             callbacks: {
@@ -6415,15 +6415,15 @@ function renderPerfChart() {
         },
         scales: {
           x: {
-            ticks: { color: '#8b8fa8', font: { family: 'DM Mono,monospace', size: 10 } },
-            grid: { color: '#2a2d35' }
+            ticks: { color: '#7a9cc5', font: { family: 'JetBrains Mono,monospace', size: 10 } },
+            grid: { color: '#1e3050' }
           },
           y: {
             ticks: {
-              color: '#8b8fa8', font: { family: 'DM Mono,monospace', size: 10 },
+              color: '#7a9cc5', font: { family: 'JetBrains Mono,monospace', size: 10 },
               callback: function(v) { return v + '%'; }
             },
-            grid: { color: '#2a2d35' }
+            grid: { color: '#1e3050' }
           }
         }
       }
