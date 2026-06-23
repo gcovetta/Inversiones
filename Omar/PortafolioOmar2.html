@@ -192,16 +192,93 @@ tr:hover td{background:var(--surface2)}
 .card-toggle:hover{color:var(--text)}
 .card-collapsed>.card-body,.card-collapsed>.tw,.card-collapsed>div:not(.card-header),.card-collapsed>.empty-state{display:none!important}
 
+/* Mobile filters bar — inline on desktop, full-width row on mobile */
+#mobile-filters{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+#mobile-filters::-webkit-scrollbar{display:none}
+@media(min-width:681px){
+  #mobile-filters{width:auto;flex:1;min-width:0;padding:0}
+  header{flex-wrap:nowrap}
+}
 @media(max-width:680px){
-  .main{flex-direction:column;flex:1;min-height:0;overflow:hidden}
-  .sidebar{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0;border-right:none;border-bottom:1px solid var(--border);width:100%!important}
+  /* ── Layout base ── */
+  body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100vh}
+  .card{overflow:visible}
+  .main{flex-direction:column;flex:1;min-height:0;overflow:visible;height:auto}
+  .content{flex:1;min-height:0;overflow-y:visible;overflow-x:visible}
+
+  /* ── Topbar: scroll horizontal compacto ── */
+  .topbar{height:auto;min-height:28px;padding:3px 8px;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .topbar::-webkit-scrollbar{display:none}
+  .topbar-item{padding:0 .55rem;border-right:1px solid var(--border);flex-shrink:0;height:22px}
+  .topbar-item:first-child{padding-left:0}
+  .topbar-val{font-size:.7rem}
+  .topbar-label{font-size:.5rem}
+  .topbar-sub{font-size:.56rem}
+  /* Ocultar Liquidez e Inv. Inicial del topbar en mobile */
+  .topbar>div:nth-last-child(-n+2){display:none}
+
+  /* ── Header: 2 filas en mobile ── */
+  header{padding:.45rem .65rem;gap:.4rem;flex-wrap:wrap;align-items:center}
+  #mobile-filters{width:100%;border-top:1px solid var(--border);padding-top:5px;margin-top:2px}
+
+  /* Fila 1: foto + nombre + botones derecha */
+  .logo{gap:5px;flex-wrap:nowrap;align-items:center;width:100%;justify-content:space-between}
+  .hright{flex-shrink:0;gap:5px}
+
+  /* Ocultar elementos secundarios del header */
+  #sb-status{display:none}
+  #sync-label{display:none}
+  .logo-dot{display:none}
+  #file-ver{display:none}
+  #lupd{font-size:.58rem!important}
+
+  /* ── Sidebar: barra horizontal ── */
+  .sidebar{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0;border-right:none;border-bottom:1px solid var(--border);width:100%!important;scrollbar-width:none}
+  .sidebar::-webkit-scrollbar{display:none}
   .nav-sec{display:none}
-  .nav-item{padding:.65rem .85rem;flex-direction:column;gap:3px;font-size:.6rem}
-  .content{flex:1;min-height:0;overflow-y:auto}
+  .nav-item{padding:.5rem .65rem;flex-direction:column;gap:2px;font-size:.57rem;flex-shrink:0;white-space:nowrap}
+
+  /* ── Métricas resumen ── */
+  .mgrid{gap:5px;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
+  .mgrid::-webkit-scrollbar{display:none}
+  .mgrid .metric{flex-shrink:0;min-width:105px;padding:.55rem .7rem}
+  .metric-value{font-size:1.05rem}
+  .metric-label{font-size:.55rem}
+
+  /* ── Cards y paneles ── */
   .panels-grid{grid-template-columns:1fr}
+  .card{margin-bottom:.5rem;border-radius:8px}
+  .card-header{padding:.55rem .7rem;gap:5px;flex-wrap:wrap}
+  .card-title{font-size:.76rem}
+
+  /* ── Tablas: scroll horizontal fluido ── */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .panel-table table{font-size:.67rem;min-width:480px}
+  .panel-table th,.panel-table td{padding:.28rem .45rem;white-space:nowrap}
+  table th,table td{padding:.28rem .42rem;font-size:.67rem;white-space:nowrap}
+
+  /* ── Gráficos ── */
   .trk-metrics{grid-template-columns:1fr 1fr}
+  canvas{max-width:100%!important}
+
+  /* ── PIN pad ── */
   .pin-pad{grid-template-columns:repeat(3,50px)}
   .pin-key{width:50px;height:38px}
+
+  /* ── Sections con padding reducido ── */
+  .content>div{padding:.5rem .55rem}
+  .nt-card{padding:9px 11px}
+  .nt-header{gap:7px}
+  .nt-slider{min-width:90px}
+
+  /* ── Arb grid ── */
+  .arb-pair-header,.arb-row{grid-template-columns:24px 1fr 1fr 58px 16px 56px 42px 58px}
+  .arb-cell{padding:2px 3px;font-size:.55rem}
+
+  /* ── Botones ── */
+  .btn{padding:3px 7px;font-size:.63rem;height:25px}
+  .btn-sidebar-toggle{width:25px;height:25px;font-size:.78rem}
 }
 /* Near-target filter */
 .nt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
@@ -339,37 +416,31 @@ tr:hover td{background:var(--surface2)}
   <div class="logo">
     <div class="logo-dot"></div>
     <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
-    <img src="../Omar/perfilOmar.png" style="width:58px;height:58px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;flex-shrink:0" alt="Omar">
+    <img src="../Omar/perfilOmar.png" style="width:52px;height:52px;border-radius:50%;border:2.5px solid var(--accent);object-fit:cover;object-position:center top;flex-shrink:0;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;box-shadow:0 0 0 4px rgba(0,230,118,0.18),0 2px 16px rgba(0,0,0,0.6)" alt="Omar">
     <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio - Omar</span>
-    <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;margin-left:4px">
-    <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;margin-left:-2px">✕</button>
-    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:2px;cursor:pointer;margin-left:6px"><input type="checkbox" id="port-filter-green" onchange="renderPortfolio()" style="accent-color:#00e676;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#00e676;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Solo Δ% amarillo (0–9%)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
-    <span style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-left:7px;border-left:1px solid var(--border2);padding-left:7px;line-height:1;align-self:center">RV</span>
-    <label title="Inv. $ sobre umbral rojo (>3% RV)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Inv. $ sobre umbral amarillo (>2% RV)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Inv. $ bajo umbral (normal)" style="display:flex;align-items:center;gap:2px;cursor:pointer"><input type="checkbox" id="port-filter-rv-white" onchange="renderPortfolio()" style="accent-color:#e8f0ff;width:13px;height:13px;cursor:pointer;margin:0"><span style="width:9px;height:9px;border-radius:2px;background:#e8f0ff;display:inline-block;flex-shrink:0"></span></label>
-    <div id="aniv-box" style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:3px 8px;font-family:var(--mono);font-size:.63rem;margin-left:4px;white-space:nowrap">
-      <span style="color:var(--text3)">Inicio</span>
-      <input type="date" id="aniv-fecha" onchange="anivUpdate()" style="background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:.63rem;outline:none;width:105px;cursor:pointer">
-      <span id="aniv-display" style="font-weight:600"></span>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);padding:3px 8px;font-family:var(--mono);font-size:.63rem;margin-left:4px;white-space:nowrap">
-      <span style="color:var(--text3)">20% s/Gan.</span>
-      <span id="perf-result-usd" style="font-weight:600">—</span>
-    </div>
   </div>
   <div class="hright">
     <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
-    <div class="lupd" id="lupd" data-lastupd="12:06 a. m.">12:06 a.&nbsp;m. · próx. 4:32</div>
+    <div class="lupd" id="lupd"></div>
     <button class="btn" id="sync-btn" onclick="syncPortfolios()" title="Sincronizar Ana y Omar con GDC" style="border-color:#4a5568;gap:5px;">
       <span id="sync-icon" style="font-size:.85rem;line-height:1;">⟳</span><span id="sync-label">Sync</span>
     </button>
     <button class="btn-sidebar-toggle" onclick="exportPortfolioXLS()" title="Exportar portafolio a Excel" style="width:auto;padding:0 8px;font-size:.72rem;">XLS</button>
-    <button class="btn-sidebar-toggle" onclick="cargarOmarEnComparacion()" title="Cargar posiciones actuales en Comparación" style="width:auto;padding:0 8px;font-size:.72rem;">⇔</button>
+    <button class="btn-sidebar-toggle" onclick="cargarOmarEnComparacion()" title="Cargar posiciones en Comparación" style="width:auto;padding:0 8px;font-size:.72rem;">⇔</button>
     <div id="file-ver" title="Versión del archivo" style="font-size:.6rem;font-family:var(--mono);color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;cursor:default;white-space:nowrap"></div>
     <script>!function(){var d=new Date(document.lastModified),p=function(n){return String(n).padStart(2,'0')};document.getElementById('file-ver').textContent='v '+d.getDate()+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}();</script>
+  </div>
+  <!-- Barra de filtros: segunda fila en mobile, inline en desktop -->
+  <div id="mobile-filters" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0">
+    <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;flex-shrink:0">
+    <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;flex-shrink:0">✕</button>
+    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-green" onchange="renderPortfolio()" style="accent-color:#00e676;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#00e676;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% amarillo (0-9%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
+    <span style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-left:4px;border-left:1px solid var(--border2);padding-left:6px;line-height:1;align-self:center;flex-shrink:0">RV</span>
+    <label title="Inv. $ sobre umbral rojo (>3% RV)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-rv-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Inv. $ sobre umbral amarillo (>2% RV)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-rv-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Inv. $ bajo umbral (normal)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-rv-white" onchange="renderPortfolio()" style="accent-color:#e8f0ff;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#e8f0ff;display:inline-block;flex-shrink:0"></span></label>
   </div>
 </header>
 <div class="main" id="main">
