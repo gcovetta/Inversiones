@@ -203,9 +203,10 @@ tr:hover td{background:var(--surface2)}
 @media(max-width:680px){
   /* ── Layout base ── */
   body{overflow:auto;height:auto}
+  .card{overflow:visible}
   .app{height:auto;min-height:100vh}
   .main{flex-direction:column;flex:1;min-height:0;overflow:visible;height:auto}
-  .content{flex:1;min-height:0;overflow-y:visible;overflow-x:hidden}
+  .content{flex:1;min-height:0;overflow-y:visible;overflow-x:visible}
 
   /* ── Topbar: scroll horizontal compacto ── */
   .topbar{height:auto;min-height:28px;padding:3px 8px;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
