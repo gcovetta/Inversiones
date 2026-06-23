@@ -1707,6 +1707,22 @@ var SUPABASE_URL = 'https://wstnseufzyavgdovrehu.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU';
 
 // ── Helpers REST Supabase ─────────────────────────────────────────────────
+
+// ── Supabase Keepalive ─────────────────────────────────────────────────────
+// Hace un ping liviano cada 3 días para evitar que el proyecto se pause
+(function sbKeepalive(){
+  var KEY = 'sb_keepalive_' + (SUPABASE_URL.match(/\/\/([^.]+)/)||[])[1];
+  var last = 0;
+  try{ last = parseInt(localStorage.getItem(KEY)||'0'); }catch(e){}
+  var now = Date.now();
+  if(now - last < 3 * 24 * 60 * 60 * 1000) return; // menos de 3 días, no hacer nada
+  fetch(SUPABASE_URL + '/rest/v1/config?limit=1', {
+    headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY}
+  }).then(function(r){
+    if(r.ok){ try{ localStorage.setItem(KEY, String(now)); }catch(e){} }
+  }).catch(function(){});
+})();
+
 function sbHeaders(){
   return {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
 }
