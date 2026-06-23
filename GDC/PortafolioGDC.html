@@ -194,15 +194,82 @@ tr:hover td{background:var(--surface2)}
 .card-collapsed>.card-body,.card-collapsed>.tw,.card-collapsed>div:not(.card-header),.card-collapsed>.empty-state{display:none!important}
 
 @media(max-width:680px){
-  .main{flex-direction:column;flex:1;min-height:0;overflow:hidden}
-  .sidebar{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0;border-right:none;border-bottom:1px solid var(--border);width:100%!important}
+  /* ── Layout base ── */
+  body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100vh}
+  .main{flex-direction:column;flex:1;min-height:0;overflow:visible;height:auto}
+  .content{flex:1;min-height:0;overflow-y:visible;overflow-x:hidden}
+
+  /* ── Topbar: scroll horizontal compacto ── */
+  .topbar{height:auto;min-height:28px;padding:4px 8px;gap:.5rem;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .topbar::-webkit-scrollbar{display:none}
+  .topbar-item{padding:0 .6rem;border-right:1px solid var(--border);flex-shrink:0;height:22px}
+  .topbar-item:first-child{padding-left:0}
+  .topbar-val{font-size:.72rem}
+  .topbar-label{font-size:.52rem}
+  .topbar-sub{font-size:.58rem}
+  /* Ocultar en topbar: Liquidez e Inv. Inicial (están en sidebar) */
+  .topbar-item:has(#liq-ars),.topbar-item:has(#liq-usd),.topbar-item:has(#inv-sidebar-usd){display:none}
+
+  /* ── Header ── */
+  header{padding:.5rem .75rem;gap:.5rem;flex-wrap:nowrap}
+  .logo{gap:6px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .hright{gap:6px;flex-shrink:0}
+  /* Ocultar texto "Sync" en mobile, solo ícono */
+  #sync-label{display:none}
+  /* Foto de perfil más chica */
+  header img[alt="GDC"]{width:36px!important;height:36px!important}
+
+  /* ── Sidebar: barra horizontal inferior ── */
+  .sidebar{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0;border-right:none;border-bottom:1px solid var(--border);width:100%!important;scrollbar-width:none}
+  .sidebar::-webkit-scrollbar{display:none}
   .nav-sec{display:none}
-  .nav-item{padding:.65rem .85rem;flex-direction:column;gap:3px;font-size:.6rem}
-  .content{flex:1;min-height:0;overflow-y:auto}
+  .nav-item{padding:.55rem .7rem;flex-direction:column;gap:2px;font-size:.58rem;flex-shrink:0;white-space:nowrap}
+
+  /* ── Métricas resumen ── */
+  .mgrid{gap:6px;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
+  .mgrid::-webkit-scrollbar{display:none}
+  .mgrid .metric{flex-shrink:0;min-width:110px;padding:.6rem .75rem}
+  .metric-value{font-size:1.1rem}
+
+  /* ── Cards y paneles ── */
   .panels-grid{grid-template-columns:1fr}
+  .card{margin-bottom:.6rem;border-radius:8px}
+  .card-header{padding:.6rem .75rem;gap:6px}
+  .card-title{font-size:.78rem}
+
+  /* ── Tablas: scroll horizontal con celdas más compactas ── */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .panel-table table{font-size:.68rem}
+  .panel-table th,.panel-table td{padding:.3rem .5rem;white-space:nowrap}
+
+  /* ── Tabla portafolio principal ── */
+  table th,table td{padding:.3rem .45rem;font-size:.68rem}
+
+  /* ── Gráficos ── */
   .trk-metrics{grid-template-columns:1fr 1fr}
+  canvas{max-width:100%!important}
+
+  /* ── PIN pad ── */
   .pin-pad{grid-template-columns:repeat(3,50px)}
   .pin-key{width:50px;height:38px}
+
+  /* ── Sections con padding reducido ── */
+  .content>div{padding:.6rem .65rem}
+  .nt-card{padding:10px 12px}
+  .nt-header{gap:8px}
+  .nt-slider{min-width:100px}
+
+  /* ── Arb grid más compacto ── */
+  .arb-pair-header,.arb-row{grid-template-columns:26px 1fr 1fr 60px 18px 58px 44px 60px}
+  .arb-cell{padding:2px 3px;font-size:.56rem}
+
+  /* ── Botones en header ── */
+  .btn{padding:3px 8px;font-size:.65rem;height:26px}
+  .btn-sidebar-toggle{width:26px;height:26px;font-size:.8rem}
+
+  /* ── Filtros de ticker (ocultar algunos en mobile) ── */
+  #port-ticker-filter{width:70px;font-size:.65rem}
 }
 /* Near-target filter */
 .nt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
