@@ -73,7 +73,7 @@ header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;a
 .main{display:flex;flex-direction:row;flex:1;min-height:0;width:100%;overflow:hidden}
 .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1rem 0;display:flex;flex-direction:column;gap:1px;overflow-y:auto;overflow-x:hidden;flex-shrink:0;width:0;transition:width .2s ease;z-index:10}
 .main.sidebar-open .sidebar{width:172px}
-.content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0;width:100%}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0;width:100%;height:0}
 .btn-sidebar-toggle{background:none;border:1px solid var(--border2);border-radius:var(--rsm);cursor:pointer;color:var(--text2);font-size:.9rem;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
 .btn-sidebar-toggle:hover{background:var(--surface2);color:var(--text)}
 .nav-item{padding:.42rem .85rem;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:background .12s,color .12s;font-family:var(--sans)}
@@ -188,7 +188,7 @@ tr:hover td{background:var(--surface2)}
 .pin-lock-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.75rem}
 
 /* page-tracker layout */
-#page-tracker{min-height:200px;overflow-y:auto;max-height:calc(100vh - 115px)}
+#page-tracker{min-height:200px}
 .card-toggle{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.82rem;padding:0 2px;line-height:1;flex-shrink:0;transition:transform .15s;margin-left:auto}
 .card-toggle:hover{color:var(--text)}
 .card-collapsed>.card-body,.card-collapsed>.tw,.card-collapsed>div:not(.card-header),.card-collapsed>.empty-state{display:none!important}
@@ -4863,17 +4863,32 @@ function trkRender(){
     TRK.divs.forEach(function(d,idx){
       var tr=document.createElement('tr');
       var mOrig=d.moneda==='USD'?'USD '+trkFmt2(d.monto):'$ '+trkFmt2(d.monto);
-      var mUSD='USD '+trkFmt2(d.montoUSD);
-      var cclF=d.cclUsado?'$'+Math.round(d.cclUsado).toLocaleString('es-AR'):'—';
+      // Recalcular USD usando CCL histórico del día de cobro (CCL_TABLE)
+      var _cclHist=null;
+      if(d.moneda==='ARS'&&d.fecha){
+        var _fp=d.fecha.split('-');// yyyy-mm-dd
+        if(_fp.length===3){var _fk=_fp[2]+'/'+_fp[1]+'/'+_fp[0];_cclHist=CCL_TABLE[_fk]||null;}
+      }
+      var _montoUSD=d.moneda==='USD'?d.monto:(_cclHist?d.monto/_cclHist:(d.cclUsado?d.monto/d.cclUsado:d.montoUSD));
+      var _cclEfectivo=d.moneda==='ARS'?(_cclHist||d.cclUsado):null;
+      var mUSD='USD '+trkFmt2(_montoUSD);
+      var cclF=_cclEfectivo?'$'+Math.round(_cclEfectivo).toLocaleString('es-AR'):(_cclHist?'$'+Math.round(_cclHist).toLocaleString('es-AR'):'—');
       var accF=d.acciones?d.acciones.toLocaleString('es-AR'):'—';
       var fechaF=d.fecha.split('-').reverse().join('/');
       tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" onclick="trkDeleteDiv('+idx+')">x</button></td>';
       tbody.appendChild(tr);
     });
   }
-  var totalUSD=TRK.divs.reduce(function(s,d){return s+d.montoUSD;},0);
+  function _trkMontoUSD(d){
+    if(d.moneda==='USD') return d.monto;
+    var fp=d.fecha?d.fecha.split('-'):[];
+    var fk=fp.length===3?fp[2]+'/'+fp[1]+'/'+fp[0]:null;
+    var cclH=fk?CCL_TABLE[fk]:null;
+    return cclH?d.monto/cclH:(d.cclUsado?d.monto/d.cclUsado:d.montoUSD);
+  }
+  var totalUSD=TRK.divs.reduce(function(s,d){return s+_trkMontoUSD(d);},0);
   var now=new Date();var mes=now.getMonth();var anio=now.getFullYear();
-  var mesUSD=TRK.divs.filter(function(d){var fd=new Date(d.fecha+'T12:00:00');return fd.getMonth()===mes&&fd.getFullYear()===anio;}).reduce(function(s,d){return s+d.montoUSD;},0);
+  var mesUSD=TRK.divs.filter(function(d){var fd=new Date(d.fecha+'T12:00:00');return fd.getMonth()===mes&&fd.getFullYear()===anio;}).reduce(function(s,d){return s+_trkMontoUSD(d);},0);
   document.getElementById('trk-m-usd').textContent='USD '+trkFmt2(totalUSD);
   document.getElementById('trk-m-mes').textContent='USD '+trkFmt2(mesUSD);
   document.getElementById('trk-m-count').textContent=TRK.divs.length;
