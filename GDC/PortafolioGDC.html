@@ -14,7 +14,7 @@
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px;--rsm:6px}
 *{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;overflow:hidden;display:flex;flex-direction:column;height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-.app{display:flex;flex-direction:column;flex:1;min-height:0}
+.app{display:flex;flex-direction:column;flex:1;min-height:0;height:0}
 .arb-wrap{margin-bottom:6px}
 .arb-pair-header{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;background:linear-gradient(135deg,#0d2545,#091830);border-radius:var(--rsm) var(--rsm) 0 0;border:1px solid #1e4080}
 .arb-row{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;border-left:1px solid var(--border2);border-right:1px solid var(--border2);border-bottom:1px solid var(--border2)}
@@ -3831,7 +3831,9 @@ function renderDivsCard(){
     } else {
       var fechaKey='';
       if(d.fecha){var fp=d.fecha.split('-');if(fp.length===3)fechaKey=fp[2]+'/'+fp[1]+'/'+fp[0];}
-      var cclDia=CCL_TABLE[fechaKey]||CCL_HOY;
+      var cclDia=CCL_TABLE[fechaKey]||null;
+      if(!cclDia&&d.fecha){var _dt3=new Date(d.fecha+'T12:00:00');for(var _di3=1;_di3<=7&&!cclDia;_di3++){for(var _sg3=-1;_sg3<=1;_sg3+=2){var _d3=new Date(_dt3);_d3.setDate(_d3.getDate()+_sg3*_di3);var _fk3=String(_d3.getDate()).padStart(2,'0')+'/'+String(_d3.getMonth()+1).padStart(2,'0')+'/'+_d3.getFullYear();if(CCL_TABLE[_fk3]){cclDia=CCL_TABLE[_fk3];break;}}}}
+      cclDia=cclDia||CCL_HOY;
       usd=cclDia>0?(d.monto||0)/cclDia:0;
     }
     var fd=d.fecha||'';
@@ -4863,29 +4865,8 @@ function trkRender(){
     TRK.divs.forEach(function(d,idx){
       var tr=document.createElement('tr');
       var mOrig=d.moneda==='USD'?'USD '+trkFmt2(d.monto):'$ '+trkFmt2(d.monto);
-      // Recalcular USD usando CCL histórico del día de cobro (CCL_TABLE)
       var _cclHist=null;
-      if(d.moneda==='ARS'&&d.fecha){
-        var _fp=d.fecha.split('-');
-        if(_fp.length===3){
-          var _fk=_fp[2]+'/'+_fp[1]+'/'+_fp[0];
-          _cclHist=CCL_TABLE[_fk]||null;
-          // Si no hay exacto, buscar el más cercano (hasta 7 días antes/después)
-          if(!_cclHist){
-            var _dt=new Date(d.fecha+'T12:00:00');
-            for(var _di=1;_di<=7&&!_cclHist;_di++){
-              for(var _sign=-1;_sign<=1;_sign+=2){
-                var _d2=new Date(_dt);_d2.setDate(_d2.getDate()+_sign*_di);
-                var _dd=String(_d2.getDate()).padStart(2,'0');
-                var _dm=String(_d2.getMonth()+1).padStart(2,'0');
-                var _dy=_d2.getFullYear();
-                var _fk2=_dd+'/'+_dm+'/'+_dy;
-                if(CCL_TABLE[_fk2]){_cclHist=CCL_TABLE[_fk2];break;}
-              }
-            }
-          }
-        }
-      }
+      if(d.moneda==='ARS'&&d.fecha){var _fp=d.fecha.split('-');if(_fp.length===3){var _fk=_fp[2]+'/'+_fp[1]+'/'+_fp[0];_cclHist=CCL_TABLE[_fk]||null;if(!_cclHist){var _dt=new Date(d.fecha+'T12:00:00');for(var _di=1;_di<=7&&!_cclHist;_di++){for(var _sg=-1;_sg<=1;_sg+=2){var _d2=new Date(_dt);_d2.setDate(_d2.getDate()+_sg*_di);var _fk2=String(_d2.getDate()).padStart(2,'0')+'/'+String(_d2.getMonth()+1).padStart(2,'0')+'/'+_d2.getFullYear();if(CCL_TABLE[_fk2]){_cclHist=CCL_TABLE[_fk2];break;}}}}}}
       var _cclEfectivo=d.moneda==='ARS'?(_cclHist||d.cclUsado):null;
       var _montoUSD=d.moneda==='USD'?d.monto:(_cclEfectivo?d.monto/_cclEfectivo:d.montoUSD);
       var mUSD='USD '+trkFmt2(_montoUSD);
@@ -4902,16 +4883,7 @@ function trkRender(){
     if(fp.length!==3) return d.cclUsado?d.monto/d.cclUsado:d.montoUSD;
     var fk=fp[2]+'/'+fp[1]+'/'+fp[0];
     var cclH=CCL_TABLE[fk]||null;
-    if(!cclH){
-      var dt=new Date(d.fecha+'T12:00:00');
-      for(var di=1;di<=7&&!cclH;di++){
-        for(var sg=-1;sg<=1;sg+=2){
-          var d2=new Date(dt);d2.setDate(d2.getDate()+sg*di);
-          var fk2=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();
-          if(CCL_TABLE[fk2]){cclH=CCL_TABLE[fk2];break;}
-        }
-      }
-    }
+    if(!cclH){var dt=new Date(d.fecha+'T12:00:00');for(var di=1;di<=7&&!cclH;di++){for(var sg=-1;sg<=1;sg+=2){var d2=new Date(dt);d2.setDate(d2.getDate()+sg*di);var fk2=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();if(CCL_TABLE[fk2]){cclH=CCL_TABLE[fk2];break;}}}}
     var ccl=cclH||d.cclUsado;
     return ccl?d.monto/ccl:d.montoUSD;
   }
