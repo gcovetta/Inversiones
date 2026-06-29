@@ -14,7 +14,7 @@
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px;--rsm:6px}
 *{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;overflow:hidden;display:flex;flex-direction:column;height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-.app{display:flex;flex-direction:column;flex:1;min-height:0}
+.app{display:flex;flex-direction:column;flex:1;min-height:0;height:0}
 .arb-wrap{margin-bottom:6px}
 .arb-pair-header{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;background:linear-gradient(135deg,#0d2545,#091830);border-radius:var(--rsm) var(--rsm) 0 0;border:1px solid #1e4080}
 .arb-row{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;border-left:1px solid var(--border2);border-right:1px solid var(--border2);border-bottom:1px solid var(--border2)}
@@ -73,7 +73,7 @@ header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;a
 .main{display:flex;flex-direction:row;flex:1;min-height:0;width:100%;overflow:hidden}
 .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1rem 0;display:flex;flex-direction:column;gap:1px;overflow-y:auto;overflow-x:hidden;flex-shrink:0;width:0;transition:width .2s ease;z-index:10}
 .main.sidebar-open .sidebar{width:172px}
-.content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0;width:100%;height:0}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0;width:100%}
 .btn-sidebar-toggle{background:none;border:1px solid var(--border2);border-radius:var(--rsm);cursor:pointer;color:var(--text2);font-size:.9rem;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
 .btn-sidebar-toggle:hover{background:var(--surface2);color:var(--text)}
 .nav-item{padding:.42rem .85rem;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:background .12s,color .12s;font-family:var(--sans)}
