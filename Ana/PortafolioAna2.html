@@ -3738,13 +3738,13 @@ async function fetchAllQuotes(){
       try{
         quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
       }catch(e){
-        // Fallback Yahoo para tickers Brasil (NU, PAGS, MELI, etc.)
-        // Yahoo .BA devuelve precio ARS (CEDEAR BYMA). Normalizar a USD-equiv para que
-        // renderPortfolio aplique (price/ratio)*CCL_HOY correctamente sin doble conversión.
+        // Fallback Yahoo para tickers Brasil (NU, PAGS, MELI, etc.) y CEDEARs sin NYSE
+        // Yahoo .BA devuelve precio ARS (CEDEAR BYMA). Marcamos fromByma=true para que
+        // renderPortfolio lo trate como precio ARS y divida por CCL (igual que GDC).
         if(getSector(p.ticker)==='brasil'){
           try{
             var _fbq=await fetchYahooAR(p.ticker);
-            if(CCL_HOY>0){_fbq.price=_fbq.price*getRatio(p.ticker)/CCL_HOY;}
+            _fbq.fromByma=true;
             quotes[p.ticker]=_fbq;
           }catch(e2){errors++;}
         } else {
@@ -5700,8 +5700,11 @@ function renderDashboard(){
     // NYSE/Brasil/Europa/China/Cripto: price en USD, qty en CEDEARs → (price/ratio)*qty
     // Argentina: price en ARS → (price/CCL)*qty
     // Bonos/ON: price en ARS por 100 nominales → (price/MEP)*qty/100
+    var _isBRL=BRL_TICKERS.has(p.ticker);
     var valUSD=isBonoON ? (q.price/mep)*p.qty/100
               :isArgentina ? (q.price/tcHoy)*p.qty
+              :_isBRL ? (q.price/tcHoy)*p.qty
+              :q.fromByma ? (q.price/tcHoy)*p.qty
               :(q.price/ratio)*p.qty;
     // costo promedio USD por unidad = costUSDpuro / qty
     var costUSDtotal=p.costUSDpuro; // USD pagado real; para bonos valUSD y costUSDpuro son consistentes entre sí
