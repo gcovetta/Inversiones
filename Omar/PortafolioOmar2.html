@@ -5106,7 +5106,7 @@ function trkCalcCCL(){
     if(_tickTimer)  clearInterval(_tickTimer);
     _countdown = AUTO_MS / 1000;
     _updateLabel();
-    _tickTimer = setInterval(function(){ if(_countdown > 0){ _countdown--; _updateLabel(); } }, 1000);
+    _tickTimer = setInterval(function(){ if(_countdown > 0){ _countdown = Math.max(0, _countdown - 180); _updateLabel(); } }, 180000);
     _autoTimer = setTimeout(function(){
       clearInterval(_tickTimer);
       if(document.hidden){
@@ -5248,7 +5248,7 @@ function trkCalcCCL(){
   }
 
   fetchMarketExtras();
-  setInterval(fetchMarketExtras, 5*60*1000);
+  setInterval(fetchMarketExtras, 10*60*1000);
 
 })();
 
