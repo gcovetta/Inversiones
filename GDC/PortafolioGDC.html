@@ -1847,7 +1847,7 @@ var SECTOR_MAP = {
   'JD':'china',
   'IBIT':'cripto',
   'EWZ':'brasil','GGB':'brasil','MELI':'brasil','NU':'brasil','PAGS':'brasil','SID':'brasil','STNE':'brasil','XP':'brasil',
-  'ADCAPIII':'fci',
+  'AGE3':'fci',
 };
 var _MKT_TO_SECTOR={BONOS:'bonos',ON:'on',ARGENTINA:'argentina',BRASIL:'brasil',ETF:'nyse',USA:'nyse',FCI:'fci'};
 function getSector(ticker){
@@ -4134,7 +4134,7 @@ async function fetchAllQuotes(){
 
   // FCI: ArgentinaDatos (fuente CAFCI) — mapa ticker → categoría + nombre del fondo
   // Verificado 02/07/2026: "Adcap Gestión Estratégica III - Clase A" en /v1/finanzas/fci/rentaFija
-  var FCI_AD_FONDOS={'ADCAPIII':{cat:'rentaFija',nombre:'Adcap Gestión Estratégica III - Clase A'}};
+  var FCI_AD_FONDOS={'AGE3':{cat:'rentaFija',nombre:'Adcap Gestión Estratégica III - Clase A'}};
   function _fciNorm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();}
   var _fciCatCache={};
 
