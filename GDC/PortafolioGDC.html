@@ -1818,7 +1818,7 @@ function getCCL(fecha){return CCL_TABLE[fmtKey(fecha)]||null;}
 function getMEP(fecha){return MEP_TABLE[fmtKey(fecha)]||null;}
 // Helper: tipo de cambio apropiado según mercado. Bonos/ONs usan MEP (con fallback a CCL), resto usa CCL.
 function getTC(fecha, mercado){
-  var esBonoON=(mercado==='BONOS'||mercado==='ON');
+  var esBonoON=(mercado==='BONOS'||mercado==='ON'||mercado==='FCI');
   return esBonoON ? (getMEP(fecha)||getCCL(fecha)||MEP_HOY||CCL_HOY) : (getCCL(fecha)||CCL_HOY);
 }
 var _HOY_KEY=(function(){var d=new Date();return(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();})();
@@ -2010,7 +2010,7 @@ function updateTCLabel(){
   var lbl=document.getElementById('m-ccl-label');
   if(!lbl)return;
   var mkt=document.getElementById('m-mkt').value;
-  var esBonoON=(mkt==='BONOS'||mkt==='ON');
+  var esBonoON=(mkt==='BONOS'||mkt==='ON'||mkt==='FCI');
   lbl.textContent=esBonoON?'MEP del día':'CCL del día';
 }
 function calcUSD(){
@@ -2020,6 +2020,8 @@ function calcUSD(){
   var comPct=parseFloat(document.getElementById('m-comision').value)||0;
   var rt=getRatio(document.getElementById('m-ticker').value.trim().toUpperCase()||'');
   var arsCalc=isBonoONForm()?(ars/100):ars;
+  // FCI: cuotapartes se cargan como las muestra Adcap (x1000) → dividir para los totales
+  if(document.getElementById('m-mkt').value==='FCI')qty=qty/1000;
   document.getElementById('m-precio-usd').value=(ars&&ccl)?(arsCalc*rt/ccl).toFixed(4):'—';
   // Calcular comisión $ y totales
   var resumen=document.getElementById('row-calc-resumen');
@@ -2053,6 +2055,8 @@ function addMov(){
   var mkt=document.getElementById('m-mkt').value;
   // Bonos/ONs: el usuario ingresa precio por 100 nominales → dividir por 100 para almacenar por nominal
   var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
+  // FCI: Adcap muestra cuotapartes x1000 respecto del VCP de CAFCI/ArgentinaDatos → dividir por 1000
+  if(mkt==='FCI'&&!isNaN(qty))qty=qty/1000;
   var cclVal=parseFloat(document.getElementById('m-ccl').value)||getTC(fecha,mkt);
   var comisionPct=parseFloat(document.getElementById('m-comision').value)||0;
   if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
@@ -2633,7 +2637,7 @@ function movModalOpen(id){
     '<div class="fgrp"><label>Ticker</label><input type="text" id="me-ticker" value="'+(m.ticker||'')+'" style="text-transform:uppercase"></div>'+
     '<div class="fgrp"><label>Cantidad</label><input type="number" id="me-qty" value="'+(m.qty||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label id="me-precio-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'Precio / 100N':'Precio ARS')+'</label><input type="number" id="me-ars" value="'+((m.mercado==='BONOS'||m.mercado==='ON')?(m.precioARS*100||''):(m.precioARS||''))+'" min="0" step="any"></div>'+
-    '<div class="fgrp"><label id="me-ccl-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'MEP':'CCL')+'</label><input type="number" id="me-ccl" value="'+(m.ccl||'')+'" min="0" step="any"></div>'+
+    '<div class="fgrp"><label id="me-ccl-label">'+((m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')?'MEP':'CCL')+'</label><input type="number" id="me-ccl" value="'+(m.ccl||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label>Comisión %</label><input type="number" id="me-com" value="'+(m.comisionPct||0)+'" min="0" max="100" step="0.01"></div>'+
     '<div class="fgrp" style="grid-column:1/-1"><label>Notas</label><input type="text" id="me-notas" value="'+(m.notas||'')+'"></div>'+
     '<div class="fgrp" style="grid-column:1/-1;display:flex;align-items:center"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none"><input type="checkbox" id="me-finish"'+(m.finish?' checked':'')+' style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0"> 🏁 A finish</label></div>';
@@ -2984,8 +2988,9 @@ function renderMovimientos(){
       : '';
     // CCL/MEP efectivo: la tabla histórica tiene prioridad sobre el valor guardado
     var _mEsBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
-    var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON);
-    var _mTcTabla=_mEsBonoON?(getMEP(m.fecha)||getCCL(m.fecha)):(getCCL(m.fecha));
+    var _mEsFci=(m.mercado==='FCI');
+    var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON||_mEsFci);
+    var _mTcTabla=(_mEsBonoON||_mEsFci)?(getMEP(m.fecha)||getCCL(m.fecha)):(getCCL(m.fecha));
     var _mTcEfectivo=_mTcTabla||m.ccl||null;
     // precioUSD: para mercados ARS recalcular desde precioARS/tc_tabla; para USD usar el guardado
     var _mPrecioUSD=(_mEsARS&&(m.precioARS||0)>0&&_mTcEfectivo>0)
@@ -3074,7 +3079,7 @@ function getPositions(owner){
       // Bonos y ONs: dividir por MEP del día; resto: por CCL
       // La tabla histórica (Tipo de cambio) tiene PRIORIDAD sobre el CCL guardado en el movimiento
       // Fallback: CCL_HOY como último recurso para no tratar ARS como USD
-      var _tc=(m.mercado==='BONOS'||m.mercado==='ON')
+      var _tc=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
         :(getCCL(m.fecha)||m.ccl||CCL_HOY);
       var usdPuro=_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty;
@@ -3089,7 +3094,7 @@ function getPositions(owner){
       var avgUSDpuro=p.qty>0?p.costUSDpuro/p.qty:0;
       // G/P realizada en USD puro (MEP para bonos/ON, CCL para el resto)
       // La tabla histórica tiene PRIORIDAD sobre el CCL guardado en el movimiento
-      var _tcV=(m.mercado==='BONOS'||m.mercado==='ON')
+      var _tcV=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
         :(getCCL(m.fecha)||m.ccl||CCL_HOY);
       var ventaUSDpuro=_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0);
@@ -3139,7 +3144,7 @@ function renderPortfolio(){
     var fromByma=q&&q.fromByma;
     var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
-    var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
+    var valueUSD=price!=null?(sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
     sectorCost[sector]=(sectorCost[sector]||0)+p.costUSDpuro;
@@ -3233,13 +3238,13 @@ function renderPortfolio(){
     // Bono dólar (BC37D, GD29…): costARS guardado a CCL histórico muy bajo → PPC/mercado << 0.15
     // Bono peso (CUAP, DICP, TX31…): PPC/mercado ≈ 0.4-1.0 (precio en ARS real)
     var ppcFromARS=p.qty>0?p.costARS/p.qty*100:0;
-    // Bonos/ON: convertir USD→ARS con MEP_HOY. Resto: CCL_HOY
-    var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
+    // Bonos/ON/FCI: convertir USD→ARS con MEP_HOY. Resto: CCL_HOY
+    var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
     var ppcFromUSD=ppcUSD*_tcHoy*100;
     var mkt=p._mktARS||0;  // usar _mktARS de Pasada 1 (mercadoCedearARS aún no está declarada)
     var ppcCedearARS=_isBonoON
       ?ppcFromUSD
-      :(_isARS2?ppcUSD*CCL_HOY:ppcUSD*CCL_HOY);
+      :(sector==='fci'?ppcUSD*(MEP_HOY||CCL_HOY):ppcUSD*CCL_HOY);
     var mercadoCedearARS=p._mktARS;
     var inversionCedearARS=p._invARS;
     var pnlPct=mercadoCedearARS!=null&&ppcCedearARS>0?(mercadoCedearARS-ppcCedearARS)/ppcCedearARS*100:null;p._pnlPct=pnlPct;
@@ -3252,6 +3257,7 @@ function renderPortfolio(){
     var fromByma=q&&q.fromByma;
     var priceUSD=_rawPrice!=null?(
       _isBonoON    ? _rawPrice*ratio/(_tcHoy||1) :
+      sector==='fci' ? _rawPrice/(_tcHoy||1) :
       _isArgentina ? _rawPrice/(CCL_HOY||1) :
       BRL_TICKERS.has(p.ticker) ? _rawPrice/(CCL_HOY||1) :
       fromByma ? _rawPrice*ratio/(CCL_HOY||1) :
@@ -3305,7 +3311,7 @@ function renderPortfolio(){
     if(!rows||!rows.length){panel.style.display='none';return;}
     panel.style.display='';body.innerHTML=rows.join('');
     var val=sectorVal[def.key];
-    var _tc=(def.key==='bonos'||def.key==='on')?MEP_HOY:CCL_HOY;
+    var _tc=(def.key==='bonos'||def.key==='on'||def.key==='fci')?MEP_HOY:CCL_HOY;
     var valARS=val>0&&_tc>0?Math.round(val*_tc):null;
     meta.innerHTML=rows.length+' posiciones'+(valARS?' · <span class="port-sensitive">$'+valARS.toLocaleString('es-AR')+'</span>':'');
   });
@@ -3420,7 +3426,7 @@ function exportPortfolioXLS(){
     var invARS=mktARS!=null?(_isBonoON?mktARS*p.qty/100:mktARS*p.qty):p.costARS;
     var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
     var _tc=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
-    var ppcARS=_isBonoON?ppcUSD*_tc*100:ppcUSD*CCL_HOY;
+    var ppcARS=_isBonoON?ppcUSD*_tc*100:(sector==='fci'?ppcUSD*(MEP_HOY||CCL_HOY):ppcUSD*CCL_HOY);
     var pnl=mktARS!=null&&ppcARS>0?(mktARS-ppcARS)/ppcARS*100:null;
     rows.push([p.ticker,sector,p.qty,ppcARS>0?Math.round(ppcARS):null,mktARS!=null?Math.round(mktARS):null,Math.round(invARS),pnl!=null?Math.round(pnl*10)/10:null]);
   });
@@ -3468,13 +3474,15 @@ function vigRender(){
     var sector=getSector(v.ticker);
     var ratio=getRatio(v.ticker);
     var isBonoON=(sector==='bonos'||sector==='on');
-    var isARS=(sector==='argentina'||isBonoON);
+    var isFci=(sector==='fci');
+    var isARS=(sector==='argentina'||isBonoON||isFci);
+    var _vTc=(isBonoON||isFci)?(MEP_HOY||CCL_HOY):CCL_HOY;
     var priceARS=null,priceUSD=null,valARS=null,valUSD=null;
     if(price!=null){
       if(isARS){
         priceARS=price;
-        priceUSD=CCL_HOY>0?price/CCL_HOY:null;
-        if(v.qty){valARS=isBonoON?price*v.qty/100:price*v.qty;valUSD=CCL_HOY>0?valARS/CCL_HOY:null;}
+        priceUSD=_vTc>0?price/_vTc:null;
+        if(v.qty){valARS=isBonoON?price*v.qty/100:price*v.qty;valUSD=_vTc>0?valARS/_vTc:null;}
       }else{
         var _vigFromByma=q&&q.fromByma;
         priceUSD=_vigFromByma?price/(CCL_HOY||1):price/ratio;
@@ -3704,10 +3712,10 @@ function renderNearTarget(){
     var sector=getSector(p.ticker);
     var _isBonoON=(sector==='bonos'||sector==='on');
     var _isARS=(sector==='argentina'||sector==='bonos'||sector==='on'||sector==='fci');
-    var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
-    // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
+    var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
+    // bonos/ON/FCI: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
     var _ntFromByma=q.fromByma;
-    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price/(CCL_HOY||1):q.price);
+    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='fci'?q.price/(_tcHoy||1):sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price/(CCL_HOY||1):q.price);
     if(!(priceUSD>0))return;
     var upside=(targetUSD-priceUSD)/priceUSD*100;
     if(!(upside>=0)||upside>NT_THRESHOLD)return;
@@ -4393,17 +4401,17 @@ function renderTargets(){
   var countEl=document.getElementById('targets-filter-count');
   if(countEl){countEl.textContent=tickers.length<allTickers.length?(tickers.length+' de '+allTickers.length+' tickers'):(allTickers.length+' tickers');}
   body.innerHTML=tickers.map(function(t){
-    var targetUSD=TARGET_TABLE[t];var ratio=getRatio(t);var sector=getSector(t);var _isBonoON=(sector==='bonos'||sector==='on');var _tcHoyT=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;var targetARS=targetUSD!=null?(targetUSD/ratio)*_tcHoyT:null;var pos=pos_map[t];var q=quotes[t];
-    var _tIsARS=(sector==='argentina'||sector==='bonos'||sector==='on');
+    var targetUSD=TARGET_TABLE[t];var ratio=getRatio(t);var sector=getSector(t);var _isBonoON=(sector==='bonos'||sector==='on');var _tcHoyT=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;var targetARS=targetUSD!=null?(targetUSD/ratio)*_tcHoyT:null;var pos=pos_map[t];var q=quotes[t];
+    var _tIsARS=(sector==='argentina'||sector==='bonos'||sector==='on'||sector==='fci');
     var _tFromByma=q&&q.fromByma;
     var mercadoARS=q?(_tIsARS||_tFromByma?q.price:(q.price/ratio)*_tcHoyT):null;
     var targetPct=null;
     if(targetUSD!=null&&q&&q.price>0){
       if(_isBonoON){targetPct=targetARS!=null&&mercadoARS>0?((targetARS-mercadoARS)/mercadoARS*100):null;}
-      else{var _tPriceUSD=_tIsARS||_tFromByma?q.price/(CCL_HOY||1):q.price;targetPct=_tPriceUSD>0?((targetUSD-_tPriceUSD)/_tPriceUSD*100):null;}
+      else{var _tPriceUSD=_tIsARS||_tFromByma?q.price/(_tcHoyT||1):q.price;targetPct=_tPriceUSD>0?((targetUSD-_tPriceUSD)/_tPriceUSD*100):null;}
     }
     var pctHtml=targetPct!=null?'<span class="'+(targetPct>=0?'pos':'neg')+'">'+(targetPct>=0?'+':'')+targetPct.toFixed(1)+'%</span>':'—';
-    var _useMEP=(sector==='bonos'||sector==='on');var _tcLabel=_useMEP?'MEP':'CCL';var _arsColor=_useMEP?'var(--blue)':'var(--text2)';
+    var _useMEP=(sector==='bonos'||sector==='on'||sector==='fci');var _tcLabel=_useMEP?'MEP':'CCL';var _arsColor=_useMEP?'var(--blue)':'var(--text2)';
     var arsInput='<input type="number" min="0" step="any" value="'+(targetARS!=null?Math.round(targetARS):'')+'" placeholder="ARS ('+_tcLabel+')" id="ta-'+t+'" title="Conversión vía '+_tcLabel+'" style="width:110px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:'+_arsColor+';font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:26px" oninput="tgtSyncRowARS(\''+t+'\')" onkeydown="if(event.key===\'Enter\')saveTarget(\''+t+'\')">';
     return '<tr><td style="font-weight:700">'+t+'</td><td><span class="mkt" style="font-size:.6rem">'+SECTOR_LABELS[sector]+'</span></td><td><input type="number" min="0" step="any" value="'+(targetUSD!=null?targetUSD:'')+'" placeholder="USD" id="ti-'+t+'" style="width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:26px" oninput="tgtSyncRowUSD(\''+t+'\')" onkeydown="if(event.key===\'Enter\')saveTarget(\''+t+'\')"></td><td class="mono">'+arsInput+'</td><td>'+pctHtml+'</td><td class="gap-row" style="gap:4px"><button class="btn btn-a btn-sm" onclick="saveTarget(\''+t+'\')">✓</button><button class="btn btn-d btn-sm" onclick="deleteTarget(\''+t+'\')" title="Eliminar">✕</button></td></tr>';
   }).join('');
@@ -4412,13 +4420,13 @@ function renderTargets(){
 
 function tgtGetCCL(ticker){
   var sector=getSector(ticker);
-  var useMEP=(sector==='bonos'||sector==='on');
+  var useMEP=(sector==='bonos'||sector==='on'||sector==='fci');
   return useMEP?(MEP_HOY||CCL_HOY):CCL_HOY;
 }
 
 function tgtIsMEP(ticker){
   var sector=getSector(ticker);
-  return (sector==='bonos'||sector==='on');
+  return (sector==='bonos'||sector==='on'||sector==='fci');
 }
 
 function tgtUpdateLabel(ticker){
@@ -5363,7 +5371,7 @@ function trkCalcCCL(){
       movimientos.forEach(function(m){
         if(!m||m.tipo==='aporte'||!m.ticker||!m.fecha)return;
         if(m.ccl&&m.ccl>0)return; // ya tiene CCL
-        var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+        var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
         var tcFecha=esBonoON?(getMEP(m.fecha)||getCCL(m.fecha)):getCCL(m.fecha);
         if(tcFecha&&tcFecha>0){
           m.ccl=tcFecha;
@@ -5394,7 +5402,7 @@ function trkCalcCCL(){
     var _cclFixed=false;
     movimientos.forEach(function(m){
       if(!m||!m.fecha) return;
-      var isBono=(m.mercado==='BONOS'||m.mercado==='ON');
+      var isBono=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
       if(!m.ccl||m.ccl===0){
         var tcVal=isBono?(MEP_TABLE[m.fecha]||CCL_TABLE[m.fecha]):(CCL_TABLE[m.fecha]);
         if(tcVal){
@@ -6125,6 +6133,7 @@ function renderDashboard(){
       // Bonos/ON: price en ARS por 100 nominales → (price/MEP)*qty/100
       // BRL: price en Reales → (price/CCL)*qty
       valUSD=isBonoON ? (q.price/mep)*p.qty/100
+            :sector==='fci' ? (q.price/mep)*p.qty
             :isArgentina ? (q.price/tcHoy)*p.qty
             :_isBRL ? (q.price/tcHoy)*p.qty
             :q.fromByma ? (q.price/tcHoy)*p.qty
