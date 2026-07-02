@@ -4132,23 +4132,33 @@ async function fetchAllQuotes(){
     }));
   }
 
-  // FCI: mapa ticker → ID de fondo en CAFCI (https://api.cafci.org.ar)
-  // Para buscar el ID: https://api.cafci.org.ar/fondo?q=adcap+gestion+estrategica+iii&limit=5
-  var FCI_CAFCI_IDS={'ADCAPIII':null}; // Completar con el ID numérico del fondo
+  // FCI: ArgentinaDatos (fuente CAFCI) — mapa ticker → categoría + nombre del fondo
+  // Verificado 02/07/2026: "Adcap Gestión Estratégica III - Clase A" en /v1/finanzas/fci/rentaFija
+  var FCI_AD_FONDOS={'ADCAPIII':{cat:'rentaFija',nombre:'Adcap Gestión Estratégica III - Clase A'}};
+  function _fciNorm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();}
+  var _fciCatCache={};
 
   async function fetchFCIAll(){
     await Promise.all(fciPos.map(async function(p){
-      var cafciId=FCI_CAFCI_IDS[p.ticker];
-      if(!cafciId){updateProgress();return;}
+      var cfg=FCI_AD_FONDOS[p.ticker];
+      if(!cfg){updateProgress();return;}
       try{
-        var r=await fetchWithTimeout('https://api.cafci.org.ar/cuotaparte?fondoId='+cafciId+'&limit=1',{},8000);
-        if(!r.ok)throw new Error('HTTP '+r.status);
-        var d=await r.json();
-        if(d&&d.length&&d[0].valor>0){
-          // VCP en ARS por cuotaparte — igual que argentina (fromByma=true)
-          quotes[p.ticker]={price:parseFloat(d[0].valor),prevClose:parseFloat(d[0].valor),fromByma:true,fromCafci:true};
+        if(!_fciCatCache[cfg.cat]){
+          _fciCatCache[cfg.cat]=Promise.all([
+            fetchWithTimeout('https://api.argentinadatos.com/v1/finanzas/fci/'+cfg.cat+'/ultimo',{},8000).then(function(r){return r.ok?r.json():[];}),
+            fetchWithTimeout('https://api.argentinadatos.com/v1/finanzas/fci/'+cfg.cat+'/penultimo',{},8000).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];})
+          ]);
         }
-      }catch(e){/* CAFCI no disponible o CORS — sin precio actualizado */}
+        var res=await _fciCatCache[cfg.cat];
+        var target=_fciNorm(cfg.nombre);
+        var find=function(list){if(!list||!list.length)return null;for(var i=0;i<list.length;i++){if(_fciNorm(list[i].fondo)===target&&list[i].vcp>0)return list[i];}return null;};
+        var cur=find(res[0]);
+        var prev=find(res[1]);
+        if(cur){
+          // VCP en ARS por cuotaparte — igual que argentina (fromByma=true)
+          quotes[p.ticker]={price:parseFloat(cur.vcp),prevClose:prev?parseFloat(prev.vcp):parseFloat(cur.vcp),fromByma:true,fromFci:true};
+        }
+      }catch(e){/* ArgentinaDatos no disponible — sin precio actualizado */}
       updateProgress();
     }));
   }
