@@ -3514,6 +3514,7 @@ function vigRender(){
 
 var _cmpData={gdc:null,veta:null};
 var _cmpNombres={gdc:{},veta:{}};
+var _cmpLiqVeta=null; // {ars,usd,usdc} de la hoja Liquidez del xlsx de Veta Capital
 function cargarGDCEnComparacion(){
   var pos=getPositions().filter(function(p){return p.qty>0.000001;});
   if(!pos.length){alert('El portafolio no tiene posiciones.');return;}
@@ -3547,13 +3548,82 @@ function cmpParseRows(ab){
   }catch(ex){}
   return cmpParseHTML(ab);
 }
+function cmpParseArgNum(s){
+  if(s==null)return NaN;
+  var t=String(s).replace(/US\$|\$|\s/g,'').trim();
+  if(!t)return NaN;
+  t=t.replace(/\./g,'').replace(',','.');
+  return parseFloat(t);
+}
+function cmpFindSheetName(wb,re){
+  for(var i=0;i<wb.SheetNames.length;i++){if(re.test(wb.SheetNames[i]))return wb.SheetNames[i];}
+  return null;
+}
+// Formato nuevo de Veta Capital (xlsx real, hojas Liquidez/Inversiones/Futuros/Opciones,
+// header en la 3ra fila de cada hoja). Devuelve null si no es este formato (para poder
+// caer al parser viejo del .xls disfrazado de HTML).
+function cmpReadVetaWorkbook(ab){
+  var wb;
+  try{wb=XLSX.read(new Uint8Array(ab),{type:'array'});}catch(ex){return null;}
+  var invName=cmpFindSheetName(wb,/inversiones/i);
+  if(!invName)return null;
+  var invRows=XLSX.utils.sheet_to_json(wb.Sheets[invName],{header:1,defval:''});
+  var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='tituloespecie';});});
+  var map={},nombres={};
+  if(hdrIdx>=0){
+    var hdr=invRows[hdrIdx].map(cmpNorm);
+    var tCol=hdr.indexOf('tituloespecie');
+    var dCol=hdr.indexOf('descripcionespecie');
+    var totCol=hdr.indexOf('total');
+    invRows.slice(hdrIdx+1).forEach(function(r){
+      var ticker=String(r[tCol]||'').trim().toUpperCase();
+      if(!ticker)return;
+      var q=cmpParseArgNum(r[totCol]);
+      if(isNaN(q)||q<=0)return;
+      map[ticker]=(map[ticker]||0)+q; // suma Disponible + Garantia
+      var desc=String(r[dCol]||'').trim();
+      if(desc)nombres[ticker]=desc;
+    });
+  }
+  var liq={ars:0,usd:0,usdc:0};
+  var liqName=cmpFindSheetName(wb,/liquidez/i);
+  if(liqName){
+    var liqRows=XLSX.utils.sheet_to_json(wb.Sheets[liqName],{header:1,defval:''});
+    var lHdrIdx=liqRows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='denominacion';});});
+    if(lHdrIdx>=0){
+      var lHdr=liqRows[lHdrIdx].map(cmpNorm);
+      var mCol=lHdr.indexOf('moneda');
+      var lTotCol=lHdr.indexOf('total');
+      liqRows.slice(lHdrIdx+1).forEach(function(r){
+        var mon=cmpNorm(r[mCol]);
+        var v=cmpParseArgNum(r[lTotCol]);
+        if(isNaN(v))return;
+        if(mon==='ars')liq.ars+=v;
+        else if(mon==='usd')liq.usd+=v;
+        else if(mon==='usdc')liq.usdc+=v;
+      });
+    }
+  }
+  return {positions:map,nombres:nombres,liq:liq};
+}
 function cmpLoadFile(who,input){
   var f=input.files[0];if(!f)return;
   document.getElementById('cmp-'+who+'-name').textContent=f.name;
   var reader=new FileReader();
   reader.onload=function(e){
     var ab=e.target.result;
-    // Broker Veta siempre exporta HTML disfrazado de .xls — usar DOMParser directo
+    if(who==='veta'){
+      // Veta Capital (formato nuevo): xlsx real con hojas Liquidez/Inversiones/Futuros/Opciones
+      var vw=cmpReadVetaWorkbook(ab);
+      if(vw){
+        _cmpData.veta=vw.positions;
+        _cmpNombres.veta=vw.nombres;
+        _cmpLiqVeta=vw.liq;
+        return;
+      }
+      _cmpLiqVeta=null;
+    }
+    // Fallback: formato viejo de Veta (.xls disfrazado de HTML) o archivo GDC (.xlsx con columna Ticker)
     var rows=(who==='veta')?cmpParseHTML(ab):cmpParseRows(ab);
     if(!rows||!rows.length){alert('No se pudo leer el archivo.');return;}
     var isVeta=(who==='veta');
@@ -3609,10 +3679,39 @@ function cmpToggleCheck(t,cb){
   var el=document.getElementById('cmp-resolved-count');
   if(el)el.textContent=_cmpChecked.size+' / '+total+' resueltos';
 }
+function cmpLiqRow(label,box,veta,decimals){
+  var diff=box-veta;
+  var ok=Math.abs(diff)<(decimals?0.01:1);
+  var opts={minimumFractionDigits:decimals,maximumFractionDigits:decimals};
+  var sc=ok?'var(--accent)':'#f59e0b';
+  return '<tr><td class="mono">'+label+'</td>'
+    +'<td class="mono">'+box.toLocaleString('es-AR',opts)+'</td>'
+    +'<td class="mono">'+veta.toLocaleString('es-AR',opts)+'</td>'
+    +'<td class="mono" style="color:'+sc+'">'+(diff>0?'+':'')+diff.toLocaleString('es-AR',opts)+'</td>'
+    +'<td><span style="font-size:.65rem;color:'+sc+'">'+(ok?'✓ Igual':'Diferente')+'</span></td>'
+    +'</tr>';
+}
 function runComparacion(){
   var el=document.getElementById('cmp-result');
+  var html='';
+  if(_cmpLiqVeta){
+    var liqArsBox=getRawNum('liq-ars');
+    var liqUsdBox=getRawNum('liq-usd');
+    var vetaArs=_cmpLiqVeta.ars||0;
+    var vetaUsdTotal=(_cmpLiqVeta.usd||0)+(_cmpLiqVeta.usdc||0);
+    html+='<div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">Liquidez</div>';
+    html+='<div class="tw panel-table" style="margin-bottom:1rem"><table><thead><tr>'
+      +'<th>Moneda</th><th>Recuadro</th>'
+      +'<th><img src="../Veta.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
+      +'<th>Diferencia</th><th>Estado</th>'
+      +'</tr></thead><tbody>'
+      +cmpLiqRow('ARS (Pesos)',liqArsBox,vetaArs,0)
+      +cmpLiqRow('USD (Dólares+cable)',liqUsdBox,vetaUsdTotal,2)
+      +'</tbody></table></div>';
+  }
   if(!_cmpData.gdc||!_cmpData.veta){
-    el.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:.6rem 0">Cargá los dos archivos primero.</div>';return;
+    if(!html)html='<div style="font-size:.8rem;color:var(--text3);padding:.6rem 0">Cargá los dos archivos primero.</div>';
+    el.innerHTML=html;return;
   }
   var gdc=_cmpData.gdc,veta=_cmpData.veta;
   var tickers=new Set(Object.keys(gdc).concat(Object.keys(veta)));
@@ -3626,9 +3725,10 @@ function runComparacion(){
   var order={'Solo Veta':0,'Solo GDC':1,'Diferente':2};
   diffs.sort(function(a,b){return (order[a.status]-order[b.status])||a.t.localeCompare(b.t);});
   if(!diffs.length){
-    el.innerHTML='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias — los portafolios coinciden.</div>';return;
+    html+='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias en posiciones — los portafolios coinciden.</div>';
+    el.innerHTML=html;return;
   }
-  var html='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
+  html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
     +'<span style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">'+diffs.length+' diferencia(s)</span>'
     +'<span id="cmp-resolved-count" style="font-size:.65rem;font-family:var(--mono);color:var(--accent)">'+_cmpChecked.size+' / '+diffs.length+' resueltos</span>'
     +'</div>';
