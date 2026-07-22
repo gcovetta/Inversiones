@@ -3920,7 +3920,7 @@ function renderSmallInv(){
     var ratio=getRatio(p.ticker);
     var _isBRL=BRL_TICKERS.has(p.ticker);
     var fromByma=q&&q.fromByma;
-    var mercadoCedearARS=(_isBRL||fromByma)?price:(price/ratio)*CCL_HOY;
+    var mercadoCedearARS=(sector==='argentina'||_isBRL||fromByma)?price:(price/ratio)*CCL_HOY;
     var inversionARS=mercadoCedearARS*p.qty;
     if(!(inversionARS>0))return;
     if(inversionARS>thresholdARS)return;
