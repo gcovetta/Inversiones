@@ -6209,6 +6209,14 @@ function renderDashboard(){
     return;
   }
   dbDestroyAll();
+  (function(){
+    var _t=document.getElementById('db-rubros-detail-tbody');
+    var _ti=document.getElementById('db-rubros-detail-title');
+    var _d=document.getElementById('db-rubros-detail');
+    if(_t)_t.innerHTML='';
+    if(_ti)_ti.innerHTML='';
+    if(_d&&!DB_LAST_RUBRO)_d.style.display='none';
+  })();
 
   var positions=getPositions();
   var open=positions.filter(function(p){return p.qty>0;});
