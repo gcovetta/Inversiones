@@ -6202,7 +6202,7 @@ var DB_SECTOR_COLOR={
   europa:'#fb923c',china:'#ff5252',cripto:'#c084fc',
   fci:'#10b981'
 };
-
+var DB_LAST_RUBRO = null;
 function renderDashboard(){
   if(typeof Chart==='undefined'){
     setTimeout(renderDashboard,400);
@@ -6441,6 +6441,7 @@ function renderDashboard(){
 
   // Función para mostrar detalle al hacer clic
   function dbShowRubroDetail(rubroName, color){
+    DB_LAST_RUBRO = {name: rubroName, color: color};
     var detail=document.getElementById('db-rubros-detail');
     var title=document.getElementById('db-rubros-detail-title');
     var tbody=document.getElementById('db-rubros-detail-tbody');
@@ -6543,6 +6544,7 @@ function renderDashboard(){
 
   renderWorldMap(posData);
   renderPerfChart();
+  if(DB_LAST_RUBRO) dbShowRubroDetail(DB_LAST_RUBRO.name, DB_LAST_RUBRO.color);
 }
 
 
@@ -7061,6 +7063,7 @@ async function dolzToggleTicker(ticker){
   if(DOLZ_EXTRA.has(ticker)) DOLZ_EXTRA.delete(ticker); else DOLZ_EXTRA.add(ticker);
   await dolzSave();
   renderPortfolio();
+  (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
 }
 
 </script>
