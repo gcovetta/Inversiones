@@ -625,6 +625,20 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
+      <!-- Inversiones Pequeñas -->
+      <div id="port-smallinv-section" style="margin-bottom:1rem">
+        <div class="nt-card" id="small-inv-card" style="margin-bottom:0">
+          <div class="nt-header">
+            <span class="nt-title">🔎 Inversiones Pequeñas</span>
+            <span class="nt-label">Inversión ≤</span>
+            <input type="range" min="0" max="3" step="0.1" value="0.5" id="si-slider" class="nt-slider" oninput="siOnSlider(this.value)">
+            <input type="number" min="0" max="3" step="0.1" value="0.5" id="si-input" class="nt-input" oninput="siOnInput(this.value)">
+            <span class="nt-pct" id="si-pct-label">0.5%</span>
+            <span class="nt-label">del valor de la cartera en RV</span>
+          </div>
+          <div class="nt-grid" id="si-grid"></div>
+        </div>
+      </div>
       <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
             <div class="panels-grid hide-qty" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
@@ -3408,6 +3422,7 @@ function renderPortfolio(){
 
   renderDivsCard();
   renderNearTarget();
+  renderSmallInv();
 }
 
 // ─── Exportar portafolio a XLS ───
@@ -3848,6 +3863,90 @@ function renderNearTarget(){
   grid.innerHTML=html;
 }
 
+// ─── Inversiones Pequeñas ───
+var SI_THRESHOLD=(function(){
+  try{var s=localStorage.getItem('ptNYSE_siThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>=0)return v;}}catch(e){}
+  return 0.5;
+})();
+function siSavePersist(){try{localStorage.setItem('ptNYSE_siThreshold',String(SI_THRESHOLD));}catch(e){}}
+function siOnSlider(v){
+  var n=parseFloat(v);if(isNaN(n)||n<0)return;
+  SI_THRESHOLD=n;siSavePersist();
+  var inp=document.getElementById('si-input');if(inp)inp.value=n;
+  var lbl=document.getElementById('si-pct-label');if(lbl)lbl.textContent=(n%1===0?n.toFixed(0):n.toFixed(1))+'%';
+  renderSmallInv();
+}
+function siOnInput(v){
+  var n=parseFloat(String(v).replace(',','.'));if(isNaN(n)||n<0)return;
+  SI_THRESHOLD=n;siSavePersist();
+  var sl=document.getElementById('si-slider');if(sl&&n<=parseFloat(sl.max))sl.value=n;
+  var lbl=document.getElementById('si-pct-label');if(lbl)lbl.textContent=(n%1===0?n.toFixed(0):n.toFixed(1))+'%';
+  renderSmallInv();
+}
+function renderSmallInv(){
+  var card=document.getElementById('small-inv-card');
+  var grid=document.getElementById('si-grid');
+  if(!card||!grid)return;
+  // Sync UI con el umbral actual
+  var inp=document.getElementById('si-input');if(inp&&parseFloat(inp.value)!==SI_THRESHOLD)inp.value=SI_THRESHOLD;
+  var sl=document.getElementById('si-slider');if(sl&&parseFloat(sl.max)>=SI_THRESHOLD&&parseFloat(sl.value)!==SI_THRESHOLD)sl.value=SI_THRESHOLD;
+  var lbl=document.getElementById('si-pct-label');if(lbl)lbl.textContent=(SI_THRESHOLD%1===0?SI_THRESHOLD.toFixed(0):SI_THRESHOLD.toFixed(1))+'%';
+
+  var all=getPositions();
+  var open=all.filter(function(p){return p.qty>0.000001;});
+  var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
+  var rvSet={};rvSectors.forEach(function(s){rvSet[s]=true;});
+
+  // Costo total RV (misma lógica que renderPortfolio) para fijar el 100% de la cartera RV
+  var totalRVusd=0;
+  open.forEach(function(p){
+    var sector=getSector(p.ticker);
+    if(rvSet[sector]) totalRVusd+=p.costUSDpuro;
+  });
+  var cclHoyRV=CCL_HOY>0?CCL_HOY:1;
+  var totalRVars=totalRVusd*cclHoyRV;
+  var thresholdARS=totalRVars*(SI_THRESHOLD/100);
+
+  var items=[];
+  open.forEach(function(p){
+    var sector=getSector(p.ticker);
+    if(!rvSet[sector])return;
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    if(price==null)return;
+    var ratio=getRatio(p.ticker);
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var fromByma=q&&q.fromByma;
+    var mercadoCedearARS=(_isBRL||fromByma)?price:(price/ratio)*CCL_HOY;
+    var inversionARS=mercadoCedearARS*p.qty;
+    if(!(inversionARS>0))return;
+    if(inversionARS>thresholdARS)return;
+    var pctOfRV=totalRVars>0?(inversionARS/totalRVars*100):0;
+    items.push({ticker:p.ticker,invARS:inversionARS,pct:pctOfRV});
+  });
+  items.sort(function(a,b){return a.invARS-b.invARS;});
+  if(!items.length){
+    card.style.display='';
+    grid.innerHTML='<div class="nt-empty">No hay tickers por debajo del umbral configurado</div>';
+    return;
+  }
+  card.style.display='';
+  var html=items.map(function(it){
+    var fill=thresholdARS>0?Math.max(2,Math.min(100,(it.invARS/thresholdARS)*100)):100;
+    var pctStr=(it.pct%1===0?it.pct.toFixed(0):it.pct.toFixed(2))+'%';
+    var valStr='$'+Math.round(it.invARS).toLocaleString('es-AR');
+    return '<div class="nt-ticker-card">'+
+      '<span class="nt-tk-sym">'+it.ticker+'</span>'+
+      '<div class="nt-tk-body">'+
+        '<div class="nt-tk-progress">'+
+          '<div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:'+fill.toFixed(1)+'%"></div></div>'+
+          '<span class="nt-tk-falta">'+valStr+' · '+pctStr+'</span>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  grid.innerHTML=html;
+}
+
 // ─── Toggle columna Cantidad (oculta por defecto para layout compacto) ───
 function toggleQtyCol(show){
   var grid=document.getElementById('panels-grid');
@@ -4278,6 +4377,7 @@ async function fetchAllQuotes(){
 
   // Render final con todos los datos listos
   renderPortfolio();
+  (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
 
   icon.textContent='⟳';prog.style.display='none';
   status.className=errors>0?'emsg':'smsg';
@@ -6202,6 +6302,7 @@ var DB_SECTOR_COLOR={
   europa:'#fb923c',china:'#ff5252',cripto:'#c084fc',
   fci:'#10b981'
 };
+
 var DB_LAST_RUBRO = null;
 function renderDashboard(){
   if(typeof Chart==='undefined'){
@@ -6209,14 +6310,6 @@ function renderDashboard(){
     return;
   }
   dbDestroyAll();
-  (function(){
-    var _t=document.getElementById('db-rubros-detail-tbody');
-    var _ti=document.getElementById('db-rubros-detail-title');
-    var _d=document.getElementById('db-rubros-detail');
-    if(_t)_t.innerHTML='';
-    if(_ti)_ti.innerHTML='';
-    if(_d&&!DB_LAST_RUBRO)_d.style.display='none';
-  })();
 
   var positions=getPositions();
   var open=positions.filter(function(p){return p.qty>0;});
@@ -6552,42 +6645,7 @@ function renderDashboard(){
 
   renderWorldMap(posData);
   renderPerfChart();
-  if(DB_LAST_RUBRO){
-    dbShowRubroDetail(DB_LAST_RUBRO.name, DB_LAST_RUBRO.color);
-  } else {
-    var _rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
-    var _rvList=posData.filter(function(d){return _rvSectors.indexOf(d.sector)!==-1;}).sort(function(a,b){return b.valUSD-a.valUSD;});
-    var _rvTotal=_rvList.reduce(function(s,d){return s+d.valUSD;},0);
-    var _detail=document.getElementById('db-rubros-detail');
-    var _title=document.getElementById('db-rubros-detail-title');
-    var _tbody=document.getElementById('db-rubros-detail-tbody');
-    if(_detail&&_title&&_tbody){
-      _title.innerHTML='Top posiciones — % sobre Renta Variable <span style="color:var(--text3);font-weight:400">— $'+Math.round(_rvTotal).toLocaleString('es-AR')+' USD</span>';
-      _tbody.innerHTML='';
-      _rvList.forEach(function(d){
-        var pct=_rvTotal>0?(d.valUSD/_rvTotal*100):0;
-        var barW=Math.max(2,Math.round(pct));
-        var color=DB_SECTOR_COLOR[d.sector]||'#448aff';
-        var tr=document.createElement('tr');
-        tr.style.borderBottom='1px solid var(--border)';
-        tr.innerHTML=
-          '<td style="padding:4px 6px;font-weight:700;color:var(--text)">'+d.ticker+'</td>'+
-          '<td style="padding:4px 6px;text-align:right;color:var(--text2)">$'+Math.round(d.valUSD).toLocaleString('es-AR')+'</td>'+
-          '<td style="padding:4px 6px;min-width:120px">'+
-            '<div style="display:flex;align-items:center;gap:6px">'+
-              '<div style="flex:1;background:var(--border);border-radius:3px;height:6px;overflow:hidden">'+
-                '<div style="width:'+barW+'%;background:'+color+';height:100%;border-radius:3px"></div>'+
-              '</div>'+
-              '<span style="color:var(--text);font-weight:700;font-size:.7rem;min-width:36px;text-align:right">'+pct.toFixed(1)+'%</span>'+
-            '</div>'+
-          '</td>';
-        _tbody.appendChild(tr);
-      });
-      _detail.style.display='block';
-      var _hint=document.getElementById('db-rubros-hint');
-      if(_hint)_hint.style.display='none';
-    }
-  }
+  if(DB_LAST_RUBRO) dbShowRubroDetail(DB_LAST_RUBRO.name, DB_LAST_RUBRO.color);
 }
 
 
@@ -7106,7 +7164,6 @@ async function dolzToggleTicker(ticker){
   if(DOLZ_EXTRA.has(ticker)) DOLZ_EXTRA.delete(ticker); else DOLZ_EXTRA.add(ticker);
   await dolzSave();
   renderPortfolio();
-  (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
 }
 
 </script>
