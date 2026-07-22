@@ -601,6 +601,20 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
+      <!-- Inversiones Pequeñas -->
+      <div id="port-smallinv-section" style="margin-bottom:1rem">
+        <div class="nt-card" id="small-inv-card" style="margin-bottom:0">
+          <div class="nt-header">
+            <span class="nt-title">🔎 Inversiones Pequeñas</span>
+            <span class="nt-label">Inversión ≤</span>
+            <input type="range" min="0" max="3" step="0.1" value="0.5" id="si-slider" class="nt-slider" oninput="siOnSlider(this.value)">
+            <input type="number" min="0" max="3" step="0.1" value="0.5" id="si-input" class="nt-input" oninput="siOnInput(this.value)">
+            <span class="nt-pct" id="si-pct-label">0.5%</span>
+            <span class="nt-label">del valor de la cartera en RV</span>
+          </div>
+          <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
+        </div>
+      </div>
         <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
             <div class="panels-grid hide-qty" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
@@ -2222,10 +2236,12 @@ function portToggleSummary(){
 
 function portToggleWatchzone(){
   var el=document.getElementById('port-watchzone-section');
+  var el2=document.getElementById('port-smallinv-section');
   var btn=document.getElementById('port-watchzone-toggle-btn');
   if(!el||!btn) return;
   var collapsed=el.style.display==='none';
   el.style.display=collapsed?'flex':'none';
+  if(el2) el2.style.display=collapsed?'':'none';
   btn.textContent=collapsed?'▲ Ocultar mira':'▼ Mostrar mira';
   try{localStorage.setItem('port_watchzone_collapsed',collapsed?'0':'1');}catch(e){}
 }
@@ -2233,8 +2249,10 @@ function portToggleWatchzone(){
   try{
     if(localStorage.getItem('port_watchzone_collapsed')==='1'){
       var el=document.getElementById('port-watchzone-section');
+      var el2=document.getElementById('port-smallinv-section');
       var btn=document.getElementById('port-watchzone-toggle-btn');
       if(el) el.style.display='none';
+      if(el2) el2.style.display='none';
       if(btn) btn.textContent='▼ Mostrar mira';
     }
   }catch(e){}
@@ -3059,6 +3077,7 @@ function renderPortfolio(){
 
   renderDivsCard();
   renderNearTarget();
+  renderSmallInv();
 }
 
 // ─── Comparación de portafolios ───
@@ -3313,6 +3332,90 @@ function renderNearTarget(){
         '<div class="nt-tk-progress">'+
           '<div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:'+fill.toFixed(1)+'%"></div></div>'+
           '<span class="nt-tk-falta">Falta '+pctStr+'</span>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  grid.innerHTML=html;
+}
+
+// ─── Inversiones Pequeñas ───
+var SI_THRESHOLD=(function(){
+  try{var s=localStorage.getItem('ptNYSE_siThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>=0)return v;}}catch(e){}
+  return 0.5;
+})();
+function siSavePersist(){try{localStorage.setItem('ptNYSE_siThreshold',String(SI_THRESHOLD));}catch(e){}}
+function siOnSlider(v){
+  var n=parseFloat(v);if(isNaN(n)||n<0)return;
+  SI_THRESHOLD=n;siSavePersist();
+  var inp=document.getElementById('si-input');if(inp)inp.value=n;
+  var lbl=document.getElementById('si-pct-label');if(lbl)lbl.textContent=(n%1===0?n.toFixed(0):n.toFixed(1))+'%';
+  renderSmallInv();
+}
+function siOnInput(v){
+  var n=parseFloat(String(v).replace(',','.'));if(isNaN(n)||n<0)return;
+  SI_THRESHOLD=n;siSavePersist();
+  var sl=document.getElementById('si-slider');if(sl&&n<=parseFloat(sl.max))sl.value=n;
+  var lbl=document.getElementById('si-pct-label');if(lbl)lbl.textContent=(n%1===0?n.toFixed(0):n.toFixed(1))+'%';
+  renderSmallInv();
+}
+function renderSmallInv(){
+  var card=document.getElementById('small-inv-card');
+  var grid=document.getElementById('si-grid');
+  if(!card||!grid)return;
+  // Sync UI con el umbral actual
+  var inp=document.getElementById('si-input');if(inp&&parseFloat(inp.value)!==SI_THRESHOLD)inp.value=SI_THRESHOLD;
+  var sl=document.getElementById('si-slider');if(sl&&parseFloat(sl.max)>=SI_THRESHOLD&&parseFloat(sl.value)!==SI_THRESHOLD)sl.value=SI_THRESHOLD;
+  var lbl=document.getElementById('si-pct-label');if(lbl)lbl.textContent=(SI_THRESHOLD%1===0?SI_THRESHOLD.toFixed(0):SI_THRESHOLD.toFixed(1))+'%';
+
+  var all=getPositions();
+  var open=all.filter(function(p){return p.qty>0.000001;});
+  var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
+  var rvSet={};rvSectors.forEach(function(s){rvSet[s]=true;});
+
+  // Costo total RV (misma lógica que renderPortfolio) para fijar el 100% de la cartera RV
+  var totalRVusd=0;
+  open.forEach(function(p){
+    var sector=getSector(p.ticker);
+    if(rvSet[sector]) totalRVusd+=p.costUSDpuro;
+  });
+  var cclHoyRV=CCL_HOY>0?CCL_HOY:1;
+  var totalRVars=totalRVusd*cclHoyRV;
+  var thresholdARS=totalRVars*(SI_THRESHOLD/100);
+
+  var items=[];
+  open.forEach(function(p){
+    var sector=getSector(p.ticker);
+    if(!rvSet[sector])return;
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    if(price==null)return;
+    var ratio=getRatio(p.ticker);
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var fromByma=q&&q.fromByma;
+    var mercadoCedearARS=(sector==='argentina'||_isBRL||fromByma)?price:(price/ratio)*CCL_HOY;
+    var inversionARS=mercadoCedearARS*p.qty;
+    if(!(inversionARS>0))return;
+    if(inversionARS>thresholdARS)return;
+    var pctOfRV=totalRVars>0?(inversionARS/totalRVars*100):0;
+    items.push({ticker:p.ticker,invARS:inversionARS,pct:pctOfRV});
+  });
+  items.sort(function(a,b){return a.invARS-b.invARS;});
+  if(!items.length){
+    card.style.display='';
+    grid.innerHTML='<div class="nt-empty">No hay tickers por debajo del umbral configurado</div>';
+    return;
+  }
+  card.style.display='';
+  var html=items.map(function(it){
+    var fill=thresholdARS>0?Math.max(2,Math.min(100,(it.invARS/thresholdARS)*100)):100;
+    var pctStr=(it.pct%1===0?it.pct.toFixed(0):it.pct.toFixed(2))+'%';
+    var valStr='$'+Math.round(it.invARS).toLocaleString('es-AR');
+    return '<div class="nt-ticker-card">'+
+      '<span class="nt-tk-sym">'+it.ticker+'</span>'+
+      '<div class="nt-tk-body">'+
+        '<div class="nt-tk-progress">'+
+          '<div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:'+fill.toFixed(1)+'%"></div></div>'+
+          '<span class="nt-tk-falta">'+valStr+' · '+pctStr+'</span>'+
         '</div>'+
       '</div>'+
     '</div>';
