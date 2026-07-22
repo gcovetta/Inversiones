@@ -636,7 +636,7 @@ tr:hover td{background:var(--surface2)}
             <span class="nt-pct" id="si-pct-label">0.5%</span>
             <span class="nt-label">del valor de la cartera en RV</span>
           </div>
-          <div class="nt-grid" id="si-grid"></div>
+          <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
         </div>
       </div>
       <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
@@ -2577,10 +2577,12 @@ function portToggleSummary(){
 
 function portToggleWatchzone(){
   var el=document.getElementById('port-watchzone-section');
+  var el2=document.getElementById('port-smallinv-section');
   var btn=document.getElementById('port-watchzone-toggle-btn');
   if(!el||!btn) return;
   var collapsed=el.style.display==='none';
   el.style.display=collapsed?'flex':'none';
+  if(el2) el2.style.display=collapsed?'':'none';
   btn.textContent=collapsed?'▲ Ocultar mira':'▼ Mostrar mira';
   try{localStorage.setItem('port_watchzone_collapsed',collapsed?'0':'1');}catch(e){}
 }
@@ -2588,8 +2590,10 @@ function portToggleWatchzone(){
   try{
     if(localStorage.getItem('port_watchzone_collapsed')==='1'){
       var el=document.getElementById('port-watchzone-section');
+      var el2=document.getElementById('port-smallinv-section');
       var btn=document.getElementById('port-watchzone-toggle-btn');
       if(el) el.style.display='none';
+      if(el2) el2.style.display='none';
       if(btn) btn.textContent='▼ Mostrar mira';
     }
   }catch(e){}
