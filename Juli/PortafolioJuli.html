@@ -3705,8 +3705,8 @@ async function fetchAllQuotes(){
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
 
   // Separar por fuente: Finnhub (NYSE/Brasil/etc), Yahoo AR (Argentina), data912 (Bonos/ON)
-  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&!BRL_TICKERS.has(p.ticker);});
-  var yahooPos=pos.filter(function(p){return getSector(p.ticker)==='argentina'||BRL_TICKERS.has(p.ticker);});
+  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&s!=='brasil'&&!BRL_TICKERS.has(p.ticker);});
+  var yahooPos=pos.filter(function(p){var s=getSector(p.ticker);return s==='argentina'||s==='brasil'||BRL_TICKERS.has(p.ticker);});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
 
