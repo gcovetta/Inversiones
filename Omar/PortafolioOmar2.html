@@ -1556,7 +1556,9 @@ var quotes = {};
 
 var PRELOADED = [];
 
-var RATIOS_TABLE = {"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4};
+var BRL_TICKERS=new Set(['BBAS3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
+
+var RATIOS_TABLE = {"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4};
 function getRatio(ticker){return RATIOS_TABLE[ticker]||1;}
 
 var SECTOR_MAP = {
@@ -1567,7 +1569,7 @@ var SECTOR_MAP = {
   'DEO':'europa','SPOT':'europa','STLA':'europa',
   'JD':'china',
   'IBIT':'cripto',
-  'ABEV':'brasil','GGB':'brasil','MELI':'brasil','NU':'brasil','PAGS':'brasil','SID':'brasil','XP':'brasil',
+  'ABEV':'brasil','GGB':'brasil','MELI':'brasil','NU':'brasil','PAGS':'brasil','SID':'brasil','STNE':'brasil','XP':'brasil',
 };
 var _MKT_TO_SECTOR={BONOS:'bonos',ON:'on',ARGENTINA:'argentina',BRASIL:'brasil',ETF:'nyse',USA:'nyse'};
 function getSector(ticker){
@@ -2618,9 +2620,11 @@ function renderPortfolio(){
     // Para Bonos/ON: price es por 100 nominales → qty se divide por 100 para el total
     var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on');
     var _isBonoON=(sector==='bonos'||sector==='on');
-    var mercadoCedearARS=price!=null?(_sectorIsARS?price:(price/ratio)*CCL_HOY):null;
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var _fromByma=q&&q.fromByma;
+    var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL||_fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
-    var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):(price/ratio)*p.qty):null;
+    var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:_fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
     sectorCost[sector]=(sectorCost[sector]||0)+p.costUSDpuro;
@@ -2721,6 +2725,8 @@ function renderPortfolio(){
     var priceUSD=_rawPrice!=null?(
       _isBonoON  ? _rawPrice*ratio/(_tcHoy||1) :
       _isArgentina ? _rawPrice/(CCL_HOY||1) :
+      BRL_TICKERS.has(p.ticker) ? _rawPrice/(CCL_HOY||1) :
+      (q&&q.fromByma) ? _rawPrice/(CCL_HOY||1) :
       _rawPrice
     ):null;
     var upside=targetUSD!=null&&priceUSD!=null&&priceUSD>0?(targetUSD-priceUSD)/priceUSD*100:null;
@@ -2906,11 +2912,12 @@ function renderNearTarget(){
     var _isARS=(sector==='argentina'||sector==='bonos'||sector==='on');
     var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
     // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
-    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):q.price);
+    var _ntFromByma=q&&q.fromByma;
+    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price/(CCL_HOY||1):q.price);
     if(!(priceUSD>0))return;
     var upside=(targetUSD-priceUSD)/priceUSD*100;
     if(!(upside>=0)||upside>NT_THRESHOLD)return;
-    var mercadoARS=_isARS?q.price:(q.price/ratio)*_tcHoy;
+    var mercadoARS=_isARS?q.price:BRL_TICKERS.has(p.ticker)?q.price:_ntFromByma?q.price:(q.price/ratio)*_tcHoy;
     var targetARS=(targetUSD/ratio)*_tcHoy;
     items.push({ticker:p.ticker,priceARS:mercadoARS,targetARS:targetARS,upside:upside});
   });
@@ -2990,7 +2997,9 @@ function renderSmallInv(){
     var q=quotes[p.ticker];var price=q?q.price:null;
     if(price==null)return;
     var ratio=getRatio(p.ticker);
-    var mercadoCedearARS=sector==='argentina'?price:(price/ratio)*CCL_HOY;
+    var _siIsBRL=BRL_TICKERS.has(p.ticker);
+    var _siFromByma=q&&q.fromByma;
+    var mercadoCedearARS=(sector==='argentina'||_siIsBRL||_siFromByma)?price:(price/ratio)*CCL_HOY;
     var inversionARS=mercadoCedearARS*p.qty;
     if(!(inversionARS>0))return;
     if(inversionARS>thresholdARS)return;
@@ -3116,10 +3125,12 @@ function computePerfilActual(){
     var q=quotes[p.ticker];var price=q?q.price:null;
     if(price==null)return;
     var ratio=getRatio(p.ticker);
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var fromByma=q&&q.fromByma;
     var _isBonoON=(sector==='bonos'||sector==='on');
     var _isFci=(sector==='fci');
     var mercadoARS;
-    if(sector==='argentina'){ mercadoARS=price; }
+    if(sector==='argentina'||_isBRL||fromByma){ mercadoARS=price; }
     else if(_isBonoON||_isFci){ mercadoARS=price; }
     else { mercadoARS=(price/ratio)*CCL_HOY; }
     var invARS=_isBonoON?mercadoARS*p.qty/100:mercadoARS*p.qty;
@@ -3606,8 +3617,10 @@ async function fetchAllQuotes(){
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
 
   // Separar por fuente: Finnhub (NYSE/Brasil/etc), Yahoo AR (Argentina), data912 (Bonos/ON)
-  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on';});
-  var yahooPos=pos.filter(function(p){return getSector(p.ticker)==='argentina';});
+  // Brasil va a Yahoo .BA (como GDC/Hilda): evita que tickers BYMA-only pasen por Finnhub
+  // y obtengan precio del subyacente NYSE incorrecto. fetchYahooAll ya pone fromByma=true para brasil.
+  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&s!=='brasil'&&!BRL_TICKERS.has(p.ticker);});
+  var yahooPos=pos.filter(function(p){var s=getSector(p.ticker);return s==='argentina'||s==='brasil'||BRL_TICKERS.has(p.ticker);});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
 
@@ -3629,9 +3642,15 @@ async function fetchAllQuotes(){
       try{
         quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
       }catch(e){
-        // Fallback Yahoo para tickers Brasil (NU, PAGS, MELI, etc.)
+        // Fallback Yahoo para tickers Brasil (NU, PAGS, MELI, etc.) y CEDEARs sin NYSE
+        // Yahoo .BA devuelve precio ARS (CEDEAR BYMA). Marcamos fromByma=true para que
+        // renderPortfolio lo trate como precio ARS y divida por CCL (igual que GDC).
         if(getSector(p.ticker)==='brasil'){
-          try{quotes[p.ticker]=await fetchYahooAR(p.ticker);}catch(e2){errors++;}
+          try{
+            var _fbq=await fetchYahooAR(p.ticker);
+            _fbq.fromByma=true;
+            quotes[p.ticker]=_fbq;
+          }catch(e2){errors++;}
         } else {
           errors++;
         }
@@ -3644,7 +3663,11 @@ async function fetchAllQuotes(){
   // ── Yahoo AR: todos en paralelo (cada uno con su propio race de proxies) ──
   async function fetchYahooAll(){
     await Promise.all(yahooPos.map(async function(p){
-      try{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+      try{
+        var fbq=await fetchYahooAR(p.ticker);
+        if(getSector(p.ticker)==='brasil'&&!BRL_TICKERS.has(p.ticker)){fbq.fromByma=true;}
+        quotes[p.ticker]=fbq;
+      }
       catch(e){errors++;}
       updateProgress();
     }));
