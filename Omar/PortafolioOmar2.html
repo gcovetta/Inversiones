@@ -323,6 +323,7 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Herramientas</div>
     <button class="nav-item" onclick="showPage(&#39;arbitraje&#39;,this)"><span>⇄</span>Arbitraje</button>
     <button class="nav-item" onclick="showPage(&#39;dashboard&#39;,this)"><span>📊</span>DashBoard</button>
+    <button class="nav-item" onclick="showPage(&#39;recomendaciones&#39;,this)"><span>💡</span>Recomendaciones</button>
     <div class="nav-sec">Cambios</div>
     <button class="nav-item" onclick="showPage(&#39;targets&#39;,this)"><span>◎</span>P. Venta</button>
     <button class="nav-item" onclick="showPage(&#39;rubros&#39;,this)"><span>🏷</span>Rubros</button>
@@ -1091,6 +1092,36 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
+    <!-- RECOMENDACIONES -->
+    <div class="page" id="page-recomendaciones">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📐 Tu perfil actual</span>
+          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Puntaje de cercanía (0-100) contra cada perfil, según tu cartera de hoy</span>
+        </div>
+        <div class="card-body" style="padding:.85rem 1rem">
+          <div id="perfil-score-empty" class="empty-state" style="display:none">Cargá liquidez y posiciones para ver el puntaje</div>
+          <div id="perfil-score-summary"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🎯 Perfil objetivo</span>
+          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Composición sugerida vs. tu cartera actual</span>
+          <select id="perfil-select" onchange="renderPerfilComparacion()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;outline:none">
+            <option value="Agresivo">Agresivo</option>
+            <option value="Moderado">Moderado</option>
+            <option value="Conservador">Conservador</option>
+          </select>
+        </div>
+        <div class="card-body" style="padding:.85rem 1rem">
+          <div id="perfil-cmp-empty" class="empty-state" style="display:none">Cargá liquidez y posiciones para ver la comparación</div>
+          <div id="perfil-cmp-groups"></div>
+        </div>
+      </div>
+    </div>
+
+
 
 <!-- Modal edicion movimientos - fuera de cualquier page para que position:fixed funcione -->
 <div id="mov-modal-overlay" onclick="if(event.target===this)movModalClose()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:center;justify-content:center;padding:1rem">
@@ -1508,6 +1539,7 @@ function showPage(id,btn){
   if(id==='dashboard') renderDashboard();
   if(id==='rubros') renderRubros();
   if(id==='bonostir') renderBonosTIR();
+  if(id==='recomendaciones') renderPerfilComparacion();
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -2678,6 +2710,7 @@ function renderPortfolio(){
   renderDivsCard();
   renderNearTarget();
   renderSmallInv();
+  renderPerfilComparacion();
 }
 
 // ─── CCL Implícito ───
@@ -2848,6 +2881,309 @@ function renderSmallInv(){
   }).join('');
   grid.innerHTML=html;
 }
+
+// ─── Perfil objetivo (comparación cartera vs. composición sugerida) ───
+// rubroMap: cómo se agrupa cada Rubro (de la pestaña Rubros) dentro de los baldes de
+// sector que define CADA perfil (los tres perfiles usan baldes distintos). Lo que no
+// aparece mapeado para un perfil queda afuera de las metas y se muestra como "Otros"
+// informativo (sin objetivo) al pie de la tabla de sectores.
+// PERFIL_UTILITY_TICKERS: asociación exclusiva de ESTA comparación (no modifica los
+// Rubros del portafolio, que quedan con su clasificación original más detallada,
+// p.ej. HARG sigue siendo "Construcción" y T/VZ/TECO2 siguen siendo "Telecomunicaciones"
+// en la pestaña Rubros). Acá simplemente se los trata como "Utilities" al armar
+// la tabla de sectores de Perfil objetivo.
+var PERFIL_UTILITY_TICKERS=new Set(['PAMP','TRAN','CECO2','HARG','TGSU2','TGNO4','METR','TECO2','NEE','DUK','SO','D','AEP','EXC','T','VZ']);
+var PERFIL_TARGETS={
+  Agresivo:{
+    composicion:{'Renta Variable':[80,90],'Renta Fija':[10,20],'Liquidez':[5,10]},
+    geografica:{'Internacional (CEDEARs)':[50,60],'Argentina':[20,30],'Bonos/Liquidez':[15,25]},
+    sectores:{
+      'Tecnología':[25,30],
+      'Finanzas':[15,20],
+      'Consumo Discrecional':[10,15],
+      'Energías Renovables':[8,12],
+      'Salud/Biotech':[8,10],
+      'Industriales/Materiales':[5,8],
+      'Consumo Básico/Utilities':[2,5]
+    },
+    rubroMap:{
+      'Tecnología':'Tecnología',
+      'Finanzas':'Finanzas',
+      'E-commerce':'Consumo Discrecional',
+      'Energía':'Energías Renovables',
+      'Salud':'Salud/Biotech',
+      'Industrial':'Industriales/Materiales','Materiales':'Industriales/Materiales','Construcción':'Industriales/Materiales',
+      'Consumo':'Consumo Básico/Utilities','Telecomunicaciones':'Consumo Básico/Utilities','Utilities':'Consumo Básico/Utilities'
+    }
+  },
+  Moderado:{
+    composicion:{'Renta Variable':[50,60],'Renta Fija':[40,50],'Liquidez':[5,10]},
+    geografica:{'Internacional (CEDEARs)':[30,40],'Argentina':[15,20],'Bonos/Liquidez':[45,60]},
+    sectores:{
+      'Tecnología':[15,20],
+      'Finanzas':[12,15],
+      'Salud':[10,12],
+      'Consumo Básico':[8,10],
+      'Industriales':[5,8],
+      'Energía':[5,7],
+      'Utilities/Telecom':[5,8]
+    },
+    rubroMap:{
+      'Tecnología':'Tecnología',
+      'Finanzas':'Finanzas',
+      'Salud':'Salud',
+      'Consumo':'Consumo Básico',
+      'Industrial':'Industriales','Materiales':'Industriales','Construcción':'Industriales',
+      'Energía':'Energía',
+      'Telecomunicaciones':'Utilities/Telecom','Utilities':'Utilities/Telecom'
+    }
+  },
+  Conservador:{
+    // Original: RF 70-80% incluía "Plazo fijo/Liquidez inmediata: 10-15%" adentro.
+    // Se separó en Renta Fija (bonos+ONs+FCI money market, 60-80%) + Liquidez (10-15%)
+    // para que sea comparable con cómo la app mide caja (liq-ars/liq-usd) aparte de bonos/ON.
+    composicion:{'Renta Variable':[20,30],'Renta Fija':[60,80],'Liquidez':[10,15]},
+    // Internacional incluye CEDEARs defensivos (10-15%) + ETFs diversificados (0-5%)
+    geografica:{'Internacional (CEDEARs)':[10,20],'Argentina':[10,15],'Bonos/Liquidez':[70,95]},
+    sectores:{
+      'Consumo Básico':[8,10],
+      'Utilities':[6,8],
+      'Finanzas':[4,6],
+      'Salud':[3,5],
+      'Tecnología':[0,3]
+    },
+    rubroMap:{
+      'Consumo':'Consumo Básico',
+      'Telecomunicaciones':'Utilities','Utilities':'Utilities',
+      'Finanzas':'Finanzas',
+      'Salud':'Salud',
+      'Tecnología':'Tecnología'
+    }
+  }
+};
+
+function computePerfilActual(){
+  var all=getPositions();
+  var open=all.filter(function(p){return p.qty>0.000001;});
+  var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
+  var rvSet={};rvSectors.forEach(function(s){rvSet[s]=true;});
+  var rfSet={bonos:true,on:true};
+
+  var rvARS=0, rfARS=0, argARS=0, intlARS=0;
+  var sectorARS={};
+
+  open.forEach(function(p){
+    var sector=getSector(p.ticker);
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    if(price==null)return;
+    var ratio=getRatio(p.ticker);
+    var _isBonoON=(sector==='bonos'||sector==='on');
+    var _isFci=(sector==='fci');
+    var mercadoARS;
+    if(sector==='argentina'){ mercadoARS=price; }
+    else if(_isBonoON||_isFci){ mercadoARS=price; }
+    else { mercadoARS=(price/ratio)*CCL_HOY; }
+    var invARS=_isBonoON?mercadoARS*p.qty/100:mercadoARS*p.qty;
+    if(!(invARS>0))return;
+
+    if(rvSet[sector]){
+      rvARS+=invARS;
+      if(sector==='argentina'){ argARS+=invARS; } else { intlARS+=invARS; }
+      var grp=PERFIL_UTILITY_TICKERS.has(p.ticker)?'Utilities':getRubro(p.ticker);
+      sectorARS[grp]=(sectorARS[grp]||0)+invARS;
+    } else if(rfSet[sector]){
+      rfARS+=invARS;
+    } else if(_isFci){
+      // FCI: renta variable si el fondo está catalogado como tal (FCI_AD_FONDOS), sino renta fija por defecto
+      var _fciCfg=(typeof FCI_AD_FONDOS!=='undefined'&&FCI_AD_FONDOS[p.ticker])||null;
+      var _fciCat=_fciCfg?_fciCfg.cat:'rentaFija';
+      if(_fciCat==='rentaVariable'){
+        rvARS+=invARS;
+        var grpFci=PERFIL_UTILITY_TICKERS.has(p.ticker)?'Utilities':getRubro(p.ticker);
+        sectorARS[grpFci]=(sectorARS[grpFci]||0)+invARS;
+      } else {
+        rfARS+=invARS;
+      }
+    }
+  });
+
+  var liqARS=getRawNum('liq-ars');
+  var liqUSD=getRawNum('liq-usd');
+  var liqTotalARS=liqARS+(liqUSD*(CCL_HOY||0));
+  var totalARS=rvARS+rfARS+liqTotalARS;
+
+  return{
+    totalARS:totalARS, rvARS:rvARS, rfARS:rfARS, liqARS:liqTotalARS,
+    argARS:argARS, intlARS:intlARS, sectorARS:sectorARS
+  };
+}
+
+// Puntaje 0-100 de una categoría contra su rango sugerido:
+// 100 si cae adentro del rango; si queda afuera, penaliza según qué tan lejos
+// está en relación al ancho del rango (a más ancho el rango, más tolerante).
+function _perfilRowScore(val,range){
+  if(val>=range[0]&&val<=range[1]) return 100;
+  var dist=val<range[0]?range[0]-val:val-range[1];
+  var width=Math.max(range[1]-range[0],5);
+  return Math.max(0,100-(dist/width)*100);
+}
+// Puntaje total de un perfil contra la cartera actual (d = computePerfilActual()).
+// Promedia por grupo (Composición / Geográfica / Sectores) y luego promedia los
+// grupos entre sí, para que un perfil con más filas de sectores no pese de más.
+function computePerfilScore(perfil,d){
+  function avg(arr){return arr.length?arr.reduce(function(a,b){return a+b;},0)/arr.length:null;}
+  var compScores=Object.keys(perfil.composicion).map(function(k){
+    var val=k==='Renta Variable'?(d.totalARS>0?d.rvARS/d.totalARS*100:0)
+          :k==='Renta Fija'?(d.totalARS>0?d.rfARS/d.totalARS*100:0)
+          :(d.totalARS>0?d.liqARS/d.totalARS*100:0);
+    return _perfilRowScore(val,perfil.composicion[k]);
+  });
+  var geoScores=Object.keys(perfil.geografica).map(function(k){
+    var val=k==='Internacional (CEDEARs)'?(d.totalARS>0?d.intlARS/d.totalARS*100:0)
+          :k==='Argentina'?(d.totalARS>0?d.argARS/d.totalARS*100:0)
+          :(d.totalARS>0?(d.rfARS+d.liqARS)/d.totalARS*100:0);
+    return _perfilRowScore(val,perfil.geografica[k]);
+  });
+  var secScores=[];
+  if(perfil.sectores){
+    var rubroMap=perfil.rubroMap||{};
+    var bucketARS={};
+    Object.keys(d.sectorARS).forEach(function(rawRubro){
+      var bucket=rubroMap[rawRubro];
+      if(bucket&&perfil.sectores[bucket]!==undefined){ bucketARS[bucket]=(bucketARS[bucket]||0)+d.sectorARS[rawRubro]; }
+    });
+    secScores=Object.keys(perfil.sectores).map(function(k){
+      var val=d.rvARS>0?((bucketARS[k]||0)/d.rvARS*100):0;
+      return _perfilRowScore(val,perfil.sectores[k]);
+    });
+  }
+  var compAvg=avg(compScores),geoAvg=avg(geoScores),secAvg=avg(secScores);
+  var groups=[compAvg,geoAvg,secAvg].filter(function(v){return v!=null;});
+  return{composicion:compAvg,geografica:geoAvg,sectores:secAvg,total:avg(groups)};
+}
+function renderPerfilScores(d){
+  var wrap=document.getElementById('perfil-score-summary');
+  var emptyEl=document.getElementById('perfil-score-empty');
+  if(!wrap)return;
+  if(!(d.totalARS>0)){
+    wrap.style.display='none';
+    if(emptyEl)emptyEl.style.display='';
+    return;
+  }
+  wrap.style.display='';
+  if(emptyEl)emptyEl.style.display='none';
+  var results=Object.keys(PERFIL_TARGETS).map(function(n){
+    return{nombre:n,score:computePerfilScore(PERFIL_TARGETS[n],d).total||0};
+  }).sort(function(a,b){return b.score-a.score;});
+  var best=results[0];
+  var html='<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:.7rem">'+
+    '<span style="font-size:.75rem;color:var(--text2)">Tu cartera se parece más a:</span>'+
+    '<span style="font-size:1rem;font-weight:800;color:var(--accent)">'+best.nombre.toUpperCase()+'</span>'+
+    '<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">('+Math.round(best.score)+'/100)</span>'+
+  '</div>';
+  html+='<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+    results.map(function(r){
+      var pct=Math.round(r.score);
+      var isBest=r.nombre===best.nombre;
+      var color=isBest?'var(--accent)':'var(--text2)';
+      return '<div style="flex:1;min-width:130px;background:var(--surface2);border:1px solid '+(isBest?'var(--accent)':'var(--border2)')+';border-radius:var(--rsm);padding:8px 10px">'+
+        '<div style="font-size:.65rem;color:var(--text3);font-family:var(--mono);margin-bottom:3px">'+r.nombre+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:5px">'+
+          '<span style="font-size:1.15rem;font-weight:800;color:'+color+'">'+pct+'</span>'+
+          '<span style="font-size:.62rem;color:var(--text3)">/100</span>'+
+        '</div>'+
+        '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:5px"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+  wrap.innerHTML=html;
+}
+function _perfilStatusColor(val,range){
+  if(val>=range[0]&&val<=range[1]) return 'var(--accent)';
+  var margin=(range[1]-range[0])*0.25||2;
+  if(val>=range[0]-margin&&val<=range[1]+margin) return '#eab308';
+  return 'var(--red)';
+}
+function _perfilStatusLabel(val,range){
+  if(val>=range[0]&&val<=range[1]) return '✓ En rango';
+  return val<range[0]?'↑ Bajo':'↓ Alto';
+}
+function renderPerfilComparacion(){
+  var wrap=document.getElementById('perfil-cmp-groups');
+  var emptyEl=document.getElementById('perfil-cmp-empty');
+  var sel=document.getElementById('perfil-select');
+  if(!wrap||!sel)return;
+  var perfil=PERFIL_TARGETS[sel.value];
+  if(!perfil){wrap.innerHTML='';return;}
+  var d=computePerfilActual();
+  renderPerfilScores(d);
+  if(!(d.totalARS>0)){
+    wrap.style.display='none';
+    if(emptyEl)emptyEl.style.display='';
+    return;
+  }
+  wrap.style.display='';
+  if(emptyEl)emptyEl.style.display='none';
+
+  function fmtPct(n){return (Math.round(n*10)/10)+'%';}
+  function rangeStr(r){return r[0]+'–'+r[1]+'%';}
+  function row(label,val,range){
+    var color=_perfilStatusColor(val,range);
+    var status=_perfilStatusLabel(val,range);
+    return '<tr>'+
+      '<td style="padding:5px 8px;font-weight:600">'+label+'</td>'+
+      '<td class="mono" style="padding:5px 8px;color:var(--text2)">'+rangeStr(range)+'</td>'+
+      '<td class="mono" style="padding:5px 8px;font-weight:700">'+fmtPct(val)+'</td>'+
+      '<td style="padding:5px 8px"><span style="color:'+color+';font-weight:700">'+status+'</span></td>'+
+    '</tr>';
+  }
+  function table(rows){
+    return '<div class="tw panel-table"><table><thead><tr><th>Categoría</th><th>Rango sugerido</th><th>Tu cartera</th><th>Estado</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
+  }
+
+  var html='';
+  html+='<div style="font-size:.68rem;color:var(--text3);font-family:var(--mono);margin:.2rem 0 .4rem">Composición (% del total)</div>';
+  html+=table([
+    row('Renta Variable', d.totalARS>0?d.rvARS/d.totalARS*100:0, perfil.composicion['Renta Variable']),
+    row('Renta Fija', d.totalARS>0?d.rfARS/d.totalARS*100:0, perfil.composicion['Renta Fija']),
+    row('Liquidez', d.totalARS>0?d.liqARS/d.totalARS*100:0, perfil.composicion['Liquidez'])
+  ]);
+  html+='<div style="font-size:.68rem;color:var(--text3);font-family:var(--mono);margin:.85rem 0 .4rem">Distribución geográfica (% del total)</div>';
+  html+=table([
+    row('Internacional (CEDEARs)', d.totalARS>0?d.intlARS/d.totalARS*100:0, perfil.geografica['Internacional (CEDEARs)']),
+    row('Argentina', d.totalARS>0?d.argARS/d.totalARS*100:0, perfil.geografica['Argentina']),
+    row('Bonos/Liquidez', d.totalARS>0?(d.rfARS+d.liqARS)/d.totalARS*100:0, perfil.geografica['Bonos/Liquidez'])
+  ]);
+  if(perfil.sectores){
+    html+='<div style="font-size:.68rem;color:var(--text3);font-family:var(--mono);margin:.85rem 0 .4rem">Sectores (% de la Renta Variable)</div>';
+    var rubroMap=perfil.rubroMap||{};
+    var bucketARS={};
+    Object.keys(d.sectorARS).forEach(function(rawRubro){
+      var bucket=rubroMap[rawRubro];
+      if(bucket&&perfil.sectores[bucket]!==undefined){
+        bucketARS[bucket]=(bucketARS[bucket]||0)+d.sectorARS[rawRubro];
+      }
+    });
+    var mappedARS=0;
+    var sectorRows=Object.keys(perfil.sectores).map(function(k){
+      var ars=bucketARS[k]||0;
+      mappedARS+=ars;
+      var val=d.rvARS>0?(ars/d.rvARS*100):0;
+      return row(k, val, perfil.sectores[k]);
+    });
+    html+=table(sectorRows);
+    var leftoverARS=d.rvARS-mappedARS;
+    if(leftoverARS>1){
+      var leftoverPct=d.rvARS>0?(leftoverARS/d.rvARS*100):0;
+      html+='<div style="font-size:.62rem;color:var(--text3);font-family:var(--mono);margin-top:5px">+ '+fmtPct(leftoverPct)+' en rubros sin objetivo definido para este perfil (Otros)</div>';
+    }
+  } else {
+    html+='<div style="font-size:.66rem;color:var(--text3);font-family:var(--mono);margin:.85rem 0 0;font-style:italic">Este perfil todavía no tiene desglose por sector cargado.</div>';
+  }
+
+  wrap.innerHTML=html;
+}
+
 
 // ─── Toggle columna Cantidad (oculta por defecto para layout compacto) ───
 function toggleQtyCol(show){
