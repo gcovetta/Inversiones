@@ -1512,38 +1512,6 @@ tr:hover td{background:var(--surface2)}
           <div id="perfil-cmp-groups"></div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">💡 Recomendaciones</span>
-          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Cargá recomendaciones por perfil para comparar después contra la cartera</span>
-        </div>
-        <div class="card-body" style="padding:.85rem 1rem">
-          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
-            <div class="fgrp" style="margin:0"><label>Ticker</label><input id="rec-ticker" type="text" placeholder="GGAL" style="text-transform:uppercase;width:90px" onkeydown="if(event.key==='Enter')recAdd()"></div>
-            <div class="fgrp" style="margin:0"><label>Perfil</label><select id="rec-perfil" style="width:120px"><option value="Conservador">Conservador</option><option value="Moderado" selected>Moderado</option><option value="Agresivo">Agresivo</option></select></div>
-            <div class="fgrp" style="margin:0"><label>Acción</label><select id="rec-accion" style="width:100px"><option value="Comprar">Comprar</option><option value="Mantener">Mantener</option><option value="Vender">Vender</option></select></div>
-            <div class="fgrp" style="margin:0"><label>P. Objetivo</label><input id="rec-target" type="text" inputmode="decimal" placeholder="0" style="width:90px" onkeydown="if(event.key==='Enter')recAdd()"></div>
-            <div class="fgrp" style="margin:0"><label>Fecha</label><input id="rec-fecha" type="date" style="width:135px"></div>
-            <div class="fgrp" style="margin:0"><label>Fuente</label><input id="rec-fuente" type="text" placeholder="Banco / analista" style="width:140px" onkeydown="if(event.key==='Enter')recAdd()"></div>
-            <div class="fgrp" style="margin:1 0 0 0;flex:1;min-width:160px"><label>Comentario</label><input id="rec-comentario" type="text" placeholder="Notas…" style="width:100%" onkeydown="if(event.key==='Enter')recAdd()"></div>
-            <button class="btn btn-a btn-sm" onclick="recAdd()">+ Agregar</button>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:.85rem;flex-wrap:wrap">
-            <span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">Filtrar perfil:</span>
-            <button class="btn btn-sm rec-filter-btn" data-perfil="" onclick="recFilterPerfil('',this)">Todos</button>
-            <button class="btn btn-sm rec-filter-btn" data-perfil="Conservador" onclick="recFilterPerfil('Conservador',this)">Conservador</button>
-            <button class="btn btn-sm rec-filter-btn" data-perfil="Moderado" onclick="recFilterPerfil('Moderado',this)">Moderado</button>
-            <button class="btn btn-sm rec-filter-btn" data-perfil="Agresivo" onclick="recFilterPerfil('Agresivo',this)">Agresivo</button>
-          </div>
-          <div id="rec-empty" class="empty-state">Sin recomendaciones cargadas</div>
-          <div class="tw panel-table" id="rec-table" style="display:none">
-            <table>
-              <thead><tr><th>Ticker</th><th>Perfil</th><th>Acción</th><th>P. Objetivo</th><th>Fecha</th><th>Fuente</th><th>Comentario</th><th></th></tr></thead>
-              <tbody id="rec-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
 
     <div class="page" id="page-vigilancia">
@@ -2030,7 +1998,7 @@ function showPage(id,btn){
   if(id==='rubros') renderRubros();
   if(id==='bonostir') renderBonosTIR();
   if(id==='vigilancia') vigRender();
-  if(id==='recomendaciones'){ recRender(); renderPerfilComparacion(); }
+  if(id==='recomendaciones'){ renderPerfilComparacion(); }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -4006,26 +3974,60 @@ function renderSmallInv(){
 }
 
 // ─── Perfil objetivo (comparación cartera vs. composición sugerida) ───
-var RUBRO_GROUP_MAP={
-  'Tecnología':'Tecnología',
-  'Finanzas':'Finanzas',
-  'Consumo':'Consumo',
-  'Energía':'Energía','Materiales':'Energía'
-  // resto de rubros (E-commerce, Salud, Entretenimiento, Telecomunicaciones, Automotriz,
-  // Aerolíneas, Industrial, Construcción, Inmobiliario, Agro, Cripto, Bonos, ON, Otros) → "Otros"
-};
-function groupRubro(rubro){ return RUBRO_GROUP_MAP[rubro]||'Otros'; }
-
+// rubroMap: cómo se agrupa cada Rubro (de la pestaña Rubros) dentro de los baldes de
+// sector que define CADA perfil (los tres perfiles usan baldes distintos). Lo que no
+// aparece mapeado para un perfil queda afuera de las metas y se muestra como "Otros"
+// informativo (sin objetivo) al pie de la tabla de sectores.
+// PERFIL_UTILITY_TICKERS: asociación exclusiva de ESTA comparación (no modifica los
+// Rubros del portafolio, que quedan con su clasificación original más detallada,
+// p.ej. HARG sigue siendo "Construcción" y T/VZ/TECO2 siguen siendo "Telecomunicaciones"
+// en la pestaña Rubros). Acá simplemente se los trata como "Utilities" al armar
+// la tabla de sectores de Perfil objetivo.
+var PERFIL_UTILITY_TICKERS=new Set(['PAMP','TRAN','CECO2','HARG','TGSU2','TGNO4','METR','TECO2','NEE','DUK','SO','D','AEP','EXC','T','VZ']);
 var PERFIL_TARGETS={
   Agresivo:{
-    composicion:{'Renta Variable':[75,85],'Renta Fija':[10,20],'Liquidez':[5,10]},
+    composicion:{'Renta Variable':[80,90],'Renta Fija':[10,20],'Liquidez':[5,10]},
     geografica:{'Internacional (CEDEARs)':[50,60],'Argentina':[20,30],'Bonos/Liquidez':[15,25]},
-    sectores:{'Tecnología':[25,35],'Finanzas':[15,20],'Consumo':[10,15],'Energía':[5,10],'Otros':[10,15]}
+    sectores:{
+      'Tecnología':[25,30],
+      'Finanzas':[15,20],
+      'Consumo Discrecional':[10,15],
+      'Energías Renovables':[8,12],
+      'Salud/Biotech':[8,10],
+      'Industriales/Materiales':[5,8],
+      'Consumo Básico/Utilities':[2,5]
+    },
+    rubroMap:{
+      'Tecnología':'Tecnología',
+      'Finanzas':'Finanzas',
+      'E-commerce':'Consumo Discrecional',
+      'Energía':'Energías Renovables',
+      'Salud':'Salud/Biotech',
+      'Industrial':'Industriales/Materiales','Materiales':'Industriales/Materiales','Construcción':'Industriales/Materiales',
+      'Consumo':'Consumo Básico/Utilities','Telecomunicaciones':'Consumo Básico/Utilities','Utilities':'Consumo Básico/Utilities'
+    }
   },
   Moderado:{
     composicion:{'Renta Variable':[50,60],'Renta Fija':[40,50],'Liquidez':[5,10]},
-    geografica:{'Internacional (CEDEARs)':[30,40],'Argentina':[15,20],'Bonos/Liquidez':[45,60]}
-    // Sectores no definidos para este perfil todavía
+    geografica:{'Internacional (CEDEARs)':[30,40],'Argentina':[15,20],'Bonos/Liquidez':[45,60]},
+    sectores:{
+      'Tecnología':[15,20],
+      'Finanzas':[12,15],
+      'Salud':[10,12],
+      'Consumo Básico':[8,10],
+      'Industriales':[5,8],
+      'Energía':[5,7],
+      'Utilities/Telecom':[5,8]
+    },
+    rubroMap:{
+      'Tecnología':'Tecnología',
+      'Finanzas':'Finanzas',
+      'Salud':'Salud',
+      'Consumo':'Consumo Básico',
+      'Industrial':'Industriales','Materiales':'Industriales','Construcción':'Industriales',
+      'Energía':'Energía',
+      'Telecomunicaciones':'Utilities/Telecom','Utilities':'Utilities/Telecom'
+    }
   },
   Conservador:{
     // Original: RF 70-80% incluía "Plazo fijo/Liquidez inmediata: 10-15%" adentro.
@@ -4033,8 +4035,21 @@ var PERFIL_TARGETS={
     // para que sea comparable con cómo la app mide caja (liq-ars/liq-usd) aparte de bonos/ON.
     composicion:{'Renta Variable':[20,30],'Renta Fija':[60,80],'Liquidez':[10,15]},
     // Internacional incluye CEDEARs defensivos (10-15%) + ETFs diversificados (0-5%)
-    geografica:{'Internacional (CEDEARs)':[10,20],'Argentina':[10,15],'Bonos/Liquidez':[70,95]}
-    // Sectores no definidos para este perfil todavía
+    geografica:{'Internacional (CEDEARs)':[10,20],'Argentina':[10,15],'Bonos/Liquidez':[70,95]},
+    sectores:{
+      'Consumo Básico':[8,10],
+      'Utilities':[6,8],
+      'Finanzas':[4,6],
+      'Salud':[3,5],
+      'Tecnología':[0,3]
+    },
+    rubroMap:{
+      'Consumo':'Consumo Básico',
+      'Telecomunicaciones':'Utilities','Utilities':'Utilities',
+      'Finanzas':'Finanzas',
+      'Salud':'Salud',
+      'Tecnología':'Tecnología'
+    }
   }
 };
 
@@ -4067,7 +4082,7 @@ function computePerfilActual(){
     if(rvSet[sector]){
       rvARS+=invARS;
       if(sector==='argentina'){ argARS+=invARS; } else { intlARS+=invARS; }
-      var grp=groupRubro(getRubro(p.ticker));
+      var grp=PERFIL_UTILITY_TICKERS.has(p.ticker)?'Utilities':getRubro(p.ticker);
       sectorARS[grp]=(sectorARS[grp]||0)+invARS;
     } else if(rfSet[sector]){
       rfARS+=invARS;
@@ -4077,7 +4092,7 @@ function computePerfilActual(){
       var _fciCat=_fciCfg?_fciCfg.cat:'rentaFija';
       if(_fciCat==='rentaVariable'){
         rvARS+=invARS;
-        var grpFci=groupRubro(getRubro(p.ticker));
+        var grpFci=PERFIL_UTILITY_TICKERS.has(p.ticker)?'Utilities':getRubro(p.ticker);
         sectorARS[grpFci]=(sectorARS[grpFci]||0)+invARS;
       } else {
         rfARS+=invARS;
@@ -4153,11 +4168,27 @@ function renderPerfilComparacion(){
   ]);
   if(perfil.sectores){
     html+='<div style="font-size:.68rem;color:var(--text3);font-family:var(--mono);margin:.85rem 0 .4rem">Sectores (% de la Renta Variable)</div>';
+    var rubroMap=perfil.rubroMap||{};
+    var bucketARS={};
+    Object.keys(d.sectorARS).forEach(function(rawRubro){
+      var bucket=rubroMap[rawRubro];
+      if(bucket&&perfil.sectores[bucket]!==undefined){
+        bucketARS[bucket]=(bucketARS[bucket]||0)+d.sectorARS[rawRubro];
+      }
+    });
+    var mappedARS=0;
     var sectorRows=Object.keys(perfil.sectores).map(function(k){
-      var val=d.rvARS>0?((d.sectorARS[k]||0)/d.rvARS*100):0;
+      var ars=bucketARS[k]||0;
+      mappedARS+=ars;
+      var val=d.rvARS>0?(ars/d.rvARS*100):0;
       return row(k, val, perfil.sectores[k]);
     });
     html+=table(sectorRows);
+    var leftoverARS=d.rvARS-mappedARS;
+    if(leftoverARS>1){
+      var leftoverPct=d.rvARS>0?(leftoverARS/d.rvARS*100):0;
+      html+='<div style="font-size:.62rem;color:var(--text3);font-family:var(--mono);margin-top:5px">+ '+fmtPct(leftoverPct)+' en rubros sin objetivo definido para este perfil (Otros)</div>';
+    }
   } else {
     html+='<div style="font-size:.66rem;color:var(--text3);font-family:var(--mono);margin:.85rem 0 0;font-style:italic">Este perfil todavía no tiene desglose por sector cargado.</div>';
   }
@@ -5719,15 +5750,6 @@ function trkCalcCCL(){
       if(_lsWl.length){ sbSetConfig('wl_gdc', _lsWl); }
     }
 
-    // 5d. Recomendaciones
-    var sbRec = await sbGetConfig('rec_gdc');
-    if(sbRec && Array.isArray(sbRec) && sbRec.length){
-      try{localStorage.setItem(REC_KEY, JSON.stringify(sbRec));}catch(e){}
-      recRender();
-    } else {
-      var _lsRec = recLoad();
-      if(_lsRec.length){ sbSetConfig('rec_gdc', _lsRec); }
-    }
 
 
     // 6. CCL/MEP override
@@ -7341,82 +7363,6 @@ function wlDel(i){
   wlRender();
 }
 wlRender();
-
-/* ── Recomendaciones (por perfil) ─────────────────────────────────── */
-const REC_KEY = 'rec_gdc_v1';
-var REC_FILTER = '';
-function recLoad(){ try{ return JSON.parse(localStorage.getItem(REC_KEY))||[]; }catch(e){ return []; } }
-function recSave(arr){
-  try{ localStorage.setItem(REC_KEY, JSON.stringify(arr)); }catch(e){}
-  sbSetConfig('rec_gdc', arr);
-}
-function recFilterPerfil(perfil, btn){
-  REC_FILTER = perfil;
-  document.querySelectorAll('.rec-filter-btn').forEach(function(b){b.classList.remove('btn-a');});
-  if(btn) btn.classList.add('btn-a');
-  recRender();
-}
-function recRender(){
-  const arr = recLoad().filter(function(r){return !REC_FILTER || r.perfil===REC_FILTER;});
-  const empty = document.getElementById('rec-empty');
-  const table = document.getElementById('rec-table');
-  const body = document.getElementById('rec-body');
-  if(!body) return;
-  if(!arr.length){
-    empty.style.display='';
-    table.style.display='none';
-    return;
-  }
-  empty.style.display='none';
-  table.style.display='';
-  const all = recLoad();
-  body.innerHTML = arr.map(function(r){
-    const i = all.indexOf(r);
-    const accColor = r.accion==='Comprar'?'var(--accent)':r.accion==='Vender'?'var(--red)':'var(--text2)';
-    return '<tr>'+
-      '<td style="font-weight:700">'+r.ticker+'</td>'+
-      '<td class="mono">'+r.perfil+'</td>'+
-      '<td class="mono" style="color:'+accColor+';font-weight:700">'+r.accion+'</td>'+
-      '<td class="mono">'+(r.target?'$'+r.target:'—')+'</td>'+
-      '<td class="mono">'+(r.fecha||'—')+'</td>'+
-      '<td class="mono">'+(r.fuente||'—')+'</td>'+
-      '<td style="max-width:220px;white-space:normal">'+(r.comentario||'—')+'</td>'+
-      '<td><button class="btn btn-sm" onclick="recDel('+i+')" title="Eliminar">✕</button></td>'+
-    '</tr>';
-  }).join('');
-}
-function recAdd(){
-  const tkEl=document.getElementById('rec-ticker');
-  const perfilEl=document.getElementById('rec-perfil');
-  const accionEl=document.getElementById('rec-accion');
-  const targetEl=document.getElementById('rec-target');
-  const fechaEl=document.getElementById('rec-fecha');
-  const fuenteEl=document.getElementById('rec-fuente');
-  const comentarioEl=document.getElementById('rec-comentario');
-  const tk=(tkEl.value||'').trim().toUpperCase();
-  if(!tk){tkEl.focus();return;}
-  const arr=recLoad();
-  arr.push({
-    ticker:tk,
-    perfil:perfilEl.value,
-    accion:accionEl.value,
-    target:(targetEl.value||'').trim().replace(',','.'),
-    fecha:fechaEl.value||new Date().toISOString().slice(0,10),
-    fuente:(fuenteEl.value||'').trim(),
-    comentario:(comentarioEl.value||'').trim()
-  });
-  recSave(arr);
-  tkEl.value='';targetEl.value='';fuenteEl.value='';comentarioEl.value='';fechaEl.value='';
-  tkEl.focus();
-  recRender();
-}
-function recDel(i){
-  const arr=recLoad();
-  arr.splice(i,1);
-  recSave(arr);
-  recRender();
-}
-recRender();
 
 // ── % Dolarizado ──────────────────────────────────────────────────────────
 var DOLZ_EXTRA = new Set();
