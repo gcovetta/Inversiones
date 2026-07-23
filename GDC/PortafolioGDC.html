@@ -4208,8 +4208,8 @@ function _perfilStatusColor(val,range){
   return 'var(--red)';
 }
 function _perfilStatusLabel(val,range){
-  if(val>=range[0]&&val<=range[1]) return 'En rango';
-  return val<range[0]?'Bajo':'Alto';
+  if(val>=range[0]&&val<=range[1]) return '✓ En rango';
+  return val<range[0]?'↑ Bajo':'↓ Alto';
 }
 function renderPerfilComparacion(){
   var wrap=document.getElementById('perfil-cmp-groups');
