@@ -35,9 +35,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .arb-input-name{font-weight:700;font-size:.62rem;color:var(--text);text-align:center}
 .topbar{display:flex;align-items:center;gap:0;padding:0 1.2rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:.68rem;font-family:var(--mono);color:var(--text3);flex-wrap:wrap;flex-shrink:0;height:32px}
 .topbar-item{display:flex;align-items:center;gap:.3rem;padding:0 .85rem;border-right:1px solid var(--border);height:100%}
+.topbar-item:first-child{padding-left:0}
 .topbar-label{color:var(--text3);font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;font-family:var(--sans);font-weight:500}
 .topbar-val{color:var(--text);font-weight:700;font-size:.8rem;font-family:var(--mono);letter-spacing:-.01em}
-.topbar-sub{color:var(--text3);font-size:.62rem}
+.topbar-sub{color:var(--text3);font-size:.65rem;font-family:var(--mono)}
 .topbar-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
 
 /* ── Marcas de activos ─────────────────────────────────────────── */
@@ -63,8 +64,8 @@ tr.marked-watch{background:rgba(251,191,36,.04)}
 .mark-note-input:focus{border-color:var(--accent)}
 .mark-pop-actions{display:flex;gap:5px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-header{padding:.85rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
-.logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
+.logo{font-weight:700;font-size:1rem;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;font-family:var(--sans)}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
 .hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .tag{font-family:var(--mono);font-size:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text3)}
@@ -187,7 +188,7 @@ tr:hover td{background:var(--surface2)}
 .pin-lock-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.75rem}
 
 /* page-tracker layout */
-#page-tracker{min-height:200px}
+#page-tracker{min-height:200px;overflow-y:auto;max-height:calc(100vh - 115px)}
 .card-toggle{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.82rem;padding:0 2px;line-height:1;flex-shrink:0;transition:transform .15s;margin-left:auto}
 .card-toggle:hover{color:var(--text)}
 .card-collapsed>.card-body,.card-collapsed>.tw,.card-collapsed>div:not(.card-header),.card-collapsed>.empty-state{display:none!important}
@@ -202,8 +203,8 @@ tr:hover td{background:var(--surface2)}
 @media(max-width:680px){
   /* ── Layout base ── */
   body{overflow:auto;height:auto}
-  .app{height:auto;min-height:100vh}
   .card{overflow:visible}
+  .app{height:auto;min-height:100vh}
   .main{flex-direction:column;flex:1;min-height:0;overflow:visible;height:auto}
   .content{flex:1;min-height:0;overflow-y:visible;overflow-x:visible}
 
@@ -226,11 +227,28 @@ tr:hover td{background:var(--surface2)}
   .logo{gap:5px;flex-wrap:nowrap;align-items:center;width:100%;justify-content:space-between}
   .hright{flex-shrink:0;gap:5px}
 
+  /* Fila 2 de filtros: ticker + checkboxes en una barra scrollable */
+  #mobile-filters{display:flex;align-items:center;gap:5px;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:3px 0 2px;flex-wrap:nowrap}
+  #mobile-filters::-webkit-scrollbar{display:none}
+
+  /* Agrandar checkboxes para que sean tocables en mobile */
+  header input[type="checkbox"]{width:16px!important;height:16px!important}
+  header label span[style*="border-radius:2px"]{width:12px!important;height:12px!important}
+  header label{gap:4px!important;padding:3px 5px;background:var(--surface2);border-radius:5px;border:1px solid var(--border);flex-shrink:0}
+
+  /* Ticker filter más compacto */
+  #port-ticker-filter{width:80px!important;font-size:.68rem!important;margin-left:0!important}
+
   /* Ocultar elementos secundarios del header */
   #sb-status{display:none}
   #sync-label{display:none}
   .logo-dot{display:none}
   #file-ver{display:none}
+
+  /* Foto de perfil más chica en mobile */
+  header img[alt="GDC"]{width:32px!important;height:32px!important;box-shadow:none!important}
+
+  /* Supabase status + hora más compactos */
   #lupd{font-size:.58rem!important}
 
   /* ── Sidebar: barra horizontal ── */
@@ -1304,9 +1322,6 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
-  </div>
-</div>
-
     <!-- RECOMENDACIONES -->
     <div class="page" id="page-recomendaciones">
       <div class="card">
@@ -1336,6 +1351,9 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+
+  </div>
+</div>
 
 
 <!-- Modal edicion movimientos - fuera de cualquier page para que position:fixed funcione -->
