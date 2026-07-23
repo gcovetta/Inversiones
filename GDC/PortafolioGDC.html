@@ -1499,6 +1499,16 @@ tr:hover td{background:var(--surface2)}
     <div class="page" id="page-recomendaciones">
       <div class="card">
         <div class="card-header">
+          <span class="card-title">📐 Tu perfil actual</span>
+          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Puntaje de cercanía (0-100) contra cada perfil, según tu cartera de hoy</span>
+        </div>
+        <div class="card-body" style="padding:.85rem 1rem">
+          <div id="perfil-score-empty" class="empty-state" style="display:none">Cargá liquidez y posiciones para ver el puntaje</div>
+          <div id="perfil-score-summary"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
           <span class="card-title">🎯 Perfil objetivo</span>
           <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Composición sugerida vs. tu cartera actual</span>
           <select id="perfil-select" onchange="renderPerfilComparacion()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;outline:none">
@@ -4111,6 +4121,86 @@ function computePerfilActual(){
   };
 }
 
+// Puntaje 0-100 de una categoría contra su rango sugerido:
+// 100 si cae adentro del rango; si queda afuera, penaliza según qué tan lejos
+// está en relación al ancho del rango (a más ancho el rango, más tolerante).
+function _perfilRowScore(val,range){
+  if(val>=range[0]&&val<=range[1]) return 100;
+  var dist=val<range[0]?range[0]-val:val-range[1];
+  var width=Math.max(range[1]-range[0],5);
+  return Math.max(0,100-(dist/width)*100);
+}
+// Puntaje total de un perfil contra la cartera actual (d = computePerfilActual()).
+// Promedia por grupo (Composición / Geográfica / Sectores) y luego promedia los
+// grupos entre sí, para que un perfil con más filas de sectores no pese de más.
+function computePerfilScore(perfil,d){
+  function avg(arr){return arr.length?arr.reduce(function(a,b){return a+b;},0)/arr.length:null;}
+  var compScores=Object.keys(perfil.composicion).map(function(k){
+    var val=k==='Renta Variable'?(d.totalARS>0?d.rvARS/d.totalARS*100:0)
+          :k==='Renta Fija'?(d.totalARS>0?d.rfARS/d.totalARS*100:0)
+          :(d.totalARS>0?d.liqARS/d.totalARS*100:0);
+    return _perfilRowScore(val,perfil.composicion[k]);
+  });
+  var geoScores=Object.keys(perfil.geografica).map(function(k){
+    var val=k==='Internacional (CEDEARs)'?(d.totalARS>0?d.intlARS/d.totalARS*100:0)
+          :k==='Argentina'?(d.totalARS>0?d.argARS/d.totalARS*100:0)
+          :(d.totalARS>0?(d.rfARS+d.liqARS)/d.totalARS*100:0);
+    return _perfilRowScore(val,perfil.geografica[k]);
+  });
+  var secScores=[];
+  if(perfil.sectores){
+    var rubroMap=perfil.rubroMap||{};
+    var bucketARS={};
+    Object.keys(d.sectorARS).forEach(function(rawRubro){
+      var bucket=rubroMap[rawRubro];
+      if(bucket&&perfil.sectores[bucket]!==undefined){ bucketARS[bucket]=(bucketARS[bucket]||0)+d.sectorARS[rawRubro]; }
+    });
+    secScores=Object.keys(perfil.sectores).map(function(k){
+      var val=d.rvARS>0?((bucketARS[k]||0)/d.rvARS*100):0;
+      return _perfilRowScore(val,perfil.sectores[k]);
+    });
+  }
+  var compAvg=avg(compScores),geoAvg=avg(geoScores),secAvg=avg(secScores);
+  var groups=[compAvg,geoAvg,secAvg].filter(function(v){return v!=null;});
+  return{composicion:compAvg,geografica:geoAvg,sectores:secAvg,total:avg(groups)};
+}
+function renderPerfilScores(d){
+  var wrap=document.getElementById('perfil-score-summary');
+  var emptyEl=document.getElementById('perfil-score-empty');
+  if(!wrap)return;
+  if(!(d.totalARS>0)){
+    wrap.style.display='none';
+    if(emptyEl)emptyEl.style.display='';
+    return;
+  }
+  wrap.style.display='';
+  if(emptyEl)emptyEl.style.display='none';
+  var results=Object.keys(PERFIL_TARGETS).map(function(n){
+    return{nombre:n,score:computePerfilScore(PERFIL_TARGETS[n],d).total||0};
+  }).sort(function(a,b){return b.score-a.score;});
+  var best=results[0];
+  var html='<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:.7rem">'+
+    '<span style="font-size:.75rem;color:var(--text2)">Tu cartera se parece más a:</span>'+
+    '<span style="font-size:1rem;font-weight:800;color:var(--accent)">'+best.nombre.toUpperCase()+'</span>'+
+    '<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">('+Math.round(best.score)+'/100)</span>'+
+  '</div>';
+  html+='<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+    results.map(function(r){
+      var pct=Math.round(r.score);
+      var isBest=r.nombre===best.nombre;
+      var color=isBest?'var(--accent)':'var(--text2)';
+      return '<div style="flex:1;min-width:130px;background:var(--surface2);border:1px solid '+(isBest?'var(--accent)':'var(--border2)')+';border-radius:var(--rsm);padding:8px 10px">'+
+        '<div style="font-size:.65rem;color:var(--text3);font-family:var(--mono);margin-bottom:3px">'+r.nombre+'</div>'+
+        '<div style="display:flex;align-items:baseline;gap:5px">'+
+          '<span style="font-size:1.15rem;font-weight:800;color:'+color+'">'+pct+'</span>'+
+          '<span style="font-size:.62rem;color:var(--text3)">/100</span>'+
+        '</div>'+
+        '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:5px"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+  wrap.innerHTML=html;
+}
 function _perfilStatusColor(val,range){
   if(val>=range[0]&&val<=range[1]) return 'var(--accent)';
   var margin=(range[1]-range[0])*0.25||2;
@@ -4129,6 +4219,7 @@ function renderPerfilComparacion(){
   var perfil=PERFIL_TARGETS[sel.value];
   if(!perfil){wrap.innerHTML='';return;}
   var d=computePerfilActual();
+  renderPerfilScores(d);
   if(!(d.totalARS>0)){
     wrap.style.display='none';
     if(emptyEl)emptyEl.style.display='';
