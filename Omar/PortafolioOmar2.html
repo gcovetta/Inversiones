@@ -1558,8 +1558,9 @@ var PRELOADED = [];
 
 var BRL_TICKERS=new Set(['BBAS3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
 
-var RATIOS_TABLE = {"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4};
-function getRatio(ticker){return RATIOS_TABLE[ticker]||1;}
+var RATIOS_TABLE = {"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "DIS": 12, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4};
+var BYMA_TO_NYSE = {'DISN':'DIS'};
+function getRatio(ticker){return RATIOS_TABLE[BYMA_TO_NYSE[ticker]||ticker]||1;}
 
 var SECTOR_MAP = {
   'A3':'argentina','AGRO':'argentina','BHIP':'argentina','BIOX':'argentina','BOLT':'argentina','CADO':'argentina','CAPX':'argentina','CARC':'argentina','CECO2':'argentina','CELU':'argentina','COME':'argentina','CTIO':'argentina','DGCE':'argentina','EDN':'argentina','FERR':'argentina','FIPL':'argentina','GLOB':'argentina','HARG':'argentina','LONG':'argentina','METR':'argentina','MIRG':'argentina','MOLI':'argentina','OEST':'argentina','PATA':'argentina','TXAR':'argentina',
@@ -1585,7 +1586,7 @@ function getSector(ticker){
 }
 
 var TICKER_MAP = {'GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
-function getFinnhubTicker(ticker){return TICKER_MAP[ticker]||ticker;}
+function getFinnhubTicker(ticker){if(BYMA_TO_NYSE[ticker])return BYMA_TO_NYSE[ticker];return TICKER_MAP[ticker]||ticker;}
 
 var TARGET_TABLE = {"CLSIO": null,"LECAO": null,"LECHO": null,"MR36O": null,"MRCAO": null,"MRCPO": null,"MRCZO": null,"SNEAO": null,"TZV27": null, "BC37D": null,"CUAP": null,"DICP": null,"ERF25": null,"GD29": null,"GD38": null,"GD41": null,"PARP": null,"PBY26": null,"SA24D": null,"TVPA": null,"TX31": null,"TZXM7": null,"TZXS7": null,"TZXS8": null, "ADBE": 573, "AMZN": 258.6, "AVGO": null, "CRM": null, "DEO": null, "DOCU": null, "FSLR": null, "HOG": null, "IBIT": null, "JD": null, "LAC": null, "META": null, "MSFT": null, "NFLX": null, "NKE": null, "NVDA": null, "SPOT": null, "STLA": null, "TEAM": null, "UBER": null, "UNH": null, "UPST": null, "GGB": null, "MELI": null, "NU": null, "PAGS": null, "SID": null, "XP": null};
 function getTarget(ticker){return TARGET_TABLE[ticker]||null;}
