@@ -1244,24 +1244,25 @@ tr:hover td{background:var(--surface2)}
       <div class="card">
         <div class="card-header">
           <span class="card-title">⇔ Comparación de Portafolios</span>
-          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Subí los XLS exportados desde cada portafolio</span>
+          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Cargá el portafolio y el archivo de posiciones del broker</span>
         </div>
         <div class="card-body" style="padding:.85rem 1rem">
           <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
             <div>
-              <div style="font-size:.63rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">Portafolio actual</div>
-              <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 <span id="cmp-gdc-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span><input type="file" id="cmp-gdc-file" accept=".xlsx,.xls" style="display:none" onchange="cmpLoadFile('gdc',this)"></label>
+              <div style="font-size:.63rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">Omar</div>
+              <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 <span id="cmp-port-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span><input type="file" id="cmp-port-file" accept=".xlsx,.xls" style="display:none" onchange="cmpLoadPortfolio(this)"></label>
             </div>
             <div>
-              <div style="margin-bottom:4px"><img src="../Veta.png" style="height:18px;vertical-align:middle"></div>
-              <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 <span id="cmp-veta-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span><input type="file" id="cmp-veta-file" accept=".xlsx,.xls,.htm,.html" style="display:none" onchange="cmpLoadFile('veta',this)"></label>
+              <div style="margin-bottom:4px"><img src="../Bull.png" style="height:18px;vertical-align:middle"></div>
+              <textarea id="cmp-bull-textarea" placeholder="Pegá las posiciones copiadas de Bull..." style="width:220px;height:72px;font-size:.62rem;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);padding:5px;resize:vertical" oninput="cmpBullTextChanged()"></textarea>
+              <div style="font-size:.6rem;font-family:var(--mono);margin-top:2px" id="cmp-bull-status"></div>
             </div>
             <button class="btn btn-a btn-sm" onclick="runComparacion()" style="margin-left:auto">Comparar</button>
           </div>
           <div id="cmp-result"></div>
         </div>
       </div>
-      </div>
+          </div>
     </div>
 
     <!-- RUBROS -->
@@ -2915,22 +2916,19 @@ function renderVentaEstadisticas(){
   document.getElementById('vestad-rfrv').innerHTML=vestadTabla(porRFRV,'Clase');
 }
 
-var _cmpData={gdc:null,veta:null};
-var _cmpNombres={gdc:{},veta:{}};
-var _cmpLiqVeta=null; // {ars,usd,usdc} de la hoja Liquidez del xlsx de Veta Capital
-function cargarPortafolioEnComparacion(){
-  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
-  if(!pos.length){alert('El portafolio no tiene posiciones.');return;}
-  var map={};
-  pos.forEach(function(p){map[p.ticker]=p.qty;});
-  _cmpData.gdc=map;
-  _cmpNombres.gdc={};
-  var el=document.getElementById('cmp-gdc-name');
-  if(el)el.textContent='Portafolio actual';
-  showPage('comparacion',document.querySelector('[onclick*="comparacion"]'));
-}
-function cmpNorm(s){return String(s).replace(/[\s ​]+/g,' ').toLowerCase().trim();}
-function cmpParseHTML(ab){
+var _cmpData={portafolio:null,broker:null};
+var _cmpNombres={portafolio:{},broker:{}};
+var _cmpChecked=new Set();
+function cmpNorm(s){return String(s).replace(/[\s​]+/g,' ').toLowerCase().trim();}
+function cmpParseRows(ab){
+  try{
+    var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
+    for(var i=0;i<wb.SheetNames.length;i++){
+      var ws=wb.Sheets[wb.SheetNames[i]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.length>1)return rows;
+    }
+  }catch(ex){}
   var txt=new TextDecoder('utf-8').decode(ab);
   var doc=new DOMParser().parseFromString(txt,'text/html');
   var rows=[];
@@ -2940,139 +2938,71 @@ function cmpParseHTML(ab){
   });
   return rows;
 }
-function cmpParseRows(ab){
-  try{
-    var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
-    for(var i=0;i<wb.SheetNames.length;i++){
-      var ws=wb.Sheets[wb.SheetNames[i]];
-      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      if(rows.some(function(r){return r.some(function(c){return cmpNorm(c)==='ticker'});}))return rows;
-    }
-  }catch(ex){}
-  return cmpParseHTML(ab);
+function cargarPortafolioEnComparacion(){
+  var pos=getPositions().filter(function(p){return Math.abs(p.qty)>0.000001;});
+  if(!pos.length){alert('El portafolio no tiene posiciones.');return;}
+  var map={};pos.forEach(function(p){map[p.ticker]=p.qty;});
+  _cmpData.portafolio=map;_cmpNombres.portafolio={};
+  var el=document.getElementById('cmp-port-name');
+  if(el)el.textContent='Portafolio actual';
+  showPage('comparacion',document.querySelector('[onclick*="comparacion"]'));
 }
-function cmpParseArgNum(s){
-  if(s==null)return NaN;
-  var t=String(s).replace(/US\$|\$|\s/g,'').trim();
-  if(!t)return NaN;
-  t=t.replace(/\./g,'').replace(',','.');
-  return parseFloat(t);
-}
-function cmpFindSheetName(wb,re){
-  for(var i=0;i<wb.SheetNames.length;i++){if(re.test(wb.SheetNames[i]))return wb.SheetNames[i];}
-  return null;
-}
-// Formato nuevo de Veta Capital (xlsx real, hojas Liquidez/Inversiones/Futuros/Opciones,
-// header en la 3ra fila de cada hoja). Devuelve null si no es este formato (para poder
-// caer al parser viejo del .xls disfrazado de HTML).
-function cmpReadVetaWorkbook(ab){
-  var wb;
-  try{wb=XLSX.read(new Uint8Array(ab),{type:'array'});}catch(ex){return null;}
-  var invName=cmpFindSheetName(wb,/inversiones/i);
-  if(!invName)return null;
-  var invRows=XLSX.utils.sheet_to_json(wb.Sheets[invName],{header:1,defval:''});
-  var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='tituloespecie';});});
-  var map={},nombres={};
-  if(hdrIdx>=0){
-    var hdr=invRows[hdrIdx].map(cmpNorm);
-    var tCol=hdr.indexOf('tituloespecie');
-    var dCol=hdr.indexOf('descripcionespecie');
-    var totCol=hdr.indexOf('total');
-    invRows.slice(hdrIdx+1).forEach(function(r){
-      var ticker=String(r[tCol]||'').trim().toUpperCase();
-      if(!ticker)return;
-      var q=cmpParseArgNum(r[totCol]);
-      if(isNaN(q)||q<=0)return;
-      map[ticker]=(map[ticker]||0)+q; // suma Disponible + Garantia
-      var desc=String(r[dCol]||'').trim();
-      if(desc)nombres[ticker]=desc;
-    });
-  }
-  var liq={ars:0,usd:0,usdc:0};
-  var liqName=cmpFindSheetName(wb,/liquidez/i);
-  if(liqName){
-    var liqRows=XLSX.utils.sheet_to_json(wb.Sheets[liqName],{header:1,defval:''});
-    var lHdrIdx=liqRows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='denominacion';});});
-    if(lHdrIdx>=0){
-      var lHdr=liqRows[lHdrIdx].map(cmpNorm);
-      var mCol=lHdr.indexOf('moneda');
-      var lTotCol=lHdr.indexOf('total');
-      liqRows.slice(lHdrIdx+1).forEach(function(r){
-        var mon=cmpNorm(r[mCol]);
-        var v=cmpParseArgNum(r[lTotCol]);
-        if(isNaN(v))return;
-        if(mon==='ars')liq.ars+=v;
-        else if(mon==='usd')liq.usd+=v;
-        else if(mon==='usdc')liq.usdc+=v;
-      });
-    }
-  }
-  return {positions:map,nombres:nombres,liq:liq};
-}
-function cmpLoadFile(who,input){
+function cmpLoadPortfolio(input){
   var f=input.files[0];if(!f)return;
-  document.getElementById('cmp-'+who+'-name').textContent=f.name;
+  document.getElementById('cmp-port-name').textContent=f.name;
   var reader=new FileReader();
   reader.onload=function(e){
-    var ab=e.target.result;
-    if(who==='veta'){
-      // Veta Capital (formato nuevo): xlsx real con hojas Liquidez/Inversiones/Futuros/Opciones
-      var vw=cmpReadVetaWorkbook(ab);
-      if(vw){
-        _cmpData.veta=vw.positions;
-        _cmpNombres.veta=vw.nombres;
-        _cmpLiqVeta=vw.liq;
-        return;
-      }
-      _cmpLiqVeta=null;
-    }
-    // Fallback: formato viejo de Veta (.xls disfrazado de HTML) o archivo GDC (.xlsx con columna Ticker)
-    var rows=(who==='veta')?cmpParseHTML(ab):cmpParseRows(ab);
+    var rows=cmpParseRows(e.target.result);
     if(!rows||!rows.length){alert('No se pudo leer el archivo.');return;}
-    var isVeta=(who==='veta');
-    var hdrIdx=rows.findIndex(function(r){
-      return r.some(function(c){
-        var s=cmpNorm(c);
-        return s==='ticker'||s.includes('nombre de la especie');
-      });
-    });
-    // Fallback Veta: primera fila con 4+ celdas no vacías
-    if(hdrIdx<0&&isVeta){
-      hdrIdx=rows.findIndex(function(r){
-        return r.filter(function(c){return String(c).trim();}).length>=4;
-      });
-    }
-    if(hdrIdx<0){alert('No se encontró la cabecera del archivo.');return;}
+    var hdrIdx=rows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='ticker';});});
+    if(hdrIdx<0){alert('No se encontró columna Ticker.');return;}
     var hdr=rows[hdrIdx].map(cmpNorm);
     var tCol=hdr.indexOf('ticker');
-    var nCol=hdr.findIndex(function(c){return c.includes('nombre de la especie');});
-    if(isVeta&&nCol<0)nCol=1; // columna fija confirmada del broker
-    // Para Veta: Cantidad siempre en col 3 (estructura fija del broker)
-    var qCol=isVeta?3:hdr.findIndex(function(c){return c.includes('cantidad');});
-    if(!isVeta&&qCol<0){alert('No se encontró columna Cantidad.');return;}
-    var map={},nombres={};
+    var qCol=hdr.findIndex(function(c){return c.includes('cantidad');});
+    if(qCol<0){alert('No se encontró columna Cantidad.');return;}
+    var map={};
     rows.slice(hdrIdx+1).forEach(function(r){
-      var raw=String(r[isVeta?nCol:tCol]||'').trim();
-      if(!raw)return;
-      var ticker,nombre='';
-      if(isVeta){
-        var parts=raw.split(/\s+/);
-        var first=parts[0].toUpperCase();
-        if(/^(SUBTOTAL|USD|VENCIMIENTO|VENCIDO|GTIA)/i.test(first))return;
-        ticker=first;
-        nombre=parts.slice(1).join(' ');
-      }else{
-        ticker=raw.toUpperCase();
-      }
+      var t=String(r[tCol]||'').trim().toUpperCase();
       var q=parseFloat(String(r[qCol]||'').trim().replace(/\./g,'').replace(',','.'));
-      if(ticker&&!isNaN(q)&&q>0){map[ticker]=q;if(nombre)nombres[ticker]=nombre;}
+      if(t&&!isNaN(q)&&q>0)map[t]=q;
     });
-    _cmpData[who]=map;
-    _cmpNombres[who]=nombres;
+    _cmpData.portafolio=map;_cmpNombres.portafolio={};
   };
   reader.readAsArrayBuffer(f);
 }
-var _cmpChecked=new Set();
+function cmpParseBullText(txt){
+  var lines=txt.split(/\r?\n/);
+  var tickerRe=/^[A-Z][A-Z0-9]{1,7}$/;
+  var map={};
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i].trim();
+    if(!tickerRe.test(line))continue;
+    var ticker=line;
+    var j=i+1;
+    while(j<lines.length&&!lines[j].trim())j++;
+    if(j>=lines.length)continue;
+    var cols=lines[j].trim().split('\t');
+    if(cols.length<2)continue;
+    var qty=parseFloat(cols[1].trim().replace(/\./g,'').replace(',','.'));
+    if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
+  }
+  return map;
+}
+function cmpBullTextChanged(){
+  var txt=document.getElementById('cmp-bull-textarea').value;
+  var m=cmpParseBullText(txt);
+  var n=Object.keys(m).length;
+  var el=document.getElementById('cmp-bull-status');
+  if(n>0){
+    _cmpData.broker=m;
+    el.textContent='✓ '+n+' posiciones cargadas';
+    el.style.color='var(--accent)';
+  }else{
+    _cmpData.broker=null;
+    el.textContent=txt.trim()?'Sin posiciones detectadas':'';
+    el.style.color='var(--text3)';
+  }
+}
 function cmpToggleCheck(t,cb){
   if(cb.checked)_cmpChecked.add(t);else _cmpChecked.delete(t);
   var row=cb.closest('tr');
@@ -3082,79 +3012,45 @@ function cmpToggleCheck(t,cb){
   var el=document.getElementById('cmp-resolved-count');
   if(el)el.textContent=_cmpChecked.size+' / '+total+' resueltos';
 }
-function cmpLiqRow(label,box,veta,decimals){
-  var diff=box-veta;
-  var ok=Math.abs(diff)<(decimals?0.01:1);
-  var opts={minimumFractionDigits:decimals,maximumFractionDigits:decimals};
-  var sc=ok?'var(--accent)':'#f59e0b';
-  return '<tr><td class="mono">'+label+'</td>'
-    +'<td class="mono">'+box.toLocaleString('es-AR',opts)+'</td>'
-    +'<td class="mono">'+veta.toLocaleString('es-AR',opts)+'</td>'
-    +'<td class="mono" style="color:'+sc+'">'+(diff>0?'+':'')+diff.toLocaleString('es-AR',opts)+'</td>'
-    +'<td><span style="font-size:.65rem;color:'+sc+'">'+(ok?'✓ Igual':'Diferente')+'</span></td>'
-    +'</tr>';
-}
 function runComparacion(){
   var el=document.getElementById('cmp-result');
-  var html='';
-  if(_cmpLiqVeta){
-    var liqArsBox=getRawNum('liq-ars');
-    var liqUsdBox=getRawNum('liq-usd');
-    var vetaArs=_cmpLiqVeta.ars||0;
-    var vetaUsdTotal=(_cmpLiqVeta.usd||0)+(_cmpLiqVeta.usdc||0);
-    html+='<div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">Liquidez</div>';
-    html+='<div class="tw panel-table" style="margin-bottom:1rem"><table><thead><tr>'
-      +'<th>Moneda</th><th>Recuadro</th>'
-      +'<th><img src="../Veta.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
-      +'<th>Diferencia</th><th>Estado</th>'
-      +'</tr></thead><tbody>'
-      +cmpLiqRow('ARS (Pesos)',liqArsBox,vetaArs,0)
-      +cmpLiqRow('USD (Dólares+cable)',liqUsdBox,vetaUsdTotal,2)
-      +'</tbody></table></div>';
+  if(!_cmpData.portafolio||!_cmpData.broker){
+    el.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:.6rem 0">Cargá los dos archivos primero.</div>';return;
   }
-  if(!_cmpData.gdc||!_cmpData.veta){
-    if(!html)html='<div style="font-size:.8rem;color:var(--text3);padding:.6rem 0">Cargá los dos archivos primero.</div>';
-    el.innerHTML=html;return;
-  }
-  var gdc=_cmpData.gdc,veta=_cmpData.veta;
-  var tickers=new Set(Object.keys(gdc).concat(Object.keys(veta)));
+  var port=_cmpData.portafolio,broker=_cmpData.broker;
+  var tickers=new Set(Object.keys(port).concat(Object.keys(broker)));
   var diffs=[];
   tickers.forEach(function(t){
-    var g=gdc[t]||0,v=veta[t]||0;
-    var diff=g-v;
-    var status=g>0&&!veta[t]?'Solo GDC':!gdc[t]&&v>0?'Solo Veta':Math.abs(diff)<0.0001?'Igual':'Diferente';
-    if(status!=='Igual')diffs.push({t:t,g:g,v:v,diff:diff,status:status});
+    var p=port[t]||0,b=broker[t]||0,diff=p-b;
+    var status=p>0&&!broker[t]?'Solo Omar':!port[t]&&b>0?'Solo Bull':Math.abs(diff)<0.0001?'Igual':'Diferente';
+    if(status!=='Igual')diffs.push({t:t,p:p,b:b,diff:diff,status:status});
   });
-  var order={'Solo Veta':0,'Solo GDC':1,'Diferente':2};
+  var order={'Solo Bull':0,'Solo Omar':1,'Diferente':2};
   diffs.sort(function(a,b){return (order[a.status]-order[b.status])||a.t.localeCompare(b.t);});
   if(!diffs.length){
-    html+='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias en posiciones — los portafolios coinciden.</div>';
-    el.innerHTML=html;return;
+    el.innerHTML='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias — los portafolios coinciden.</div>';return;
   }
-  html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
+  var html='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
     +'<span style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">'+diffs.length+' diferencia(s)</span>'
     +'<span id="cmp-resolved-count" style="font-size:.65rem;font-family:var(--mono);color:var(--accent)">'+_cmpChecked.size+' / '+diffs.length+' resueltos</span>'
     +'</div>';
   html+='<div class="tw panel-table"><table><thead><tr>'
     +'<th style="width:28px"></th>'
-    +'<th>Ticker</th><th>GDC</th>'
-    +'<th><img src="../Veta.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
+    +'<th>Ticker</th><th>Omar</th>'
+    +'<th><img src="../Bull.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
     +'<th>Diferencia</th><th>Estado</th>'
     +'</tr></thead><tbody>';
   diffs.forEach(function(d){
-    var sc=d.status==='Solo GDC'?'var(--accent)':d.status==='Solo Veta'?'#448aff':'#f59e0b';
-    var diffStr=d.g>0&&d.v>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
+    var sc=d.status==='Solo Omar'?'var(--accent)':d.status==='Solo Bull'?'#448aff':'#f59e0b';
+    var diffStr=d.p>0&&d.b>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
     var done=_cmpChecked.has(d.t);
-    var nombre=(_cmpNombres.veta&&_cmpNombres.veta[d.t])||(_cmpNombres.gdc&&_cmpNombres.gdc[d.t])||'';
     html+='<tr style="'+(done?'opacity:.35;text-decoration:line-through':'')+'">'
       +'<td style="text-align:center;padding:.25rem .35rem">'
       +'<input type="checkbox"'+(done?' checked':'')+' onchange="cmpToggleCheck(\''+d.t+'\',this)" style="accent-color:var(--accent);cursor:pointer;width:13px;height:13px">'
       +'</td>'
-      +'<td><span style="font-weight:700;font-family:var(--mono)">'+d.t+'</span>'
-      +(nombre?'<br><span style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">'+nombre+'</span>':'')
-      +'</td>'
-      +'<td class="mono">'+(d.g?d.g.toLocaleString('es-AR'):'—')+'</td>'
-      +'<td class="mono">'+(d.v?d.v.toLocaleString('es-AR'):'—')+'</td>'
+      +'<td><span style="font-weight:700;font-family:var(--mono)">'+d.t+'</span></td>'
+      +'<td class="mono">'+(d.p?d.p.toLocaleString('es-AR'):'—')+'</td>'
+      +'<td class="mono">'+(d.b?d.b.toLocaleString('es-AR'):'—')+'</td>'
       +'<td class="mono" style="color:'+sc+'">'+diffStr+'</td>'
       +'<td><span style="font-size:.65rem;color:'+sc+'">'+d.status+'</span></td>'
       +'</tr>';
