@@ -716,6 +716,43 @@ tr:hover td{background:var(--surface2)}
         <div id="pos-prog" style="position:absolute;bottom:0;left:0;right:0;line-height:0"><div class="pbar" style="border-radius:0;height:3px;background:var(--border)"><div class="pfill" id="pfill" style="width:0%"></div></div></div>
       </div>
       </div><!-- /port-content -->
+
+      <div class="card" id="vsell-card" style="margin:0 1.2rem 1.2rem">
+        <div class="card-header">
+          <span class="card-title">💸 Vender</span>
+          <span style="font-size:.62rem;color:var(--text3);font-family:var(--mono);margin-left:6px">mismos campos que el simulador de ventas</span>
+        </div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="fgrp">
+              <label>Ticker</label>
+              <select id="vsell-ticker" onchange="vsellPreview()" style="text-transform:uppercase"><option value="">— ticker —</option></select>
+            </div>
+            <div class="fgrp">
+              <label>Cantidad</label>
+              <input type="number" id="vsell-qty" placeholder="0" min="0" step="any" oninput="vsellPreview()">
+            </div>
+            <div class="fgrp">
+              <label>Fecha</label>
+              <input type="date" id="vsell-fecha" oninput="vsellPreview()">
+            </div>
+            <div class="fgrp">
+              <label>Precio venta ARS</label>
+              <input type="number" id="vsell-precio-ars" placeholder="0" min="0" step="any" oninput="vsellPreview()">
+            </div>
+            <div class="fgrp">
+              <label>CCL del día</label>
+              <input type="number" id="vsell-ccl" placeholder="auto" min="0" step="any" oninput="vsellPreview()">
+            </div>
+          </div>
+          <div id="vsell-preview" style="font-size:.68rem;font-family:var(--mono);margin-top:8px;padding:7px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm)"><span style="color:var(--text3)">Elegí un ticker para ver el preview.</span></div>
+          <div class="gap-row" style="margin-top:8px;justify-content:flex-end;align-items:center">
+            <span id="vsell-status" class="smsg"></span>
+            <button class="btn" onclick="vsellClear()" style="border-color:#4a5568">Limpiar</button>
+            <button class="btn btn-a" id="vsell-btn-confirmar" onclick="vsellConfirmar()" disabled>✔ Confirmar venta</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- MOVIMIENTOS -->
@@ -2053,7 +2090,7 @@ function showPage(id,btn){
   if(id==='tracker') initTracker();
   if(id==='dividendos') divPopulateSelect();
   if(id==='arbitraje') arbRender();
-  if(id==='portafolio') setTimeout(renderPortfolio, 50);
+  if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
   if(id==='rubros') renderRubros();
   if(id==='bonostir') renderBonosTIR();
@@ -2713,7 +2750,7 @@ function saveAndRender(){
   try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){}
   if(_gdcInitDone){ sbSaveArray('movimientos', movimientos); }
   else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
-  renderMovimientos();renderPortfolio();renderDivsCard();
+  renderMovimientos();renderPortfolio();renderDivsCard();vsellPopulateSelect();
   (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
 }
@@ -3062,6 +3099,165 @@ function ventaLabCalc(){
 
   result.style.display = 'block';
   result.innerHTML = headerCCL + resumenHTML + tablaHTML;
+}
+
+// ─── Vender rápido (módulo en Home/Portafolio) ───
+// Mismos campos y mismo motor (lote más barato) que el Simulador de Venta,
+// pero ejecuta la venta real: crea el movimiento y actualiza la cartera.
+function vsellPopulateSelect(){
+  var sel = document.getElementById('vsell-ticker');
+  if(!sel) return;
+  var current = sel.value;
+  var tickers = [];
+  var seen = {};
+  getPositions().forEach(function(p){ if(p.qty>0.000001 && !seen[p.ticker]){seen[p.ticker]=true;tickers.push(p.ticker);} });
+  tickers.sort();
+  sel.innerHTML = '<option value="">— ticker —</option>' +
+    tickers.map(function(t){
+      var pos = getPositions().find(function(p){return p.ticker===t;});
+      var label = t + (pos && pos.qty > 0 ? ' ('+Math.round(pos.qty)+')' : '');
+      return '<option value="'+t+'"'+(t===current?' selected':'')+'>'+label+'</option>';
+    }).join('');
+  var fEl = document.getElementById('vsell-fecha');
+  if(fEl && !fEl.value) fEl.value = new Date().toISOString().split('T')[0];
+}
+
+function vsellGetLastMercado(ticker){
+  for(var i=movimientos.length-1;i>=0;i--){
+    var m=movimientos[i];
+    if(m&&m.ticker===ticker&&m.mercado) return m.mercado;
+  }
+  return 'USA';
+}
+
+function vsellPreview(){
+  var tickerEl=document.getElementById('vsell-ticker');
+  var qtyEl=document.getElementById('vsell-qty');
+  var fechaEl=document.getElementById('vsell-fecha');
+  var arsEl=document.getElementById('vsell-precio-ars');
+  var cclEl=document.getElementById('vsell-ccl');
+  var prevEl=document.getElementById('vsell-preview');
+  var btnConfirm=document.getElementById('vsell-btn-confirmar');
+  if(!tickerEl||!prevEl) return;
+  var ticker=tickerEl.value.trim().toUpperCase();
+  if(!ticker){ prevEl.innerHTML='<span style="color:var(--text3)">Elegí un ticker para ver el preview.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
+
+  var sector=getSector(ticker);
+  var esBonoON=(sector==='bonos'||sector==='on');
+  var cclManual=parseFloat(cclEl.value);
+  var fechaStr=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
+  var cclTabla=fechaStr?(esBonoON?(getMEP(fechaStr)||getCCL(fechaStr)):getCCL(fechaStr)):null;
+  var ccl=cclManual>0?cclManual:(cclTabla||(esBonoON?(MEP_HOY||CCL_HOY):CCL_HOY));
+  if(!cclManual&&ccl)cclEl.placeholder=Math.round(ccl);
+
+  var precioARSInput=parseFloat(arsEl.value);
+  var precioARS=esBonoON&&precioARSInput>0?precioARSInput/100:precioARSInput;
+  var qtyVender=parseFloat(qtyEl.value);
+  var ventaUSDxUnit=(precioARS>0&&ccl>0)?precioARS/ccl:null;
+
+  var compras=[]; var qtyVendidaHist=0;
+  movimientos.forEach(function(m){
+    if(!m||m.ticker!==ticker)return;
+    if(m.tipo==='compra'){ compras.push({fecha:m.fecha,qty:m.qty,precioUSD:m.precioUSD||0,precioARS:m.precioARS||0,ccl:m.ccl||0,mercado:m.mercado}); }
+    else if(m.tipo==='venta'){ qtyVendidaHist+=m.qty; }
+  });
+  if(!compras.length){ prevEl.innerHTML='<span style="color:var(--red)">No hay compras registradas para '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
+
+  var pendiente=qtyVendidaHist;
+  var lineas=compras.map(function(c){ return {fecha:c.fecha,qty:c.qty,qtyAbierta:c.qty,precioUSD:c.precioUSD,precioARS:c.precioARS,ccl:c.ccl,mercado:c.mercado}; });
+  for(var i=0;i<lineas.length&&pendiente>0;i++){ var desc=Math.min(lineas[i].qtyAbierta,pendiente); lineas[i].qtyAbierta-=desc; pendiente-=desc; }
+  var abiertas=lineas.filter(function(l){return l.qtyAbierta>0.000001;}).map(function(l){
+    var _esB=(l.mercado==='BONOS'||l.mercado==='ON'||l.mercado==='FCI');
+    var _tc=_esB?(getMEP(l.fecha)||getCCL(l.fecha)||l.ccl||MEP_HOY||CCL_HOY):(getCCL(l.fecha)||l.ccl||CCL_HOY);
+    var ppcUSD=_tc>0?l.precioARS/_tc:l.precioUSD;
+    return {fecha:l.fecha,qtyAbierta:l.qtyAbierta,ppcUSD:ppcUSD};
+  });
+  if(!abiertas.length){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
+
+  var qtyTotalAbierta=abiertas.reduce(function(s,l){return s+l.qtyAbierta;},0);
+
+  if(!(qtyVender>0)){
+    prevEl.innerHTML='<span style="color:var(--text3)">Abierto: '+qtyTotalAbierta.toFixed(2)+' u. · Ingresá cantidad y precio para ver el preview.</span>';
+    if(btnConfirm)btnConfirm.disabled=true;
+    return;
+  }
+  if(qtyVender>qtyTotalAbierta+0.000001){
+    prevEl.innerHTML='<span style="color:var(--red)">Pediste vender '+qtyVender+' pero solo hay '+qtyTotalAbierta.toFixed(2)+' abiertas.</span>';
+    if(btnConfirm)btnConfirm.disabled=true;
+    return;
+  }
+
+  var ordenadas=abiertas.slice().sort(function(a,b){return a.ppcUSD-b.ppcUSD;});
+  var restante=qtyVender; var consumidas=[]; var costoBaseTotal=0;
+  for(var j=0;j<ordenadas.length&&restante>0.000001;j++){
+    var lot=ordenadas[j]; if(lot.qtyAbierta<=0.000001)continue;
+    var take=Math.min(lot.qtyAbierta,restante);
+    costoBaseTotal+=take*lot.ppcUSD;
+    consumidas.push({fecha:lot.fecha,qty:take});
+    restante-=take;
+  }
+  var ingresoTotal=ventaUSDxUnit!==null?ventaUSDxUnit*qtyVender:null;
+  var pnl=ingresoTotal!==null?ingresoTotal-costoBaseTotal:null;
+  var pct=(pnl!==null&&costoBaseTotal>0)?(pnl/costoBaseTotal*100):null;
+  var loteTxt=consumidas.map(function(c){return c.fecha+' ('+(c.qty%1===0?c.qty.toFixed(0):c.qty.toFixed(2))+'u)';}).join(', ');
+
+  var cl=pnl===null?'':(pnl>=0?'pos':'neg');
+  var sg=pnl===null?'':(pnl>=0?'+':'');
+  prevEl.innerHTML=
+    '<span style="color:var(--text2)">Lote: <b style="color:var(--text)">'+loteTxt+'</b></span>&nbsp;&nbsp;·&nbsp;&nbsp;'+
+    '<span style="color:var(--text2)">G/P: <b class="'+cl+'">'+(pnl!==null?sg+'U$S '+pnl.toFixed(2)+' ('+sg+pct.toFixed(2)+'%)':'—')+'</b></span>';
+
+  if(btnConfirm)btnConfirm.disabled=(ingresoTotal===null);
+}
+
+function vsellClear(){
+  ['vsell-qty','vsell-precio-ars','vsell-ccl'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var tEl=document.getElementById('vsell-ticker'); if(tEl)tEl.value='';
+  vsellPreview();
+}
+
+function vsellConfirmar(){
+  var tickerEl=document.getElementById('vsell-ticker');
+  var qtyEl=document.getElementById('vsell-qty');
+  var fechaEl=document.getElementById('vsell-fecha');
+  var arsEl=document.getElementById('vsell-precio-ars');
+  var cclEl=document.getElementById('vsell-ccl');
+  var statusEl=document.getElementById('vsell-status');
+  var ticker=tickerEl.value.trim().toUpperCase();
+  var qty=parseFloat(qtyEl.value);
+  var fecha=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
+  var precioARSInput=parseFloat(arsEl.value);
+  if(!ticker){flash(statusEl,'Elegí un ticker',true);return;}
+  if(isNaN(qty)||qty<=0){flash(statusEl,'Cantidad inválida',true);return;}
+  if(!fecha){flash(statusEl,'Falta la fecha',true);return;}
+  if(isNaN(precioARSInput)||precioARSInput<=0){flash(statusEl,'Precio inválido',true);return;}
+
+  var mkt=vsellGetLastMercado(ticker);
+  var sector=getSector(ticker);
+  var esBonoON=(sector==='bonos'||sector==='on');
+  var precioARS=esBonoON?precioARSInput/100:precioARSInput;
+  var cclManual=parseFloat(cclEl.value);
+  var cclVal=cclManual>0?cclManual:getTC(fecha,mkt);
+  if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP — completá el campo CCL',true);return;}
+  var ratio=getRatio(ticker);
+  var precioUSD=cclVal?precioARS*ratio/cclVal:null;
+
+  var posActual=getPositions().find(function(p){return p.ticker===ticker;});
+  if(!posActual||qty>posActual.qty+0.000001){
+    flash(statusEl,'No tenés '+qty+' unidades abiertas de '+ticker,true);
+    return;
+  }
+
+  movimientos.push({
+    id:Date.now(), fecha:fecha, tipo:'venta', mercado:mkt, ticker:ticker, qty:qty,
+    precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
+    comision:0, comisionPct:0, notas:'Vendido desde módulo rápido (Portafolio)',
+    finish:false, owner:undefined, loteMethod:'barato'
+  });
+  saveAndRender();
+  flash(statusEl,'Venta registrada ✓',false);
+  vsellClear();
+  vsellPopulateSelect();
 }
 
 // ─── Estadísticas de Ganancia realizada (x ticker, x tipo, x RF/RV) ───
