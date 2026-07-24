@@ -2881,14 +2881,20 @@ function ventaLabCalc(){
   var ticker = tickerEl.value.trim().toUpperCase();
   if(!ticker){ result.style.display='none'; emptyMsg.style.display='none'; return; }
 
+  // Bonos/ON: el precio se carga "cada 100 VN" (igual que en Movimientos) y la conversión
+  // usa MEP, no CCL. Para el resto (CEDEARs) el precio ya es por unidad y se usa CCL.
+  var _vlabSector = getSector(ticker);
+  var _vlabEsBonoON = (_vlabSector==='bonos'||_vlabSector==='on');
+
   var cclManual = parseFloat(cclEl.value);
   var fechaStr  = fechaEl.value ? fechaEl.value.split('-').reverse().join('/') : '';
-  var cclTabla  = fechaStr ? getCCL(fechaStr) : null;
-  var ccl       = cclManual > 0 ? cclManual : (cclTabla || CCL_HOY);
+  var cclTabla  = fechaStr ? (_vlabEsBonoON ? (getMEP(fechaStr)||getCCL(fechaStr)) : getCCL(fechaStr)) : null;
+  var ccl       = cclManual > 0 ? cclManual : (cclTabla || (_vlabEsBonoON ? (MEP_HOY||CCL_HOY) : CCL_HOY));
   if(!cclManual) cclEl.placeholder = ccl;
   var cclLabel  = cclManual ? ' (manual)' : (cclTabla ? ' (tabla)' : ' (hoy)');
 
-  var precioARS = parseFloat(arsEl.value);
+  var precioARSInput = parseFloat(arsEl.value);
+  var precioARS = _vlabEsBonoON && precioARSInput>0 ? precioARSInput/100 : precioARSInput;
   var qtyVender = parseFloat(qtyEl.value);
   var ratio     = getRatio(ticker);
   var ventaUSDxCedear = (precioARS > 0 && ccl > 0) ? precioARS / ccl : null;
@@ -2941,8 +2947,8 @@ function ventaLabCalc(){
   var ppcPromedioActual = qtyTotalAbierta>0 ? costoTotalAbierta/qtyTotalAbierta : 0;
 
   var headerCCL = '<div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:10px">'+
-    '<b style="color:var(--text)">'+ticker+'</b> · ratio 1:'+ratio+' · CCL $'+Math.round(ccl).toLocaleString('es-AR')+cclLabel+
-    (precioARS>0?' · Precio ARS $'+precioARS.toLocaleString('es-AR')+' → USD/cedear '+(ventaUSDxCedear?ventaUSDxCedear.toFixed(4):'—'):' · <i>Ingresá el precio de venta ARS</i>')+
+    '<b style="color:var(--text)">'+ticker+'</b>'+(_vlabEsBonoON?' · Bono/ON (precio cada 100 VN)':' · ratio 1:'+ratio)+' · '+(_vlabEsBonoON?'MEP':'CCL')+' $'+Math.round(ccl).toLocaleString('es-AR')+cclLabel+
+    (precioARSInput>0?' · Precio ARS $'+precioARSInput.toLocaleString('es-AR')+' → USD/'+(_vlabEsBonoON?'VN':'cedear')+' '+(ventaUSDxCedear?ventaUSDxCedear.toFixed(4):'—'):' · <i>Ingresá el precio de venta ARS</i>')+
     '</div>';
 
   if(!(qtyVender>0)){
