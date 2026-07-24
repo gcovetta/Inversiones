@@ -2261,7 +2261,7 @@ function addMov(){
   var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
   var _cristianEl=document.getElementById('m-cristian');
-  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,owner:_cristianEl&&_cristianEl.checked?'cristian':undefined,loteMethod:(tipo==='venta'?'barato':undefined)});
+  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,owner:_cristianEl&&_cristianEl.checked?'cristian':undefined,loteMethod:(tipo==='venta'?'promedio':undefined)});
   saveAndRender();
   // Guardar TC del día en tablas si no existe aún
   if(cclVal>0||MEP_HOY>0){var _fk=fmtKey(fecha);var _tcu=false;if(CCL_HOY>0&&!CCL_TABLE[_fk]){CCL_TABLE[_fk]=CCL_HOY;_tcu=true;}if(MEP_HOY>0&&!MEP_TABLE[_fk]){MEP_TABLE[_fk]=MEP_HOY;_tcu=true;}if(_tcu){try{localStorage.setItem('ptNYSE_ccl_override',JSON.stringify(CCL_TABLE));localStorage.setItem('ptNYSE_mep_override',JSON.stringify(MEP_TABLE));}catch(e){}sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}}
@@ -3276,29 +3276,16 @@ function vsellPreview(){
   var qtyVender=parseFloat(qtyEl.value);
   var ventaUSDxUnit=(precioARS>0&&ccl>0)?precioARS/ccl:null;
 
-  var compras=[]; var qtyVendidaHist=0;
-  movimientos.forEach(function(m){
-    if(!m||m.ticker!==ticker)return;
-    if(m.tipo==='compra'){ compras.push({fecha:m.fecha,qty:m.qty,precioUSD:m.precioUSD||0,precioARS:m.precioARS||0,ccl:m.ccl||0,mercado:m.mercado}); }
-    else if(m.tipo==='venta'){ qtyVendidaHist+=m.qty; }
-  });
-  if(!compras.length){ prevEl.innerHTML='<span style="color:var(--red)">No hay compras registradas para '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
+  // Promedio ponderado: se toma directo de getPositions(), que ya deja costUSDpuro/qty
+  // netos de toda la historia (compras y ventas previas, sea cual sea el método usado en cada una).
+  var posActual=getPositions().find(function(p){return p.ticker===ticker;});
+  if(!posActual||posActual.qty<=0.000001){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
 
-  var pendiente=qtyVendidaHist;
-  var lineas=compras.map(function(c){ return {fecha:c.fecha,qty:c.qty,qtyAbierta:c.qty,precioUSD:c.precioUSD,precioARS:c.precioARS,ccl:c.ccl,mercado:c.mercado}; });
-  for(var i=0;i<lineas.length&&pendiente>0;i++){ var desc=Math.min(lineas[i].qtyAbierta,pendiente); lineas[i].qtyAbierta-=desc; pendiente-=desc; }
-  var abiertas=lineas.filter(function(l){return l.qtyAbierta>0.000001;}).map(function(l){
-    var _esB=(l.mercado==='BONOS'||l.mercado==='ON'||l.mercado==='FCI');
-    var _tc=_esB?(getMEP(l.fecha)||getCCL(l.fecha)||l.ccl||MEP_HOY||CCL_HOY):(getCCL(l.fecha)||l.ccl||CCL_HOY);
-    var ppcUSD=_tc>0?l.precioARS/_tc:l.precioUSD;
-    return {fecha:l.fecha,qtyAbierta:l.qtyAbierta,ppcUSD:ppcUSD};
-  });
-  if(!abiertas.length){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
-
-  var qtyTotalAbierta=abiertas.reduce(function(s,l){return s+l.qtyAbierta;},0);
+  var qtyTotalAbierta=posActual.qty;
+  var avgCostoUSD=posActual.costUSDpuro/posActual.qty;
 
   if(!(qtyVender>0)){
-    prevEl.innerHTML='<span style="color:var(--text3)">Abierto: '+qtyTotalAbierta.toFixed(2)+' u. · Ingresá cantidad y precio para ver el preview.</span>';
+    prevEl.innerHTML='<span style="color:var(--text3)">Abierto: '+qtyTotalAbierta.toFixed(2)+' u. a un promedio de U$S '+avgCostoUSD.toFixed(4)+' · Ingresá cantidad y precio para ver el preview.</span>';
     if(btnConfirm)btnConfirm.disabled=true;
     return;
   }
@@ -3308,24 +3295,15 @@ function vsellPreview(){
     return;
   }
 
-  var ordenadas=abiertas.slice().sort(function(a,b){return a.ppcUSD-b.ppcUSD;});
-  var restante=qtyVender; var consumidas=[]; var costoBaseTotal=0;
-  for(var j=0;j<ordenadas.length&&restante>0.000001;j++){
-    var lot=ordenadas[j]; if(lot.qtyAbierta<=0.000001)continue;
-    var take=Math.min(lot.qtyAbierta,restante);
-    costoBaseTotal+=take*lot.ppcUSD;
-    consumidas.push({fecha:lot.fecha,qty:take});
-    restante-=take;
-  }
+  var costoBaseTotal=avgCostoUSD*qtyVender;
   var ingresoTotal=ventaUSDxUnit!==null?ventaUSDxUnit*qtyVender:null;
   var pnl=ingresoTotal!==null?ingresoTotal-costoBaseTotal:null;
   var pct=(pnl!==null&&costoBaseTotal>0)?(pnl/costoBaseTotal*100):null;
-  var loteTxt=consumidas.map(function(c){return c.fecha+' ('+(c.qty%1===0?c.qty.toFixed(0):c.qty.toFixed(2))+'u)';}).join(', ');
 
   var cl=pnl===null?'':(pnl>=0?'pos':'neg');
   var sg=pnl===null?'':(pnl>=0?'+':'');
   prevEl.innerHTML=
-    '<span style="color:var(--text2)">Lote: <b style="color:var(--text)">'+loteTxt+'</b></span>&nbsp;&nbsp;·&nbsp;&nbsp;'+
+    '<span style="color:var(--text2)">Promedio: <b style="color:var(--text)">U$S '+avgCostoUSD.toFixed(4)+'/u</b></span>&nbsp;&nbsp;·&nbsp;&nbsp;'+
     '<span style="color:var(--text2)">G/P: <b class="'+cl+'">'+(pnl!==null?sg+'U$S '+pnl.toFixed(2)+' ('+sg+pct.toFixed(2)+'%)':'—')+'</b></span>';
 
   if(btnConfirm)btnConfirm.disabled=(ingresoTotal===null);
@@ -3374,7 +3352,7 @@ function vsellConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'venta', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Vendido desde módulo rápido (Portafolio)',
-    finish:false, owner:undefined, loteMethod:'barato'
+    finish:false, owner:undefined, loteMethod:'promedio'
   });
   saveAndRender();
   flash(statusEl,'Venta registrada ✓',false);
