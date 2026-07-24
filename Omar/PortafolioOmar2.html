@@ -517,11 +517,13 @@ tr:hover td{background:var(--surface2)}
       </div>
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.5rem">
         <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
+        <button id="port-summary-toggle-btn" onclick="portToggleSummary()" title="Colapsar/expandir resumen" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar resumen</button>
+        <button id="port-watchzone-toggle-btn" onclick="portToggleWatchzone()" title="Colapsar/expandir zona de seguimiento" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar mira</button>
       </div>
       <div id="port-content" class="">
       <!-- Elemento oculto para mantener el cálculo de dividendos -->
       <div style="display:none"><div id="m-divs">—</div></div>
-      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
+      <div id="port-summary-section" style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
         <!-- Izquierda: 2 filas de métricas -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
           <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">—</div></div>
@@ -567,7 +569,7 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
       <!-- Tickers cerca del objetivo + CCL implícito -->
-      <div style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
+      <div id="port-watchzone-section" style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
         <div class="nt-card" id="near-target-card" style="flex:3;margin-bottom:0">
           <div class="nt-header">
             <span class="nt-title">🎯 Tickers cerca del objetivo</span>
@@ -2237,6 +2239,50 @@ function portToggleBlur(){
     portShowOverlay();
   }
 }
+
+function portToggleSummary(){
+  var el=document.getElementById('port-summary-section');
+  var btn=document.getElementById('port-summary-toggle-btn');
+  if(!el||!btn) return;
+  var collapsed=el.style.display==='none';
+  el.style.display=collapsed?'flex':'none';
+  btn.textContent=collapsed?'▲ Ocultar resumen':'▼ Mostrar resumen';
+  try{localStorage.setItem('port_summary_collapsed',collapsed?'0':'1');}catch(e){}
+}
+(function(){
+  try{
+    if(localStorage.getItem('port_summary_collapsed')==='1'){
+      var el=document.getElementById('port-summary-section');
+      var btn=document.getElementById('port-summary-toggle-btn');
+      if(el) el.style.display='none';
+      if(btn) btn.textContent='▼ Mostrar resumen';
+    }
+  }catch(e){}
+})();
+
+function portToggleWatchzone(){
+  var el=document.getElementById('port-watchzone-section');
+  var el2=document.getElementById('port-smallinv-section');
+  var btn=document.getElementById('port-watchzone-toggle-btn');
+  if(!el||!btn) return;
+  var collapsed=el.style.display==='none';
+  el.style.display=collapsed?'flex':'none';
+  if(el2) el2.style.display=collapsed?'':'none';
+  btn.textContent=collapsed?'▲ Ocultar mira':'▼ Mostrar mira';
+  try{localStorage.setItem('port_watchzone_collapsed',collapsed?'0':'1');}catch(e){}
+}
+(function(){
+  try{
+    if(localStorage.getItem('port_watchzone_collapsed')==='1'){
+      var el=document.getElementById('port-watchzone-section');
+      var el2=document.getElementById('port-smallinv-section');
+      var btn=document.getElementById('port-watchzone-toggle-btn');
+      if(el) el.style.display='none';
+      if(el2) el2.style.display='none';
+      if(btn) btn.textContent='▼ Mostrar mira';
+    }
+  }catch(e){}
+})();
 
 loadMarks();
 function portCheckSession(){portUnblur();return; // PIN desactivadoportUnblur();return; // PIN desactivado
