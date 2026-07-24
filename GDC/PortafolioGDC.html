@@ -703,7 +703,58 @@ tr:hover td{background:var(--surface2)}
           <tbody id="body-cristian"></tbody>
         </table></div>
       </div>
-      <div class="card" id="vsell-card" style="display:inline-block;width:auto;max-width:100%">
+      <div class="card" id="vbuy-card" style="display:inline-block;width:auto;max-width:100%;margin-right:10px;vertical-align:top">
+        <div class="card-header">
+          <span class="card-title">🛒 Comprar</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <div class="fgrp" style="width:130px">
+              <label>Mercado</label>
+              <select id="vbuy-mkt" onchange="vbuyOnMktChange()" style="width:100%">
+                <option value="USA">NYSE / NASDAQ</option>
+                <option value="ETF">ETF (USA)</option>
+                <option value="ARGENTINA">Argentina</option>
+                <option value="BONOS">Bonos</option>
+                <option value="ON">ON</option>
+                <option value="FCI">FCI</option>
+                <option value="BRASIL">Brasil</option>
+                <option value="EUROPA">Europa</option>
+                <option value="CHINA">China</option>
+                <option value="CRIPTO">Cripto</option>
+              </select>
+            </div>
+            <div class="fgrp" style="width:90px">
+              <label>Ticker</label>
+              <input type="text" id="vbuy-ticker" placeholder="AAPL" style="text-transform:uppercase;width:100%">
+            </div>
+            <div class="fgrp" style="width:118px">
+              <label>Fecha</label>
+              <input type="date" id="vbuy-fecha" style="width:100%">
+            </div>
+            <div class="fgrp" style="width:70px">
+              <label>Cantidad</label>
+              <input type="number" id="vbuy-qty" placeholder="0" min="0" step="any" style="width:100%">
+            </div>
+            <div class="fgrp" style="width:100px">
+              <label id="vbuy-lbl-precio">Precio ARS</label>
+              <input type="number" id="vbuy-precio-ars" placeholder="0" min="0" step="any" style="width:100%">
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none">
+              <input type="checkbox" id="vbuy-finish" style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0">
+              🏁 A finish
+            </label>
+          </div>
+          <div class="gap-row" style="margin-top:8px;justify-content:flex-end;align-items:center">
+            <span id="vbuy-status" class="smsg"></span>
+            <button class="btn" onclick="vbuyClear()" style="border-color:#4a5568">Limpiar</button>
+            <button class="btn btn-a" onclick="vbuyConfirmar()">✔ Confirmar compra</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="vsell-card" style="display:inline-block;width:auto;max-width:100%;vertical-align:top">
         <div class="card-header">
           <span class="card-title">💸 Vender</span>
           <span style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-left:6px">mismos campos que el simulador de ventas</span>
@@ -2088,8 +2139,9 @@ function showPage(id,btn){
   if(btn)btn.classList.add('active');
   if(id==='tracker') initTracker();
   if(id==='dividendos') divPopulateSelect();
+  if(id==='movimientos') resetMFechaHoy();
   if(id==='arbitraje') arbRender();
-  if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); }
+  if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
   if(id==='rubros') renderRubros();
   if(id==='bonostir') renderBonosTIR();
@@ -2116,7 +2168,11 @@ function onTipo(){
   document.getElementById('lbl-precio').textContent=t==='dividendo'?'Monto ARS':(isBonoONForm()?'Precio / 100N':'Precio ARS');
 }
 
-document.getElementById('m-fecha').value=new Date().toISOString().split('T')[0];
+function resetMFechaHoy(){
+  var el=document.getElementById('m-fecha');
+  if(el) el.value=new Date().toISOString().split('T')[0];
+}
+resetMFechaHoy();
 document.getElementById('m-fecha').addEventListener('change',function(){
   var fecha=this.value.split('-').reverse().join('/');
   var mkt=document.getElementById('m-mkt').value;
@@ -2206,7 +2262,8 @@ function addMov(){
   saveAndRender();
   // Guardar TC del día en tablas si no existe aún
   if(cclVal>0||MEP_HOY>0){var _fk=fmtKey(fecha);var _tcu=false;if(CCL_HOY>0&&!CCL_TABLE[_fk]){CCL_TABLE[_fk]=CCL_HOY;_tcu=true;}if(MEP_HOY>0&&!MEP_TABLE[_fk]){MEP_TABLE[_fk]=MEP_HOY;_tcu=true;}if(_tcu){try{localStorage.setItem('ptNYSE_ccl_override',JSON.stringify(CCL_TABLE));localStorage.setItem('ptNYSE_mep_override',JSON.stringify(MEP_TABLE));}catch(e){}sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}}
-  ['m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';}); 
+  ['m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
+  resetMFechaHoy();
   if(finishEl)finishEl.checked=false;
   var _cEl=document.getElementById('m-cristian');if(_cEl)_cEl.checked=false;
   flash(sel,'Movimiento registrado',false);
@@ -3100,6 +3157,65 @@ function ventaLabCalc(){
   result.innerHTML = headerCCL + resumenHTML + tablaHTML;
 }
 
+// ─── Comprar rápido (módulo en Home/Portafolio) ───
+function vbuyOnMktChange(){
+  var mkt=document.getElementById('vbuy-mkt').value;
+  var lbl=document.getElementById('vbuy-lbl-precio');
+  if(lbl) lbl.textContent=(mkt==='BONOS'||mkt==='ON')?'Precio /100N':'Precio ARS';
+}
+
+function vbuyResetFecha(){
+  var el=document.getElementById('vbuy-fecha');
+  if(el) el.value=new Date().toISOString().split('T')[0];
+}
+
+function vbuyClear(){
+  ['vbuy-ticker','vbuy-qty','vbuy-precio-ars'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var f=document.getElementById('vbuy-finish'); if(f)f.checked=false;
+  var mktEl=document.getElementById('vbuy-mkt'); if(mktEl)mktEl.value='USA';
+  vbuyOnMktChange();
+  vbuyResetFecha();
+}
+
+function vbuyConfirmar(){
+  var mktEl=document.getElementById('vbuy-mkt');
+  var tickerEl=document.getElementById('vbuy-ticker');
+  var fechaEl=document.getElementById('vbuy-fecha');
+  var qtyEl=document.getElementById('vbuy-qty');
+  var arsEl=document.getElementById('vbuy-precio-ars');
+  var finishEl=document.getElementById('vbuy-finish');
+  var statusEl=document.getElementById('vbuy-status');
+  if(!mktEl) return;
+
+  var mkt=mktEl.value;
+  var ticker=tickerEl.value.trim().toUpperCase();
+  var fecha=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
+  var qty=parseFloat(qtyEl.value);
+  var precioARSInput=parseFloat(arsEl.value);
+
+  if(!ticker){flash(statusEl,'Ingresá un ticker',true);return;}
+  if(!fecha){flash(statusEl,'Falta la fecha',true);return;}
+  if(isNaN(qty)||qty<=0){flash(statusEl,'Cantidad inválida',true);return;}
+  if(isNaN(precioARSInput)||precioARSInput<0){flash(statusEl,'Precio inválido',true);return;}
+
+  var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
+  if(mkt==='FCI')qty=qty/1000;
+  var cclVal=getTC(fecha,mkt);
+  if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP para esa fecha',true);return;}
+  var ratio=getRatio(ticker);
+  var precioUSD=cclVal?precioARS*ratio/cclVal:null;
+
+  movimientos.push({
+    id:Date.now(), fecha:fecha, tipo:'compra', mercado:mkt, ticker:ticker, qty:qty,
+    precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
+    comision:0, comisionPct:0, notas:'Cargado desde módulo rápido (Portafolio)',
+    finish:finishEl&&finishEl.checked||false, owner:undefined
+  });
+  saveAndRender();
+  flash(statusEl,'Compra registrada ✓',false);
+  vbuyClear();
+}
+
 // ─── Vender rápido (módulo en Home/Portafolio) ───
 // Mismos campos y mismo motor (lote más barato) que el Simulador de Venta,
 // pero ejecuta la venta real: crea el movimiento y actualiza la cartera.
@@ -3117,8 +3233,11 @@ function vsellPopulateSelect(){
       var label = t + (pos && pos.qty > 0 ? ' ('+Math.round(pos.qty)+')' : '');
       return '<option value="'+t+'"'+(t===current?' selected':'')+'>'+label+'</option>';
     }).join('');
-  var fEl = document.getElementById('vsell-fecha');
-  if(fEl && !fEl.value) fEl.value = new Date().toISOString().split('T')[0];
+}
+
+function vsellResetFecha(){
+  var el=document.getElementById('vsell-fecha');
+  if(el) el.value=new Date().toISOString().split('T')[0];
 }
 
 function vsellGetLastMercado(ticker){
@@ -3212,6 +3331,7 @@ function vsellPreview(){
 function vsellClear(){
   ['vsell-qty','vsell-precio-ars','vsell-ccl'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var tEl=document.getElementById('vsell-ticker'); if(tEl)tEl.value='';
+  vsellResetFecha();
   vsellPreview();
 }
 
@@ -6407,7 +6527,7 @@ function trkCalcCCL(){
     var sbDolz = await sbGetConfig('dolz_extra');
     if(Array.isArray(sbDolz)) DOLZ_EXTRA = new Set(sbDolz);
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();trkRender();portUnblur();vsellPopulateSelect();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     _gdcInitDone = true;
     if(initFromSupabase._done) initFromSupabase._done();
