@@ -3,7 +3,7 @@
 <html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portafolio - Omar</title>
+<title>Omar</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1680,10 +1680,11 @@ function getMEP(fecha){return MEP_TABLE[fmtKey(fecha)]||null;}
 // Helper: tipo de cambio apropiado según mercado. Bonos/ONs usan MEP (con fallback a CCL), resto usa CCL.
 function getTC(fecha, mercado){
   var esBonoON=(mercado==='BONOS'||mercado==='ON');
-  return esBonoON ? (getMEP(fecha)||getCCL(fecha)) : getCCL(fecha);
+  return esBonoON ? (getMEP(fecha)||getCCL(fecha)||MEP_HOY||CCL_HOY) : (getCCL(fecha)||CCL_HOY);
 }
-var CCL_HOY = CCL_TABLE['17/04/2026'] || 1453;
-var MEP_HOY = MEP_TABLE['17/04/2026'] || CCL_HOY; // se actualiza al hacer fetch
+var _HOY_KEY=(function(){var d=new Date();return(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();})();
+var CCL_HOY = CCL_TABLE[_HOY_KEY] || 1453;
+var MEP_HOY = MEP_TABLE[_HOY_KEY] || CCL_HOY; // se actualiza al hacer fetch
 
 var movimientos = [];
 var quotes = {};
@@ -4119,6 +4120,7 @@ async function fetchFinnhub(ticker){
 }
 
 async function fetchAllQuotes(){
+  fetchTopbarRates();
   var pos=getPositions().filter(function(p){return p.qty>0.000001;});
   if(!pos.length){flash(document.getElementById('ref-status'),'No hay posiciones',true);return;}
   // NO limpiar quotes — mantener cotizaciones viejas hasta que lleguen las nuevas
@@ -4768,6 +4770,7 @@ async function fetchTopbarRates(){
     var dc=await rc.json();
     var vc=parseFloat(dc.venta);
     if(vc>0){
+      CCL_HOY=vc;CCL_TABLE[_HOY_KEY]=vc;try{localStorage.setItem('ptNYSE_ccl_override',JSON.stringify(CCL_TABLE));}catch(e){}sbSetConfig('ccl_override',CCL_TABLE);
       document.getElementById('tb-ccl').textContent='$'+vc.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
       document.getElementById('tb-ccl-src').textContent='venta';
       var rcTag2=document.getElementById('rc-ccl-tag');
@@ -4801,7 +4804,7 @@ async function fetchTopbarRates(){
     var dm=await rm.json();
     var vm=parseFloat(dm.venta);
     if(vm>0){
-      MEP_HOY=vm;
+      MEP_HOY=vm;MEP_TABLE[_HOY_KEY]=vm;try{localStorage.setItem('ptNYSE_mep_override',JSON.stringify(MEP_TABLE));}catch(e){}sbSetConfig('mep_override',MEP_TABLE);
       document.getElementById('tb-mep').textContent='$'+vm.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
       document.getElementById('tb-mep-src').textContent='venta';
     }
