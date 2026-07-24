@@ -492,6 +492,8 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
+    <div class="nav-sec">Ventas (Lab)</div>
+    <button class="nav-item" onclick="showPage(&#39;ventaslab&#39;,this)"><span>🧾</span>Simulador Venta</button>
     <div class="nav-sec">Links</div>
     <a class="nav-item" href="../Ana/PortafolioAna2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio Ana</a>
     <a class="nav-item" href="../Omar/PortafolioOmar2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio Omar</a>
@@ -1364,6 +1366,53 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+    <!-- VENTAS LAB -->
+    <div class="page" id="page-ventaslab" style="padding:0">
+      <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
+
+        <div class="ibox" style="margin-bottom:1rem">
+          🧪 <b>Laboratorio — no toca tu cartera real.</b> Esta página no escribe movimientos ni Supabase.
+          Sirve para probar un método de venta distinto al actual: en vez de descontar el promedio ponderado,
+          la cantidad vendida se resta primero del lote de <b>menor costo en USD</b> (el más barato), dejando
+          en pie los lotes más caros — así el costo promedio restante queda más alto y la cartera se ve más
+          pesimista. Si el resultado te convence, lo llevamos al sistema productivo.
+        </div>
+
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">
+            <span class="card-title">🧾 Simular venta por lote más barato</span>
+          </div>
+          <div class="card-body">
+            <div class="fg">
+              <div class="fgrp">
+                <label>Ticker</label>
+                <select id="vlab-ticker" onchange="ventaLabCalc()" style="text-transform:uppercase"><option value="">— seleccioná ticker —</option></select>
+              </div>
+              <div class="fgrp">
+                <label>Cantidad a vender</label>
+                <input type="number" id="vlab-qty" placeholder="0" min="0" step="any" oninput="ventaLabCalc()">
+              </div>
+              <div class="fgrp">
+                <label>Fecha de venta</label>
+                <input type="date" id="vlab-fecha" oninput="ventaLabCalc()">
+              </div>
+              <div class="fgrp">
+                <label>Precio venta ARS (CEDEAR)</label>
+                <input type="number" id="vlab-precio-ars" placeholder="0" min="0" step="any" oninput="ventaLabCalc()">
+              </div>
+              <div class="fgrp">
+                <label>CCL del día</label>
+                <input type="number" id="vlab-ccl" placeholder="auto" min="0" step="any" oninput="ventaLabCalc()">
+              </div>
+            </div>
+            <div id="vlab-result" style="display:none;margin-top:10px"></div>
+            <div id="vlab-empty-msg" style="display:none;margin-top:8px" class="ibox"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- RUBROS -->
     <div class="page" id="page-rubros" style="padding:0">
       <div id="rubros-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
@@ -2009,6 +2058,7 @@ function showPage(id,btn){
   if(id==='bonostir') renderBonosTIR();
   if(id==='vigilancia') vigRender();
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
+  if(id==='ventaslab'){ ventaLabPopulateSelect(); ventaLabCalc(); }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -2970,6 +3020,213 @@ function simCalc(){
         '<th>G/P USD</th>'+
         '<th>G/P %</th>'+
         '<th></th>'+
+      '</tr></thead>'+
+      '<tbody>'+filas+'</tbody>'+
+    '</table></div>';
+
+  result.style.display = 'block';
+  result.innerHTML = headerCCL + resumenHTML + tablaHTML;
+}
+
+// ─── Laboratorio de Ventas: consumir primero el lote MAS BARATO (no FIFO por fecha) ───
+function ventaLabPopulateSelect(){
+  var fEl = document.getElementById('vlab-fecha');
+  if(fEl && !fEl.value) fEl.value = new Date().toISOString().split('T')[0];
+  var sel = document.getElementById('vlab-ticker');
+  if(!sel) return;
+  var current = sel.value;
+  var tickers = [];
+  var seen = {};
+  getPositions().forEach(function(p){ if(p.qty>0.000001 && !seen[p.ticker]){seen[p.ticker]=true;tickers.push(p.ticker);} });
+  tickers.sort();
+  sel.innerHTML = '<option value="">— seleccioná ticker —</option>' +
+    tickers.map(function(t){
+      var pos = getPositions().find(function(p){return p.ticker===t;});
+      var label = t + (pos && pos.qty > 0 ? ' ('+Math.round(pos.qty)+')' : '');
+      return '<option value="'+t+'">'+label+'</option>';
+    }).join('');
+  if(current) sel.value = current;
+}
+
+function ventaLabCalc(){
+  var tickerEl = document.getElementById('vlab-ticker');
+  var fechaEl  = document.getElementById('vlab-fecha');
+  var arsEl    = document.getElementById('vlab-precio-ars');
+  var cclEl    = document.getElementById('vlab-ccl');
+  var qtyEl    = document.getElementById('vlab-qty');
+  var result   = document.getElementById('vlab-result');
+  var emptyMsg = document.getElementById('vlab-empty-msg');
+  if(!tickerEl) return;
+
+  var ticker = tickerEl.value.trim().toUpperCase();
+  if(!ticker){ result.style.display='none'; emptyMsg.style.display='none'; return; }
+
+  var cclManual = parseFloat(cclEl.value);
+  var fechaStr  = fechaEl.value ? fechaEl.value.split('-').reverse().join('/') : '';
+  var cclTabla  = fechaStr ? getCCL(fechaStr) : null;
+  var ccl       = cclManual > 0 ? cclManual : (cclTabla || CCL_HOY);
+  if(!cclManual) cclEl.placeholder = ccl;
+  var cclLabel  = cclManual ? ' (manual)' : (cclTabla ? ' (tabla)' : ' (hoy)');
+
+  var precioARS = parseFloat(arsEl.value);
+  var qtyVender = parseFloat(qtyEl.value);
+  var ratio     = getRatio(ticker);
+  var ventaUSDxCedear = (precioARS > 0 && ccl > 0) ? precioARS / ccl : null;
+
+  // Reconstruir líneas abiertas igual que el Simulador de venta actual (FIFO histórico por fecha)
+  var compras = [];
+  var qtyVendidaHist = 0;
+  movimientos.forEach(function(m){
+    if(!m || m.ticker !== ticker) return;
+    if(m.tipo === 'compra'){
+      compras.push({ fecha:m.fecha, qty:m.qty, precioUSD:m.precioUSD||0, precioARS:m.precioARS||0, ccl:m.ccl||0, id:m.id });
+    } else if(m.tipo === 'venta'){
+      qtyVendidaHist += m.qty;
+    }
+  });
+
+  if(!compras.length){
+    result.style.display='none';
+    emptyMsg.style.display='block';
+    emptyMsg.textContent = 'No hay compras registradas para '+ticker+'.';
+    return;
+  }
+
+  var pendiente = qtyVendidaHist;
+  var lineas = compras.map(function(c){ return { fecha:c.fecha, qty:c.qty, qtyAbierta:c.qty, precioUSD:c.precioUSD, precioARS:c.precioARS, ccl:c.ccl, id:c.id }; });
+  for(var i=0; i<lineas.length && pendiente>0; i++){
+    var descuento = Math.min(lineas[i].qtyAbierta, pendiente);
+    lineas[i].qtyAbierta -= descuento;
+    pendiente -= descuento;
+  }
+  var abiertas = lineas.filter(function(l){ return l.qtyAbierta > 0.000001; }).map(function(l){
+    var ppcUSD = l.ccl>0 ? l.precioARS/l.ccl : l.precioUSD;
+    return { fecha:l.fecha, qty:l.qty, qtyAbierta:l.qtyAbierta, ppcUSD:ppcUSD, precioARS:l.precioARS, ccl:l.ccl, id:l.id };
+  });
+
+  if(!abiertas.length){
+    result.style.display='none';
+    emptyMsg.style.display='block';
+    emptyMsg.textContent = 'No quedan unidades abiertas en '+ticker+'.';
+    return;
+  }
+  emptyMsg.style.display='none';
+
+  // Método ACTUAL (promedio ponderado, el que usa el sistema hoy): PPC promedio de TODAS las líneas abiertas
+  var qtyTotalAbierta = abiertas.reduce(function(s,l){ return s+l.qtyAbierta; }, 0);
+  var costoTotalAbierta = abiertas.reduce(function(s,l){ return s+l.ppcUSD*l.qtyAbierta; }, 0);
+  var ppcPromedioActual = qtyTotalAbierta>0 ? costoTotalAbierta/qtyTotalAbierta : 0;
+
+  var headerCCL = '<div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:10px">'+
+    '<b style="color:var(--text)">'+ticker+'</b> · ratio 1:'+ratio+' · CCL $'+Math.round(ccl).toLocaleString('es-AR')+cclLabel+
+    (precioARS>0?' · Precio ARS $'+precioARS.toLocaleString('es-AR')+' → USD/cedear '+(ventaUSDxCedear?ventaUSDxCedear.toFixed(4):'—'):' · <i>Ingresá el precio de venta ARS</i>')+
+    '</div>';
+
+  if(!(qtyVender>0)){
+    result.style.display='block';
+    result.innerHTML = headerCCL +
+      '<div class="ibox">Total abierto: '+(qtyTotalAbierta%1===0?qtyTotalAbierta.toFixed(0):qtyTotalAbierta.toFixed(2))+' u. · PPC promedio actual: USD '+ppcPromedioActual.toFixed(4)+'/u. · Ingresá una cantidad a vender para simular.</div>';
+    return;
+  }
+
+  // Método LAB: consumir la cantidad a vender del lote MAS BARATO primero (ppcUSD ascendente)
+  var ordenadas = abiertas.slice().sort(function(a,b){ return a.ppcUSD-b.ppcUSD; });
+  var restante = Math.min(qtyVender, qtyTotalAbierta);
+  var consumidas = [];
+  for(var j=0; j<ordenadas.length && restante>0.000001; j++){
+    var lot = ordenadas[j];
+    var take = Math.min(lot.qtyAbierta, restante);
+    if(take<=0) continue;
+    consumidas.push({ fecha:lot.fecha, qty:take, ppcUSD:lot.ppcUSD, costoBase:take*lot.ppcUSD });
+    restante -= take;
+  }
+  var costoBaseTotal = consumidas.reduce(function(s,c){ return s+c.costoBase; }, 0);
+  var qtyVendidaEfectiva = consumidas.reduce(function(s,c){ return s+c.qty; }, 0);
+  var ingresoTotal = ventaUSDxCedear!==null ? ventaUSDxCedear*qtyVendidaEfectiva : null;
+  var pnlRealizadoLab = ingresoTotal!==null ? ingresoTotal-costoBaseTotal : null;
+  var pctLab = (pnlRealizadoLab!==null && costoBaseTotal>0) ? pnlRealizadoLab/costoBaseTotal*100 : null;
+
+  var qtyRestanteLab = qtyTotalAbierta - qtyVendidaEfectiva;
+  var costoRestanteLab = costoTotalAbierta - costoBaseTotal;
+  var ppcRestanteLab = qtyRestanteLab>0 ? costoRestanteLab/qtyRestanteLab : 0;
+
+  // Comparación: qué mostraría el sistema actual (promedio) tras vender la misma cantidad
+  var costoBaseActual = ppcPromedioActual*qtyVendidaEfectiva;
+  var pnlRealizadoActual = ingresoTotal!==null ? ingresoTotal-costoBaseActual : null;
+  var ppcRestanteActual = ppcPromedioActual; // el promedio no cambia al vender una fracción
+
+  var cl = function(v){ return v===null?'':(v>=0?'pos':'neg'); };
+  var sg = function(v){ return v===null?'':(v>=0?'+':''); };
+
+  var resumenHTML =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:12px">'+
+      '<div class="metric" style="padding:.6rem .8rem">'+
+        '<div class="metric-label">Cantidad a vender</div>'+
+        '<div class="metric-value" style="font-size:.95rem">'+(qtyVendidaEfectiva%1===0?qtyVendidaEfectiva.toFixed(0):qtyVendidaEfectiva.toFixed(2))+(qtyVendidaEfectiva<qtyVender?' (máx. disp.)':'')+'</div>'+
+      '</div>'+
+      '<div class="metric" style="padding:.6rem .8rem">'+
+        '<div class="metric-label">Costo base LAB (barato 1º)</div>'+
+        '<div class="metric-value" style="font-size:.95rem">USD '+costoBaseTotal.toFixed(2)+'</div>'+
+      '</div>'+
+      '<div class="metric" style="padding:.6rem .8rem">'+
+        '<div class="metric-label">Costo base actual (promedio)</div>'+
+        '<div class="metric-value" style="font-size:.95rem">USD '+costoBaseActual.toFixed(2)+'</div>'+
+      '</div>'+
+      '<div class="metric" style="padding:.6rem .8rem">'+
+        '<div class="metric-label">G/P realizado LAB</div>'+
+        '<div class="metric-value '+cl(pnlRealizadoLab)+'" style="font-size:.95rem">'+(pnlRealizadoLab!==null?sg(pnlRealizadoLab)+pnlRealizadoLab.toFixed(2):'—')+'</div>'+
+        '<div class="metric-sub '+cl(pctLab)+'">'+(pctLab!==null?sg(pctLab)+pctLab.toFixed(2)+'%':'')+'</div>'+
+      '</div>'+
+      '<div class="metric" style="padding:.6rem .8rem">'+
+        '<div class="metric-label">G/P realizado actual</div>'+
+        '<div class="metric-value '+cl(pnlRealizadoActual)+'" style="font-size:.95rem">'+(pnlRealizadoActual!==null?sg(pnlRealizadoActual)+pnlRealizadoActual.toFixed(2):'—')+'</div>'+
+      '</div>'+
+      '<div class="metric" style="padding:.6rem .8rem">'+
+        '<div class="metric-label">PPC restante LAB</div>'+
+        '<div class="metric-value" style="font-size:.95rem">USD '+ppcRestanteLab.toFixed(4)+'</div>'+
+      '</div>'+
+      '<div class="metric" style="padding:.6rem .8rem">'+
+        '<div class="metric-label">PPC restante actual</div>'+
+        '<div class="metric-value" style="font-size:.95rem">USD '+ppcRestanteActual.toFixed(4)+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="ibox" style="margin-bottom:10px">'+
+      (ppcRestanteLab>ppcRestanteActual
+        ? '📉 Con el método LAB el PPC restante queda <b>'+((ppcRestanteLab/ppcRestanteActual-1)*100).toFixed(1)+'% más alto</b> que con el promedio actual → cartera más pesimista, como pediste.'
+        : 'Con esta combinación de lotes el PPC restante queda igual o más bajo que el promedio actual.')+
+    '</div>';
+
+  var filas = consumidas.map(function(c){
+    var costoLinea = c.costoBase;
+    var ingresoLinea = ventaUSDxCedear!==null ? ventaUSDxCedear*c.qty : null;
+    var pnlLinea = ingresoLinea!==null ? ingresoLinea-costoLinea : null;
+    var pctLinea = (pnlLinea!==null && costoLinea>0) ? pnlLinea/costoLinea*100 : null;
+    var qtyFmt = c.qty%1===0 ? c.qty.toFixed(0) : c.qty.toFixed(2);
+    return '<tr>'+
+      '<td class="mono">'+c.fecha+'</td>'+
+      '<td class="mono">'+qtyFmt+'</td>'+
+      '<td class="mono muted">USD '+c.ppcUSD.toFixed(4)+'</td>'+
+      '<td class="mono">USD '+costoLinea.toFixed(2)+'</td>'+
+      (ingresoLinea!==null?'<td class="mono">USD '+ingresoLinea.toFixed(2)+'</td>':'<td class="muted">—</td>')+
+      (pnlLinea!==null?
+        '<td class="mono '+cl(pnlLinea)+'">'+sg(pnlLinea)+pnlLinea.toFixed(2)+'</td>'+
+        '<td class="mono '+cl(pctLinea)+'">'+sg(pctLinea)+(pctLinea!==null?pctLinea.toFixed(1):'0.0')+'%</td>'
+        :'<td class="muted">—</td><td class="muted">—</td>')+
+    '</tr>';
+  }).join('');
+
+  var tablaHTML =
+    '<div style="font-size:.68rem;color:var(--text3);margin-bottom:4px">Lotes consumidos (del más barato al más caro, hasta cubrir la cantidad a vender):</div>'+
+    '<div class="tw" style="margin-top:0">'+
+    '<table style="font-size:.72rem">'+
+      '<thead><tr>'+
+        '<th>Fecha compra</th>'+
+        '<th>Qty consumida</th>'+
+        '<th>PPC USD/u.</th>'+
+        '<th>Costo USD</th>'+
+        '<th>Ingreso USD</th>'+
+        '<th>G/P USD</th>'+
+        '<th>G/P %</th>'+
       '</tr></thead>'+
       '<tbody>'+filas+'</tbody>'+
     '</table></div>';
