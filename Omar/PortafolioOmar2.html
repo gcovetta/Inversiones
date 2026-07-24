@@ -753,7 +753,8 @@ tr:hover td{background:var(--surface2)}
             <button class="btn btn-a" id="vsell-btn-confirmar" onclick="vsellConfirmar()" disabled>✔ Confirmar venta</button>
           </div>
         </div>
-      </div>      <div class="card" style="overflow:visible;display:inline-block;width:fit-content">
+      </div>      <div style="width:100%"></div>
+      <div class="card" style="overflow:visible;display:inline-block;width:fit-content;max-width:100%">
         <div class="card-header"><span class="card-title">Dividendos cobrados</span></div>
         <div id="divs-content" class=""></div>
       </div>
@@ -1211,31 +1212,32 @@ tr:hover td{background:var(--surface2)}
     <div class="page" id="page-ventaestad" style="padding:0">
       <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
 
-        <div class="ibox" style="margin-bottom:1rem">
-          📊 Ganancia realizada de todas tus ventas (histórico + lote más barato desde que se activó en producción),
+        <div class="ibox" style="margin-bottom:.7rem;font-size:.72rem;padding:.55rem .7rem">
+          📊 Ganancia realizada de todas tus ventas (histórico con lote más barato + ventas nuevas con promedio ponderado),
           agrupada por ticker, por tipo de instrumento y por Renta Fija / Renta Variable.
         </div>
 
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-header">
-            <span class="card-title">💰 Resumen total</span>
+        <div class="card" style="margin-bottom:.6rem">
+          <div class="card-header" style="padding:.5rem .8rem">
+            <span class="card-title" style="font-size:.82rem">💰 Resumen total</span>
           </div>
-          <div class="card-body" id="vestad-resumen"></div>
+          <div class="card-body" id="vestad-resumen" style="padding:.5rem .7rem"></div>
         </div>
 
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-header"><span class="card-title">Por Ticker</span></div>
-          <div class="card-body"><div id="vestad-ticker" style="overflow-x:auto"></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem;align-items:start">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Tipo de instrumento</span></div>
+            <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-tipo" style="overflow-x:auto"></div></div>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Renta Fija / Renta Variable</span></div>
+            <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-rfrv" style="overflow-x:auto"></div></div>
+          </div>
         </div>
 
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-header"><span class="card-title">Por Tipo de instrumento</span></div>
-          <div class="card-body"><div id="vestad-tipo" style="overflow-x:auto"></div></div>
-        </div>
-
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-header"><span class="card-title">Por Renta Fija / Renta Variable</span></div>
-          <div class="card-body"><div id="vestad-rfrv" style="overflow-x:auto"></div></div>
+        <div class="card">
+          <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Ticker</span></div>
+          <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-ticker" style="overflow-x:auto"></div></div>
         </div>
 
       </div>
@@ -1912,7 +1914,7 @@ function addMov(){
   // Calcular comisión absoluta: (qty * precioARS * % / 100)
   var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
-  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'barato':undefined)});
+  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'promedio':undefined)});
   saveAndRender();
   ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   resetMFechaHoy();
@@ -2760,29 +2762,16 @@ function vsellPreview(){
   var qtyVender=parseFloat(qtyEl.value);
   var ventaUSDxUnit=(precioARS>0&&ccl>0)?precioARS/ccl:null;
 
-  var compras=[]; var qtyVendidaHist=0;
-  movimientos.forEach(function(m){
-    if(!m||m.ticker!==ticker)return;
-    if(m.tipo==='compra'){ compras.push({fecha:m.fecha,qty:m.qty,precioUSD:m.precioUSD||0,precioARS:m.precioARS||0,ccl:m.ccl||0,mercado:m.mercado}); }
-    else if(m.tipo==='venta'){ qtyVendidaHist+=m.qty; }
-  });
-  if(!compras.length){ prevEl.innerHTML='<span style="color:var(--red)">No hay compras registradas para '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
+  // Promedio ponderado: se toma directo de getPositions(), que ya deja costUSDpuro/qty
+  // netos de toda la historia (compras y ventas previas, sea cual sea el método usado en cada una).
+  var posActual=getPositions().find(function(p){return p.ticker===ticker;});
+  if(!posActual||posActual.qty<=0.000001){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
 
-  var pendiente=qtyVendidaHist;
-  var lineas=compras.map(function(c){ return {fecha:c.fecha,qty:c.qty,qtyAbierta:c.qty,precioUSD:c.precioUSD,precioARS:c.precioARS,ccl:c.ccl,mercado:c.mercado}; });
-  for(var i=0;i<lineas.length&&pendiente>0;i++){ var desc=Math.min(lineas[i].qtyAbierta,pendiente); lineas[i].qtyAbierta-=desc; pendiente-=desc; }
-  var abiertas=lineas.filter(function(l){return l.qtyAbierta>0.000001;}).map(function(l){
-    var _esB=(l.mercado==='BONOS'||l.mercado==='ON');
-    var _tc=_esB?(getMEP(l.fecha)||getCCL(l.fecha)||l.ccl||MEP_HOY||CCL_HOY):(getCCL(l.fecha)||l.ccl||CCL_HOY);
-    var ppcUSD=_tc>0?l.precioARS/_tc:l.precioUSD;
-    return {fecha:l.fecha,qtyAbierta:l.qtyAbierta,ppcUSD:ppcUSD};
-  });
-  if(!abiertas.length){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
-
-  var qtyTotalAbierta=abiertas.reduce(function(s,l){return s+l.qtyAbierta;},0);
+  var qtyTotalAbierta=posActual.qty;
+  var avgCostoUSD=posActual.costUSDpuro/posActual.qty;
 
   if(!(qtyVender>0)){
-    prevEl.innerHTML='<span style="color:var(--text3)">Abierto: '+qtyTotalAbierta.toFixed(2)+' u. · Ingresá cantidad y precio para ver el preview.</span>';
+    prevEl.innerHTML='<span style="color:var(--text3)">Abierto: '+qtyTotalAbierta.toFixed(2)+' u. a un promedio de U$S '+avgCostoUSD.toFixed(4)+' · Ingresá cantidad y precio para ver el preview.</span>';
     if(btnConfirm)btnConfirm.disabled=true;
     return;
   }
@@ -2792,24 +2781,15 @@ function vsellPreview(){
     return;
   }
 
-  var ordenadas=abiertas.slice().sort(function(a,b){return a.ppcUSD-b.ppcUSD;});
-  var restante=qtyVender; var consumidas=[]; var costoBaseTotal=0;
-  for(var j=0;j<ordenadas.length&&restante>0.000001;j++){
-    var lot=ordenadas[j]; if(lot.qtyAbierta<=0.000001)continue;
-    var take=Math.min(lot.qtyAbierta,restante);
-    costoBaseTotal+=take*lot.ppcUSD;
-    consumidas.push({fecha:lot.fecha,qty:take});
-    restante-=take;
-  }
+  var costoBaseTotal=avgCostoUSD*qtyVender;
   var ingresoTotal=ventaUSDxUnit!==null?ventaUSDxUnit*qtyVender:null;
   var pnl=ingresoTotal!==null?ingresoTotal-costoBaseTotal:null;
   var pct=(pnl!==null&&costoBaseTotal>0)?(pnl/costoBaseTotal*100):null;
-  var loteTxt=consumidas.map(function(c){return c.fecha+' ('+(c.qty%1===0?c.qty.toFixed(0):c.qty.toFixed(2))+'u)';}).join(', ');
 
   var cl=pnl===null?'':(pnl>=0?'pos':'neg');
   var sg=pnl===null?'':(pnl>=0?'+':'');
   prevEl.innerHTML=
-    '<span style="color:var(--text2)">Lote: <b style="color:var(--text)">'+loteTxt+'</b></span>&nbsp;&nbsp;·&nbsp;&nbsp;'+
+    '<span style="color:var(--text2)">Promedio: <b style="color:var(--text)">U$S '+avgCostoUSD.toFixed(4)+'/u</b></span>&nbsp;&nbsp;·&nbsp;&nbsp;'+
     '<span style="color:var(--text2)">G/P: <b class="'+cl+'">'+(pnl!==null?sg+'U$S '+pnl.toFixed(2)+' ('+sg+pct.toFixed(2)+'%)':'—')+'</b></span>';
 
   if(btnConfirm)btnConfirm.disabled=(ingresoTotal===null);
@@ -2855,7 +2835,7 @@ function vsellConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'venta', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Vendido desde módulo rápido (Portafolio)',
-    finish:false, loteMethod:'barato'
+    finish:false, loteMethod:'promedio'
   });
   saveAndRender();
   flash(statusEl,'Venta registrada ✓',false);
@@ -2869,8 +2849,9 @@ function vestadTipoTicker(ticker){
   if(s==='on')return 'ON';
   if(s==='fci')return 'FCI';
   if(s==='argentina')return 'Acción Arg.';
+  if(s==='brasil')return 'Brasil';
   if(s==='cripto')return 'Cripto';
-  return 'Cedear'; // nyse, brasil, europa, china
+  return 'Cedear'; // nyse, europa, china
 }
 function vestadEsRF(ticker){
   var s=getSector(ticker);
@@ -2911,7 +2892,7 @@ function vestadTabla(grupos, labelHeader){
       '<td class="mono '+vestadCl(g.gananciaPct)+'">'+vestadFmtPct(g.gananciaPct)+'</td>'+
     '</tr>';
   }).join('');
-  return '<div class="tw"><table style="font-size:.75rem">'+
+  return '<div class="tw panel-table"><table>'+
     '<thead><tr><th>'+labelHeader+'</th><th># Ventas</th><th>Costo base</th><th>Ganancia neta</th><th>Ganancia %</th></tr></thead>'+
     '<tbody>'+filas+'</tbody></table></div>';
 }
@@ -2933,22 +2914,22 @@ function renderVentaEstadisticas(){
   var totalCostBasis=ventas.reduce(function(s,v){return s+v.costBasisUSD;},0);
   var totalPct=totalCostBasis>0?(totalGanancia/totalCostBasis*100):null;
   resumenEl.innerHTML=
-    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">'+
-      '<div class="metric" style="padding:.6rem .8rem">'+
-        '<div class="metric-label"># Ventas</div>'+
-        '<div class="metric-value" style="font-size:.95rem">'+ventas.length+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto">'+
+        '<div class="metric-label" style="font-size:.56rem"># Ventas</div>'+
+        '<div class="metric-value" style="font-size:.8rem">'+ventas.length+'</div>'+
       '</div>'+
-      '<div class="metric" style="padding:.6rem .8rem">'+
-        '<div class="metric-label">Costo base total</div>'+
-        '<div class="metric-value" style="font-size:.95rem">U$S '+totalCostBasis.toFixed(2)+'</div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto">'+
+        '<div class="metric-label" style="font-size:.56rem">Costo base total</div>'+
+        '<div class="metric-value" style="font-size:.8rem">U$S '+totalCostBasis.toFixed(2)+'</div>'+
       '</div>'+
-      '<div class="metric" style="padding:.6rem .8rem">'+
-        '<div class="metric-label">Ganancia neta total</div>'+
-        '<div class="metric-value '+vestadCl(totalGanancia)+'" style="font-size:.95rem">'+vestadFmtUSD(totalGanancia)+'</div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto">'+
+        '<div class="metric-label" style="font-size:.56rem">Ganancia neta total</div>'+
+        '<div class="metric-value '+vestadCl(totalGanancia)+'" style="font-size:.8rem">'+vestadFmtUSD(totalGanancia)+'</div>'+
       '</div>'+
-      '<div class="metric" style="padding:.6rem .8rem">'+
-        '<div class="metric-label">Ganancia % total</div>'+
-        '<div class="metric-value '+vestadCl(totalPct)+'" style="font-size:.95rem">'+vestadFmtPct(totalPct)+'</div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto">'+
+        '<div class="metric-label" style="font-size:.56rem">Ganancia % total</div>'+
+        '<div class="metric-value '+vestadCl(totalPct)+'" style="font-size:.8rem">'+vestadFmtPct(totalPct)+'</div>'+
       '</div>'+
     '</div>';
 
