@@ -495,6 +495,7 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Ventas (Lab)</div>
     <button class="nav-item" onclick="showPage(&#39;ventaslab&#39;,this)"><span>🧾</span>Simulador Venta</button>
     <button class="nav-item" onclick="showPage(&#39;ventaestad&#39;,this)"><span>📊</span>Estadísticas Venta</button>
+    <button class="nav-item" onclick="showPage(&#39;ventahist&#39;,this)"><span>📜</span>Estadísticas Venta Histórica</button>
     <div class="nav-sec">Links</div>
     <a class="nav-item" href="../Ana/PortafolioAna2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio Ana</a>
     <a class="nav-item" href="../Omar/PortafolioOmar2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio Omar</a>
@@ -1505,6 +1506,46 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+    <div class="page" id="page-ventahist" style="padding:0">
+      <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
+
+        <div class="ibox" style="margin-bottom:.7rem;font-size:.72rem;padding:.55rem .7rem">
+          📜 <b>Prueba histórica — no toca tu cartera real.</b> Subí un Excel/CSV con todas tus compras y ventas
+          (de cualquier período) y te muestro el resultado por ticker usando el mismo motor de promedio ponderado
+          que usa la cartera real. Acepta dos formatos: (1) uno simple con columnas <b>Ticker, Fecha, Tipo
+          (Compra/Venta), Cantidad, Precio</b> en ARS (para bonos/ON, el precio cada 100 nominales; <b>Mercado</b>
+          opcional: poné BONOS u ON para que use MEP en vez de CCL); o (2) el export tal cual de tu broker, con
+          columnas <b>Liquida/Operado, Operación (CPRA/VTAS), Especie, Cantidad, Importe</b> — en este caso uso
+          Especie como identificador (no hace falta ticker), Operado como fecha, e Importe/Cantidad para calcular
+          el precio real por unidad. Las filas con otros códigos de Operación (transferencias, VTTR, COTR, etc.)
+          se ignoran automáticamente. Las compras y ventas del mismo día (pases) se procesan
+          como operaciones normales, sin tratamiento especial por ahora. No se guarda nada — cada vez que entrás
+          a esta solapa tenés que volver a subir el archivo.
+        </div>
+
+        <div class="card" style="margin-bottom:.7rem">
+          <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">📂 Cargar archivo</span></div>
+          <div class="card-body" style="padding:.6rem .8rem">
+            <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 <span id="vhist-file-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span>
+              <input type="file" id="vhist-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="ventahistOnFile(this)">
+            </label>
+            <span id="vhist-file-status" style="margin-left:10px;font-size:.68rem;font-family:var(--mono);color:var(--text3)"></span>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:.6rem">
+          <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">💰 Resumen total</span></div>
+          <div class="card-body" id="vhist-resumen" style="padding:.5rem .7rem"><div class="ibox">Subí un archivo para ver el análisis.</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Ticker</span></div>
+          <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-ticker" style="overflow-x:auto"></div></div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- RUBROS -->
     <div class="page" id="page-rubros" style="padding:0">
       <div id="rubros-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
@@ -2154,6 +2195,7 @@ function showPage(id,btn){
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
   if(id==='ventaslab'){ ventaLabPopulateSelect(); ventaLabCalc(); }
   if(id==='ventaestad'){ renderVentaEstadisticas(); }
+  if(id==='ventahist'){ renderVentaHistorica(); }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -3467,6 +3509,214 @@ function renderVentaEstadisticas(){
 
   var porRFRV=vestadAgrupar(ventas, function(v){ return vestadEsRF(v.ticker)?'Renta Fija':'Renta Variable'; });
   document.getElementById('vestad-rfrv').innerHTML=vestadTabla(porRFRV,'Clase');
+}
+
+// ─── Estadísticas Venta Histórica (prueba standalone, no toca movimientos reales) ───
+var _ventahistRows = [];
+
+function ventahistParseFecha(v){
+  if(v==null||v==='') return null;
+  if(typeof v==='number'){
+    var d=new Date(Math.round((v-25569)*86400*1000));
+    var dd=d.getUTCDate(), mm=d.getUTCMonth()+1, yyyy=d.getUTCFullYear();
+    return (dd<10?'0':'')+dd+'/'+(mm<10?'0':'')+mm+'/'+yyyy;
+  }
+  var s=String(v).trim();
+  var m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){
+    var dd2=m[1].padStart(2,'0'), mm2=m[2].padStart(2,'0'), yyyy2=m[3].length===2?('20'+m[3]):m[3];
+    return dd2+'/'+mm2+'/'+yyyy2;
+  }
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[3].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+m[1];
+  return null;
+}
+
+function ventahistParseTipo(v){
+  var s=cmpNorm(v);
+  if(s==='compra'||s==='c'||s==='buy'||s==='cpra') return 'compra';
+  if(s==='venta'||s==='v'||s==='sell'||s==='vtas'||s==='vta') return 'venta';
+  return null; // VTTR, COTR, transferencias u otros códigos no se tratan como operación de mercado
+}
+
+function ventahistParseNum(v){
+  if(v==null||v==='') return NaN;
+  if(typeof v==='number') return v;
+  return cmpParseArgNum(v);
+}
+
+function ventahistFechaKey(f){
+  var p=f.split('/');
+  return p.length===3 ? p[2]+p[1].padStart(2,'0')+p[0].padStart(2,'0') : '0';
+}
+
+// Parsea la matriz de filas (como la devuelve XLSX.utils.sheet_to_json({header:1})).
+// Soporta dos formatos:
+//  1) Formato simple: Ticker, Fecha, Tipo, Cantidad, Precio, Mercado (opcional)
+//  2) Formato de exportación de broker: Especie (nombre completo, no ticker), Operado/Liquida (fechas),
+//     Operación (CPRA/VTAS), Cantidad, Importe. En este caso el precio por unidad se calcula como
+//     Importe/Cantidad, así no hace falta adivinar si "Precio" viene cada 100 nominales o por unidad.
+function ventahistParseRows(rows){
+  var hdrIdx=rows.findIndex(function(r){
+    return r.some(function(c){var n=cmpNorm(c);return n==='especie'||n==='ticker';});
+  });
+  if(hdrIdx<0) return {error:'No se encontró la columna Especie o Ticker.'};
+  var hdr=rows[hdrIdx].map(cmpNorm);
+
+  var especieCol=hdr.indexOf('especie');
+  var tickerCol=hdr.indexOf('ticker');
+  var opCol=hdr.findIndex(function(c){return c==='operado';});
+  var liqCol=hdr.findIndex(function(c){return c==='liquida'||c==='liquidacion'||c==='liquidación';});
+  var fCol=hdr.indexOf('fecha');
+  var tipoOpCol=hdr.findIndex(function(c){return c==='operacion'||c==='operación';});
+  var tipoCol=hdr.indexOf('tipo');
+  var qCol=hdr.findIndex(function(c){return c==='cantidad'||c==='qty'||c==='nominales';});
+  var impCol=hdr.findIndex(function(c){return c==='importe'||c==='monto';});
+  var pCol=hdr.findIndex(function(c){return c.indexOf('precio')===0||c==='price';});
+  var mCol=hdr.indexOf('mercado');
+
+  var idCol=especieCol>=0?especieCol:tickerCol;
+  var dateCol=opCol>=0?opCol:(liqCol>=0?liqCol:fCol);
+  var typeCol=tipoOpCol>=0?tipoOpCol:tipoCol;
+
+  if(idCol<0||dateCol<0||typeCol<0||qCol<0){
+    return {error:'Faltan columnas necesarias. Necesito: (Especie o Ticker) + (Operado, Liquida o Fecha) + (Operación o Tipo) + Cantidad, y para el precio Importe o Precio.'};
+  }
+  if(impCol<0&&pCol<0){
+    return {error:'Necesito la columna Importe o la columna Precio para calcular el costo.'};
+  }
+
+  var parsed=[], errores=0, ignoradas=0;
+  rows.slice(hdrIdx+1).forEach(function(r,idx){
+    var idRaw=String(r[idCol]||'').trim();
+    if(!idRaw) return;
+    var fecha=ventahistParseFecha(r[dateCol]);
+    var tipo=ventahistParseTipo(r[typeCol]);
+    if(!tipo){ ignoradas++; return; }
+    var qty=Math.abs(ventahistParseNum(r[qCol]));
+    var precioARS=NaN;
+    if(impCol>=0){
+      var importe=Math.abs(ventahistParseNum(r[impCol]));
+      precioARS=(!isNaN(importe)&&qty>0)?(importe/qty):NaN;
+    }
+    if(isNaN(precioARS)&&pCol>=0){
+      precioARS=ventahistParseNum(r[pCol]);
+    }
+    var esBonoON=/BONO|OBLIGAC|LETRA|LECAP|LECER|BOTE|BOPREAL/i.test(idRaw);
+    var mercado=(mCol>=0&&r[mCol])?String(r[mCol]).trim().toUpperCase():(esBonoON?'BONOS':'');
+    if(!fecha||isNaN(qty)||qty<=0||isNaN(precioARS)||precioARS<0){errores++;return;}
+    parsed.push({ticker:idRaw,fecha:fecha,tipo:tipo,qty:qty,precioARS:precioARS,mercado:mercado,_idx:idx});
+  });
+
+  return {parsed:parsed,errores:errores,ignoradas:ignoradas};
+}
+
+function ventahistOnFile(input){
+  var f=input.files[0];
+  if(!f) return;
+  document.getElementById('vhist-file-name').textContent=f.name;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      var res=ventahistParseRows(rows);
+      if(res.error){ alert(res.error); return; }
+      if(!res.parsed.length){ alert('No se pudo leer ninguna fila válida. Revisá el formato del archivo.'); return; }
+      _ventahistRows=res.parsed;
+      var statusTxt=res.parsed.length+' operaciones cargadas';
+      if(res.ignoradas) statusTxt+=' · '+res.ignoradas+' filas ignoradas (transferencias u otros códigos)';
+      if(res.errores) statusTxt+=' · '+res.errores+' filas con error';
+      document.getElementById('vhist-file-status').textContent=statusTxt;
+      renderVentaHistorica();
+    }catch(ex){
+      alert('Error leyendo el archivo: '+ex.message);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function calcularVentaHistorica(rows){
+  var pos={};
+  var ordenados=rows.slice().sort(function(a,b){
+    var da=ventahistFechaKey(a.fecha), db=ventahistFechaKey(b.fecha);
+    if(da!==db) return da<db?-1:1;
+    return a._idx-b._idx;
+  });
+  ordenados.forEach(function(r){
+    var key=r.ticker;
+    if(!pos[key]) pos[key]={ticker:key,qty:0,costUSDpuro:0,gananciaUSD:0,costBasisVendido:0,ventasCount:0,_sobreventa:0};
+    var p=pos[key];
+    var esBonoON=(r.mercado==='BONOS'||r.mercado==='ON');
+    var tc=esBonoON?(getMEP(r.fecha)||getCCL(r.fecha)||MEP_HOY||CCL_HOY):(getCCL(r.fecha)||CCL_HOY);
+    var usdPuro=tc>0?(r.precioARS*r.qty/tc):0;
+    if(r.tipo==='compra'){
+      p.costUSDpuro+=usdPuro;
+      p.qty+=r.qty;
+    } else {
+      var avgUSDpuro=p.qty>0.000001?p.costUSDpuro/p.qty:0;
+      var qtyVendida=Math.min(r.qty,p.qty);
+      var costBasis=avgUSDpuro*qtyVendida;
+      var proceeds=tc>0?(r.precioARS*qtyVendida/tc):0;
+      p.gananciaUSD+=proceeds-costBasis;
+      p.costBasisVendido+=costBasis;
+      p.costUSDpuro-=costBasis;
+      p.qty-=qtyVendida;
+      p.ventasCount++;
+      if(r.qty>qtyVendida) p._sobreventa+=(r.qty-qtyVendida);
+    }
+  });
+  return Object.values(pos);
+}
+
+function renderVentaHistorica(){
+  var resumenEl=document.getElementById('vhist-resumen');
+  var tablaEl=document.getElementById('vhist-ticker');
+  if(!resumenEl||!tablaEl) return;
+  if(!_ventahistRows.length){
+    resumenEl.innerHTML='<div class="ibox">Subí un archivo para ver el análisis.</div>';
+    tablaEl.innerHTML='';
+    return;
+  }
+  var resultados=calcularVentaHistorica(_ventahistRows).filter(function(p){return p.ventasCount>0;});
+  if(!resultados.length){
+    resumenEl.innerHTML='<div class="ibox">No se detectaron ventas en el archivo cargado (¿solo cargaste compras?).</div>';
+    tablaEl.innerHTML='';
+    return;
+  }
+  var totalGanancia=resultados.reduce(function(s,p){return s+p.gananciaUSD;},0);
+  var totalCostBasis=resultados.reduce(function(s,p){return s+p.costBasisVendido;},0);
+  var totalVentas=resultados.reduce(function(s,p){return s+p.ventasCount;},0);
+  var totalPct=totalCostBasis>0?(totalGanancia/totalCostBasis*100):null;
+  var cl=function(n){return n===null?'':(n>=0?'pos':'neg');};
+  var fmtUSD=function(n){return (n>=0?'+':'')+'U$S '+n.toFixed(2);};
+  var fmtPct=function(n){return n===null?'—':(n>=0?'+':'')+n.toFixed(2)+'%';};
+
+  resumenEl.innerHTML=
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem"># Ventas</div><div class="metric-value" style="font-size:.8rem">'+totalVentas+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Costo base total</div><div class="metric-value" style="font-size:.8rem">U$S '+totalCostBasis.toFixed(2)+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Ganancia neta total</div><div class="metric-value '+cl(totalGanancia)+'" style="font-size:.8rem">'+fmtUSD(totalGanancia)+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Ganancia % total</div><div class="metric-value '+cl(totalPct)+'" style="font-size:.8rem">'+fmtPct(totalPct)+'</div></div>'+
+    '</div>';
+
+  var sorted=resultados.slice().sort(function(a,b){return b.gananciaUSD-a.gananciaUSD;});
+  var filas=sorted.map(function(p){
+    var pct=p.costBasisVendido>0?(p.gananciaUSD/p.costBasisVendido*100):null;
+    return '<tr>'+
+      '<td class="mono">'+p.ticker+(p._sobreventa>0.000001?' ⚠️':'')+'</td>'+
+      '<td class="mono">'+p.ventasCount+'</td>'+
+      '<td class="mono muted">U$S '+p.costBasisVendido.toFixed(2)+'</td>'+
+      '<td class="mono '+cl(p.gananciaUSD)+'">'+fmtUSD(p.gananciaUSD)+'</td>'+
+      '<td class="mono '+cl(pct)+'">'+fmtPct(pct)+'</td>'+
+      '<td class="mono muted">'+(p.qty>0.000001?p.qty.toFixed(2):'—')+'</td>'+
+    '</tr>';
+  }).join('');
+  tablaEl.innerHTML='<div class="tw panel-table"><table>'+
+    '<thead><tr><th>Ticker</th><th># Ventas</th><th>Costo base</th><th>Ganancia neta</th><th>Ganancia %</th><th>Qty restante</th></tr></thead>'+
+    '<tbody>'+filas+'</tbody></table></div>'+
+    (sorted.some(function(p){return p._sobreventa>0.000001;})?'<div class="ibox" style="margin-top:8px;font-size:.68rem">⚠️ Los tickers marcados vendieron más cantidad de la que compraron dentro del archivo — probablemente ya tenías posición antes del rango de fechas subido, así que esa parte no tiene costo base cargado y no entra en el cálculo de ganancia.</div>':'');
 }
 
 function checkMovSinTC(){
