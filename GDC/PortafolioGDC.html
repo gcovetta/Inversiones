@@ -1565,6 +1565,25 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
 
+        <div class="card" style="margin-bottom:.7rem">
+          <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">💵 Dividendos y Rentas cobradas</span></div>
+          <div class="card-body" style="padding:.6rem .8rem;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+            <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 Cargar/reemplazar archivo <span id="vhist-div-file-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span>
+              <input type="file" id="vhist-div-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="ventahistOnDivFile(this)">
+            </label>
+            <button class="btn btn-sm" onclick="ventahistClearDivs()">🗑️ Vaciar</button>
+            <span id="vhist-div-count" style="font-size:.68rem;font-family:var(--mono);color:var(--text3)">Sin dividendos/rentas guardados</span>
+            <span id="vhist-div-file-status" style="font-size:.68rem;font-family:var(--mono);color:var(--text3)"></span>
+            <div class="ibox" style="width:100%;font-size:.68rem;padding:.4rem .6rem;margin-top:2px">
+              Acepta el export "Movimientos Dividendos y Rentas Cobradas" del broker (columnas Fecha, Cpbt, Especie,
+              Moneda, Divi/renta). Solo se suman los cobros tipo <b>DIV</b> y <b>RTA</b> — los <b>CANJ</b> (canje, sin
+              movimiento de caja) y <b>RESC</b> (rescate/redención total, devolución de capital) se ignoran para no
+              inflar la ganancia. Cada cobro se clasifica por ticker (Bonos/Argentina/Brasil/Cedear) igual que el
+              resto de la cartera.
+            </div>
+          </div>
+        </div>
+
         <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">💰 Resumen total</span></div>
           <div class="card-body" id="vhist-resumen" style="padding:.5rem .7rem"><div class="ibox">Subí un archivo o agregá movimientos a mano para ver el análisis.</div></div>
@@ -1585,9 +1604,14 @@ tr:hover td{background:var(--surface2)}
           <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-rfrv-anio" style="overflow-x:auto"></div></div>
         </div>
 
-        <div class="card">
+        <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Ticker</span></div>
           <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-ticker" style="overflow-x:auto"></div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Dividendos/Rentas por Ticker</span></div>
+          <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-divs-ticker" style="overflow-x:auto"></div></div>
         </div>
 
       </div>
@@ -3560,6 +3584,7 @@ function renderVentaEstadisticas(){
 
 // ─── Estadísticas Venta Histórica (prueba standalone, no toca movimientos reales) ───
 var _ventahistRows = [];
+var _ventahistDivs = []; // dividendos/rentas cobradas, persistidos aparte (identifican por ticker corto)
 
 function ventahistParseFecha(v){
   if(v==null||v==='') return null;
@@ -3611,7 +3636,10 @@ function ventahistEsBonoON(idRaw){
 // Activos con split conocido dentro del período cargado: la variación de precio "por split" contamina
 // el promedio ponderado y da ganancias/pérdidas ficticias. Se excluyen por completo de la base histórica.
 var VHIST_EXCLUIDOS_RE=/^LONGVIE|^CELULOSA|^FERRUM/i;
+// Tickers cortos equivalentes (usados en el archivo de Dividendos/Rentas, que identifica por ticker y no por nombre completo).
+var VHIST_EXCLUIDOS_TICKERS=new Set(['LONG','CELU','FERR','ECOG']);
 function ventahistEstaExcluido(idRaw){
+  if(VHIST_EXCLUIDOS_TICKERS.has(String(idRaw||'').trim().toUpperCase())) return true;
   return VHIST_EXCLUIDOS_RE.test(idRaw)||cmpNorm(idRaw).indexOf('ecogas')>=0;
 }
 
@@ -3698,6 +3726,66 @@ function ventahistReadRows(ab){
   return cmpParseHTML(ab);
 }
 
+// ─── Dividendos y Rentas cobradas (archivo separado del broker, identifica por ticker corto) ───
+// Formato: Fecha, Cpbt (DIV/RTA/CANJ/RESC), Especie (ticker), Moneda (vacío=USD, "PESOS"=ARS), Divi/renta (monto).
+// Solo DIV y RTA se cuentan como ingreso: CANJ es un canje sin movimiento de caja, y RESC es un rescate/
+// redención total del bono (devolución de capital, no ganancia) — sumarlo como renta sobreestimaría la ganancia.
+function ventahistParseDivRows(rows){
+  var hdrIdx=rows.findIndex(function(r){
+    var n=r.map(cmpNorm);
+    return n.indexOf('fecha')>=0&&n.indexOf('especie')>=0&&n.indexOf('cpbt')>=0;
+  });
+  if(hdrIdx<0) return {error:'No se encontró la tabla de Dividendos/Rentas (columnas Fecha, Cpbt, Especie, Divi/renta).'};
+  var hdr=rows[hdrIdx].map(cmpNorm);
+  var fCol=hdr.indexOf('fecha');
+  var cpbtCol=hdr.indexOf('cpbt');
+  var idCol=hdr.indexOf('especie');
+  var monCol=hdr.indexOf('moneda');
+  var montoCol=hdr.indexOf('divi/renta');
+  if(fCol<0||cpbtCol<0||idCol<0||montoCol<0){
+    return {error:'Faltan columnas necesarias. Necesito: Fecha, Cpbt, Especie y Divi/renta.'};
+  }
+  var parsed=[], ignoradas=0, errores=0;
+  rows.slice(hdrIdx+1).forEach(function(r,idx){
+    var cpbt=cmpNorm(r[cpbtCol]);
+    if(cpbt!=='div'&&cpbt!=='rta'){ ignoradas++; return; }
+    var ticker=String(r[idCol]||'').trim().toUpperCase();
+    if(!ticker) return;
+    var fecha=ventahistParseFecha(r[fCol]);
+    var monto=ventahistParseNum(r[montoCol]);
+    var moneda=String(r[monCol]||'').trim().toUpperCase();
+    if(!fecha||isNaN(monto)||monto===0){ errores++; return; }
+    parsed.push({ticker:ticker,fecha:fecha,monto:monto,moneda:moneda,cpbt:cpbt,_idx:idx});
+  });
+  return {parsed:parsed,ignoradas:ignoradas,errores:errores};
+}
+
+// Traduce el sector real (getSector, el mismo que usa toda la cartera) a los 4 baldes de este desglose.
+function vhistSectorToTipo(sector){
+  if(sector==='bonos'||sector==='on') return 'Bonos';
+  if(sector==='argentina') return 'Argentina';
+  if(sector==='brasil') return 'Brasil';
+  return 'Cedear';
+}
+
+// Convierte cada cobro de dividendo/renta a USD y lo clasifica, usando getSector real (ticker corto → sector).
+function calcularDividendosHistoricos(rows){
+  return rows.map(function(r){
+    var sector=(typeof getSector==='function')?getSector(r.ticker):'nyse';
+    var tipoActivo=vhistSectorToTipo(sector);
+    var esBonoON=(sector==='bonos'||sector==='on');
+    var usd;
+    if(r.moneda==='PESOS'){
+      var tc=esBonoON?(getMEP(r.fecha)||MEP_HOY):(getCCL(r.fecha)||CCL_HOY);
+      usd=tc>0?(r.monto/tc):0;
+    } else {
+      usd=r.monto; // ya viene en USD
+    }
+    var anio=parseInt((r.fecha.split('/')[2])||'0',10);
+    return {ticker:r.ticker,fecha:r.fecha,anio:anio,tipoActivo:tipoActivo,usd:usd};
+  });
+}
+
 function ventahistResetFecha(){
   var el=document.getElementById('vhist-add-fecha');
   if(el) el.value=new Date().toISOString().split('T')[0];
@@ -3774,6 +3862,51 @@ function ventahistClearBase(){
   vhistPersist();
   document.getElementById('vhist-file-status').textContent='';
   document.getElementById('vhist-file-name').textContent='Sin archivo';
+  renderVentaHistorica();
+}
+
+// Persiste los dividendos/rentas cobrados (mismo patrón que vhistPersist).
+function vhistDivsPersist(){
+  try{ localStorage.setItem('ptNYSE_vhist_divs', JSON.stringify(_ventahistDivs)); }catch(e){}
+  sbSetConfig('vhist_divs', _ventahistDivs);
+}
+
+function ventahistOnDivFile(input){
+  var f=input.files[0];
+  if(!f) return;
+  document.getElementById('vhist-div-file-name').textContent=f.name;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var rows=ventahistReadRows(e.target.result);
+      var res=ventahistParseDivRows(rows);
+      if(res.error){ alert(res.error); return; }
+      if(!res.parsed.length){ alert('No se pudo leer ninguna fila de Dividendos/Renta válida. Revisá el formato del archivo.'); return; }
+      var excluidas=res.parsed.filter(function(r){return ventahistEstaExcluido(r.ticker);}).length;
+      var limpio=res.parsed.filter(function(r){return !ventahistEstaExcluido(r.ticker);});
+      if(_ventahistDivs.length && !confirm('Ya tenés dividendos/rentas guardados ('+_ventahistDivs.length+').\n¿Reemplazarlos con este archivo ('+limpio.length+' cobros)?')){ return; }
+      _ventahistDivs=limpio;
+      vhistDivsPersist();
+      var statusTxt=limpio.length+' cobros guardados (dividendos + rentas)';
+      if(excluidas) statusTxt+=' · '+excluidas+' excluidos (splits)';
+      if(res.ignoradas) statusTxt+=' · '+res.ignoradas+' filas ignoradas (canjes/rescates, no son renta)';
+      if(res.errores) statusTxt+=' · '+res.errores+' filas con error';
+      document.getElementById('vhist-div-file-status').textContent=statusTxt;
+      renderVentaHistorica();
+    }catch(ex){
+      alert('Error leyendo el archivo: '+ex.message);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function ventahistClearDivs(){
+  if(!_ventahistDivs.length){ alert('No hay dividendos/rentas guardados.'); return; }
+  if(!confirm('¿Vaciar los dividendos/rentas guardados ('+_ventahistDivs.length+')? Esta acción no se puede deshacer.')) return;
+  _ventahistDivs=[];
+  vhistDivsPersist();
+  document.getElementById('vhist-div-file-status').textContent='';
+  document.getElementById('vhist-div-file-name').textContent='Sin archivo';
   renderVentaHistorica();
 }
 
@@ -3889,15 +4022,39 @@ function vhistRenderAnioTotal(ventas){
   return '<div style="display:flex;flex-wrap:wrap;gap:6px">'+cards+'</div>';
 }
 
+// Tabla compacta de dividendos/rentas por ticker corto (no se puede mergear con la tabla por Especie
+// descriptiva de arriba porque son dos sistemas de identificación distintos).
+function vhistRenderDivsPorTicker(divEventos){
+  if(!divEventos.length) return '';
+  var porTicker={};
+  divEventos.forEach(function(d){
+    if(!porTicker[d.ticker]) porTicker[d.ticker]={usd:0,n:0,tipoActivo:d.tipoActivo};
+    porTicker[d.ticker].usd+=d.usd;
+    porTicker[d.ticker].n++;
+  });
+  var sorted=Object.keys(porTicker).map(function(k){return Object.assign({ticker:k},porTicker[k]);}).sort(function(a,b){return b.usd-a.usd;});
+  var filas=sorted.map(function(p){
+    return '<tr><td class="mono">'+p.ticker+'</td><td class="mono muted">'+p.tipoActivo+'</td><td class="mono">'+p.n+'</td><td class="mono pos">+U$S '+p.usd.toFixed(2)+'</td></tr>';
+  }).join('');
+  return '<div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Tipo</th><th># Cobros</th><th>Total USD</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
+}
+
 function renderVentaHistorica(){
   var resumenEl=document.getElementById('vhist-resumen');
   var tablaEl=document.getElementById('vhist-ticker');
   var anioEl=document.getElementById('vhist-anio');
   var tipoEl=document.getElementById('vhist-tipo-anio');
   var rfrvEl=document.getElementById('vhist-rfrv-anio');
+  var divsTickerEl=document.getElementById('vhist-divs-ticker');
   if(!resumenEl||!tablaEl) return;
   document.getElementById('vhist-count').textContent=_ventahistRows.length?(_ventahistRows.length+' movimientos guardados'):'Sin movimientos guardados';
-  if(!_ventahistRows.length){
+  var vhDivCount=document.getElementById('vhist-div-count');
+  if(vhDivCount) vhDivCount.textContent=_ventahistDivs.length?(_ventahistDivs.length+' cobros guardados'):'Sin dividendos/rentas guardados';
+
+  var divEventos=calcularDividendosHistoricos(_ventahistDivs);
+  if(divsTickerEl) divsTickerEl.innerHTML=vhistRenderDivsPorTicker(divEventos);
+
+  if(!_ventahistRows.length && !divEventos.length){
     resumenEl.innerHTML='<div class="ibox">Subí un archivo o agregá movimientos a mano para ver el análisis.</div>';
     tablaEl.innerHTML='';
     if(anioEl) anioEl.innerHTML='';
@@ -3908,7 +4065,7 @@ function renderVentaHistorica(){
   var calc=calcularVentaHistorica(_ventahistRows);
   var resultados=calc.porTicker.filter(function(p){return p.ventasCount>0;});
   var ventas=calc.ventas;
-  if(!resultados.length){
+  if(!resultados.length && !divEventos.length){
     resumenEl.innerHTML='<div class="ibox">No se detectaron ventas en la base guardada (¿solo cargaste compras?).</div>';
     tablaEl.innerHTML='';
     if(anioEl) anioEl.innerHTML='';
@@ -3916,7 +4073,9 @@ function renderVentaHistorica(){
     if(rfrvEl) rfrvEl.innerHTML='';
     return;
   }
-  var totalGanancia=resultados.reduce(function(s,p){return s+p.gananciaUSD;},0);
+  var totalGananciaCapital=resultados.reduce(function(s,p){return s+p.gananciaUSD;},0);
+  var totalDivs=divEventos.reduce(function(s,d){return s+d.usd;},0);
+  var totalGanancia=totalGananciaCapital+totalDivs;
   var totalCostBasis=resultados.reduce(function(s,p){return s+p.costBasisVendido;},0);
   var totalVentas=resultados.reduce(function(s,p){return s+p.ventasCount;},0);
   var totalPct=totalCostBasis>0?(totalGanancia/totalCostBasis*100):null;
@@ -3928,19 +4087,26 @@ function renderVentaHistorica(){
     '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
       '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem"># Ventas</div><div class="metric-value" style="font-size:.8rem">'+totalVentas+'</div></div>'+
       '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Costo base total</div><div class="metric-value" style="font-size:.8rem">U$S '+totalCostBasis.toFixed(2)+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Dividendos/Rentas cobrados</div><div class="metric-value pos" style="font-size:.8rem">+U$S '+totalDivs.toFixed(2)+'</div></div>'+
       '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Ganancia neta total</div><div class="metric-value '+cl(totalGanancia)+'" style="font-size:.8rem">'+fmtUSD(totalGanancia)+'</div></div>'+
       '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Ganancia % total</div><div class="metric-value '+cl(totalPct)+'" style="font-size:.8rem">'+fmtPct(totalPct)+'</div></div>'+
     '</div>';
 
+  // Los dividendos/rentas se suman como "ganancia" sin costo asociado (costBasis=0), así entran en los
+  // mismos baldes de año/tipo/RF-RV que las ventas, sin tocar la tabla por Ticker (que usa Especie descriptiva).
+  var ventasConDivs=ventas.concat(divEventos.map(function(d){
+    return {ticker:d.ticker,fecha:d.fecha,anio:d.anio,tipoActivo:d.tipoActivo,gananciaUSD:d.usd,costBasis:0};
+  }));
+
   if(anioEl){
-    anioEl.innerHTML=vhistRenderAnioTotal(ventas);
+    anioEl.innerHTML=vhistRenderAnioTotal(ventasConDivs);
   }
   if(tipoEl){
-    var tipoMatrix=vhistBuildMatrix(ventas,function(v){return v.tipoActivo||'Argentina';});
+    var tipoMatrix=vhistBuildMatrix(ventasConDivs,function(v){return v.tipoActivo||'Argentina';});
     tipoEl.innerHTML=vhistRenderMatrix(tipoMatrix,['Bonos','Argentina','Brasil','Cedear'],'Tipo');
   }
   if(rfrvEl){
-    var rfrvMatrix=vhistBuildMatrix(ventas,function(v){return v.tipoActivo==='Bonos'?'RF':'RV';});
+    var rfrvMatrix=vhistBuildMatrix(ventasConDivs,function(v){return v.tipoActivo==='Bonos'?'RF':'RV';});
     rfrvEl.innerHTML=vhistRenderMatrix(rfrvMatrix,['RF','RV'],'RF/RV');
   }
 
@@ -6932,6 +7098,14 @@ function trkCalcCCL(){
       try{localStorage.setItem('ptNYSE_vhist_movs',JSON.stringify(_ventahistRows));}catch(e){}
     } else {
       try{var svh=localStorage.getItem('ptNYSE_vhist_movs'); if(svh){_ventahistRows=JSON.parse(svh);}}catch(e){}
+    }
+    // 9c. Dividendos/Rentas cobrados de Estadísticas Venta Histórica (persistido aparte)
+    var sbVhistDivs = await sbGetConfig('vhist_divs');
+    if(sbVhistDivs && Array.isArray(sbVhistDivs)){
+      _ventahistDivs=sbVhistDivs;
+      try{localStorage.setItem('ptNYSE_vhist_divs',JSON.stringify(_ventahistDivs));}catch(e){}
+    } else {
+      try{var svhd=localStorage.getItem('ptNYSE_vhist_divs'); if(svhd){_ventahistDivs=JSON.parse(svhd);}}catch(e){}
     }
     if(typeof renderVentaHistorica==='function') renderVentaHistorica();
 
