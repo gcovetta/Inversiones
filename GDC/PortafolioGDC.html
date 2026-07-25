@@ -3557,8 +3557,14 @@ function ventahistFechaKey(f){
 //     Operación (CPRA/VTAS), Cantidad, Importe. En este caso el precio por unidad se calcula como
 //     Importe/Cantidad, así no hace falta adivinar si "Precio" viene cada 100 nominales o por unidad.
 function ventahistParseRows(rows){
+  // Requiere Especie/Ticker Y Cantidad en la misma fila: algunos exports de broker traen una
+  // mini-tabla de "filtros aplicados" antes de la tabla real que también menciona "Especie"
+  // pero sin columna Cantidad, y no queremos confundirla con el encabezado de datos.
   var hdrIdx=rows.findIndex(function(r){
-    return r.some(function(c){var n=cmpNorm(c);return n==='especie'||n==='ticker';});
+    var n=r.map(cmpNorm);
+    var hasId=n.indexOf('especie')>=0||n.indexOf('ticker')>=0;
+    var hasQty=n.some(function(c){return c==='cantidad'||c==='qty'||c==='nominales';});
+    return hasId&&hasQty;
   });
   if(hdrIdx<0) return {error:'No se encontró la columna Especie o Ticker.'};
   var hdr=rows[hdrIdx].map(cmpNorm);
@@ -3611,6 +3617,21 @@ function ventahistParseRows(rows){
   return {parsed:parsed,errores:errores,ignoradas:ignoradas};
 }
 
+function ventahistReadRows(ab){
+  // 1) intenta como Excel/CSV real
+  try{
+    var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
+    for(var i=0;i<wb.SheetNames.length;i++){
+      var ws=wb.Sheets[wb.SheetNames[i]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.some(function(r){return r.some(function(c){var n=cmpNorm(c);return n==='especie'||n==='ticker';});})) return rows;
+    }
+  }catch(ex){}
+  // 2) fallback: muchos brokers exportan un .xls que en realidad es HTML (ej. Portfolio Personal).
+  //    Reusa el mismo parser que ya usa Comparación de Portafolios para el formato viejo de Veta.
+  return cmpParseHTML(ab);
+}
+
 function ventahistOnFile(input){
   var f=input.files[0];
   if(!f) return;
@@ -3618,9 +3639,7 @@ function ventahistOnFile(input){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
-      var ws=wb.Sheets[wb.SheetNames[0]];
-      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      var rows=ventahistReadRows(e.target.result);
       var res=ventahistParseRows(rows);
       if(res.error){ alert(res.error); return; }
       if(!res.parsed.length){ alert('No se pudo leer ninguna fila válida. Revisá el formato del archivo.'); return; }
