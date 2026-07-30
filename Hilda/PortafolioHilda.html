@@ -145,6 +145,7 @@ tr:hover td{background:var(--surface2)}
 /* Toggle para ocultar columna Cant. en paneles */
 .panels-grid.hide-qty .panel-table th:last-child,
 .panels-grid.hide-qty .panel-table td:last-child{display:none}
+.panels-grid.hide-pventa .panel-table .col-pventa{display:none}
 .qty-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-family:var(--mono);font-size:.65rem;color:var(--text2);user-select:none}
 .qty-toggle input{accent-color:var(--accent);cursor:pointer;width:12px;height:12px;margin:0}
 .qty-toggle:hover{color:var(--text)}
@@ -641,43 +642,43 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
         <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
-            <div class="panels-grid hide-qty" id="panels-grid" style="align-items:start">
+            <div class="panels-grid hide-qty hide-pventa" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="display:none">
             <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
           </div>
           <div class="card" id="panel-brasil" style="display:none">
             <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
           </div>
           <div class="card" id="panel-europa" style="display:none">
             <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-bonos" style="display:none">
             <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
           </div>
           <div class="card" id="panel-on" style="display:none">
             <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
           </div>
           <div class="card" id="panel-china" style="display:none">
             <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-argentina" style="display:none">
             <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
           </div>
           <div class="card" id="panel-cripto" style="display:none">
             <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -769,11 +770,14 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
-      <div id="pos-footer-bar" style="position:sticky;bottom:0;z-index:50;background:var(--surface);border-top:1px solid var(--border);padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;overflow:hidden;margin-top:1.2rem">
+      <div id="pos-footer-bar" style="position:sticky;bottom:.6rem;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.35);padding:.5rem .9rem;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;overflow:hidden;margin:1.2rem auto 0 auto;width:fit-content;max-width:100%">
         <span class="card-title">Posiciones abiertas</span>
         <div class="gap-row">
           <label class="qty-toggle" title="Mostrar/ocultar columna Cantidad">
             <input type="checkbox" id="qty-toggle" onchange="toggleQtyCol(this.checked)"> Mostrar Cant.
+          </label>
+          <label class="qty-toggle" title="Mostrar/ocultar columna P. Venta">
+            <input type="checkbox" id="pventa-toggle" onchange="togglePVentaCol(this.checked)"> Mostrar P. Venta
           </label>
           <span id="ref-status" class="emsg"></span>
           <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
@@ -3535,7 +3539,7 @@ function renderPortfolio(){
       '<td class="mono">'+invARS+'</td>'+
       '<td class="mono">'+(mktARS?mktARS:'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td class="mono muted">'+ppcARS+'</td>'+
-      '<td class="mono">'+targetCell+'</td>'+
+      '<td class="mono col-pventa">'+targetCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
     var _passColor=!_colorFilterOn||((_fGreen&&_fGreen.checked)&&pnlPct!==null&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct!==null&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct!==null&&pnlPct<0);
@@ -4365,6 +4369,24 @@ function toggleQtyCol(show){
     var cb=document.getElementById('qty-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
     if(grid&&show!=='1')grid.classList.add('hide-qty');
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
+})();
+
+// ─── Toggle columna P. Venta (oculta por defecto) ───
+function togglePVentaCol(show){
+  var grid=document.getElementById('panels-grid');
+  if(!grid)return;
+  if(show){grid.classList.remove('hide-pventa');}else{grid.classList.add('hide-pventa');}
+  try{localStorage.setItem('ptHilda_showPVenta',show?'1':'0');}catch(e){}
+}
+(function initPVentaToggle(){
+  var show='0';
+  try{var s=localStorage.getItem('ptHilda_showPVenta');if(s!==null)show=s;}catch(e){}
+  function apply(){
+    var cb=document.getElementById('pventa-toggle');var grid=document.getElementById('panels-grid');
+    if(cb)cb.checked=(show==='1');
+    if(grid&&show!=='1')grid.classList.add('hide-pventa');
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();
