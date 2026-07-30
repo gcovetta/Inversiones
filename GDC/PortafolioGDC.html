@@ -2159,6 +2159,7 @@ var BRL_TICKERS=new Set(['BBAS3']); // tickers que cotizan en BRL (B3 directo, n
 var movimientos = [];
 var quotes = {};
 var RSI_CACHE = {}; // ticker -> {value, ts}. RSI(14) diario, no aplica a bonos/ONs
+var TIR_CACHE = {}; // ticker -> {value, ts}. TIR% desde EcoValores, solo Bonos (cobertura parcial, no cubre ONs)
 
 var PRELOADED = [];
 
@@ -4799,11 +4800,19 @@ function renderPortfolio(){
     var _markBtnCls='mark-btn'+(_mark?' active':'');
     var _markNote=_mark&&_mark.note?'<span class="mark-note-tag" title="'+_mark.note.replace(/"/g,'&quot;')+'">'+_mark.note.replace(/</g,'&lt;')+'</span>':'';
 
-    // RSI (14): no aplica a Bonos/ONs (ahí va TIR más adelante)
-    var _rsiEntry=_isBonoON?null:RSI_CACHE[p.ticker];
-    var rsiCell=_rsiEntry&&_rsiEntry.value!=null
-      ?'<span style="color:'+rsiColor(_rsiEntry.value)+';font-weight:600">'+_rsiEntry.value.toFixed(1)+'</span>'
-      :'<span style="color:var(--text3)">—</span>';
+    // RSI (14) para todo menos Bonos/ONs. Para Bonos: TIR (EcoValores, cobertura parcial). ONs: sin fuente, siempre '—'.
+    var rsiCell;
+    if(_isBonoON){
+      var _tirEntry=(sector==='bonos')?TIR_CACHE[p.ticker]:null;
+      rsiCell=_tirEntry&&_tirEntry.value!=null
+        ?'<span style="color:var(--text);font-weight:600">'+_tirEntry.value.toFixed(2)+'%</span>'
+        :'<span style="color:var(--text3)">—</span>';
+    } else {
+      var _rsiEntry=RSI_CACHE[p.ticker];
+      rsiCell=_rsiEntry&&_rsiEntry.value!=null
+        ?'<span style="color:'+rsiColor(_rsiEntry.value)+';font-weight:600">'+_rsiEntry.value.toFixed(1)+'</span>'
+        :'<span style="color:var(--text3)">—</span>';
+    }
 
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
@@ -6215,6 +6224,8 @@ async function fetchAllQuotes(){
 
   // RSI: refresco oportunista (no bloquea el render de precios; cada ticker respeta su propio TTL)
   if(typeof fetchAllRSI==='function') fetchAllRSI();
+  // TIR de Bonos: idem, oportunista
+  if(typeof fetchAllTIR==='function') fetchAllTIR();
 }
 
 // ─── RSI (14, método Wilder) ───────────────────────────────────────────────
@@ -6342,6 +6353,98 @@ function toggleRSICol(show){
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();
+
+// ─── TIR de Bonos (fuente: EcoValores research, cobertura parcial) ────────
+// Parsea TODAS las tablas de la página: para cada tabla busca la columna
+// cuyo header sea "% TIR" (o "TIR"), y para cada fila con un link a
+// ticker.php?t=XXX toma el valor de esa columna. Tablas sin columna TIR
+// (Acciones, Cedears, Commodities, etc.) se ignoran solas al no matchear.
+function parseEcoValoresTIR(html){
+  var map={};
+  try{
+    var doc=new DOMParser().parseFromString(html,'text/html');
+    var tables=doc.querySelectorAll('table');
+    tables.forEach(function(table){
+      var headerCells=table.querySelectorAll('thead th, tr:first-child th, tr:first-child td');
+      var tirIdx=-1;
+      headerCells.forEach(function(th,i){
+        var t=(th.textContent||'').trim().toLowerCase();
+        if(tirIdx<0 && (t==='% tir'||t==='tir')) tirIdx=i;
+      });
+      if(tirIdx<0) return;
+      var rows=table.querySelectorAll('tr');
+      rows.forEach(function(tr){
+        var a=tr.querySelector('a[href*="ticker.php?t="]');
+        if(!a) return;
+        var m=(a.getAttribute('href')||'').match(/[?&]t=([A-Za-z0-9]+)/);
+        if(!m) return;
+        var ticker=m[1].toUpperCase();
+        var cells=tr.querySelectorAll('td');
+        if(cells.length<=tirIdx) return;
+        var raw=(cells[tirIdx].textContent||'').trim().replace('%','').replace(',','.');
+        var val=parseFloat(raw);
+        if(!isNaN(val)) map[ticker]=val;
+      });
+    });
+  }catch(e){}
+  return map;
+}
+
+async function fetchEcoValoresTIR(){
+  var url='https://bonos.ecovalores.com.ar/eco/';
+  var tries=[
+    function(){
+      return fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(url),{},9000)
+        .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
+        .then(function(j){return j.contents||'';});
+    },
+    function(){
+      return fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),{},9000)
+        .then(function(r){return r.ok?r.text():Promise.reject('!ok');});
+    },
+    function(){
+      return fetchWithTimeout('https://thingproxy.freeboard.io/fetch/'+url,{},9000)
+        .then(function(r){return r.ok?r.text():Promise.reject('!ok');});
+    }
+  ];
+  for(var i=0;i<tries.length;i++){
+    try{
+      var html=await tries[i]();
+      var map=parseEcoValoresTIR(html);
+      if(Object.keys(map).length) return map;
+    }catch(e){}
+  }
+  throw new Error('Sin datos de TIR (EcoValores)');
+}
+
+// Trae TIR para todos los Bonos abiertos en un solo fetch (EcoValores no pagina).
+// TTL de 12hs igual que RSI. Tickers no presentes en EcoValores quedan en '—'.
+var _fetchAllTIRRunning=false;
+async function fetchAllTIR(){
+  if(_fetchAllTIRRunning) return;
+  _fetchAllTIRRunning=true;
+  try{
+    var pos=getPositions().filter(function(p){return p.qty>0.000001 && getSector(p.ticker)==='bonos';});
+    if(!pos.length) return;
+    var TTL=12*60*60*1000;
+    var now=Date.now();
+    var stale=pos.some(function(p){var c=TIR_CACHE[p.ticker];return !c||(now-c.ts)>TTL;});
+    if(!stale) return;
+    var map={};
+    try{ map=await fetchEcoValoresTIR(); }catch(e){ return; }
+    pos.forEach(function(p){
+      if(map.hasOwnProperty(p.ticker)){
+        TIR_CACHE[p.ticker]={value:map[p.ticker],ts:now};
+      } else if(!TIR_CACHE[p.ticker]){
+        TIR_CACHE[p.ticker]={value:null,ts:now}; // marcado "consultado, sin cobertura" para no reintentar cada render
+      }
+    });
+    try{localStorage.setItem('ptNYSE_tir',JSON.stringify(TIR_CACHE));}catch(e){}
+    renderPortfolio();
+  } finally {
+    _fetchAllTIRRunning=false;
+  }
+}
 
 function exportCSV(){
   if(!movimientos.length)return;
@@ -7499,6 +7602,12 @@ function trkCalcCCL(){
       if(srsi) RSI_CACHE=JSON.parse(srsi)||{};
     }catch(e){}
 
+    // 9f. TIR cache (Bonos, EcoValores) - mismo esquema que RSI
+    try{
+      var stir=localStorage.getItem('ptNYSE_tir');
+      if(stir) TIR_CACHE=JSON.parse(stir)||{};
+    }catch(e){}
+
     // 9b. Base histórica de Estadísticas Venta Histórica (persistida, no toca movimientos reales)
     var sbVhist = await sbGetConfig('vhist_movs');
     if(sbVhist && Array.isArray(sbVhist)){
@@ -7619,6 +7728,8 @@ function trkCalcCCL(){
     }
     // RSI: dispara siempre al cargar; internamente sólo pide lo que esté vencido (>12hs) o falte
     setTimeout(function(){ if(typeof fetchAllRSI==='function') fetchAllRSI(); }, 1500);
+    // TIR de Bonos (EcoValores): mismo criterio, un solo fetch para toda la cartera
+    setTimeout(function(){ if(typeof fetchAllTIR==='function') fetchAllTIR(); }, 2000);
   }
 
   initFromSupabase();
