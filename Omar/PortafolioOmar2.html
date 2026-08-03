@@ -3233,7 +3233,7 @@ function renderPortfolio(){
     var ppcFromUSD=ppcUSD*_tcHoy*100;
     var mkt=p._mktARS||0;  // usar _mktARS de Pasada 1 (mercadoCedearARS aún no está declarada)
     var ppcCedearARS=_isBonoON
-      ?((mkt>0&&ppcFromARS/mkt<0.15)||(mkt===0&&ppcFromUSD>0&&ppcFromARS/ppcFromUSD<0.15)?ppcFromUSD:ppcFromARS)
+      ?ppcFromUSD
       :(_isARS2?ppcUSD*CCL_HOY:ppcUSD*CCL_HOY);
     var mercadoCedearARS=p._mktARS;
     var inversionCedearARS=p._invARS;
@@ -4162,8 +4162,10 @@ async function fetchAllQuotes(){
   // Separar por fuente: Finnhub (NYSE/Brasil/etc), Yahoo AR (Argentina), data912 (Bonos/ON)
   // Brasil va a Yahoo .BA (como GDC/Hilda): evita que tickers BYMA-only pasen por Finnhub
   // y obtengan precio del subyacente NYSE incorrecto. fetchYahooAll ya pone fromByma=true para brasil.
-  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&s!=='brasil'&&!BRL_TICKERS.has(p.ticker);});
-  var yahooPos=pos.filter(function(p){var s=getSector(p.ticker);return s==='argentina'||s==='brasil'||BRL_TICKERS.has(p.ticker);});
+  // RBLX: va a Yahoo .BA (como GDC) en vez de Finnhub. Finnhub trae el precio del subyacente
+  // NYSE y se sintetiza el ARS-equiv con ratio/CCL, lo que diverge del precio real del CEDEAR en BYMA.
+  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&s!=='brasil'&&!BRL_TICKERS.has(p.ticker)&&p.ticker!=='RBLX';});
+  var yahooPos=pos.filter(function(p){var s=getSector(p.ticker);return s==='argentina'||s==='brasil'||BRL_TICKERS.has(p.ticker)||p.ticker==='RBLX';});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
 
@@ -4208,10 +4210,17 @@ async function fetchAllQuotes(){
     await Promise.all(yahooPos.map(async function(p){
       try{
         var fbq=await fetchYahooAR(p.ticker);
-        if(getSector(p.ticker)==='brasil'&&!BRL_TICKERS.has(p.ticker)){fbq.fromByma=true;}
+        if((getSector(p.ticker)==='brasil'||p.ticker==='RBLX')&&!BRL_TICKERS.has(p.ticker)){fbq.fromByma=true;}
         quotes[p.ticker]=fbq;
       }
-      catch(e){errors++;}
+      catch(e){
+        // Fallback Finnhub para RBLX si Yahoo .BA falla (igual criterio que GDC)
+        if(p.ticker==='RBLX'){
+          try{quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));}catch(e2){errors++;}
+        } else {
+          errors++;
+        }
+      }
       updateProgress();
     }));
   }
