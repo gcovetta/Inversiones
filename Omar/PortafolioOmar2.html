@@ -692,7 +692,7 @@ tr:hover td{background:var(--surface2)}
               <input type="number" id="vbuy-qty" placeholder="0" min="0" step="any" style="width:100%">
             </div>
             <div class="fgrp" style="width:100px">
-              <label>Precio ARS</label>
+              <label id="vbuy-precio-label">Precio ARS</label>
               <input type="number" id="vbuy-precio-ars" placeholder="0" min="0" step="any" style="width:100%">
             </div>
           </div>
@@ -729,7 +729,7 @@ tr:hover td{background:var(--surface2)}
               <input type="date" id="vsell-fecha" oninput="vsellPreview()" style="width:100%">
             </div>
             <div class="fgrp" style="width:100px">
-              <label>Precio ARS</label>
+              <label id="vsell-precio-label">Precio ARS</label>
               <input type="number" id="vsell-precio-ars" placeholder="0" min="0" step="any" oninput="vsellPreview()" style="width:100%">
             </div>
             <div class="fgrp" style="width:80px">
@@ -2722,10 +2722,19 @@ function vbuyResetFecha(){
   if(el) el.value=new Date().toISOString().split('T')[0];
 }
 
+function vbuySyncLabel(){
+  var mktEl=document.getElementById('vbuy-mkt'),lbl=document.getElementById('vbuy-precio-label');
+  if(!mktEl||!lbl)return;
+  var esBonoON=(mktEl.value==='BONOS'||mktEl.value==='ON');
+  lbl.textContent=esBonoON?'Precio / 100N':'Precio ARS';
+}
+(function(){var el=document.getElementById('vbuy-mkt');if(el)el.addEventListener('change',vbuySyncLabel);})();
+
 function vbuyClear(){
   ['vbuy-ticker','vbuy-qty','vbuy-precio-ars'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var f=document.getElementById('vbuy-finish'); if(f)f.checked=false;
   var mktEl=document.getElementById('vbuy-mkt'); if(mktEl)mktEl.value='USA';
+  vbuySyncLabel();
   vbuyResetFecha();
 }
 
@@ -2743,12 +2752,14 @@ function vbuyConfirmar(){
   var ticker=tickerEl.value.trim().toUpperCase();
   var fecha=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
   var qty=parseFloat(qtyEl.value);
-  var precioARS=parseFloat(arsEl.value);
+  var precioARSInput=parseFloat(arsEl.value);
+  // Bonos/ONs: igual que en el formulario completo, se ingresa precio por 100 nominales → dividir por 100 para almacenar por nominal
+  var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
 
   if(!ticker){flash(statusEl,'Ingresá un ticker',true);return;}
   if(!fecha){flash(statusEl,'Falta la fecha',true);return;}
   if(isNaN(qty)||qty<=0){flash(statusEl,'Cantidad inválida',true);return;}
-  if(isNaN(precioARS)||precioARS<0){flash(statusEl,'Precio inválido',true);return;}
+  if(isNaN(precioARSInput)||precioARSInput<0){flash(statusEl,'Precio inválido',true);return;}
 
   var cclVal=getTC(fecha,mkt);
   if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP para esa fecha',true);return;}
@@ -2808,17 +2819,21 @@ function vsellPreview(){
   var btnConfirm=document.getElementById('vsell-btn-confirmar');
   if(!tickerEl||!prevEl) return;
   var ticker=tickerEl.value.trim().toUpperCase();
-  if(!ticker){ prevEl.innerHTML='<span style="color:var(--text3)">Elegí un ticker para ver el preview.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
+  if(!ticker){ prevEl.innerHTML='<span style="color:var(--text3)">Elegí un ticker para ver el preview.</span>'; if(btnConfirm)btnConfirm.disabled=true; var lblP0=document.getElementById('vsell-precio-label'); if(lblP0)lblP0.textContent='Precio ARS'; return; }
 
   var sector=getSector(ticker);
   var esBonoON=(sector==='bonos'||sector==='on');
+  var lblP=document.getElementById('vsell-precio-label');
+  if(lblP)lblP.textContent=esBonoON?'Precio / 100N':'Precio ARS';
   var cclManual=parseFloat(cclEl.value);
   var fechaStr=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
   var cclTabla=fechaStr?(esBonoON?(getMEP(fechaStr)||getCCL(fechaStr)):getCCL(fechaStr)):null;
   var ccl=cclManual>0?cclManual:(cclTabla||(esBonoON?(MEP_HOY||CCL_HOY):CCL_HOY));
   if(!cclManual&&ccl)cclEl.placeholder=Math.round(ccl);
 
-  var precioARS=parseFloat(arsEl.value);
+  var precioARSInput=parseFloat(arsEl.value);
+  // Bonos/ONs: el precio se ingresa por 100 nominales → dividir por 100 para comparar contra costUSDpuro (por nominal)
+  var precioARS=esBonoON&&precioARSInput>0?precioARSInput/100:precioARSInput;
   var qtyVender=parseFloat(qtyEl.value);
   var ventaUSDxUnit=(precioARS>0&&ccl>0)?precioARS/ccl:null;
 
@@ -2872,13 +2887,16 @@ function vsellConfirmar(){
   var ticker=tickerEl.value.trim().toUpperCase();
   var qty=parseFloat(qtyEl.value);
   var fecha=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
-  var precioARS=parseFloat(arsEl.value);
+  var precioARSInput=parseFloat(arsEl.value);
   if(!ticker){flash(statusEl,'Elegí un ticker',true);return;}
   if(isNaN(qty)||qty<=0){flash(statusEl,'Cantidad inválida',true);return;}
   if(!fecha){flash(statusEl,'Falta la fecha',true);return;}
-  if(isNaN(precioARS)||precioARS<=0){flash(statusEl,'Precio inválido',true);return;}
+  if(isNaN(precioARSInput)||precioARSInput<=0){flash(statusEl,'Precio inválido',true);return;}
 
   var mkt=vsellGetLastMercado(ticker);
+  var esBonoONv=(mkt==='BONOS'||mkt==='ON');
+  // Bonos/ONs: se ingresa precio por 100 nominales → dividir por 100 para almacenar por nominal (igual que compra)
+  var precioARS=esBonoONv?(precioARSInput/100):precioARSInput;
   var cclManual=parseFloat(cclEl.value);
   var cclVal=cclManual>0?cclManual:getTC(fecha,mkt);
   if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP — completá el campo CCL',true);return;}
