@@ -462,7 +462,8 @@ tr:hover td{background:var(--surface2)}
 <div class="main" id="main">
   <nav class="sidebar">
     <div class="nav-sec">Vistas</div>
-    <button class="nav-item active" onclick="showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio</button>
+    <button class="nav-item active" id="nav-cartera-principal" onclick="setCarteraActiva(&#39;principal&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio</button>
+    <button class="nav-item" id="nav-cartera-cocos" onclick="setCarteraActiva(&#39;cocos&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio 2 (Cocos)</button>
     <button class="nav-item" onclick="showPage(&#39;movimientos&#39;,this)"><span>↕</span>Movimientos</button>
     <div class="nav-sec">R. Variable</div>
     <div style="padding:.2rem .85rem .1rem">
@@ -516,10 +517,13 @@ tr:hover td{background:var(--surface2)}
           <div class="pin-action" onclick="portPinReset()">Cambiar PIN</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:.5rem">
+        <span id="cartera-activa-badge" style="font-family:var(--mono);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:20px;background:#0a2218;color:var(--accent);border:1px solid #143a24">Principal</span>
+        <div style="display:flex;align-items:center;gap:8px">
         <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
         <button id="port-summary-toggle-btn" onclick="portToggleSummary()" title="Colapsar/expandir resumen" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar resumen</button>
         <button id="port-watchzone-toggle-btn" onclick="portToggleWatchzone()" title="Colapsar/expandir zona de seguimiento" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar mira</button>
+        </div>
       </div>
       <div id="port-content" class="">
       <!-- Elemento oculto para mantener el cálculo de dividendos -->
@@ -777,6 +781,7 @@ tr:hover td{background:var(--surface2)}
             <div class="fgrp" id="g-mkt"><label>Mercado</label><select id="m-mkt"><option value="USA">NYSE / NASDAQ</option><option value="ETF">ETF (USA)</option><option value="ARGENTINA">Argentina</option><option value="BONOS">Bonos</option><option value="ON">ON</option><option value="BRASIL">Brasil</option><option value="EUROPA">Europa</option><option value="CHINA">China</option><option value="CRIPTO">Cripto</option></select></div>
             <div class="fgrp" id="g-ticker"><label>Ticker</label><input id="m-ticker" type="text" placeholder="AAPL, IBIT..." style="text-transform:uppercase"></div>
             <div class="fgrp"><label>Fecha</label><input id="m-fecha" type="date"></div>
+            <div class="fgrp"><label>Cartera</label><select id="m-cartera" title="A qué cartera pertenece este movimiento"><option value="principal">Principal</option><option value="cocos">Portafolio 2 (Cocos)</option></select></div>
           </div>
           <div id="row-normal">
             <div class="fg">
@@ -840,7 +845,12 @@ tr:hover td{background:var(--surface2)}
             </select>
             <input id="mov-filter-fecha" type="text" placeholder="Fecha (ej: 2026)..." style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none" oninput="renderMovimientos()" title="Filtrar por fecha">
             <input id="mov-filter-notas" type="text" placeholder="Notas..." style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none" oninput="renderMovimientos()" title="Filtrar por notas">
-            <button class="btn btn-sm" onclick="(function(){document.getElementById(&#39;mov-filter&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-tipo&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-mkt&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-fecha&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-notas&#39;).value=&#39;&#39;;renderMovimientos();})()" title="Limpiar filtros" style="color:var(--text3)">✕</button>
+            <select id="mov-filter-cartera" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 6px;height:28px;outline:none" onchange="renderMovimientos()" title="Filtrar por cartera">
+              <option value="">Todas las carteras</option>
+              <option value="principal">Principal</option>
+              <option value="cocos">Portafolio 2 (Cocos)</option>
+            </select>
+            <button class="btn btn-sm" onclick="(function(){document.getElementById(&#39;mov-filter&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-tipo&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-mkt&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-fecha&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-notas&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-cartera&#39;).value=&#39;&#39;;renderMovimientos();})()" title="Limpiar filtros" style="color:var(--text3)">✕</button>
             <button class="btn" onclick="exportCSV()">↓ CSV</button>
             <button class="btn btn-d" onclick="clearAll()" title="Borrar todos los movimientos">🗑 Borrar todo</button>
           </div>
@@ -1689,6 +1699,11 @@ var MEP_HOY = MEP_TABLE[_HOY_KEY] || CCL_HOY; // se actualiza al hacer fetch
 var movimientos = [];
 var quotes = {};
 
+// Cartera activa: 'principal' (la de siempre) o 'cocos' (cartera vieja, en liquidación, operada con Cocos Capital).
+// Todo movimiento se etiqueta con m.cartera al crearse; getPositions() sólo agrega los de CARTERA_ACTIVA,
+// así las dos carteras nunca se mezclan en posiciones, valores ni gráficos.
+var CARTERA_ACTIVA = (function(){try{return localStorage.getItem('ptNYSE_cartera_activa')||'principal';}catch(e){return 'principal';}})();
+
 var PRELOADED = [];
 
 var BRL_TICKERS=new Set(['BBAS3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
@@ -1826,6 +1841,32 @@ function showPage(id,btn){
   }
 }
 
+// ─── Cartera activa (Principal vs Portafolio 2 / Cocos Capital) ───
+function syncCarteraUI(){
+  var badge=document.getElementById('cartera-activa-badge');
+  if(badge){
+    if(CARTERA_ACTIVA==='cocos'){
+      badge.textContent='Portafolio 2 · Cocos Capital';
+      badge.style.background='#2a1650';badge.style.color='#c9a6ff';badge.style.borderColor='#5b2f8f';
+    } else {
+      badge.textContent='Principal';
+      badge.style.background='#0a2218';badge.style.color='var(--accent)';badge.style.borderColor='#143a24';
+    }
+  }
+  var bp=document.getElementById('nav-cartera-principal'),bc=document.getElementById('nav-cartera-cocos');
+  if(bp)bp.classList.toggle('active',CARTERA_ACTIVA==='principal');
+  if(bc)bc.classList.toggle('active',CARTERA_ACTIVA==='cocos');
+  var mCartSel=document.getElementById('m-cartera'); if(mCartSel) mCartSel.value=CARTERA_ACTIVA;
+}
+function setCarteraActiva(c){
+  CARTERA_ACTIVA=c;
+  try{localStorage.setItem('ptNYSE_cartera_activa',c);}catch(e){}
+  syncCarteraUI();
+  renderPortfolio();
+  if(typeof vsellPopulateSelect==='function')vsellPopulateSelect();
+}
+syncCarteraUI();
+
 function isBonoONForm(){var mkt=document.getElementById('m-mkt');return mkt&&(mkt.value==='BONOS'||mkt.value==='ON');}
 function onTipo(){
   var t=document.getElementById('m-tipo').value;
@@ -1897,10 +1938,12 @@ function calcUSD(){
 function addMov(){
   var tipo=document.getElementById('m-tipo').value;
   var sel=document.getElementById('m-status');
+  var carteraSel=document.getElementById('m-cartera');
+  var carteraMov=carteraSel?carteraSel.value:'principal';
   if(tipo==='aporte'){
     var monto=parseFloat(document.getElementById('m-monto').value);
     if(!monto||monto<=0){flash(sel,'Ingresa un monto',true);return;}
-    movimientos.push({id:Date.now(),fecha:document.getElementById('m-fecha').value.split('-').reverse().join('/'),tipo:tipo,mercado:'—',ticker:'APORTE',qty:0,precioARS:monto,ccl:null,precioUSD:monto,comision:0,notas:''});
+    movimientos.push({id:Date.now(),fecha:document.getElementById('m-fecha').value.split('-').reverse().join('/'),tipo:tipo,mercado:'—',ticker:'APORTE',qty:0,precioARS:monto,ccl:null,precioUSD:monto,comision:0,notas:'',cartera:carteraMov});
     saveAndRender();flash(sel,'Aporte registrado',false);return;
   }
   var ticker=document.getElementById('m-ticker').value.trim().toUpperCase();
@@ -1921,7 +1964,7 @@ function addMov(){
   // Calcular comisión absoluta: (qty * precioARS * % / 100)
   var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
-  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'promedio':undefined)});
+  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'promedio':undefined),cartera:carteraMov});
   saveAndRender();
   ['m-ticker','m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   resetMFechaHoy();
@@ -2458,8 +2501,9 @@ function renderMovimientos(){
   var filterMkt=(document.getElementById('mov-filter-mkt')||{value:''}).value.toUpperCase();
   var filterFecha=(document.getElementById('mov-filter-fecha')||{value:''}).value.trim();
   var filterNotas=(document.getElementById('mov-filter-notas')||{value:''}).value.trim().toLowerCase();
+  var filterCartera=(document.getElementById('mov-filter-cartera')||{value:''}).value;
   var activeFocusId=document.activeElement?document.activeElement.id:null;
-  
+
   var filterVal=currentFilterVal;
 
   var lista=movimientos.slice().reverse();
@@ -2471,8 +2515,9 @@ function renderMovimientos(){
   });
   if(filterFecha) lista=lista.filter(function(m){return (m.fecha||'').indexOf(filterFecha)>=0;});
   if(filterNotas) lista=lista.filter(function(m){return (m.notas||'').toLowerCase().indexOf(filterNotas)>=0;});
+  if(filterCartera) lista=lista.filter(function(m){return (m.cartera||'principal')===filterCartera;});
 
-  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas;
+  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterCartera;
   document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
   if(!lista.length){empty.style.display='';wrap.style.display='none';return;}
   empty.style.display='none';wrap.style.display='';
@@ -2501,7 +2546,7 @@ function renderMovimientos(){
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
       '<td><span class="mkt">'+mLabel+'</span></td>'+
-      '<td style="font-weight:600">'+m.ticker+'</td>'+
+      '<td style="font-weight:600">'+m.ticker+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':'')+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
       '<td class="mono">'+(m.precioARS?'$'+m.precioARS.toLocaleString('es-AR'):'')+'</td>'+
       '<td class="mono muted">'+_mCCLstr+'</td>'+
@@ -2568,7 +2613,8 @@ function getPositions(){
 
   // Procesar en orden CRONOLÓGICO (no orden de carga) para que el consumo de lotes
   // por venta respete qué compras existían efectivamente a esa fecha.
-  var ordenados = movimientos.slice().sort(function(a,b){
+  // Sólo movimientos de la cartera activa (principal/cocos) — evita mezclar las dos carteras.
+  var ordenados = movimientos.filter(function(m){return m&&(m.cartera||'principal')===CARTERA_ACTIVA;}).sort(function(a,b){
     var fa=(a&&a.fecha||'').split('/'), fb=(b&&b.fecha||'').split('/');
     var da = fa.length===3? fa[2]+fa[1].padStart(2,'0')+fa[0].padStart(2,'0') : '0';
     var db = fb.length===3? fb[2]+fb[1].padStart(2,'0')+fb[0].padStart(2,'0') : '0';
@@ -2713,7 +2759,7 @@ function vbuyConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'compra', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Cargado desde módulo rápido (Portafolio)',
-    finish:finishEl&&finishEl.checked||false
+    finish:finishEl&&finishEl.checked||false, cartera:CARTERA_ACTIVA
   });
   saveAndRender();
   flash(statusEl,'Compra registrada ✓',false);
@@ -2849,7 +2895,7 @@ function vsellConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'venta', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Vendido desde módulo rápido (Portafolio)',
-    finish:false, loteMethod:'promedio'
+    finish:false, loteMethod:'promedio', cartera:CARTERA_ACTIVA
   });
   saveAndRender();
   flash(statusEl,'Venta registrada ✓',false);
