@@ -923,7 +923,15 @@ tr:hover td{background:var(--surface2)}
             </select>
             <input id="mov-filter-fecha" type="text" placeholder="Fecha (ej: 2026)..." style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none" oninput="renderMovimientos()" title="Filtrar por fecha">
             <input id="mov-filter-notas" type="text" placeholder="Notas..." style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none" oninput="renderMovimientos()" title="Filtrar por notas">
-            <button class="btn btn-sm" onclick="(function(){document.getElementById(&#39;mov-filter&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-tipo&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-mkt&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-fecha&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-notas&#39;).value=&#39;&#39;;renderMovimientos();})()" title="Limpiar filtros" style="color:var(--text3)">✕</button>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--mono);font-size:.68rem;color:var(--red);height:28px;padding:0 4px" title="Mostrar sólo compras/ventas (no bonos/ON) cuyo CCL no está en la tabla histórica para esa fecha exacta (se usó un valor cargado a mano como fallback)">
+              <input type="checkbox" id="mov-filter-noccl" onchange="renderMovimientos()" style="accent-color:var(--red);width:12px;height:12px;cursor:pointer;margin:0">
+              ⚠ Sin CCL en tabla
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--mono);font-size:.68rem;color:var(--amber);height:28px;padding:0 4px" title="Mostrar sólo compras/ventas de Bonos/ON cuyo MEP no está en la tabla histórica para esa fecha exacta (puede haber caído a CCL como aproximación, o directamente a un valor cargado a mano)">
+              <input type="checkbox" id="mov-filter-nomep" onchange="renderMovimientos()" style="accent-color:var(--amber);width:12px;height:12px;cursor:pointer;margin:0">
+              ⚠ Sin MEP en tabla
+            </label>
+            <button class="btn btn-sm" onclick="(function(){document.getElementById(&#39;mov-filter&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-tipo&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-mkt&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-fecha&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-notas&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-noccl&#39;).checked=false;document.getElementById(&#39;mov-filter-nomep&#39;).checked=false;renderMovimientos();})()" title="Limpiar filtros" style="color:var(--text3)">✕</button>
             <button class="btn" onclick="exportCSV()">↓ CSV</button>
             <button class="btn btn-d" onclick="clearAll()" title="Borrar todos los movimientos">🗑 Borrar todo</button>
           </div>
@@ -1677,6 +1685,17 @@ async function sbSaveArray(table, arr){
     await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gt.'+arr.length,{method:'DELETE',headers:sbHeaders()});
     return true;
   }catch(e){ console.warn('sbSaveArray error',table,e); return false; }
+}
+// Reintenta sbSaveArray hasta 3 veces (backoff 1.2s/2.4s) antes de darse por vencido —
+// mitiga cortes de red momentáneos o cierres de pestaña justo después de guardar.
+async function sbSaveArrayRetry(table, arr, tries){
+  tries = tries || 3;
+  for(var i=0;i<tries;i++){
+    var ok = await sbSaveArray(table, arr);
+    if(ok) return true;
+    if(i<tries-1) await new Promise(function(r){setTimeout(r, 1200*(i+1));});
+  }
+  return false;
 }
 
 async function sbLoadArray(table){
@@ -2671,9 +2690,20 @@ function portCheckSession(){portUnblur();return; // PIN desactivadoportUnblur();
 // ─────────────────────────────────────────────────────────────────────────
 
 var _hildaInitDone = false;
+// Si sbSaveArray falla (red, Supabase caído, etc.) el guardado quedaba SOLO local y en el próximo
+// reload initFromSupabase() pisa todo con la versión vieja de Supabase — el movimiento "desaparece".
+// Antes esto era silencioso (sbSaveArray traga el error y devuelve false). Ahora se avisa en #lupd.
+function warnSaveFailed(){
+  var el=document.getElementById('lupd');
+  if(!el)return;
+  el.textContent='⚠️ No se guardó en la nube — reintentá o revisá tu conexión';
+  el.style.color='var(--red)';
+  console.error('[saveAndRender] sbSaveArray devolvió false — el movimiento NO llegó a Supabase, sólo quedó local en este dispositivo/navegador.');
+  setTimeout(function(){ el.style.color=''; el.textContent=new Date().toLocaleTimeString('es-AR'); },10000);
+}
 function saveAndRender(){
   try{localStorage.setItem('ptHilda_mov2',JSON.stringify(movimientos));localStorage.setItem('ptHilda_version','hilda_v1');}catch(e){}
-  if(_hildaInitDone){ sbSaveArray('movimientos', movimientos); }
+  if(_hildaInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok) warnSaveFailed(); }); }
   else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
   renderMovimientos();renderPortfolio();vsellPopulateSelect();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
@@ -2681,6 +2711,7 @@ function saveAndRender(){
 
 // Estado del modal de edición
 var MOV_EDIT_ID = null;
+var _movWasFiltered = false; // controla el auto-scroll de renderMovimientos(): sólo salta al header la primera vez que se activa un filtro
 
 function movModalOpen(id){
   var m=movimientos.find(function(x){return x.id==id;});
@@ -2834,8 +2865,10 @@ function renderMovimientos(){
   var filterMkt=(document.getElementById('mov-filter-mkt')||{value:''}).value.toUpperCase();
   var filterFecha=(document.getElementById('mov-filter-fecha')||{value:''}).value.trim();
   var filterNotas=(document.getElementById('mov-filter-notas')||{value:''}).value.trim().toLowerCase();
+  var filterNoCCL=(document.getElementById('mov-filter-noccl')||{checked:false}).checked;
+  var filterNoMEP=(document.getElementById('mov-filter-nomep')||{checked:false}).checked;
   var activeFocusId=document.activeElement?document.activeElement.id:null;
-  
+
   var filterVal=currentFilterVal;
 
   var lista=movimientos.slice().sort(function(a,b){var fa=(a.fecha||'').split('/'),fb=(b.fecha||'').split('/');var da=fa.length===3?fa[2]+fa[1]+fa[0]:'0',db=fb.length===3?fb[2]+fb[1]+fb[0]:'0';return db.localeCompare(da);});
@@ -2847,8 +2880,22 @@ function renderMovimientos(){
   });
   if(filterFecha) lista=lista.filter(function(m){return (m.fecha||'').indexOf(filterFecha)>=0;});
   if(filterNotas) lista=lista.filter(function(m){return (m.notas||'').toLowerCase().indexOf(filterNotas)>=0;});
+  // Sin CCL en tabla: sólo mercados que NO son bonos/ON (esos usan MEP — ver filtro de abajo)
+  if(filterNoCCL) lista=lista.filter(function(m){
+    if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
+    var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+    if(esBonoON)return false;
+    return !getCCL(m.fecha);
+  });
+  // Sin MEP en tabla: sólo bonos/ON. Chequea el MEP puntual, aunque haya caído a CCL como aproximación
+  if(filterNoMEP) lista=lista.filter(function(m){
+    if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
+    var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+    if(!esBonoON)return false;
+    return !getMEP(m.fecha);
+  });
 
-  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas;
+  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterNoCCL||filterNoMEP;
   document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
   checkMovSinTC();
   var histBody=document.getElementById('mov-historial-body');
@@ -2870,13 +2917,23 @@ function renderMovimientos(){
     // CCL/MEP efectivo: la tabla histórica tiene prioridad sobre el valor guardado
     var _mEsBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
     var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON);
-    var _mTcTabla=_mEsBonoON?(getMEP(m.fecha)||getCCL(m.fecha)):(getCCL(m.fecha));
+    var _mMepTabla=_mEsBonoON?getMEP(m.fecha):null;
+    var _mCclTabla=getCCL(m.fecha);
+    var _mTcTabla=_mEsBonoON?(_mMepTabla||_mCclTabla):_mCclTabla;
     var _mTcEfectivo=_mTcTabla||m.ccl||null;
     // precioUSD: para mercados ARS recalcular desde precioARS/tc_tabla; para USD usar el guardado
     var _mPrecioUSD=(_mEsARS&&(m.precioARS||0)>0&&_mTcEfectivo>0)
       ?(m.precioARS/_mTcEfectivo)
       :(m.precioUSD||null);
-    var _mCCLstr=_mTcTabla?String(Math.round(_mTcTabla))+(_mTcTabla===m.ccl?'':' ✓'):(m.ccl?String(m.ccl):'—');
+    // Alertas sobre la fuente del TC: bonos/ON sin MEP puntual (⚠MEP — puede haber caído a CCL como aproximación) vs resto sin CCL puntual (⚠ rojo)
+    var _mSinMEP=_mEsBonoON&&!_mMepTabla;
+    var _mCCLstr;
+    if(_mTcTabla){
+      var _mWarnInline=_mSinMEP?' <span style="color:var(--amber)" title="No hay MEP en la tabla histórica para '+m.fecha+'. Se está usando el CCL de esa fecha ('+Math.round(_mCclTabla)+') como aproximación.">⚠MEP</span>':'';
+      _mCCLstr=String(Math.round(_mTcTabla))+(_mTcTabla===m.ccl?'':' ✓')+_mWarnInline;
+    } else {
+      _mCCLstr=m.ccl?'<span style="color:var(--red)" title="No hay '+(_mEsBonoON?'MEP':'CCL')+' en la tabla histórica para '+m.fecha+'. Se está usando '+m.ccl+' cargado a mano en el movimiento, que puede no ser el valor real de ese día.">⚠ '+m.ccl+'</span>':'—';
+    }
     return '<tr>'+
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
@@ -2929,8 +2986,10 @@ function renderMovimientos(){
       if(elToFocus)elToFocus.focus();
     }
     
-    // Scroll para que wrap quede visible si hay filtro activo
-    if(anyFilter){
+    // Scroll para que wrap quede visible SOLO al activar un filtro (no en cada re-render
+    // mientras el filtro sigue activo, porque eso te pisa el scroll manual — p.ej. al
+    // editar/borrar movimientos uno por uno dentro de una lista filtrada larga).
+    if(anyFilter&&!_movWasFiltered){
       wrap.scrollTop=0;
       var content=document.querySelector('.content');
       var cardHeader=document.querySelector('#mov-card .card-header');
@@ -2940,6 +2999,7 @@ function renderMovimientos(){
         content.scrollTop+=wrapTop-headerH;
       }
     }
+    _movWasFiltered=anyFilter;
   });
 }
 
