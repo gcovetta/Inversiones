@@ -3563,7 +3563,7 @@ function renderPortfolio(){
       _isBonoON    ? _rawPrice*ratio/(_tcHoy||1) :
       _isArgentina ? _rawPrice/(CCL_HOY||1) :
       BRL_TICKERS.has(p.ticker) ? _rawPrice/(CCL_HOY||1) :
-      (q&&q.fromByma)           ? _rawPrice/(CCL_HOY||1) :
+      (q&&q.fromByma)           ? _rawPrice*ratio/(CCL_HOY||1) :
       _rawPrice
     ):null;
     var upside=targetUSD!=null&&priceUSD!=null&&priceUSD>0?(targetUSD-priceUSD)/priceUSD*100:null;
@@ -3993,7 +3993,7 @@ function renderNearTarget(){
     var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
     // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
     var _ntFromByma=q&&q.fromByma;
-    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price/(CCL_HOY||1):q.price);
+    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price*ratio/(CCL_HOY||1):q.price);
     if(!(priceUSD>0))return;
     var upside=(targetUSD-priceUSD)/priceUSD*100;
     if(!(upside>=0)||upside>NT_THRESHOLD)return;
@@ -4714,15 +4714,18 @@ async function fetchAllQuotes(){
   var icon=document.getElementById('ref-icon');var status=document.getElementById('ref-status');var prog=document.getElementById('pos-prog');var pfill=document.getElementById('pfill');
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
 
-  // Separar por fuente: Finnhub (NYSE/Brasil/etc), Yahoo AR (Argentina), data912 (Bonos/ON)
-  // Brasil va a Yahoo .BA (como GDC): evita que tickers BYMA-only como EMBJ pasen por Finnhub
-  // y obtengan precio del subyacente NYSE incorrecto. fetchYahooAll ya pone fromByma=true para brasil.
-  // RBLX: va a Yahoo .BA (como GDC) en vez de Finnhub. Finnhub trae el precio del subyacente
-  // NYSE y se sintetiza el ARS-equiv con ratio/CCL, lo que diverge del precio real del CEDEAR en BYMA.
-  var finnhubPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='argentina'&&s!=='bonos'&&s!=='on'&&s!=='brasil'&&!BRL_TICKERS.has(p.ticker)&&p.ticker!=='RBLX';});
-  var yahooPos=pos.filter(function(p){var s=getSector(p.ticker);return s==='argentina'||s==='brasil'||BRL_TICKERS.has(p.ticker)||p.ticker==='RBLX';});
+  // Estrategia de cotizaciones (igual que GDC, la referencia):
+  // FASE 1 (paralelo): Yahoo .BA para TODO (acciones argentinas, CEDEARs USA/Brasil/Europa/China/Cripto)
+  //   - argentina: precio ARS directo
+  //   - todos los demás no-BRL: fromByma=true → renderPortfolio usa el precio ARS real del CEDEAR
+  //     directamente, en vez de sintetizar con Finnhub (subyacente USD)/ratio, que diverge del
+  //     precio real de mercado en BYMA (bug de RBLX/SPY con la lógica vieja Finnhub-primero).
+  // FASE 2 (secuencial): Finnhub fallback SOLO para tickers donde Yahoo .BA falló
+  // Bonos/ONs: data912 como siempre (paralelo con Fase 1)
+  var bymaPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='bonos'&&s!=='on';});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
+  var finnhubFallbackSectors=new Set(['nyse','brasil','europa','china','cripto','argentina']);
 
   var total=pos.length,done=0,errors=0;
 
@@ -4735,49 +4738,37 @@ async function fetchAllQuotes(){
 
   function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
 
-  // ── Finnhub: secuencial 1.1s (rate limit) ───────────────────────────
-  async function fetchFinnhubAll(){
-    for(var i=0;i<finnhubPos.length;i++){
-      var p=finnhubPos[i];
-      try{
-        quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
-      }catch(e){
-        // Fallback Yahoo para tickers Brasil (NU, PAGS, MELI, etc.) y CEDEARs sin NYSE
-        // Yahoo .BA devuelve precio ARS (CEDEAR BYMA). Marcamos fromByma=true para que
-        // renderPortfolio lo trate como precio ARS y divida por CCL (igual que GDC).
-        if(getSector(p.ticker)==='brasil'){
-          try{
-            var _fbq=await fetchYahooAR(p.ticker);
-            _fbq.fromByma=true;
-            quotes[p.ticker]=_fbq;
-          }catch(e2){errors++;}
-        } else {
-          errors++;
-        }
-      }
-      updateProgress();
-      if(i<finnhubPos.length-1)await delay(1100);
-    }
-  }
-
-  // ── Yahoo AR: todos en paralelo (cada uno con su propio race de proxies) ──
-  async function fetchYahooAll(){
-    await Promise.all(yahooPos.map(async function(p){
+  // ── FASE 1: Yahoo .BA para todas las posiciones no-bono/ON (paralelo) ──
+  async function fetchBymaAll(){
+    await Promise.all(bymaPos.map(async function(p){
+      var s=getSector(p.ticker);
       try{
         var fbq=await fetchYahooAR(p.ticker);
-        if((getSector(p.ticker)==='brasil'||p.ticker==='RBLX')&&!BRL_TICKERS.has(p.ticker)){fbq.fromByma=true;}
-        quotes[p.ticker]=fbq;
-      }
-      catch(e){
-        // Fallback Finnhub para RBLX si Yahoo .BA falla (igual criterio que GDC)
-        if(p.ticker==='RBLX'){
-          try{quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));}catch(e2){errors++;}
-        } else {
-          errors++;
+        if(s!=='argentina'&&!BRL_TICKERS.has(p.ticker)){
+          fbq.fromByma=true;
         }
+        quotes[p.ticker]=fbq;
+      }catch(e){
+        // No contar error todavía: Finnhub fallback cubre todos los sectores
       }
       updateProgress();
     }));
+  }
+
+  // ── FASE 2: Finnhub fallback para tickers donde Yahoo .BA falló (secuencial) ──
+  async function fetchFinnhubFallback(){
+    var fallbackPos=bymaPos.filter(function(p){
+      return finnhubFallbackSectors.has(getSector(p.ticker))&&!quotes[p.ticker];
+    });
+    if(!fallbackPos.length) return;
+    for(var i=0;i<fallbackPos.length;i++){
+      var p=fallbackPos[i];
+      try{
+        quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
+        renderPortfolio();
+      }catch(e){ errors++; }
+      if(i<fallbackPos.length-1)await delay(1100);
+    }
   }
 
   // ── Bonos soberanos: data912 arg_bonds → fallback Yahoo ──
@@ -4810,8 +4801,9 @@ async function fetchAllQuotes(){
     }));
   }
 
-  // Los cuatro grupos corren en paralelo
-  await Promise.all([fetchFinnhubAll(),fetchYahooAll(),fetchBonosAll(),fetchONsAll()]);
+  // Fase 1 + bonos/ON en paralelo, luego Fase 2 (fallback) sólo para lo que falló
+  await Promise.all([fetchBymaAll(),fetchBonosAll(),fetchONsAll()]);
+  await fetchFinnhubFallback();
 
   // Render final con todos los datos listos
   renderPortfolio();
