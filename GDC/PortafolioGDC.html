@@ -3045,6 +3045,7 @@ function saveAndRender(){
 
 // Estado del modal de edición
 var MOV_EDIT_ID = null;
+var _movWasFiltered = false; // controla el auto-scroll de renderMovimientos(): sólo salta al header la primera vez que se activa un filtro
 
 function movModalOpen(id){
   var m=movimientos.find(function(x){return x.id==id;});
@@ -4590,8 +4591,10 @@ function renderMovimientos(){
       if(elToFocus)elToFocus.focus();
     }
     
-    // Scroll para que wrap quede visible si hay filtro activo
-    if(anyFilter){
+    // Scroll para que wrap quede visible SOLO al activar un filtro (no en cada re-render
+    // mientras el filtro sigue activo, porque eso te pisa el scroll manual — p.ej. al
+    // editar/borrar movimientos uno por uno dentro de una lista filtrada larga).
+    if(anyFilter&&!_movWasFiltered){
       wrap.scrollTop=0;
       var content=document.querySelector('.content');
       var cardHeader=document.querySelector('#mov-card .card-header');
@@ -4601,6 +4604,7 @@ function renderMovimientos(){
         content.scrollTop+=wrapTop-headerH;
       }
     }
+    _movWasFiltered=anyFilter;
   });
 }
 
