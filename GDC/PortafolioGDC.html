@@ -1956,11 +1956,13 @@ async function syncDataToOthers(statusCallback) {
   Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null) realTargets[t]=TARGET_TABLE[t]; });
 
   var tables = [
-    // RATIOS_TABLE no se pushea — ya viene hardcodeado en el HTML sincronizado
-    { key: 'targets',      value: Object.keys(realTargets).length ? realTargets : null },
-    { key: 'rubros',       value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
-    { key: 'ccl_override', value: cclOvr || CCL_TABLE },
-    { key: 'mep_override', value: mepOvr || null }
+    // Los otros 4 portafolios ya leen 'ratios' de su propia Supabase en el init (sbGetConfig('ratios')) —
+    // sólo faltaba que GDC se lo empuje.
+    { key: 'ratios',        value: Object.keys(RATIOS_TABLE).length ? RATIOS_TABLE : null },
+    { key: 'targets',       value: Object.keys(realTargets).length ? realTargets : null },
+    { key: 'rubros',        value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
+    { key: 'ccl_override',  value: cclOvr || CCL_TABLE },
+    { key: 'mep_override',  value: mepOvr || MEP_TABLE }
   ];
 
   var errors = [];
@@ -1977,18 +1979,16 @@ async function syncDataToOthers(statusCallback) {
   return errors;
 }
 
+// El paso de "Sync HTML" (dispara un GitHub Action que reconstruye los 5 HTML) está
+// desactivado a propósito: GH_TOKEN es un placeholder sin reemplazar, así que ese paso
+// siempre tiraba error — y tapaba que el sync de datos (CCL/MEP/Ratios/Targets/Rubros)
+// SÍ funciona. Poné esto en true (y un token real en GH_TOKEN) para reactivarlo.
+var SYNC_HTML_ENABLED = false;
+
 async function syncPortfolios() {
   var btn   = document.getElementById('sync-btn');
   var icon  = document.getElementById('sync-icon');
   var label = document.getElementById('sync-label');
-
-  // Token hardcodeado en GH_TOKEN
-  var token = GH_TOKEN;
-  if (!token) {
-    token = prompt('GitHub Token para Sync:');
-    if (!token) return;
-  }
-  GH_TOKEN = token.trim();
 
   // Estado: cargando
   btn.disabled = true;
@@ -1998,11 +1998,49 @@ async function syncPortfolios() {
   btn.style.borderColor = 'var(--amber)';
   btn.style.color = 'var(--amber)';
 
-  // 1. Sincronizar datos (Ratios, Targets, Rubros, CCL) a Omar y Ana
+  // 1. Sincronizar datos (Ratios, Targets, Rubros, CCL, MEP) a Omar, Ana, Hilda y Juli
   var dataErrors = await syncDataToOthers(function(msg){ label.textContent = msg; });
   if (dataErrors.length) {
     console.warn('syncDataToOthers errores:', dataErrors);
+    icon.style.animation = '';
+    icon.textContent = '⚠';
+    label.textContent = 'Parcial (' + dataErrors.length + ' error' + (dataErrors.length!==1?'es':'') + ')';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    console.error('Detalle de errores de sync:', dataErrors.join(', '));
+    setTimeout(function() {
+      icon.textContent = '⟳';
+      label.textContent = 'Sync';
+      btn.style.borderColor = '#4a5568';
+      btn.style.color = '';
+      btn.disabled = false;
+    }, 5000);
+    return;
   }
+
+  icon.style.animation = '';
+  icon.textContent = '✓';
+  label.textContent = 'Synced!';
+  btn.style.borderColor = 'var(--accent)';
+  btn.style.color = 'var(--accent)';
+  var _resetSync = function() {
+    icon.textContent = '⟳';
+    icon.style.animation = '';
+    label.textContent = 'Sync';
+    btn.style.borderColor = '#4a5568';
+    btn.style.color = '';
+    btn.disabled = false;
+  };
+
+  if (!SYNC_HTML_ENABLED) { setTimeout(_resetSync, 4000); return; }
+
+  // ── Sync HTML vía GitHub Actions (opcional, ver SYNC_HTML_ENABLED arriba) ──
+  var token = GH_TOKEN;
+  if (!token || token === 'GITHUB_TOKEN_AQUI') {
+    token = prompt('GitHub Token para Sync HTML:');
+    if (!token) { _resetSync(); return; }
+  }
+  GH_TOKEN = token.trim();
   label.textContent = 'Sync HTML...';
 
   var url = 'https://api.github.com/repos/' + GH_REPO +
@@ -2020,20 +2058,7 @@ async function syncPortfolios() {
     });
 
     if (res.status === 204) {
-      // Éxito: GitHub acepta el trigger (no devuelve body)
-      icon.style.animation = '';
-      icon.textContent = '✓';
-      label.textContent = 'Synced!';
-      btn.style.borderColor = 'var(--accent)';
-      btn.style.color = 'var(--accent)';
-      setTimeout(function() {
-        icon.textContent = '⟳';
-        icon.style.animation = '';
-        label.textContent = 'Sync';
-        btn.style.borderColor = '#4a5568';
-        btn.style.color = '';
-        btn.disabled = false;
-      }, 4000);
+      setTimeout(_resetSync, 4000);
     } else {
       var body = await res.json().catch(function(){ return {}; });
       throw new Error('HTTP ' + res.status + ': ' + (body.message || 'Error desconocido'));
@@ -2041,18 +2066,11 @@ async function syncPortfolios() {
   } catch(e) {
     icon.style.animation = '';
     icon.textContent = '✗';
-    label.textContent = 'Error';
+    label.textContent = 'Datos OK, HTML falló';
     btn.style.borderColor = 'var(--red)';
     btn.style.color = 'var(--red)';
-    console.error('Sync error:', e);
-    alert('Error al disparar sync:\n' + e.message);
-    setTimeout(function() {
-      icon.textContent = '⟳';
-      label.textContent = 'Sync';
-      btn.style.borderColor = '#4a5568';
-      btn.style.color = '';
-      btn.disabled = false;
-    }, 3000);
+    console.error('Sync HTML error:', e);
+    setTimeout(_resetSync, 5000);
   }
 }
 
