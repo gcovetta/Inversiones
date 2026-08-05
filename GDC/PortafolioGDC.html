@@ -2190,6 +2190,17 @@ async function sbSaveArray(table, arr){
     return true;
   }catch(e){ console.warn('sbSaveArray error',table,e); return false; }
 }
+// Reintenta sbSaveArray hasta 3 veces (backoff 1.2s/2.4s) antes de darse por vencido —
+// mitiga cortes de red momentáneos o cierres de pestaña justo después de guardar.
+async function sbSaveArrayRetry(table, arr, tries){
+  tries = tries || 3;
+  for(var i=0;i<tries;i++){
+    var ok = await sbSaveArray(table, arr);
+    if(ok) return true;
+    if(i<tries-1) await new Promise(function(r){setTimeout(r, 1200*(i+1));});
+  }
+  return false;
+}
 
 async function sbLoadArray(table){
   // Retorna: array (ok, puede ser vacío), null (error de red/parse)
@@ -3051,7 +3062,7 @@ function warnSaveFailed(){
 }
 function saveAndRender(){
   try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){}
-  if(_gdcInitDone){ sbSaveArray('movimientos', movimientos).then(function(ok){ if(!ok) warnSaveFailed(); }); }
+  if(_gdcInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok) warnSaveFailed(); }); }
   else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
   renderMovimientos();renderPortfolio();renderDivsCard();vsellPopulateSelect();
   (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
