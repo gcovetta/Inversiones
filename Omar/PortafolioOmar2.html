@@ -95,7 +95,7 @@ header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;a
 .tw{overflow-x:auto;width:100%;max-width:100%;box-sizing:border-box}
 #mov-card{display:flex;flex-direction:column}
 #mov-card .card-header{position:sticky;top:0;z-index:5;background:var(--surface);flex-shrink:0}
-#mov-wrap{overflow-x:auto;width:100%;box-sizing:border-box;flex:1}
+#mov-wrap{overflow-x:auto;overflow-y:auto;width:100%;box-sizing:border-box;flex:1;max-height:calc(100vh - 320px)}
 #mov-wrap thead th{position:sticky;top:0;background:var(--surface);z-index:2}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
 th{text-align:left;padding:.5rem .85rem;color:var(--text3);font-weight:400;font-family:var(--mono);font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -205,6 +205,7 @@ tr:hover td{background:var(--surface2)}
   /* ── Layout base ── */
   body{overflow:auto;height:auto}
   .card{overflow:visible}
+  #mov-wrap{max-height:none;overflow-y:visible}
   .app{height:auto;min-height:100vh}
   .main{flex-direction:column;flex:1;min-height:0;overflow:visible;height:auto}
   .content{flex:1;min-height:0;overflow-y:visible;overflow-x:visible}
@@ -450,8 +451,8 @@ tr:hover td{background:var(--surface2)}
   <div id="mobile-filters" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0">
     <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;flex-shrink:0">
     <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;flex-shrink:0">✕</button>
-    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-green" onchange="renderPortfolio()" style="accent-color:#00e676;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#00e676;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Solo Δ% amarillo (0–9%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-green" checked onchange="renderPortfolio()" style="accent-color:#00e676;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#00e676;display:inline-block;flex-shrink:0"></span></label>
+    <label title="Solo Δ% amarillo (0–9%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-yellow" checked onchange="renderPortfolio()" style="accent-color:#eab308;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
     <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
     <span style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-left:4px;border-left:1px solid var(--border2);padding-left:6px;line-height:1;align-self:center;flex-shrink:0">RV</span>
     <label title="Inv. $ sobre umbral rojo (>3% RV)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-rv-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
@@ -488,7 +489,6 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;tracker&#39;,this)"><span>◎</span>Dividendos</button>
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
-    <button class="nav-item" onclick="showPage(&#39;bonostir&#39;,this)"><span>📈</span>Bonos TIR</button>
     <div class="nav-sec">Ventas</div>
     <button class="nav-item" onclick="showPage(&#39;ventaestad&#39;,this)"><span>📊</span>Estadísticas Venta</button>
     <div class="nav-sec">Links</div>
@@ -1205,29 +1205,6 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
-    <!-- BONOS TIR -->
-    <div class="page" id="page-bonostir" style="padding:0">
-      <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-        <div class="card">
-          <div class="card-header" style="gap:10px;flex-wrap:wrap">
-            <span class="card-title">📈 Bonos — TIR en vivo</span>
-            <span style="font-size:.66rem;color:var(--text3);font-family:var(--mono)">bonistas.com</span>
-            <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
-              <span id="btir-status" style="font-size:.66rem;font-family:var(--mono);color:var(--text3)"></span>
-              <button class="btn btn-sm" onclick="renderBonosTIR()" style="font-size:.7rem">⟳ Actualizar</button>
-            </div>
-          </div>
-          <div class="card-body" style="padding:.5rem 1rem">
-            <div style="overflow-x:auto">
-              <table id="btir-table" style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.73rem;min-width:460px">
-                <thead id="btir-thead"></thead>
-                <tbody id="btir-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <div class="page" id="page-ventaestad" style="padding:0">
       <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
@@ -1727,7 +1704,7 @@ var PRELOADED = [];
 
 var BRL_TICKERS=new Set(['BBAS3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
 
-var RATIOS_TABLE = {"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "RBLX": 2, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "DIS": 12, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4};
+var RATIOS_TABLE = {"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "RBLX": 2, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "DIS": 12, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4, "URA": 5};
 var BYMA_TO_NYSE = {'DISN':'DIS'};
 function getRatio(ticker){return RATIOS_TABLE[BYMA_TO_NYSE[ticker]||ticker]||1;}
 
@@ -1849,7 +1826,6 @@ function showPage(id,btn){
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') renderDashboard();
   if(id==='rubros') renderRubros();
-  if(id==='bonostir') renderBonosTIR();
   if(id==='recomendaciones') renderPerfilComparacion();
   if(id==='ventaestad') renderVentaEstadisticas();
   // Sidebar: colapsado en portafolio, abierto en el resto
@@ -3411,7 +3387,7 @@ function renderPortfolio(){
       '<td class="mono col-pventa">'+targetCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
-    var _passColor=!_colorFilterOn||((_fGreen&&_fGreen.checked)&&pnlPct!==null&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct!==null&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct!==null&&pnlPct<0);
+    var _passColor=!!_portTkFilter||!_colorFilterOn||((_fGreen&&_fGreen.checked)&&pnlPct!==null&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct!==null&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct!==null&&pnlPct<0);
     var _passRV=!_rvFilterOn||((_fRVRed&&_fRVRed.checked)&&invColor==='var(--red)')||((_fRVYellow&&_fRVYellow.checked)&&invColor==='#eab308')||((_fRVWhite&&_fRVWhite.checked)&&invColor==='var(--text)');
     if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor&&_passRV) sectors[sector].push(row);
   });
@@ -6704,212 +6680,6 @@ function renderPerfChart() {
       draw();
     })
     .catch(function() { draw(); });
-}
-
-// ─── Bonos TIR ───────────────────────────────────────────────
-// ─── Bonos TIR — bonistas.com ─────────────────────────────────
-var BTIR_DATA = [];
-var BTIR_SORT = { col: 'tir', dir: -1 };   // dir: -1 desc, 1 asc
-var BTIR_FILTERS = { ticker: '', tir: '', modified_duration: '', parity: '' };
-
-var BTIR_COLS = [
-  { key: 'ticker',            label: 'Ticker',   type: 'text' },
-  { key: 'tir',               label: 'TIR',      type: 'num'  },
-  { key: 'modified_duration', label: 'MD',       type: 'num'  },
-  { key: 'parity',            label: 'Paridad',  type: 'num'  }
-];
-
-function renderBonosTIR() {
-  var status = document.getElementById('btir-status');
-  var thead  = document.getElementById('btir-thead');
-  var tbody  = document.getElementById('btir-tbody');
-  if (!status || !thead || !tbody) return;
-  status.innerHTML = '⏳ Cargando…';
-  thead.innerHTML = ''; tbody.innerHTML = '';
-
-  fetch('https://bonistas.com/api/bonds')
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      var rows = Array.isArray(data) ? data : (data.data || data.bonds || []);
-      // Solo bonos con TIR real
-      BTIR_DATA = rows.filter(function(r) {
-        return r.tir && r.tir !== 0 && r.ticker;
-      });
-      _btir2BuildHeader();
-      _btir2Render();
-    })
-    .catch(function(e) {
-      if (status) status.innerHTML = '<span style="color:var(--red)">⚠ ' + e.message + '</span>';
-    });
-}
-
-function _btir2BuildHeader() {
-  var thead = document.getElementById('btir-thead');
-  if (!thead) return;
-  thead.innerHTML = '';
-
-  var inputStyle = 'width:100%;background:var(--surface2);border:1px solid var(--border);' +
-    'border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.65rem;' +
-    'padding:3px 6px;outline:none;box-sizing:border-box';
-
-  // Row 1: sortable headers
-  var tr1 = document.createElement('tr');
-  tr1.style.borderBottom = '1px solid var(--border2)';
-  BTIR_COLS.forEach(function(col) {
-    var th = document.createElement('th');
-    th.style.cssText = 'padding:6px 8px 4px;color:var(--text2);font-size:.65rem;font-weight:700;' +
-      'text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;cursor:pointer;user-select:none';
-    th.setAttribute('data-col', col.key);
-    th.onclick = function() { btirSort(col.key); };
-    var ind = BTIR_SORT.col === col.key ? (BTIR_SORT.dir === -1 ? ' ↓' : ' ↑') : ' ↕';
-    var indColor = BTIR_SORT.col === col.key ? 'var(--accent)' : 'var(--text3)';
-    th.innerHTML = col.label +
-      '<span id="btir-ind-' + col.key + '" style="color:' + indColor + ';font-size:.7rem">' + ind + '</span>';
-    tr1.appendChild(th);
-  });
-  thead.appendChild(tr1);
-
-  // Row 2: per-column filter inputs
-  var tr2 = document.createElement('tr');
-  tr2.style.borderBottom = '2px solid var(--border2)';
-  BTIR_COLS.forEach(function(col) {
-    var th = document.createElement('th');
-    th.style.cssText = 'padding:3px 6px 6px';
-    var inp = document.createElement('input');
-    inp.type = 'text';
-    inp.style.cssText = inputStyle;
-    inp.value = BTIR_FILTERS[col.key] || '';
-    inp.placeholder = col.type === 'num' ? '> < >= <= =' : 'Filtrar…';
-    inp.setAttribute('data-col', col.key);
-    inp.oninput = (function(k) {
-      return function() { btirFilterCol(k, this.value); };
-    })(col.key);
-    th.appendChild(inp);
-    tr2.appendChild(th);
-  });
-  thead.appendChild(tr2);
-}
-
-function _btir2Render() {
-  var tbody  = document.getElementById('btir-tbody');
-  var status = document.getElementById('btir-status');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  // Apply filters
-  var rows = BTIR_DATA.filter(function(r) {
-    // Ticker filter: substring
-    if (BTIR_FILTERS.ticker) {
-      var q = BTIR_FILTERS.ticker.toLowerCase();
-      if ((r.ticker || '').toLowerCase().indexOf(q) < 0) return false;
-    }
-    // Numeric filters
-    if (BTIR_FILTERS.tir && !_btirNumMatch(r.tir * 100, BTIR_FILTERS.tir)) return false;
-    if (BTIR_FILTERS.modified_duration && !_btirNumMatch(r.modified_duration, BTIR_FILTERS.modified_duration)) return false;
-    if (BTIR_FILTERS.parity && !_btirNumMatch(r.parity, BTIR_FILTERS.parity)) return false;
-    return true;
-  });
-
-  // Sort
-  var sc = BTIR_SORT.col, sd = BTIR_SORT.dir;
-  rows.sort(function(a, b) {
-    var va = sc === 'tir' ? a.tir * 100 : (a[sc] || 0);
-    var vb = sc === 'tir' ? b.tir * 100 : (b[sc] || 0);
-    if (sc === 'ticker') { va = a.ticker || ''; vb = b.ticker || ''; }
-    if (va < vb) return -sd;
-    if (va > vb) return sd;
-    return 0;
-  });
-
-  rows.forEach(function(r) {
-    var tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid var(--border)';
-    tr.onmouseover = function() { this.style.background = 'rgba(255,255,255,.03)'; };
-    tr.onmouseout  = function() { this.style.background = ''; };
-
-    // Ticker
-    var tdTk = document.createElement('td');
-    tdTk.style.cssText = 'padding:5px 8px;font-weight:700;color:var(--text);white-space:nowrap';
-    tdTk.textContent = r.ticker || '—';
-    tr.appendChild(tdTk);
-
-    // TIR
-    var tirPct = r.tir != null ? r.tir * 100 : null;
-    var tdTir = document.createElement('td');
-    tdTir.style.cssText = 'padding:5px 8px;text-align:right;white-space:nowrap';
-    if (tirPct != null) {
-      var col = tirPct >= 0 ? 'var(--accent)' : 'var(--red)';
-      var sign = tirPct >= 0 ? '+' : '';
-      tdTir.innerHTML = '<span style="color:' + col + ';font-weight:700">' + sign + tirPct.toFixed(2) + '%</span>';
-    } else { tdTir.textContent = '—'; }
-    tr.appendChild(tdTir);
-
-    // MD
-    var tdMd = document.createElement('td');
-    tdMd.style.cssText = 'padding:5px 8px;text-align:right;color:var(--text2);white-space:nowrap';
-    tdMd.textContent = (r.modified_duration != null && r.modified_duration !== 0)
-      ? r.modified_duration.toFixed(2) : '—';
-    tr.appendChild(tdMd);
-
-    // Paridad
-    var tdPar = document.createElement('td');
-    tdPar.style.cssText = 'padding:5px 8px;text-align:right;color:var(--text2);white-space:nowrap';
-    tdPar.textContent = (r.parity != null && r.parity !== 0)
-      ? r.parity.toFixed(1) + '%' : '—';
-    tr.appendChild(tdPar);
-
-    tbody.appendChild(tr);
-  });
-
-  if (status) status.innerHTML =
-    '<span style="color:var(--text3)">' + rows.length + ' bonos' +
-    (rows.length < BTIR_DATA.length ? ' (filtrados de ' + BTIR_DATA.length + ')' : '') +
-    ' · ' + new Date().toLocaleTimeString('es-AR') + '</span>';
-}
-
-function btirSort(col) {
-  if (BTIR_SORT.col === col) {
-    BTIR_SORT.dir *= -1;
-  } else {
-    BTIR_SORT.col = col;
-    BTIR_SORT.dir = col === 'ticker' ? 1 : -1;
-  }
-  // Update all indicators
-  BTIR_COLS.forEach(function(c) {
-    var el = document.getElementById('btir-ind-' + c.key);
-    if (!el) return;
-    if (c.key === col) {
-      el.textContent = BTIR_SORT.dir === -1 ? ' ↓' : ' ↑';
-      el.style.color = 'var(--accent)';
-    } else {
-      el.textContent = ' ↕';
-      el.style.color = 'var(--text3)';
-    }
-  });
-  _btir2Render();
-}
-
-function btirFilterCol(col, val) {
-  BTIR_FILTERS[col] = val;
-  _btir2Render();
-}
-
-function _btirNumMatch(rawVal, filterStr) {
-  var s = (filterStr || '').trim();
-  if (!s) return true;
-  var n = parseFloat(rawVal);
-  if (isNaN(n)) return false;
-  var m;
-  if ((m = s.match(/^>=\s*([\d.]+)$/))) return n >= parseFloat(m[1]);
-  if ((m = s.match(/^<=\s*([\d.]+)$/))) return n <= parseFloat(m[1]);
-  if ((m = s.match(/^>\s*([\d.]+)$/)))  return n >  parseFloat(m[1]);
-  if ((m = s.match(/^<\s*([\d.]+)$/)))  return n <  parseFloat(m[1]);
-  if ((m = s.match(/^=\s*([\d.]+)$/)))  return Math.abs(n - parseFloat(m[1])) < 0.001;
-  if ((m = s.match(/^([\d.]+)$/)))      return n >= parseFloat(m[1]);
-  return true;
 }
 
 </script>
