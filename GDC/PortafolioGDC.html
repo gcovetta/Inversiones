@@ -512,6 +512,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;vigilancia&#39;,this)"><span>👁</span>Vigilancia</button>
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
+    <button class="nav-item" onclick="showPage(&#39;labdiv&#39;,this)"><span>🧪</span>Lab Dividendos</button>
     <div class="nav-sec">Ventas (Lab)</div>
     <button class="nav-item" onclick="showPage(&#39;ventaestad&#39;,this)"><span>📊</span>Estadísticas Venta</button>
     <button class="nav-item" onclick="showPage(&#39;ventahist&#39;,this)"><span>📜</span>Estadísticas Venta Histórica</button>
@@ -1690,6 +1691,78 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+    <!-- LAB DIVIDENDOS (comparación PPC actual vs. PPC neto de dividendos, NO impacta portafolio) -->
+    <div class="page" id="page-labdiv">
+      <div class="card">
+        <div class="card-header" style="gap:10px;flex-wrap:wrap">
+          <span class="card-title">🧪 Lab Dividendos</span>
+          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Aislado del portafolio principal — nada de acá cambia el PPC, la Inversión $ ni el Δ% que ves en Portafolio</span>
+        </div>
+        <div class="card-body" style="padding:.6rem 1rem">
+          <div class="ibox" style="margin-bottom:0;font-size:.68rem">
+            ⚠️ Esta pestaña es de <b>prueba</b>, con 8 dividendos cargados a mano del reporte de movimientos (cta. 45468, desde 07/2026) para validar. Cuando lo revisemos y sirva, lo hacemos automático y lo llevamos a producción.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <div class="card-header" style="gap:10px;flex-wrap:wrap">
+          <span class="card-title">💰 Dividendos cobrados por activo</span>
+          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Yield = dividendos cobrados (Tracker CCL) ÷ total histórico invertido en el ticker (incluye activos ya vendidos, como HON)</span>
+          <button class="btn btn-sm" style="margin-left:auto" onclick="renderLabDivCards()">↻ Recalcular</button>
+        </div>
+        <div class="card-body" style="padding:.6rem 1rem">
+          <div id="labdiv-cards-empty" class="empty-state" style="display:none">No hay dividendos cargados en el Tracker CCL todavía.</div>
+          <div id="labdiv-cards-wrap" style="display:flex;flex-wrap:wrap;gap:.6rem"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem">
+        <div class="card" style="flex:1 1 260px">
+          <div class="card-header"><span class="card-title" style="font-size:.8rem">Cobrado por mes</span></div>
+          <div class="tw"><table><thead><tr><th>Mes</th><th>Total U$S</th></tr></thead><tbody id="labdiv-mes-body"></tbody></table></div>
+        </div>
+        <div class="card" style="flex:1 1 200px">
+          <div class="card-header"><span class="card-title" style="font-size:.8rem">Cobrado por año</span></div>
+          <div class="tw"><table><thead><tr><th>Año</th><th>Total U$S</th></tr></thead><tbody id="labdiv-anio-body"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <div class="card-header" style="gap:10px;flex-wrap:wrap">
+          <span class="card-title">PPC actual vs. PPC neto de dividendos</span>
+          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Solo posiciones abiertas — compara cómo quedaría el PPC/Δ% si restamos los dividendos cobrados mientras el activo estaba en cartera</span>
+        </div>
+        <div class="card-body" style="padding:.6rem 1rem">
+          <div class="gap-row" style="margin-bottom:8px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--text2)">
+              <input type="checkbox" id="labdiv-solo-afectados" checked onchange="renderLabDividendos()">
+              Mostrar solo tickers con dividendos aplicados
+            </label>
+            <button class="btn btn-sm" style="margin-left:auto" onclick="renderLabDividendos()">↻ Recalcular</button>
+          </div>
+        </div>
+        <div id="labdiv-empty" class="empty-state" style="display:none">No hay posiciones abiertas para comparar.</div>
+        <div class="tw" id="labdiv-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Cant.</th>
+                <th>PPC actual</th>
+                <th>PPC c/ dividendos</th>
+                <th>Diferencia</th>
+                <th>Dividendos aplicados (U$S)</th>
+                <th>Δ% actual</th>
+                <th>Δ% c/ dividendos</th>
+              </tr>
+            </thead>
+            <tbody id="labdiv-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- RENDIMIENTO ANUAL -->
     <div class="page" id="page-rendanual">
       <div class="card">
@@ -2188,6 +2261,30 @@ var MEP_TABLE = {"19/04/2026": 1412.0, "20/04/2026": 1411.0, "21/04/2026": 1410.
 function fmtKey(fecha){var p=fecha.split('/');return p[0].padStart(2,'0')+'/'+p[1].padStart(2,'0')+'/'+p[2];}
 function getCCL(fecha){return CCL_TABLE[fmtKey(fecha)]||null;}
 function getMEP(fecha){return MEP_TABLE[fmtKey(fecha)]||null;}
+// Convierte un dividendo del Tracker CCL (TRK.divs, fecha en formato YYYY-MM-DD) a USD:
+// si se cobró en USD es directo; si se cobró en ARS se divide por el CCL histórico del
+// día de cobro (con fallback ±7 días en CCL_TABLE), y si no hay dato histórico se usa el
+// CCL guardado al momento de cargar el dividendo. Mismo criterio que ya usa trkRender().
+function trkDivToUSD(d){
+  if(!d) return 0;
+  if(d.moneda==='USD') return d.monto||0;
+  var fp=d.fecha?d.fecha.split('-'):[];
+  if(fp.length!==3) return d.cclUsado?(d.monto||0)/d.cclUsado:(d.montoUSD||0);
+  var fk=fp[2]+'/'+fp[1]+'/'+fp[0];
+  var cclH=CCL_TABLE[fk]||null;
+  if(!cclH){
+    var dt=new Date(d.fecha+'T12:00:00');
+    for(var di=1;di<=7&&!cclH;di++){
+      for(var sg=-1;sg<=1;sg+=2){
+        var d2=new Date(dt);d2.setDate(d2.getDate()+sg*di);
+        var fk2=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();
+        if(CCL_TABLE[fk2]){cclH=CCL_TABLE[fk2];break;}
+      }
+    }
+  }
+  var ccl=cclH||d.cclUsado;
+  return ccl?(d.monto||0)/ccl:(d.montoUSD||0);
+}
 // Helper: tipo de cambio apropiado según mercado. Bonos/ONs usan MEP (con fallback a CCL), resto usa CCL.
 function getTC(fecha, mercado){
   var esBonoON=(mercado==='BONOS'||mercado==='ON'||mercado==='FCI');
@@ -2340,6 +2437,7 @@ function showPage(id,btn){
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
   if(id==='ventaestad'){ renderVentaEstadisticas(); }
   if(id==='ventahist'){ renderVentaHistorica(); }
+  if(id==='labdiv'){ renderLabDividendos(); renderLabDivCards(); }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -4389,11 +4487,36 @@ function getPositions(owner){
     return (a&&a.id||0)-(b&&b.id||0);
   });
 
-  ordenados.forEach(function(m){
-    if(!m||m.tipo==='aporte')return;
+  // Dividendos del Tracker CCL (TRK.divs) intercalados cronológicamente junto a los
+  // movimientos, para poder verificar si la posición seguía en cartera (qty>0) el día
+  // de cobro antes de restarlo del costo base / PPC del activo.
+  var trkDivEvents=(typeof TRK!=='undefined'&&TRK.divs?TRK.divs:[]).map(function(d){
+    var fp=(d.fecha||'').split('-'); // YYYY-MM-DD → DD/MM/YYYY
+    var fechaDMY=fp.length===3?(fp[2]+'/'+fp[1]+'/'+fp[0]):'';
+    return {__trkDiv:true,ticker:d.ticker,fecha:fechaDMY,id:d.id,_raw:d};
+  });
+  var eventos=ordenados.concat(trkDivEvents).sort(function(a,b){
+    var fa=(a&&a.fecha||'').split('/'), fb=(b&&b.fecha||'').split('/');
+    var da = fa.length===3? fa[2]+fa[1].padStart(2,'0')+fa[0].padStart(2,'0') : '0';
+    var db = fb.length===3? fb[2]+fb[1].padStart(2,'0')+fb[0].padStart(2,'0') : '0';
+    if(da!==db) return da<db?-1:1;
+    return (a&&a.id||0)-(b&&b.id||0);
+  });
+
+  eventos.forEach(function(m){
+    if(!m)return;
+    if(m.__trkDiv){
+      // Dividendo del Tracker CCL: solo reduce el PPC si el ticker estaba en cartera esa fecha.
+      var pDiv=pos[m.ticker];
+      if(pDiv&&pDiv.qty>0.000001){
+        pDiv.divAdjustUSD=(pDiv.divAdjustUSD||0)+trkDivToUSD(m._raw);
+      }
+      return;
+    }
+    if(m.tipo==='aporte')return;
     if(owner==='cristian'){if(m.owner!=='cristian')return;}else{if(m.owner==='cristian')return;}
     var key=m.ticker;
-    if(!pos[key])pos[key]={ticker:m.ticker,mercado:m.mercado,qty:0,costUSD:0,costARS:0,costUSDpuro:0,realizedPnl:0,dividendsUSD:0};
+    if(!pos[key])pos[key]={ticker:m.ticker,mercado:m.mercado,qty:0,costUSD:0,costARS:0,costUSDpuro:0,realizedPnl:0,dividendsUSD:0,divAdjustUSD:0};
     else if(m.mercado)pos[key].mercado=m.mercado; // actualizar con cada mov para que el último editado gane
     var p=pos[key];
     if(!lots[key])lots[key]=[];
@@ -4483,6 +4606,172 @@ function getPositions(owner){
     }
   });
   return Object.values(pos);
+}
+
+// ─── Lab Dividendos (comparación PPC actual vs. PPC neto de dividendos) ───
+// NO impacta getPositions()/renderPortfolio(): usa el mismo divAdjustUSD que ya
+// viaja en cada posición (acumulado en getPositions a partir de TRK.divs) sólo
+// para simular acá cómo quedaría el PPC/Δ% si restáramos los dividendos cobrados.
+function renderLabDividendos(){
+  var body=document.getElementById('labdiv-body');
+  var empty=document.getElementById('labdiv-empty');
+  var wrap=document.getElementById('labdiv-wrap');
+  if(!body||!empty||!wrap) return;
+
+  function pctSpan(pct,costoRecuperado){
+    if(costoRecuperado) return '<span style="color:var(--accent);font-weight:700">costo recuperado</span>';
+    if(pct===null||isNaN(pct)) return '<span style="color:var(--text3)">—</span>';
+    var col=pct<0?'var(--red)':pct<10?'#eab308':'var(--accent)';
+    return '<span style="color:'+col+'">'+(pct>0?'+':'')+Math.round(pct)+'%</span>';
+  }
+
+  var soloAfectadosEl=document.getElementById('labdiv-solo-afectados');
+  var soloAfectados=!soloAfectadosEl||soloAfectadosEl.checked;
+
+  var all=getPositions();
+  var open=all.filter(function(p){return p.qty>0.000001;});
+
+  var rows=open.map(function(p){
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
+    var _isBonoON=(sector==='bonos'||sector==='on');
+    var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
+
+    // PPC actual — misma fórmula que hoy usa Portafolio, sin tocar.
+    var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
+    var ppcARS=_isBonoON?(ppcUSD*_tcHoy*100):(sector==='fci'?ppcUSD*(MEP_HOY||CCL_HOY):ppcUSD*CCL_HOY);
+
+    // PPC propuesto: costo base menos dividendos cobrados mientras estaba en cartera, piso $0.
+    var divAdj=p.divAdjustUSD||0;
+    var costUSDpuroAdj=Math.max(0,p.costUSDpuro-divAdj);
+    var ppcUSDAdj=p.qty>0?costUSDpuroAdj/p.qty:0;
+    var ppcARSAdj=_isBonoON?(ppcUSDAdj*_tcHoy*100):(sector==='fci'?ppcUSDAdj*(MEP_HOY||CCL_HOY):ppcUSDAdj*CCL_HOY);
+    var costoRecuperado=divAdj>0&&costUSDpuroAdj<=0;
+
+    // Mercado y Δ% — misma lógica que renderPortfolio (Pasada 1).
+    var _sectorIsARS=(sector==='argentina'||sector==='bonos'||sector==='on');
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var fromByma=q&&q.fromByma;
+    var mercadoARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
+
+    var pnlPct=mercadoARS!=null&&ppcARS>0?(mercadoARS-ppcARS)/ppcARS*100:null;
+    var pnlPctAdj=(mercadoARS!=null&&ppcARSAdj>0)?(mercadoARS-ppcARSAdj)/ppcARSAdj*100:null;
+
+    return {ticker:p.ticker,qty:p.qty,ppc:ppcARS,ppcAdj:ppcARSAdj,divAdj:divAdj,pnl:pnlPct,pnlAdj:pnlPctAdj,costoRecuperado:costoRecuperado};
+  });
+
+  if(soloAfectados) rows=rows.filter(function(r){return r.divAdj>0.01;});
+  rows.sort(function(a,b){return b.divAdj-a.divAdj;});
+
+  if(!rows.length){
+    empty.style.display='';wrap.style.display='none';
+    empty.textContent=soloAfectados?'Ningún ticker en cartera tiene dividendos del Tracker CCL aplicados todavía.':'No hay posiciones abiertas para comparar.';
+    body.innerHTML='';
+    return;
+  }
+  empty.style.display='none';wrap.style.display='';
+
+  body.innerHTML=rows.map(function(r){
+    var diff=r.ppc-r.ppcAdj;
+    return '<tr>'+
+      '<td style="font-weight:700">'+r.ticker+'</td>'+
+      '<td class="mono">'+(r.qty%1===0?r.qty.toFixed(0):r.qty.toFixed(2))+'</td>'+
+      '<td class="mono">$'+Math.round(r.ppc).toLocaleString('es-AR')+'</td>'+
+      '<td class="mono" style="color:var(--accent)">$'+Math.round(r.ppcAdj).toLocaleString('es-AR')+'</td>'+
+      '<td class="mono" style="color:var(--text2)">'+(diff>0?'-$'+Math.round(diff).toLocaleString('es-AR'):'—')+'</td>'+
+      '<td class="mono">U$S '+r.divAdj.toFixed(2)+'</td>'+
+      '<td class="mono">'+pctSpan(r.pnl,false)+'</td>'+
+      '<td class="mono">'+pctSpan(r.pnlAdj,r.costoRecuperado)+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ── Lab Dividendos: tarjetas por activo + resumen mensual/anual ──
+// Independiente de getPositions()/open-qty: incluye activos ya vendidos (ej. HON)
+// porque acá el objetivo es ver el ingreso histórico por dividendos, no el PPC vivo.
+
+// Total histórico USD invertido por ticker (bruto: suma de todas las compras de
+// siempre, sin netear por ventas — así un activo cerrado no queda con "inversión" $0).
+function labInvertidoPorTicker(){
+  var out={};
+  (movimientos||[]).forEach(function(m){
+    if(!m||m.tipo!=='compra')return;
+    var _tc=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
+      ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
+      :(getCCL(m.fecha)||m.ccl||CCL_HOY);
+    var usdPuro=_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:(m.precioUSD||0)*m.qty;
+    out[m.ticker]=(out[m.ticker]||0)+usdPuro;
+  });
+  return out;
+}
+
+// Dividendos del Tracker CCL agrupados por ticker, por mes (YYYY-MM) y por año.
+function labDivAggregates(){
+  var porTicker={},porMes={},porAnio={};
+  (TRK.divs||[]).forEach(function(d){
+    if(!d||!d.ticker)return;
+    var usd=trkDivToUSD(d);
+    var ars=d.moneda==='ARS'?(d.monto||0):(d.monto||0)*(d.cclUsado||CCL_HOY||0);
+    if(!porTicker[d.ticker])porTicker[d.ticker]={usd:0,ars:0,count:0,lastFecha:d.fecha||''};
+    var pt=porTicker[d.ticker];
+    pt.usd+=usd;pt.ars+=ars;pt.count+=1;
+    if((d.fecha||'')>pt.lastFecha)pt.lastFecha=d.fecha;
+    var ym=(d.fecha||'').slice(0,7),y=(d.fecha||'').slice(0,4);
+    if(ym)porMes[ym]=(porMes[ym]||0)+usd;
+    if(y)porAnio[y]=(porAnio[y]||0)+usd;
+  });
+  return {porTicker:porTicker,porMes:porMes,porAnio:porAnio};
+}
+
+function renderLabDivCards(){
+  var wrap=document.getElementById('labdiv-cards-wrap');
+  var emptyCards=document.getElementById('labdiv-cards-empty');
+  var mesBody=document.getElementById('labdiv-mes-body');
+  var anioBody=document.getElementById('labdiv-anio-body');
+  if(!wrap)return;
+
+  var agg=labDivAggregates();
+  var invertido=labInvertidoPorTicker();
+  var tickers=Object.keys(agg.porTicker);
+
+  if(!tickers.length){
+    wrap.innerHTML='';
+    if(emptyCards)emptyCards.style.display='';
+    if(mesBody)mesBody.innerHTML='';
+    if(anioBody)anioBody.innerHTML='';
+    return;
+  }
+  if(emptyCards)emptyCards.style.display='none';
+
+  var cards=tickers.map(function(t){
+    var a=agg.porTicker[t];
+    var inv=invertido[t]||0;
+    var yieldPct=inv>0?(a.usd/inv*100):null;
+    return {ticker:t,usd:a.usd,ars:a.ars,count:a.count,lastFecha:a.lastFecha,inv:inv,yieldPct:yieldPct};
+  }).sort(function(x,y){return y.usd-x.usd;});
+
+  wrap.innerHTML=cards.map(function(c){
+    var yieldTxt=c.yieldPct!=null?c.yieldPct.toFixed(2)+'%':(c.inv<=0?'sin compras registradas':'—');
+    var yieldColor=c.yieldPct==null?'var(--text3)':c.yieldPct<2?'var(--text)':c.yieldPct<5?'#eab308':'var(--accent)';
+    var fechaDMY=c.lastFecha?c.lastFecha.split('-').reverse().join('/'):'—';
+    return '<div class="metric" style="min-width:160px;flex:0 1 auto">'+
+      '<div class="metric-label">'+c.ticker+'</div>'+
+      '<div class="metric-value">U$S '+c.usd.toFixed(2)+'</div>'+
+      '<div class="metric-sub">$'+Math.round(c.ars).toLocaleString('es-AR')+' ARS · '+c.count+' pago'+(c.count===1?'':'s')+'</div>'+
+      '<div class="metric-sub" style="color:'+yieldColor+';font-weight:700">Yield s/invertido: '+yieldTxt+'</div>'+
+      '<div class="metric-sub">Último cobro: '+fechaDMY+'</div>'+
+    '</div>';
+  }).join('');
+
+  var meses=Object.keys(agg.porMes).sort().reverse();
+  if(mesBody)mesBody.innerHTML=meses.map(function(m){
+    return '<tr><td class="mono">'+m+'</td><td class="mono">U$S '+agg.porMes[m].toFixed(2)+'</td></tr>';
+  }).join('');
+
+  var anios=Object.keys(agg.porAnio).sort().reverse();
+  if(anioBody)anioBody.innerHTML=anios.map(function(a){
+    return '<tr><td class="mono">'+a+'</td><td class="mono">U$S '+agg.porAnio[a].toFixed(2)+'</td></tr>';
+  }).join('');
 }
 
 function renderPortfolio(){
@@ -4655,7 +4944,6 @@ function renderPortfolio(){
 
     var mktARS=mercadoCedearARS!=null?'$'+Math.round(mercadoCedearARS).toLocaleString('es-AR'):null;
     var ppcARS='$'+Math.round(ppcCedearARS).toLocaleString('es-AR');
-
     var finishFlag=finishTickers.has(p.ticker)?'<span title="A finish" style="font-size:.7rem;margin-left:4px">🏁</span>':'';
     var cristianFlag=p.owner==='cristian'?'<span title="Activo de Cristian" style="font-size:.65rem;background:#3b1f6e;color:#a78bfa;border:1px solid #6d28d9;border-radius:3px;padding:0 3px;margin-left:3px">C</span>':'';
     var _mark=MARKS[p.ticker];
@@ -7395,6 +7683,32 @@ function trkCalcCCL(){
     } else {
       try{var td=localStorage.getItem(TRK.DKEY);if(td)TRK.divs=JSON.parse(td);}catch(e){}
     }
+
+    // ── SEED de prueba (Lab Dividendos): 8 dividendos reales del reporte de
+    // Movimientos de la cta. 45468 (jul-ago 2026), cargados a mano para validar
+    // el Lab antes de armar el importador automático. Solo se agregan si no
+    // están ya (dedup por id) y NO se persisten a Supabase acá — es de uso
+    // local para esta revisión. cclUsado es el que efectivamente usó el broker
+    // (columna "Precio" del reporte); para las especies en ARS sin conversión
+    // propia se usa el CCL histórico más cercano solo a fines informativos.
+    (function(){
+      var LAB_SEED_DIVS=[
+        {id:20260714001,ticker:'HON',  fecha:'2026-07-14',moneda:'USD',monto:162.36,   montoUSD:162.36, cclUsado:1505,notas:'Lab seed (broker XLS) — activo vendido, ya no está en cartera'},
+        {id:20260714002,ticker:'SNEAO',fecha:'2026-07-14',moneda:'ARS',monto:31706.41, montoUSD:20.2210,cclUsado:1568,notas:'Lab seed (broker XLS)'},
+        {id:20260723001,ticker:'METR', fecha:'2026-07-23',moneda:'ARS',monto:377215.14,montoUSD:241.1888,cclUsado:1564,notas:'Lab seed (broker XLS)'},
+        {id:20260723002,ticker:'MR43O',fecha:'2026-07-23',moneda:'ARS',monto:36190.76, montoUSD:23.1421,cclUsado:1564,notas:'Lab seed (broker XLS)'},
+        {id:20260730001,ticker:'BHIP', fecha:'2026-07-30',moneda:'ARS',monto:17166.48, montoUSD:10.9772,cclUsado:1564,notas:'Lab seed (broker XLS)'},
+        {id:20260810001,ticker:'MA',   fecha:'2026-08-10',moneda:'USD',monto:0.5,      montoUSD:0.5,    cclUsado:1520,notas:'Lab seed (broker XLS)'},
+        {id:20260812001,ticker:'BBD',  fecha:'2026-08-12',moneda:'USD',monto:23.09,    montoUSD:23.09,  cclUsado:1515,notas:'Lab seed (broker XLS)'},
+        {id:20260813001,ticker:'LVS',  fecha:'2026-08-13',moneda:'USD',monto:1.32,     montoUSD:1.32,   cclUsado:1515,notas:'Lab seed (broker XLS)'}
+      ];
+      if(!TRK.divs) TRK.divs=[];
+      var existIds={};
+      TRK.divs.forEach(function(d){existIds[String(d.id)]=true;});
+      LAB_SEED_DIVS.forEach(function(d){
+        if(!existIds[String(d.id)]) TRK.divs.push(d);
+      });
+    })();
 
     // 4. Ratios
     var sbRatios = await sbGetConfig('ratios');
