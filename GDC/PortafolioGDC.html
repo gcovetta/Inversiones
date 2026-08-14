@@ -1700,7 +1700,8 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div class="card-body" style="padding:.6rem 1rem">
           <div class="ibox" style="margin-bottom:0;font-size:.68rem">
-            ⚠️ Esta pestaña es de <b>prueba</b>, con 8 dividendos cargados a mano del reporte de movimientos (cta. 45468, desde 07/2026) para validar. Cuando lo revisemos y sirva, lo hacemos automático y lo llevamos a producción.
+            ⚠️ Esta pestaña es de <b>prueba</b>, con 8 dividendos cargados a mano del reporte de movimientos (cta. 45468) para validar. Cuando lo revisemos y sirva, lo hacemos automático y lo llevamos a producción.<br>
+            📅 Todo lo que ves acá (tarjetas, mes/año, comparación de PPC) solo tiene en cuenta dividendos del Tracker CCL con fecha ≥ <b id="labdiv-desde-txt">01/07/2026</b> — lo que ya estuviera cargado antes (ej. CUAP, PBY26) queda afuera de este análisis por ahora, sin borrarse.
           </div>
         </div>
       </div>
@@ -2261,6 +2262,12 @@ var MEP_TABLE = {"19/04/2026": 1412.0, "20/04/2026": 1411.0, "21/04/2026": 1410.
 function fmtKey(fecha){var p=fecha.split('/');return p[0].padStart(2,'0')+'/'+p[1].padStart(2,'0')+'/'+p[2];}
 function getCCL(fecha){return CCL_TABLE[fmtKey(fecha)]||null;}
 function getMEP(fecha){return MEP_TABLE[fmtKey(fecha)]||null;}
+// Corte del Lab Dividendos: mientras estamos revisando, solo se tienen en cuenta
+// dividendos del Tracker CCL con fecha (YYYY-MM-DD) >= este valor. No borra ni toca
+// los que ya estaban cargados de antes (ej. CUAP, PBY26) — solo los deja afuera de
+// este análisis hasta que decidamos incorporar el histórico completo.
+var LAB_DIV_DESDE='2026-07-01';
+function trkDivEnRango(d){return !!(d&&d.fecha&&d.fecha>=LAB_DIV_DESDE);}
 // Convierte un dividendo del Tracker CCL (TRK.divs, fecha en formato YYYY-MM-DD) a USD:
 // si se cobró en USD es directo; si se cobró en ARS se divide por el CCL histórico del
 // día de cobro (con fallback ±7 días en CCL_TABLE), y si no hay dato histórico se usa el
@@ -4490,7 +4497,7 @@ function getPositions(owner){
   // Dividendos del Tracker CCL (TRK.divs) intercalados cronológicamente junto a los
   // movimientos, para poder verificar si la posición seguía en cartera (qty>0) el día
   // de cobro antes de restarlo del costo base / PPC del activo.
-  var trkDivEvents=(typeof TRK!=='undefined'&&TRK.divs?TRK.divs:[]).map(function(d){
+  var trkDivEvents=(typeof TRK!=='undefined'&&TRK.divs?TRK.divs:[]).filter(trkDivEnRango).map(function(d){
     var fp=(d.fecha||'').split('-'); // YYYY-MM-DD → DD/MM/YYYY
     var fechaDMY=fp.length===3?(fp[2]+'/'+fp[1]+'/'+fp[0]):'';
     return {__trkDiv:true,ticker:d.ticker,fecha:fechaDMY,id:d.id,_raw:d};
@@ -4708,7 +4715,7 @@ function labInvertidoPorTicker(){
 // Dividendos del Tracker CCL agrupados por ticker, por mes (YYYY-MM) y por año.
 function labDivAggregates(){
   var porTicker={},porMes={},porAnio={};
-  (TRK.divs||[]).forEach(function(d){
+  (TRK.divs||[]).filter(trkDivEnRango).forEach(function(d){
     if(!d||!d.ticker)return;
     var usd=trkDivToUSD(d);
     var ars=d.moneda==='ARS'?(d.monto||0):(d.monto||0)*(d.cclUsado||CCL_HOY||0);
