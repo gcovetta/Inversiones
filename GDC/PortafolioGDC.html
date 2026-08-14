@@ -1699,9 +1699,13 @@ tr:hover td{background:var(--surface2)}
           <span class="smsg" style="font-size:.68rem;color:var(--text3)">Aislado del portafolio principal — nada de acá cambia el PPC, la Inversión $ ni el Δ% que ves en Portafolio</span>
         </div>
         <div class="card-body" style="padding:.6rem 1rem">
-          <div class="ibox" style="margin-bottom:0;font-size:.68rem">
-            ⚠️ Esta pestaña es de <b>prueba</b>, con 8 dividendos cargados a mano del reporte de movimientos (cta. 45468) para validar. Cuando lo revisemos y sirva, lo hacemos automático y lo llevamos a producción.<br>
+          <div class="ibox" style="margin-bottom:8px;font-size:.68rem">
+            ⚠️ Esta pestaña es de <b>prueba</b>, con dividendos en efectivo cargados a mano del reporte de movimientos (cta. 45468) para validar. Cuando lo revisemos y sirva, lo hacemos automático y lo llevamos a producción.<br>
             📅 Todo lo que ves acá (tarjetas, mes/año, comparación de PPC) solo tiene en cuenta dividendos del Tracker CCL con fecha ≥ <b id="labdiv-desde-txt">01/07/2026</b> — lo que ya estuviera cargado antes (ej. CUAP, PBY26) queda afuera de este análisis por ahora, sin borrarse.
+          </div>
+          <div class="ibox" style="margin-bottom:0;font-size:.68rem;border-color:#eab308">
+            🪙 <b>Pagos en especie detectados (NO cargados como efectivo):</b> en el reporte, cuando "Cantidad" no trae "$" es porque acreditaron más unidades del activo en vez de plata. Se excluyeron de este análisis:
+            <div id="labdiv-excluidos-wrap" style="margin-top:4px"></div>
           </div>
         </div>
       </div>
@@ -2268,6 +2272,13 @@ function getMEP(fecha){return MEP_TABLE[fmtKey(fecha)]||null;}
 // este análisis hasta que decidamos incorporar el histórico completo.
 var LAB_DIV_DESDE='2026-07-01';
 function trkDivEnRango(d){return !!(d&&d.fecha&&d.fecha>=LAB_DIV_DESDE);}
+// Filas del reporte de Movimientos que en Cantidad NO tenían "$" (pago en especie:
+// más unidades del activo/bono, no efectivo) y por eso no entran al Tracker CCL.
+// Se muestran acá solo para que quede visible por qué faltan del análisis de cash.
+var LAB_SEED_EXCLUIDOS=[
+  {ticker:'MIRG', fecha:'2026-08-03',motivo:'Pago en especie: acreditaron más unidades de MIRG en vez de efectivo.'},
+  {ticker:'MR43O',fecha:'2026-07-23',motivo:'Pago en especie: acreditaron más nominales del bono en vez de efectivo (confirmado por Garo).'}
+];
 // Convierte un dividendo del Tracker CCL (TRK.divs, fecha en formato YYYY-MM-DD) a USD:
 // si se cobró en USD es directo; si se cobró en ARS se divide por el CCL histórico del
 // día de cobro (con fallback ±7 días en CCL_TABLE), y si no hay dato histórico se usa el
@@ -2444,7 +2455,7 @@ function showPage(id,btn){
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
   if(id==='ventaestad'){ renderVentaEstadisticas(); }
   if(id==='ventahist'){ renderVentaHistorica(); }
-  if(id==='labdiv'){ renderLabDividendos(); renderLabDivCards(); }
+  if(id==='labdiv'){ renderLabDividendos(); renderLabDivCards(); renderLabDivExcluidos(); }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -4728,6 +4739,15 @@ function labDivAggregates(){
     if(y)porAnio[y]=(porAnio[y]||0)+usd;
   });
   return {porTicker:porTicker,porMes:porMes,porAnio:porAnio};
+}
+
+function renderLabDivExcluidos(){
+  var wrap=document.getElementById('labdiv-excluidos-wrap');
+  if(!wrap)return;
+  if(!LAB_SEED_EXCLUIDOS.length){wrap.innerHTML='<span style="color:var(--text3)">Ninguno por ahora.</span>';return;}
+  wrap.innerHTML=LAB_SEED_EXCLUIDOS.map(function(x){
+    return '<div style="margin-top:2px"><b>'+x.ticker+'</b> ('+x.fecha.split('-').reverse().join('/')+'): '+x.motivo+'</div>';
+  }).join('');
 }
 
 function renderLabDivCards(){
@@ -7691,8 +7711,9 @@ function trkCalcCCL(){
       try{var td=localStorage.getItem(TRK.DKEY);if(td)TRK.divs=JSON.parse(td);}catch(e){}
     }
 
-    // ── SEED de prueba (Lab Dividendos): 8 dividendos reales del reporte de
-    // Movimientos de la cta. 45468 (jul-ago 2026), cargados a mano para validar
+    // ── SEED de prueba (Lab Dividendos): 7 dividendos EN EFECTIVO reales del
+    // reporte de Movimientos de la cta. 45468 (jul-ago 2026), cargados a mano
+    // para validar
     // el Lab antes de armar el importador automático. Solo se agregan si no
     // están ya (dedup por id) y NO se persisten a Supabase acá — es de uso
     // local para esta revisión. cclUsado es el que efectivamente usó el broker
@@ -7703,13 +7724,17 @@ function trkCalcCCL(){
         {id:20260714001,ticker:'HON',  fecha:'2026-07-14',moneda:'USD',monto:162.36,   montoUSD:162.36, cclUsado:1505,notas:'Lab seed (broker XLS) — activo vendido, ya no está en cartera'},
         {id:20260714002,ticker:'SNEAO',fecha:'2026-07-14',moneda:'ARS',monto:31706.41, montoUSD:20.2210,cclUsado:1568,notas:'Lab seed (broker XLS)'},
         {id:20260723001,ticker:'METR', fecha:'2026-07-23',moneda:'ARS',monto:377215.14,montoUSD:241.1888,cclUsado:1564,notas:'Lab seed (broker XLS)'},
-        {id:20260723002,ticker:'MR43O',fecha:'2026-07-23',moneda:'ARS',monto:36190.76, montoUSD:23.1421,cclUsado:1564,notas:'Lab seed (broker XLS)'},
         {id:20260730001,ticker:'BHIP', fecha:'2026-07-30',moneda:'ARS',monto:17166.48, montoUSD:10.9772,cclUsado:1564,notas:'Lab seed (broker XLS)'},
         {id:20260810001,ticker:'MA',   fecha:'2026-08-10',moneda:'USD',monto:0.5,      montoUSD:0.5,    cclUsado:1520,notas:'Lab seed (broker XLS)'},
         {id:20260812001,ticker:'BBD',  fecha:'2026-08-12',moneda:'USD',monto:23.09,    montoUSD:23.09,  cclUsado:1515,notas:'Lab seed (broker XLS)'},
         {id:20260813001,ticker:'LVS',  fecha:'2026-08-13',moneda:'USD',monto:1.32,     montoUSD:1.32,   cclUsado:1515,notas:'Lab seed (broker XLS)'}
       ];
+      // MR43O (23/07/2026) SACADO del seed: no fue un cobro en efectivo, fue un pago
+      // en especie (más unidades del bono), como confirmó Garo — ver LAB_SEED_EXCLUIDOS
+      // más abajo para la lista completa de casos excluidos con el motivo.
       if(!TRK.divs) TRK.divs=[];
+      // Si MR43O había quedado cargado de una revisión anterior (id 20260723002), lo sacamos.
+      TRK.divs=TRK.divs.filter(function(d){return String(d.id)!=='20260723002';});
       var existIds={};
       TRK.divs.forEach(function(d){existIds[String(d.id)]=true;});
       LAB_SEED_DIVS.forEach(function(d){
