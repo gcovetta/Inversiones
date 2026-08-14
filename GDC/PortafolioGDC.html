@@ -2276,8 +2276,11 @@ function trkDivEnRango(d){return !!(d&&d.fecha&&d.fecha>=LAB_DIV_DESDE);}
 // más unidades del activo/bono, no efectivo) y por eso no entran al Tracker CCL.
 // Se muestran acá solo para que quede visible por qué faltan del análisis de cash.
 var LAB_SEED_EXCLUIDOS=[
-  {ticker:'MIRG', fecha:'2026-08-03',motivo:'Pago en especie: acreditaron más unidades de MIRG en vez de efectivo.'},
-  {ticker:'MR43O',fecha:'2026-07-23',motivo:'Pago en especie: acreditaron más nominales del bono en vez de efectivo (confirmado por Garo).'}
+  {ticker:'MIRG', fecha:'2026-08-03',motivo:'Cantidad sin "$" → pago en especie: acreditaron más unidades de MIRG en vez de efectivo.'},
+  {ticker:'MR43O',fecha:'2026-07-23',motivo:'Cantidad sin "$" → pago en especie (confirmado por Garo), no efectivo.'},
+  {ticker:'SNEAO',fecha:'2026-07-14',motivo:'Cantidad sin "$" en el reporte → no se cuenta como cobro en efectivo.'},
+  {ticker:'METR', fecha:'2026-07-23',motivo:'Cantidad sin "$" en el reporte → no se cuenta como cobro en efectivo.'},
+  {ticker:'BHIP', fecha:'2026-07-30',motivo:'Cantidad sin "$" en el reporte → no se cuenta como cobro en efectivo.'}
 ];
 // Convierte un dividendo del Tracker CCL (TRK.divs, fecha en formato YYYY-MM-DD) a USD:
 // si se cobró en USD es directo; si se cobró en ARS se divide por el CCL histórico del
@@ -7711,30 +7714,28 @@ function trkCalcCCL(){
       try{var td=localStorage.getItem(TRK.DKEY);if(td)TRK.divs=JSON.parse(td);}catch(e){}
     }
 
-    // ── SEED de prueba (Lab Dividendos): 7 dividendos EN EFECTIVO reales del
+    // ── SEED de prueba (Lab Dividendos): 4 dividendos EN EFECTIVO reales del
     // reporte de Movimientos de la cta. 45468 (jul-ago 2026), cargados a mano
-    // para validar
-    // el Lab antes de armar el importador automático. Solo se agregan si no
-    // están ya (dedup por id) y NO se persisten a Supabase acá — es de uso
-    // local para esta revisión. cclUsado es el que efectivamente usó el broker
-    // (columna "Precio" del reporte); para las especies en ARS sin conversión
-    // propia se usa el CCL histórico más cercano solo a fines informativos.
+    // para validar el Lab antes de armar el importador automático. Regla de
+    // Garo: en el reporte, SOLO cuenta como cobro en efectivo la fila donde
+    // "Cantidad" trae el signo "$" adelante (en este export eso corresponde a
+    // Especie vacía + un CCL real en "Precio"); todo lo demás es pago en
+    // especie (más unidades del activo) y se deja afuera — ver LAB_SEED_EXCLUIDOS.
+    // Se agregan si no están ya (dedup por id) y NO se persisten a Supabase
+    // acá — es de uso local para esta revisión.
     (function(){
       var LAB_SEED_DIVS=[
-        {id:20260714001,ticker:'HON',  fecha:'2026-07-14',moneda:'USD',monto:162.36,   montoUSD:162.36, cclUsado:1505,notas:'Lab seed (broker XLS) — activo vendido, ya no está en cartera'},
-        {id:20260714002,ticker:'SNEAO',fecha:'2026-07-14',moneda:'ARS',monto:31706.41, montoUSD:20.2210,cclUsado:1568,notas:'Lab seed (broker XLS)'},
-        {id:20260723001,ticker:'METR', fecha:'2026-07-23',moneda:'ARS',monto:377215.14,montoUSD:241.1888,cclUsado:1564,notas:'Lab seed (broker XLS)'},
-        {id:20260730001,ticker:'BHIP', fecha:'2026-07-30',moneda:'ARS',monto:17166.48, montoUSD:10.9772,cclUsado:1564,notas:'Lab seed (broker XLS)'},
-        {id:20260810001,ticker:'MA',   fecha:'2026-08-10',moneda:'USD',monto:0.5,      montoUSD:0.5,    cclUsado:1520,notas:'Lab seed (broker XLS)'},
-        {id:20260812001,ticker:'BBD',  fecha:'2026-08-12',moneda:'USD',monto:23.09,    montoUSD:23.09,  cclUsado:1515,notas:'Lab seed (broker XLS)'},
-        {id:20260813001,ticker:'LVS',  fecha:'2026-08-13',moneda:'USD',monto:1.32,     montoUSD:1.32,   cclUsado:1515,notas:'Lab seed (broker XLS)'}
+        {id:20260714001,ticker:'HON',fecha:'2026-07-14',moneda:'USD',monto:162.36,montoUSD:162.36,cclUsado:1505,notas:'Lab seed (broker XLS) — activo vendido, ya no está en cartera'},
+        {id:20260810001,ticker:'MA', fecha:'2026-08-10',moneda:'USD',monto:0.5,   montoUSD:0.5,   cclUsado:1520,notas:'Lab seed (broker XLS)'},
+        {id:20260812001,ticker:'BBD',fecha:'2026-08-12',moneda:'USD',monto:23.09, montoUSD:23.09, cclUsado:1515,notas:'Lab seed (broker XLS)'},
+        {id:20260813001,ticker:'LVS',fecha:'2026-08-13',moneda:'USD',monto:1.32,  montoUSD:1.32,  cclUsado:1515,notas:'Lab seed (broker XLS)'}
       ];
-      // MR43O (23/07/2026) SACADO del seed: no fue un cobro en efectivo, fue un pago
-      // en especie (más unidades del bono), como confirmó Garo — ver LAB_SEED_EXCLUIDOS
-      // más abajo para la lista completa de casos excluidos con el motivo.
+      // SNEAO, METR, BHIP, MR43O: SACADOS del seed — en el reporte "Cantidad" no
+      // traía "$" adelante, o sea son pago en especie, no efectivo (regla de Garo).
+      // Si alguno había quedado cargado de una revisión anterior, lo sacamos acá.
+      var LAB_SEED_IDS_VIEJOS=['20260714002','20260723001','20260723002','20260730001'];
       if(!TRK.divs) TRK.divs=[];
-      // Si MR43O había quedado cargado de una revisión anterior (id 20260723002), lo sacamos.
-      TRK.divs=TRK.divs.filter(function(d){return String(d.id)!=='20260723002';});
+      TRK.divs=TRK.divs.filter(function(d){return LAB_SEED_IDS_VIEJOS.indexOf(String(d.id))<0;});
       var existIds={};
       TRK.divs.forEach(function(d){existIds[String(d.id)]=true;});
       LAB_SEED_DIVS.forEach(function(d){
