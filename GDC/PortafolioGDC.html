@@ -5058,27 +5058,29 @@ function renderLabDivChart(porMes){
   var vals=meses.map(function(m){return porMes[m]||0;});
   var maxVal=Math.max.apply(null,vals.concat([0]));
 
-  var BW=30,BG=8,CH=90,LH=18,PL=36,PR=8; // más grande, pero el ancho del SVG se ajusta a la cantidad de meses (no a todo el ancho de página)
+  // TM = margen arriba para que el número del mes más alto no quede cortado
+  // (antes el label del máximo caía justo en el borde superior del SVG).
+  var BW=34,BG=10,CH=100,LH=22,TM=22,PL=40,PR=10;
   var SW=PL+(BW+BG)*meses.length+PR;
-  var SH=CH+LH+10;
+  var SH=TM+CH+LH+10;
 
   var bars=meses.map(function(k,i){
     var val=vals[i];
     var bh=maxVal>0?Math.max(2,Math.round(val/maxVal*CH)):2;
     var x=PL+i*(BW+BG);
-    var y=CH-bh;
+    var y=TM+(CH-bh);
     var parts=k.split('-');
     var lbl=MNAMES[parseInt(parts[1],10)-1]+"'"+parts[0].slice(2);
     var vlbl=val>=1?Math.round(val):'<1';
     return '<g>'+
       '<rect x="'+x+'" y="'+y+'" width="'+BW+'" height="'+bh+'" rx="3" fill="var(--accent)" opacity="0.85"><title>'+k+': U$S '+val.toFixed(2)+'</title></rect>'+
-      (bh>=14?'<text x="'+(x+BW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--accent)">'+vlbl+'</text>':'')+
-      '<text x="'+(x+BW/2)+'" y="'+(CH+LH-4)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text3)">'+lbl+'</text>'+
+      '<text x="'+(x+BW/2)+'" y="'+(y-6)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" font-weight="700" fill="var(--accent)">'+vlbl+'</text>'+
+      '<text x="'+(x+BW/2)+'" y="'+(TM+CH+LH-5)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" fill="var(--text3)">'+lbl+'</text>'+
     '</g>';
   }).join('');
 
-  var guide=maxVal>0?'<line x1="'+PL+'" y1="0" x2="'+(SW-PR)+'" y2="0" stroke="var(--border)" stroke-width="1"/>'+
-    '<text x="'+(PL-4)+'" y="4" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text3)">'+Math.round(maxVal)+'</text>':'';
+  var guide=maxVal>0?'<line x1="'+PL+'" y1="'+TM+'" x2="'+(SW-PR)+'" y2="'+TM+'" stroke="var(--border)" stroke-width="1"/>'+
+    '<text x="'+(PL-5)+'" y="'+(TM+4)+'" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="11" fill="var(--text3)">'+Math.round(maxVal)+'</text>':'';
 
   host.innerHTML='<svg viewBox="0 0 '+SW+' '+SH+'" xmlns="http://www.w3.org/2000/svg" style="width:'+Math.min(SW,640)+'px;max-width:100%;height:auto;display:block">'+guide+bars+'</svg>';
 }
