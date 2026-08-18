@@ -809,10 +809,7 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
       <div style="width:100%"></div>
-      <div class="card" style="overflow:visible;display:inline-block;width:fit-content;max-width:100%">
-        <div class="card-header"><span class="card-title">Dividendos cobrados</span></div>
-        <div id="divs-content" class=""></div>
-      </div>
+      <!-- Recuadro "Dividendos cobrados" sacado de Portafolio — ver 🧪 Lab Dividendos -->
       <!-- Barra sticky inferior: Posiciones abiertas -->
       <div id="pos-footer-bar" style="position:sticky;bottom:.6rem;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.35);padding:.5rem .9rem;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;overflow:hidden;margin:1.2rem auto 0 auto;width:fit-content;max-width:100%">
         <span class="card-title">Posiciones abiertas</span>
@@ -1743,14 +1740,14 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div class="card-body" style="padding:.6rem 1rem">
           <div id="labdiv-cards-empty" class="empty-state" style="display:none">No hay dividendos cargados en el Tracker CCL todavía.</div>
-          <div id="labdiv-cards-wrap" style="display:flex;flex-wrap:wrap;gap:.6rem"></div>
+          <div id="labdiv-cards-wrap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.6rem"></div>
         </div>
       </div>
 
       <div class="card" style="margin-top:1rem">
         <div class="card-header"><span class="card-title" style="font-size:.8rem">📊 Dividendos cobrados por mes</span></div>
         <div class="card-body" style="padding:.6rem 1rem">
-          <div style="position:relative;height:220px"><canvas id="labdiv-chart-mes"></canvas></div>
+          <div style="position:relative;height:130px;max-width:480px"><canvas id="labdiv-chart-mes" width="480" height="130"></canvas></div>
         </div>
       </div>
 
@@ -2490,7 +2487,14 @@ function showPage(id,btn){
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
   if(id==='ventaestad'){ renderVentaEstadisticas(); }
   if(id==='ventahist'){ renderVentaHistorica(); }
-  if(id==='labdiv'){ renderLabDivVerificacion(); renderLabDividendos(); renderLabDivCards(); renderLabDivExcluidos(); }
+  if(id==='labdiv'){
+    renderLabDivVerificacion(); renderLabDividendos(); renderLabDivExcluidos();
+    // Las tarjetas arman el gráfico Chart.js — se difiere un tick para que el
+    // browser termine de aplicar "active" (display:block) antes de medir el
+    // canvas; si no, Chart.js puede medir contra un contenedor de ancho 0 y
+    // el canvas queda con un tamaño desbocado que rompe el scroll de la página.
+    setTimeout(renderLabDivCards,50);
+  }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -4887,17 +4891,26 @@ function renderLabDivCards(){
     var inv=invertido[t]||0;
     var yieldPct=inv>0?(a.usd/inv*100):null;
     return {ticker:t,usd:a.usd,ars:a.ars,count:a.count,lastFecha:a.lastFecha,inv:inv,yieldPct:yieldPct};
-  }).sort(function(x,y){return y.usd-x.usd;});
+  }).sort(function(x,y){
+    // Mejor yield primero; sin yield calculable (sin compras registradas) al final.
+    if(x.yieldPct==null&&y.yieldPct==null) return y.usd-x.usd;
+    if(x.yieldPct==null) return 1;
+    if(y.yieldPct==null) return -1;
+    return y.yieldPct-x.yieldPct;
+  });
 
   wrap.innerHTML=cards.map(function(c){
-    var yieldTxt=c.yieldPct!=null?c.yieldPct.toFixed(2)+'%':(c.inv<=0?'sin compras registradas':'—');
-    var yieldColor=c.yieldPct==null?'var(--text3)':c.yieldPct<2?'var(--text)':c.yieldPct<5?'#eab308':'var(--accent)';
+    var yieldTxt=c.yieldPct!=null?c.yieldPct.toFixed(2)+'%':(c.inv<=0?'sin compras':'—');
+    // Yield sobre lo invertido: >8% verde, >5% naranja, resto color normal.
+    var yieldColor=c.yieldPct==null?'var(--text3)':c.yieldPct>8?'var(--green)':c.yieldPct>5?'var(--orange)':'var(--text)';
     var fechaDMY=c.lastFecha?c.lastFecha.split('-').reverse().join('/'):'—';
-    return '<div class="metric" style="min-width:160px;flex:0 1 auto">'+
-      '<div class="metric-label">'+c.ticker+'</div>'+
-      '<div class="metric-value">U$S '+c.usd.toFixed(2)+'</div>'+
+    return '<div class="metric" style="border-color:'+yieldColor+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">'+
+        '<span style="font-weight:700;font-size:.82rem;letter-spacing:-.01em">'+c.ticker+'</span>'+
+        '<span style="font-weight:700;font-size:.92rem;color:'+yieldColor+'">'+yieldTxt+'</span>'+
+      '</div>'+
+      '<div class="metric-value" style="font-size:1.05rem;margin-top:3px">U$S '+c.usd.toFixed(2)+'</div>'+
       '<div class="metric-sub">$'+Math.round(c.ars).toLocaleString('es-AR')+' ARS · '+c.count+' pago'+(c.count===1?'':'s')+'</div>'+
-      '<div class="metric-sub" style="color:'+yieldColor+';font-weight:700">Yield s/invertido: '+yieldTxt+'</div>'+
       '<div class="metric-sub">Último cobro: '+fechaDMY+'</div>'+
     '</div>';
   }).join('');
