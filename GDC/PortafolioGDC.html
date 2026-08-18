@@ -1695,13 +1695,9 @@ tr:hover td{background:var(--surface2)}
           <span class="smsg" style="font-size:.68rem;color:var(--text3)">La Inversión $ y el Δ% de Portafolio NO cambian solos — el PPC solo se ajusta ticker por ticker cuando vos lo tildás abajo</span>
         </div>
         <div class="card-body" style="padding:.6rem 1rem">
-          <div class="ibox" style="margin-bottom:8px;font-size:.68rem">
+          <div class="ibox" style="margin-bottom:0;font-size:.68rem">
             ⚠️ Esta pestaña es de <b>prueba</b>, con dividendos en efectivo cargados a mano del reporte de movimientos (cta. 45468) para validar. Cuando lo revisemos y sirva, armamos el importador automático.<br>
             📅 Todo lo que ves acá (checklist, tarjetas, mes/año) solo tiene en cuenta dividendos del Tracker CCL con fecha ≥ <b id="labdiv-desde-txt">01/07/2026</b> — lo que ya estuviera cargado antes (ej. CUAP, PBY26) queda afuera por ahora, sin borrarse.
-          </div>
-          <div class="ibox" style="margin-bottom:0;font-size:.68rem;border-color:#eab308">
-            🪙 <b>Pagos en especie detectados (NO cargados como efectivo):</b> en el reporte, cuando "Cantidad" no trae "$" es porque acreditaron más unidades del activo en vez de plata. Se excluyeron de este análisis:
-            <div id="labdiv-excluidos-wrap" style="margin-top:4px"></div>
           </div>
         </div>
       </div>
@@ -1745,10 +1741,10 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
 
-      <div class="card" style="margin-top:1rem">
+      <div class="card" style="margin-top:1rem;display:inline-block;width:fit-content;max-width:100%">
         <div class="card-header"><span class="card-title" style="font-size:.8rem">📊 Dividendos cobrados por mes</span></div>
         <div class="card-body" style="padding:.6rem 1rem">
-          <div id="labdiv-chart-mes" style="overflow-x:auto"></div>
+          <div id="labdiv-chart-mes" style="overflow-x:auto;width:fit-content;max-width:100%"></div>
         </div>
       </div>
 
@@ -1794,6 +1790,15 @@ tr:hover td{background:var(--surface2)}
             </thead>
             <tbody id="labdiv-body"></tbody>
           </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;border-color:#eab308">
+        <div class="card-body" style="padding:.6rem 1rem">
+          <div class="ibox" style="margin-bottom:0;font-size:.68rem;border-color:#eab308">
+            🪙 <b>Pagos en especie detectados (NO cargados como efectivo):</b> en el reporte, cuando "Cantidad" no trae "$" es porque acreditaron más unidades del activo en vez de plata. Se excluyeron de este análisis:
+            <div id="labdiv-excluidos-wrap" style="margin-top:4px"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -4864,19 +4869,34 @@ function renderLabDivVerificacion(){
   if(!body)return;
 
   var todos=(TRK.divs||[]).filter(trkDivEnRango).slice().sort(function(a,b){return (a.fecha||'').localeCompare(b.fecha||'');});
+
+  var all=getPositions();
+  var posByTicker={};
+  all.forEach(function(p){posByTicker[p.ticker]=p;});
+
+  // Acá solo importan los dividendos de activos que SIGUEN en cartera (hay un PPC
+  // vivo que ajustar). Los que ya se sumaron directo a Estadísticas Venta (activo
+  // vendido con ventas registradas) o que no tienen ni cartera ni ventas (huérfanos)
+  // se sacan por completo de esta lista — no hay nada que verificar ahí.
+  var enCarteraFn=function(d){ var p=posByTicker[d.ticker]; return p&&p.qty>0.000001; };
+  var todosCartera=todos.filter(enCarteraFn);
   // Ya tildados = ya se aplicaron a la reducción del PPC (ver Portafolio/Lab
   // comparación) — no tienen nada más que hacer acá, así que se sacan de esta
   // lista de pendientes. Se resumen en una línea aparte para que no desaparezcan sin dejar rastro.
-  var divs=todos.filter(function(d){return !d.verificado;});
-  var aplicados=todos.filter(function(d){return d.verificado;});
+  var divs=todosCartera.filter(function(d){return !d.verificado;});
+  var aplicados=todosCartera.filter(function(d){return d.verificado;});
+  var fueraDeCartera=todos.length-todosCartera.length;
   if(aplicadosEl){
-    aplicadosEl.textContent=aplicados.length?('✓ '+aplicados.length+' dividendo'+(aplicados.length!==1?'s':'')+' ya verificado'+(aplicados.length!==1?'s':'')+' y aplicado'+(aplicados.length!==1?'s':'')+' al PPC (no se muestran acá).'):'';
+    var notas=[];
+    if(aplicados.length)notas.push('✓ '+aplicados.length+' dividendo'+(aplicados.length!==1?'s':'')+' ya verificado'+(aplicados.length!==1?'s':'')+' y aplicado'+(aplicados.length!==1?'s':'')+' al PPC (no se muestran acá).');
+    if(fueraDeCartera)notas.push('ℹ️ '+fueraDeCartera+' dividendo'+(fueraDeCartera!==1?'s':'')+' de activo'+(fueraDeCartera!==1?'s':'')+' ya vendido'+(fueraDeCartera!==1?'s':'')+' — ver Estadísticas Venta.');
+    aplicadosEl.textContent=notas.join(' ');
   }
 
   if(!divs.length){
     if(empty){
       empty.style.display='';
-      empty.textContent=aplicados.length?'No queda nada pendiente de verificar — todo lo cargado ya se aplicó al PPC.':'No hay dividendos en efectivo cargados en el rango a verificar.';
+      empty.textContent=(aplicados.length||fueraDeCartera)?'No queda nada pendiente de verificar acá.':'No hay dividendos en efectivo cargados en el rango a verificar.';
     }
     if(wrap)wrap.style.display='none';
     body.innerHTML='';
@@ -4884,13 +4904,6 @@ function renderLabDivVerificacion(){
   }
   if(empty)empty.style.display='none';
   if(wrap)wrap.style.display='';
-
-  var all=getPositions();
-  var posByTicker={};
-  all.forEach(function(p){posByTicker[p.ticker]=p;});
-  var ventaTickers={};
-  (movimientos||[]).forEach(function(m){ if(m&&m.tipo==='venta') ventaTickers[m.ticker]=true; });
-  var ventaExtra=labDivVentaExtraPorTicker();
 
   function pnlTxt(pct){
     if(pct==null||isNaN(pct))return '—';
@@ -4900,47 +4913,31 @@ function renderLabDivVerificacion(){
   body.innerHTML=divs.map(function(d){
     var usd=trkDivToUSD(d);
     var p=posByTicker[d.ticker];
-    var qty=p?p.qty:0;
-    var enCartera=qty>0.000001;
+    var qty=p.qty;
     var sector=getSector(d.ticker);
     var _isBonoON=(sector==='bonos'||sector==='on');
     var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
-    var impactoARSporUnidad=(enCartera&&_tcHoy>0)?(usd/qty)*_tcHoy:null;
+    var impactoARSporUnidad=_tcHoy>0?(usd/qty)*_tcHoy:null;
     var fechaDMY=(d.fecha||'').split('-').reverse().join('/');
     var montoTxt=(d.moneda==='ARS'?'$':'U$S ')+(d.monto||0).toLocaleString('es-AR',{maximumFractionDigits:2})+(d.moneda==='ARS'?' ARS':'');
     var checked=d.verificado?'checked':'';
 
     // Δ ganancia: cómo cambia el Δ% de Portafolio si tildo justo este dividendo
     // (independiente de si ya está tildado), comparando el escenario "verificado
-    // sin este" vs "verificado con este" — solo tiene sentido si el activo sigue
-    // en cartera (si no, no hay PPC vivo que mover).
+    // sin este" vs "verificado con este".
+    var baseAdj=(p.divAdjustVerifiedUSD||0)-(d.verificado?usd:0);
+    var afterAdj=baseAdj+usd;
+    var pnlAntes=labDivCalcPnl(p,baseAdj);
+    var pnlDespues=labDivCalcPnl(p,afterAdj);
     var deltaCell;
-    if(enCartera){
-      var baseAdj=(p.divAdjustVerifiedUSD||0)-(d.verificado?usd:0);
-      var afterAdj=baseAdj+usd;
-      var pnlAntes=labDivCalcPnl(p,baseAdj);
-      var pnlDespues=labDivCalcPnl(p,afterAdj);
-      if(pnlAntes!=null&&pnlDespues!=null){
-        var pnlDif=pnlDespues-pnlAntes;
-        deltaCell='<span class="mono" style="font-size:.66rem">'+pnlTxt(pnlAntes)+' → <b>'+pnlTxt(pnlDespues)+'</b><br><span style="color:var(--accent)">('+(pnlDif>=0?'+':'')+pnlDif.toFixed(1)+'pp)</span></span>';
-      }else{
-        deltaCell='<span style="color:var(--text3)">—</span>';
-      }
+    if(pnlAntes!=null&&pnlDespues!=null){
+      var pnlDif=pnlDespues-pnlAntes;
+      deltaCell='<span class="mono" style="font-size:.66rem">'+pnlTxt(pnlAntes)+' → <b>'+pnlTxt(pnlDespues)+'</b><br><span style="color:var(--accent)">('+(pnlDif>=0?'+':'')+pnlDif.toFixed(1)+'pp)</span></span>';
     }else{
-      deltaCell='<span style="color:var(--text3);font-size:.62rem">no aplica (vendido)</span>';
+      deltaCell='<span style="color:var(--text3)">—</span>';
     }
 
-    // Verificado: si el activo ya no está en cartera no hay nada que tildar —
-    // el cobro se refleja directo en Estadísticas Venta (si el ticker tiene
-    // ventas registradas) o se ignora (si nunca se vendió, ticker huérfano).
-    var verifCell;
-    if(enCartera){
-      verifCell='<input type="checkbox" '+checked+' onchange="trkDivToggleVerificado(\''+d.id+'\')">';
-    }else if(ventaTickers[d.ticker]){
-      verifCell='<span style="font-size:.6rem;color:var(--accent)" title="Sumado a la ganancia realizada de '+d.ticker+' en Estadísticas Venta">✓ sumado en Venta</span>';
-    }else{
-      verifCell='<span style="font-size:.6rem;color:var(--text3)">— sin ventas</span>';
-    }
+    var verifCell='<input type="checkbox" '+checked+' onchange="trkDivToggleVerificado(\''+d.id+'\')">';
 
     return '<tr'+(d.verificado?' style="opacity:.55"':'')+'>'+
       '<td style="font-weight:700">'+d.ticker+'</td>'+
@@ -4948,7 +4945,7 @@ function renderLabDivVerificacion(){
       '<td class="mono">'+montoTxt+'</td>'+
       '<td class="mono">'+(d.cclUsado?d.cclUsado.toLocaleString('es-AR'):'—')+'</td>'+
       '<td class="mono">U$S '+usd.toFixed(2)+'</td>'+
-      '<td class="mono">'+(enCartera?(qty%1===0?qty.toFixed(0):qty.toFixed(2)):'<span style="color:var(--text3)">no está en cartera</span>')+'</td>'+
+      '<td class="mono">'+(qty%1===0?qty.toFixed(0):qty.toFixed(2))+'</td>'+
       '<td class="mono">'+(impactoARSporUnidad!=null?'-$'+impactoARSporUnidad.toFixed(2).replace('.',',')+'/u':'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td>'+deltaCell+'</td>'+
       '<td style="text-align:center">'+verifCell+'</td>'+
@@ -5061,9 +5058,9 @@ function renderLabDivChart(porMes){
   var vals=meses.map(function(m){return porMes[m]||0;});
   var maxVal=Math.max.apply(null,vals.concat([0]));
 
-  var BW=20,BG=5,CH=48,LH=14,PL=30,PR=6; // chico a propósito
+  var BW=30,BG=8,CH=90,LH=18,PL=36,PR=8; // más grande, pero el ancho del SVG se ajusta a la cantidad de meses (no a todo el ancho de página)
   var SW=PL+(BW+BG)*meses.length+PR;
-  var SH=CH+LH+8;
+  var SH=CH+LH+10;
 
   var bars=meses.map(function(k,i){
     var val=vals[i];
@@ -5074,16 +5071,16 @@ function renderLabDivChart(porMes){
     var lbl=MNAMES[parseInt(parts[1],10)-1]+"'"+parts[0].slice(2);
     var vlbl=val>=1?Math.round(val):'<1';
     return '<g>'+
-      '<rect x="'+x+'" y="'+y+'" width="'+BW+'" height="'+bh+'" rx="2" fill="var(--accent)" opacity="0.85"><title>'+k+': U$S '+val.toFixed(2)+'</title></rect>'+
-      (bh>=10?'<text x="'+(x+BW/2)+'" y="'+(y-3)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="6" fill="var(--accent)">'+vlbl+'</text>':'')+
-      '<text x="'+(x+BW/2)+'" y="'+(CH+LH-3)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="6" fill="var(--text3)">'+lbl+'</text>'+
+      '<rect x="'+x+'" y="'+y+'" width="'+BW+'" height="'+bh+'" rx="3" fill="var(--accent)" opacity="0.85"><title>'+k+': U$S '+val.toFixed(2)+'</title></rect>'+
+      (bh>=14?'<text x="'+(x+BW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--accent)">'+vlbl+'</text>':'')+
+      '<text x="'+(x+BW/2)+'" y="'+(CH+LH-4)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="var(--text3)">'+lbl+'</text>'+
     '</g>';
   }).join('');
 
   var guide=maxVal>0?'<line x1="'+PL+'" y1="0" x2="'+(SW-PR)+'" y2="0" stroke="var(--border)" stroke-width="1"/>'+
-    '<text x="'+(PL-3)+'" y="4" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="5.5" fill="var(--text3)">'+Math.round(maxVal)+'</text>':'';
+    '<text x="'+(PL-4)+'" y="4" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text3)">'+Math.round(maxVal)+'</text>':'';
 
-  host.innerHTML='<svg viewBox="0 0 '+SW+' '+SH+'" xmlns="http://www.w3.org/2000/svg" style="width:'+Math.min(SW,480)+'px;max-width:100%;height:auto;display:block">'+guide+bars+'</svg>';
+  host.innerHTML='<svg viewBox="0 0 '+SW+' '+SH+'" xmlns="http://www.w3.org/2000/svg" style="width:'+Math.min(SW,640)+'px;max-width:100%;height:auto;display:block">'+guide+bars+'</svg>';
 }
 
 function renderPortfolio(){
