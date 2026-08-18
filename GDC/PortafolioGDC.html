@@ -5565,12 +5565,17 @@ function cmpReadVetaWorkbook(ab){
   var invName=cmpFindSheetName(wb,/inversiones/i);
   if(!invName)return null;
   var invRows=XLSX.utils.sheet_to_json(wb.Sheets[invName],{header:1,defval:''});
-  var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='tituloespecie';});});
+  // El broker cambió los encabezados de esta hoja en algún momento: antes era
+  // TituloEspecie/DescripcionEspecie, ahora es Codigo/Denominacion (con una
+  // columna TipoEspecie nueva adelante). Se soportan los dos por las dudas.
+  var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){var n=cmpNorm(c);return n==='tituloespecie'||n==='codigo';});});
   var map={},nombres={};
   if(hdrIdx>=0){
     var hdr=invRows[hdrIdx].map(cmpNorm);
     var tCol=hdr.indexOf('tituloespecie');
+    if(tCol<0)tCol=hdr.indexOf('codigo');
     var dCol=hdr.indexOf('descripcionespecie');
+    if(dCol<0)dCol=hdr.indexOf('denominacion');
     var totCol=hdr.indexOf('total');
     invRows.slice(hdrIdx+1).forEach(function(r){
       var ticker=String(r[tCol]||'').trim().toUpperCase();
