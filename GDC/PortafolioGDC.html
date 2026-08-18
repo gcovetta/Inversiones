@@ -1724,6 +1724,7 @@ tr:hover td{background:var(--surface2)}
                 <th>= USD</th>
                 <th>Cant. en cartera</th>
                 <th>Baja el PPC (ARS/u)</th>
+                <th>Δ Ganancia si tildo</th>
                 <th>Verificado ✓</th>
               </tr>
             </thead>
@@ -3556,6 +3557,24 @@ function renderVentaEstadisticas(){
   getPositions(); // fuerza el recálculo/annotate de gananciaUSD en cada venta antes de leer
   var ventas=movimientos.filter(function(m){ return m&&m.tipo==='venta'&&m.gananciaUSD!==undefined&&m.gananciaUSD!==null; });
 
+  // Dividendos del Tracker CCL (Lab Dividendos) cobrados en tickers que ya no están
+  // en cartera: no hay PPC que ajustar (el activo está vendido), así que ese cobro
+  // se suma acá como ganancia extra — una sola vez, al primer registro de venta de
+  // ese ticker — para que el total y los agrupados por ticker/tipo/RF-RV lo reflejen.
+  // Si el ticker nunca se vendió (no aparece en `ventas`), no se toca nada.
+  var divExtra=labDivVentaExtraPorTicker();
+  var _divExtraKeys=Object.keys(divExtra);
+  if(_divExtraKeys.length){
+    var yaSumado={};
+    ventas=ventas.map(function(v){
+      if(divExtra[v.ticker]!=null && !yaSumado[v.ticker]){
+        yaSumado[v.ticker]=true;
+        return Object.assign({},v,{gananciaUSD:v.gananciaUSD+divExtra[v.ticker]});
+      }
+      return v;
+    });
+  }
+
   var resumenEl=document.getElementById('vestad-resumen');
   if(!ventas.length){
     resumenEl.innerHTML='<div class="ibox">Todavía no hay ventas registradas con datos de ganancia.</div>';
@@ -3568,6 +3587,12 @@ function renderVentaEstadisticas(){
   var totalGanancia=ventas.reduce(function(s,v){return s+v.gananciaUSD;},0);
   var totalCostBasis=ventas.reduce(function(s,v){return s+v.costBasisUSD;},0);
   var totalPct=totalCostBasis>0?(totalGanancia/totalCostBasis*100):null;
+  var _divNote=_divExtraKeys.length?(
+    '<div style="font-size:.6rem;color:var(--text3);margin-top:6px">💰 Incluye U$S '+
+    _divExtraKeys.reduce(function(s,k){return s+divExtra[k];},0).toFixed(2)+
+    ' de dividendos cobrados en activos ya vendidos (Tracker CCL, 🧪 Lab Dividendos) en: '+_divExtraKeys.join(', ')+
+    '</div>'
+  ):'';
   resumenEl.innerHTML=
     '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
       '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto">'+
@@ -3586,7 +3611,7 @@ function renderVentaEstadisticas(){
         '<div class="metric-label" style="font-size:.56rem">Ganancia % total</div>'+
         '<div class="metric-value '+vestadCl(totalPct)+'" style="font-size:.8rem">'+vestadFmtPct(totalPct)+'</div>'+
       '</div>'+
-    '</div>';
+    '</div>'+_divNote;
 
   var porTicker=vestadAgrupar(ventas, function(v){ return v.ticker; });
   document.getElementById('vestad-ticker').innerHTML=vestadTabla(porTicker,'Ticker');
@@ -4782,11 +4807,55 @@ function labDivAggregates(){
   return {porTicker:porTicker,porMes:porMes,porAnio:porAnio};
 }
 
+// Dividendos del Tracker CCL (rango Lab) cobrados en tickers que YA NO están en
+// cartera: no hay PPC que ajustar (el activo está vendido), así que ese cobro no
+// tiene nada que verificar acá — en cambio se suma como ganancia extra en
+// Estadísticas Venta, pero SOLO si el ticker tiene al menos una venta registrada
+// en movimientos. Si el ticker nunca se vendió (huérfano), no se hace nada.
+function labDivVentaExtraPorTicker(){
+  var out={};
+  var all=getPositions();
+  var posByTicker={};
+  all.forEach(function(p){posByTicker[p.ticker]=p;});
+  var ventaTickers={};
+  (movimientos||[]).forEach(function(m){ if(m&&m.tipo==='venta') ventaTickers[m.ticker]=true; });
+  (TRK.divs||[]).filter(trkDivEnRango).forEach(function(d){
+    if(!d||!d.ticker)return;
+    var p=posByTicker[d.ticker];
+    var enCartera=p&&p.qty>0.000001;
+    if(enCartera)return;
+    if(!ventaTickers[d.ticker])return;
+    out[d.ticker]=(out[d.ticker]||0)+trkDivToUSD(d);
+  });
+  return out;
+}
+
+// PPC ARS y Δ% de ganancia de una posición si se le resta `divAdjUSD` (USD) al
+// costo base — misma cuenta que usa renderPortfolio/renderLabDividendos, factorizada
+// acá para poder simular el "antes/después" de un dividendo puntual en el checklist.
+function labDivCalcPnl(p,divAdjUSD){
+  var q=quotes[p.ticker];var price=q?q.price:null;
+  var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
+  var _isBonoON=(sector==='bonos'||sector==='on');
+  var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
+  var costUSDpuro=Math.max(0,p.costUSDpuro-(divAdjUSD||0));
+  var ppcUSD=p.qty>0?costUSDpuro/p.qty:0;
+  var ppcARS=_isBonoON?(ppcUSD*_tcHoy*100):(sector==='fci'?ppcUSD*(MEP_HOY||CCL_HOY):ppcUSD*CCL_HOY);
+  var _sectorIsARS=(sector==='argentina'||sector==='bonos'||sector==='on');
+  var _isBRL=BRL_TICKERS.has(p.ticker);
+  var fromByma=q&&q.fromByma;
+  var mercadoARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
+  var pnlPct=(mercadoARS!=null&&ppcARS>0)?(mercadoARS-ppcARS)/ppcARS*100:null;
+  return pnlPct;
+}
+
 // Checklist "Verificar antes de aplicar al PPC": muestra la cuenta completa de
 // cada dividendo en efectivo del rango (monto, CCL usado, USD resultante, y
 // cuánto bajaría el PPC ARS/u) con un tilde manual. Solo lo tildado entra a
 // divAdjustVerifiedUSD (calculado en getPositions) y afecta el PPC/Δ% real que
 // se ve en Portafolio — lo pendiente queda visible acá pero no toca nada más.
+// Si el activo ya no está en cartera no hay nada que verificar (ver
+// labDivVentaExtraPorTicker: ese cobro se refleja en Estadísticas Venta).
 function renderLabDivVerificacion(){
   var body=document.getElementById('labdiv-verif-body');
   var empty=document.getElementById('labdiv-verif-empty');
@@ -4806,6 +4875,14 @@ function renderLabDivVerificacion(){
   var all=getPositions();
   var posByTicker={};
   all.forEach(function(p){posByTicker[p.ticker]=p;});
+  var ventaTickers={};
+  (movimientos||[]).forEach(function(m){ if(m&&m.tipo==='venta') ventaTickers[m.ticker]=true; });
+  var ventaExtra=labDivVentaExtraPorTicker();
+
+  function pnlTxt(pct){
+    if(pct==null||isNaN(pct))return '—';
+    return (pct>0?'+':'')+pct.toFixed(1)+'%';
+  }
 
   body.innerHTML=divs.map(function(d){
     var usd=trkDivToUSD(d);
@@ -4819,6 +4896,39 @@ function renderLabDivVerificacion(){
     var fechaDMY=(d.fecha||'').split('-').reverse().join('/');
     var montoTxt=(d.moneda==='ARS'?'$':'U$S ')+(d.monto||0).toLocaleString('es-AR',{maximumFractionDigits:2})+(d.moneda==='ARS'?' ARS':'');
     var checked=d.verificado?'checked':'';
+
+    // Δ ganancia: cómo cambia el Δ% de Portafolio si tildo justo este dividendo
+    // (independiente de si ya está tildado), comparando el escenario "verificado
+    // sin este" vs "verificado con este" — solo tiene sentido si el activo sigue
+    // en cartera (si no, no hay PPC vivo que mover).
+    var deltaCell;
+    if(enCartera){
+      var baseAdj=(p.divAdjustVerifiedUSD||0)-(d.verificado?usd:0);
+      var afterAdj=baseAdj+usd;
+      var pnlAntes=labDivCalcPnl(p,baseAdj);
+      var pnlDespues=labDivCalcPnl(p,afterAdj);
+      if(pnlAntes!=null&&pnlDespues!=null){
+        var pnlDif=pnlDespues-pnlAntes;
+        deltaCell='<span class="mono" style="font-size:.66rem">'+pnlTxt(pnlAntes)+' → <b>'+pnlTxt(pnlDespues)+'</b><br><span style="color:var(--accent)">('+(pnlDif>=0?'+':'')+pnlDif.toFixed(1)+'pp)</span></span>';
+      }else{
+        deltaCell='<span style="color:var(--text3)">—</span>';
+      }
+    }else{
+      deltaCell='<span style="color:var(--text3);font-size:.62rem">no aplica (vendido)</span>';
+    }
+
+    // Verificado: si el activo ya no está en cartera no hay nada que tildar —
+    // el cobro se refleja directo en Estadísticas Venta (si el ticker tiene
+    // ventas registradas) o se ignora (si nunca se vendió, ticker huérfano).
+    var verifCell;
+    if(enCartera){
+      verifCell='<input type="checkbox" '+checked+' onchange="trkDivToggleVerificado(\''+d.id+'\')">';
+    }else if(ventaTickers[d.ticker]){
+      verifCell='<span style="font-size:.6rem;color:var(--accent)" title="Sumado a la ganancia realizada de '+d.ticker+' en Estadísticas Venta">✓ sumado en Venta</span>';
+    }else{
+      verifCell='<span style="font-size:.6rem;color:var(--text3)">— sin ventas</span>';
+    }
+
     return '<tr'+(d.verificado?' style="opacity:.55"':'')+'>'+
       '<td style="font-weight:700">'+d.ticker+'</td>'+
       '<td class="mono">'+fechaDMY+'</td>'+
@@ -4827,7 +4937,8 @@ function renderLabDivVerificacion(){
       '<td class="mono">U$S '+usd.toFixed(2)+'</td>'+
       '<td class="mono">'+(enCartera?(qty%1===0?qty.toFixed(0):qty.toFixed(2)):'<span style="color:var(--text3)">no está en cartera</span>')+'</td>'+
       '<td class="mono">'+(impactoARSporUnidad!=null?'-$'+impactoARSporUnidad.toFixed(2).replace('.',',')+'/u':'<span style="color:var(--text3)">—</span>')+'</td>'+
-      '<td style="text-align:center"><input type="checkbox" '+checked+' onchange="trkDivToggleVerificado(\''+d.id+'\')"></td>'+
+      '<td>'+deltaCell+'</td>'+
+      '<td style="text-align:center">'+verifCell+'</td>'+
     '</tr>';
   }).join('');
 }
