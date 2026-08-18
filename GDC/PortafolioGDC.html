@@ -709,8 +709,7 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
-</div>
-      
+
       <div class="card" id="panel-cristian" style="display:none;margin-top:1rem">
         <div class="card-header">
           <span class="card-title">👤 Activos de Cristian</span>
@@ -1713,6 +1712,7 @@ tr:hover td{background:var(--surface2)}
           <span class="smsg" style="font-size:.68rem;color:var(--text3)">Revisá la cuenta de cada dividendo y tildalo — recién ahí baja el PPC/Δ% real de Portafolio. Se guarda en este navegador, no toca tu Supabase todavía.</span>
         </div>
         <div id="labdiv-verif-empty" class="empty-state" style="display:none">No hay dividendos en efectivo cargados en el rango a verificar.</div>
+        <div id="labdiv-verif-aplicados" style="font-size:.62rem;color:var(--text3);padding:0 1rem;margin-bottom:4px"></div>
         <div class="tw" id="labdiv-verif-wrap">
           <table>
             <thead>
@@ -4860,11 +4860,24 @@ function renderLabDivVerificacion(){
   var body=document.getElementById('labdiv-verif-body');
   var empty=document.getElementById('labdiv-verif-empty');
   var wrap=document.getElementById('labdiv-verif-wrap');
+  var aplicadosEl=document.getElementById('labdiv-verif-aplicados');
   if(!body)return;
 
-  var divs=(TRK.divs||[]).filter(trkDivEnRango).slice().sort(function(a,b){return (a.fecha||'').localeCompare(b.fecha||'');});
+  var todos=(TRK.divs||[]).filter(trkDivEnRango).slice().sort(function(a,b){return (a.fecha||'').localeCompare(b.fecha||'');});
+  // Ya tildados = ya se aplicaron a la reducción del PPC (ver Portafolio/Lab
+  // comparación) — no tienen nada más que hacer acá, así que se sacan de esta
+  // lista de pendientes. Se resumen en una línea aparte para que no desaparezcan sin dejar rastro.
+  var divs=todos.filter(function(d){return !d.verificado;});
+  var aplicados=todos.filter(function(d){return d.verificado;});
+  if(aplicadosEl){
+    aplicadosEl.textContent=aplicados.length?('✓ '+aplicados.length+' dividendo'+(aplicados.length!==1?'s':'')+' ya verificado'+(aplicados.length!==1?'s':'')+' y aplicado'+(aplicados.length!==1?'s':'')+' al PPC (no se muestran acá).'):'';
+  }
+
   if(!divs.length){
-    if(empty)empty.style.display='';
+    if(empty){
+      empty.style.display='';
+      empty.textContent=aplicados.length?'No queda nada pendiente de verificar — todo lo cargado ya se aplicó al PPC.':'No hay dividendos en efectivo cargados en el rango a verificar.';
+    }
     if(wrap)wrap.style.display='none';
     body.innerHTML='';
     return;
