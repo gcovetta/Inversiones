@@ -1747,7 +1747,7 @@ tr:hover td{background:var(--surface2)}
       <div class="card" style="margin-top:1rem">
         <div class="card-header"><span class="card-title" style="font-size:.8rem">📊 Dividendos cobrados por mes</span></div>
         <div class="card-body" style="padding:.6rem 1rem">
-          <div style="position:relative;height:130px;max-width:480px"><canvas id="labdiv-chart-mes" width="480" height="130"></canvas></div>
+          <div id="labdiv-chart-mes" style="overflow-x:auto"></div>
         </div>
       </div>
 
@@ -2487,14 +2487,7 @@ function showPage(id,btn){
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
   if(id==='ventaestad'){ renderVentaEstadisticas(); }
   if(id==='ventahist'){ renderVentaHistorica(); }
-  if(id==='labdiv'){
-    renderLabDivVerificacion(); renderLabDividendos(); renderLabDivExcluidos();
-    // Las tarjetas arman el gráfico Chart.js — se difiere un tick para que el
-    // browser termine de aplicar "active" (display:block) antes de medir el
-    // canvas; si no, Chart.js puede medir contra un contenedor de ancho 0 y
-    // el canvas queda con un tamaño desbocado que rompe el scroll de la página.
-    setTimeout(renderLabDivCards,50);
-  }
+  if(id==='labdiv'){ renderLabDivVerificacion(); renderLabDividendos(); renderLabDivCards(); renderLabDivExcluidos(); }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -4928,45 +4921,45 @@ function renderLabDivCards(){
   renderLabDivChart(agg.porMes);
 }
 
-// Gráfico de barras — dividendos cobrados por mes (U$S), mismo estilo/paleta que
-// los gráficos del Dashboard (dbMakeChart). Se destruye la instancia anterior
-// antes de redibujar para no acumular canvases fantasma al recalcular.
-var LAB_DIV_CHART=null;
+// Gráfico de barras — dividendos cobrados por mes (U$S). SVG chico, sin librería
+// externa ni redimensionado async: mismo patrón que ya usaba (y funcionaba bien)
+// el recuadro "Dividendos cobrados" de Portafolio, achicado. Se eligió SVG a
+// propósito en vez de Chart.js para sacar de la ecuación cualquier resize-loop
+// del canvas como sospechoso del bug de scroll en esta pestaña.
 function renderLabDivChart(porMes){
-  var canvas=document.getElementById('labdiv-chart-mes');
-  if(!canvas)return;
-  if(typeof Chart==='undefined'){ setTimeout(function(){renderLabDivChart(porMes);},400); return; }
-  try{var ex=Chart.getChart(canvas);if(ex)ex.destroy();}catch(e){}
-  if(LAB_DIV_CHART){try{LAB_DIV_CHART.destroy();}catch(e){}LAB_DIV_CHART=null;}
+  var host=document.getElementById('labdiv-chart-mes');
+  if(!host)return;
 
-  var meses=Object.keys(porMes||{}).sort(); // orden cronológico ascendente para el gráfico
-  var valores=meses.map(function(m){return +((porMes[m]||0).toFixed(2));});
+  var meses=Object.keys(porMes||{}).sort(); // orden cronológico ascendente
+  if(!meses.length){ host.innerHTML='<span style="color:var(--text3);font-size:.7rem">Sin datos para graficar.</span>'; return; }
 
-  var ctx=canvas.getContext('2d');
-  LAB_DIV_CHART=new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels:meses,
-      datasets:[{
-        label:'Dividendos U$S',
-        data:valores,
-        backgroundColor:'#448affcc',
-        borderColor:'#448aff',
-        borderWidth:1,borderRadius:4
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:function(c){return ' U$S '+c.parsed.y.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}}}
-      },
-      scales:{
-        x:{ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10}},grid:{color:'#1e3050'}},
-        y:{beginAtZero:true,ticks:{color:'#7a9cc5',font:{family:'JetBrains Mono, monospace',size:10},callback:function(v){return 'U$S '+v;}},grid:{color:'#1e3050'}}
-      }
-    }
-  });
+  var MNAMES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var vals=meses.map(function(m){return porMes[m]||0;});
+  var maxVal=Math.max.apply(null,vals.concat([0]));
+
+  var BW=20,BG=5,CH=48,LH=14,PL=30,PR=6; // chico a propósito
+  var SW=PL+(BW+BG)*meses.length+PR;
+  var SH=CH+LH+8;
+
+  var bars=meses.map(function(k,i){
+    var val=vals[i];
+    var bh=maxVal>0?Math.max(2,Math.round(val/maxVal*CH)):2;
+    var x=PL+i*(BW+BG);
+    var y=CH-bh;
+    var parts=k.split('-');
+    var lbl=MNAMES[parseInt(parts[1],10)-1]+"'"+parts[0].slice(2);
+    var vlbl=val>=1?Math.round(val):'<1';
+    return '<g>'+
+      '<rect x="'+x+'" y="'+y+'" width="'+BW+'" height="'+bh+'" rx="2" fill="var(--accent)" opacity="0.85"><title>'+k+': U$S '+val.toFixed(2)+'</title></rect>'+
+      (bh>=10?'<text x="'+(x+BW/2)+'" y="'+(y-3)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="6" fill="var(--accent)">'+vlbl+'</text>':'')+
+      '<text x="'+(x+BW/2)+'" y="'+(CH+LH-3)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="6" fill="var(--text3)">'+lbl+'</text>'+
+    '</g>';
+  }).join('');
+
+  var guide=maxVal>0?'<line x1="'+PL+'" y1="0" x2="'+(SW-PR)+'" y2="0" stroke="var(--border)" stroke-width="1"/>'+
+    '<text x="'+(PL-3)+'" y="4" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="5.5" fill="var(--text3)">'+Math.round(maxVal)+'</text>':'';
+
+  host.innerHTML='<svg viewBox="0 0 '+SW+' '+SH+'" xmlns="http://www.w3.org/2000/svg" style="width:'+Math.min(SW,480)+'px;max-width:100%;height:auto;display:block">'+guide+bars+'</svg>';
 }
 
 function renderPortfolio(){
