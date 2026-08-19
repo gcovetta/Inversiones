@@ -1976,22 +1976,26 @@ async function _sbSetOther(baseUrl, apiKey, configKey, value) {
     await fetch(baseUrl + '/rest/v1/config?key=eq.' + encodeURIComponent(configKey), {
       method: 'DELETE', headers: headers
     });
-    // Insertar nueva
+    // Insertar nueva. OJO: `value` va tal cual (objeto), NO con un JSON.stringify
+    // extra — antes se mandaba doble-serializado, lo que funcionaba "de casualidad"
+    // gracias al fallback de sbGetConfig, pero era frágil e innecesario.
     var r = await fetch(baseUrl + '/rest/v1/config', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ key: configKey, value: JSON.stringify(value) })
+      body: JSON.stringify({ key: configKey, value: value, updated_at: new Date().toISOString() })
     });
     return r.ok;
   } catch(e) { return false; }
 }
 
 async function syncDataToOthers(statusCallback) {
-  // Lee los valores actuales en memoria de GDC
-  // También intenta leer ccl_override y mep_override de Supabase
-  var cclOvr = await sbGetConfig('ccl_override');
-  var mepOvr = await sbGetConfig('mep_override');
-
+  // Usa SIEMPRE el CCL_TABLE/MEP_TABLE en memoria de esta sesión de GDC — es lo que
+  // se ve en pantalla en este momento (tabla embebida + overrides ya cargados +
+  // cualquier fecha que acabás de agregar). Antes acá se volvía a pedir 'ccl_override'
+  // a la Supabase de GDC con sbGetConfig, lo cual podía traer una copia vieja si ese
+  // guardado (disparado por tcSave, en segundo plano) todavía no había terminado —
+  // y esa copia vieja pisaba a Omar/Ana/Hilda/Juli con un tipo de cambio desactualizado,
+  // sin ningún error visible. Leer directo de memoria elimina esa carrera.
   // Filtrar TARGET_TABLE: solo tickers con precio real (no null)
   var realTargets = {};
   Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null) realTargets[t]=TARGET_TABLE[t]; });
@@ -2002,8 +2006,8 @@ async function syncDataToOthers(statusCallback) {
     { key: 'ratios',        value: Object.keys(RATIOS_TABLE).length ? RATIOS_TABLE : null },
     { key: 'targets',       value: Object.keys(realTargets).length ? realTargets : null },
     { key: 'rubros',        value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
-    { key: 'ccl_override',  value: cclOvr || CCL_TABLE },
-    { key: 'mep_override',  value: mepOvr || MEP_TABLE }
+    { key: 'ccl_override',  value: Object.keys(CCL_TABLE).length ? CCL_TABLE : null },
+    { key: 'mep_override',  value: Object.keys(MEP_TABLE).length ? MEP_TABLE : null }
   ];
 
   var errors = [];
