@@ -465,6 +465,7 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Vistas</div>
     <button class="nav-item active" id="nav-cartera-principal" onclick="setCarteraActiva(&#39;principal&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio</button>
     <button class="nav-item" id="nav-cartera-cocos" onclick="setCarteraActiva(&#39;cocos&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio 2 (Cocos)</button>
+    <button class="nav-item" id="nav-cartera-vetajeep" onclick="setCarteraActiva(&#39;vetajeep&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio 3 (VetaJeep)</button>
     <button class="nav-item" onclick="showPage(&#39;movimientos&#39;,this)"><span>↕</span>Movimientos</button>
     <div class="nav-sec">R. Variable</div>
     <div style="padding:.2rem .85rem .1rem">
@@ -658,7 +659,7 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
       </div>
-</div>
+
       <div class="card" id="vbuy-card" style="display:inline-block;width:auto;max-width:100%;margin-right:10px;vertical-align:top">
         <div class="card-header">
           <span class="card-title">🛒 Comprar</span>
@@ -781,7 +782,7 @@ tr:hover td{background:var(--surface2)}
             <div class="fgrp" id="g-mkt"><label>Mercado</label><select id="m-mkt"><option value="USA">NYSE / NASDAQ</option><option value="ETF">ETF (USA)</option><option value="ARGENTINA">Argentina</option><option value="BONOS">Bonos</option><option value="ON">ON</option><option value="BRASIL">Brasil</option><option value="EUROPA">Europa</option><option value="CHINA">China</option><option value="CRIPTO">Cripto</option></select></div>
             <div class="fgrp" id="g-ticker"><label>Ticker</label><input id="m-ticker" type="text" placeholder="AAPL, IBIT..." style="text-transform:uppercase"></div>
             <div class="fgrp"><label>Fecha</label><input id="m-fecha" type="date"></div>
-            <div class="fgrp"><label>Cartera</label><select id="m-cartera" title="A qué cartera pertenece este movimiento"><option value="principal">Principal</option><option value="cocos">Portafolio 2 (Cocos)</option></select></div>
+            <div class="fgrp"><label>Cartera</label><select id="m-cartera" title="A qué cartera pertenece este movimiento"><option value="principal">Principal</option><option value="cocos">Portafolio 2 (Cocos)</option><option value="vetajeep">Portafolio 3 (VetaJeep)</option></select></div>
           </div>
           <div id="row-normal">
             <div class="fg">
@@ -849,6 +850,7 @@ tr:hover td{background:var(--surface2)}
               <option value="">Todas las carteras</option>
               <option value="principal">Principal</option>
               <option value="cocos">Portafolio 2 (Cocos)</option>
+              <option value="vetajeep">Portafolio 3 (VetaJeep)</option>
             </select>
             <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--mono);font-size:.68rem;color:var(--red);height:28px;padding:0 4px" title="Mostrar sólo compras/ventas (no bonos/ON) cuyo CCL no está en la tabla histórica para esa fecha exacta (se usó un valor cargado a mano como fallback)">
               <input type="checkbox" id="mov-filter-noccl" onchange="renderMovimientos()" style="accent-color:var(--red);width:12px;height:12px;cursor:pointer;margin:0">
@@ -1836,21 +1838,25 @@ function showPage(id,btn){
   }
 }
 
-// ─── Cartera activa (Principal vs Portafolio 2 / Cocos Capital) ───
+// ─── Cartera activa (Principal / Portafolio 2 Cocos / Portafolio 3 VetaJeep) ───
 function syncCarteraUI(){
   var badge=document.getElementById('cartera-activa-badge');
   if(badge){
     if(CARTERA_ACTIVA==='cocos'){
       badge.textContent='Portafolio 2 · Cocos Capital';
       badge.style.background='#2a1650';badge.style.color='#c9a6ff';badge.style.borderColor='#5b2f8f';
+    } else if(CARTERA_ACTIVA==='vetajeep'){
+      badge.textContent='Portafolio 3 · VetaJeep';
+      badge.style.background='#2b2410';badge.style.color='#e0c674';badge.style.borderColor='#5c4a1f';
     } else {
       badge.textContent='Principal';
       badge.style.background='#0a2218';badge.style.color='var(--accent)';badge.style.borderColor='#143a24';
     }
   }
-  var bp=document.getElementById('nav-cartera-principal'),bc=document.getElementById('nav-cartera-cocos');
+  var bp=document.getElementById('nav-cartera-principal'),bc=document.getElementById('nav-cartera-cocos'),bv=document.getElementById('nav-cartera-vetajeep');
   if(bp)bp.classList.toggle('active',CARTERA_ACTIVA==='principal');
   if(bc)bc.classList.toggle('active',CARTERA_ACTIVA==='cocos');
+  if(bv)bv.classList.toggle('active',CARTERA_ACTIVA==='vetajeep');
   var mCartSel=document.getElementById('m-cartera'); if(mCartSel) mCartSel.value=CARTERA_ACTIVA;
 }
 function setCarteraActiva(c){
@@ -2579,7 +2585,7 @@ function renderMovimientos(){
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
       '<td><span class="mkt">'+mLabel+'</span></td>'+
-      '<td style="font-weight:600">'+m.ticker+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':'')+'</td>'+
+      '<td style="font-weight:600">'+m.ticker+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':'')+((m.cartera==='vetajeep')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2b2410;color:#e0c674;border:1px solid #5c4a1f">VETAJEEP</span>':'')+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
       '<td class="mono">'+(m.precioARS?'$'+m.precioARS.toLocaleString('es-AR'):'')+'</td>'+
       '<td class="mono muted">'+_mCCLstr+'</td>'+
