@@ -3684,7 +3684,7 @@ function renderPortfolio(){
 }
 
 // ─── Comparación de portafolios ───
-var _cmpData={portafolio:null,bull:null,cocos:null};
+var _cmpData={portafolio:null,bull:null,cocos:null,cocosUnparsed:null};
 var _cmpChecked=new Set();
 function cmpNorm(s){return String(s).replace(/[\s​]+/g,' ').toLowerCase().trim();}
 function cmpParseRows(ab){
@@ -3769,12 +3769,23 @@ function cmpParseBullText(txt){
     var line=lines[i].trim();
     if(!tickerRe.test(line))continue;
     var ticker=line;
+    // Entre el ticker y su fila de datos, Bull mete una línea de descripción
+    // libre del producto (ej. "CEDEAR AMBEV S.A.", o a veces solo "ALUAR" /
+    // "BBVA" / "ECOGAS" / "MIRGOR" — el nombre corto, que de casualidad también
+    // matchea el patrón de ticker). Antes acá solo se saltaban líneas en blanco,
+    // así que esa descripción rompía el parseo y CASI NINGÚN ticker se cargaba
+    // (por eso "80 diferencias" — todo Bull aparecía como "Solo Hilda"). Ahora
+    // se avanza hasta la primera línea que tenga un TAB (la fila de datos real),
+    // sin importar si de paso se cruza algo que parezca otro ticker.
     var j=i+1;
-    while(j<lines.length&&!lines[j].trim())j++;
+    while(j<lines.length && lines[j].indexOf('\t')<0) j++;
     if(j>=lines.length)continue;
-    var cols=lines[j].trim().split('\t');
-    if(cols.length<2)continue;
-    var qty=parseFloat(cols[1].trim().replace(/\./g,'').replace(',','.'));
+    var cols=lines[j].split('\t');
+    if(!cols.length)continue;
+    // La fila de datos no repite el ticker/producto (eso va en su propia línea
+    // aparte) — su primera columna YA es "Cantidad". Antes se leía cols[1]
+    // ("Último Precio"), que nunca daba un número de cantidad válido.
+    var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
     if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
   }
   return map;
@@ -3799,27 +3810,36 @@ function cmpParseCocosCSV(ab){
   var lines=txt.split(/\r?\n/).map(function(l){return l.trim();}).filter(function(l){return l;});
   if(lines.length<2)return null;
   var map={};
+  var unparsed=[]; // filas con "cantidad" > 0 donde no se pudo sacar un ticker de "instrumento"
+  // Filas de liquidez pura (efectivo en ARS/USD/etc.) — el broker las manda sin
+  // paréntesis y sin nada que parsear, no son posiciones y no hace falta avisar.
+  var esLiquidez=function(s){return /^(ARS|USD|EXT|EUR|UYU|GBP)$/.test(s);};
   lines.slice(1).forEach(function(line){
     var cols=line.split(';');
     if(cols.length<2)return;
     var instrumento=(cols[0]||'').trim();
-    var m=instrumento.match(/\(([^)]+)\)\s*$/);
-    if(!m)return;
-    var ticker=m[1].trim().toUpperCase();
-    if(/^(ARS|USD|EXT|EUR|UYU|GBP)$/.test(ticker))return;
+    if(esLiquidez(instrumento))return;
     var qty=parseFloat((cols[1]||'').trim().replace(/\./g,'').replace(',','.'));
+    var m=instrumento.match(/\(([^)]+)\)\s*$/);
+    if(!m){
+      if(!isNaN(qty)&&qty>0)unparsed.push({instrumento:instrumento,qty:qty});
+      return;
+    }
+    var ticker=m[1].trim().toUpperCase();
+    if(esLiquidez(ticker))return;
     if(!isNaN(qty)&&qty>0)map[ticker]=qty;
   });
-  return map;
+  return {map:map,unparsed:unparsed};
 }
 function cmpLoadCocos(input){
   var f=input.files[0];if(!f)return;
   document.getElementById('cmp-cocos-name').textContent=f.name;
   var reader=new FileReader();
   reader.onload=function(e){
-    var m=cmpParseCocosCSV(e.target.result);
-    if(!m||!Object.keys(m).length){alert('No se pudo leer el archivo de Cocos o no tiene posiciones.');return;}
-    _cmpData.cocos=m;
+    var res=cmpParseCocosCSV(e.target.result);
+    if(!res||!Object.keys(res.map).length){alert('No se pudo leer el archivo de Cocos o no tiene posiciones.');return;}
+    _cmpData.cocos=res.map;
+    _cmpData.cocosUnparsed=res.unparsed;
   };
   reader.readAsArrayBuffer(f);
 }
@@ -3850,10 +3870,26 @@ function runComparacion(){
   });
   var order={'Solo Broker':0,'Solo Hilda':1,'Diferente':2};
   diffs.sort(function(a,b){return (order[a.status]-order[b.status])||a.t.localeCompare(b.t);});
-  if(!diffs.length){
-    el.innerHTML='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias — los portafolios coinciden.</div>';return;
+
+  // Filas del CSV de Cocos donde no se pudo sacar un ticker de "instrumento" (el
+  // broker no siempre manda el ticker entre paréntesis — algunas ON lo dejan vacío,
+  // ej. "ON GMCTR CL.36 V.28/8/27 U$S CG ()"). Esas posiciones NO entran en la
+  // comparación de arriba y por eso pueden aparecer como "Solo Hilda" sin serlo
+  // realmente — avisamos acá en vez de dejarlas desaparecer en silencio.
+  var unparsedHtml='';
+  if(_cmpData.cocosUnparsed&&_cmpData.cocosUnparsed.length){
+    unparsedHtml='<div class="ibox" style="margin-bottom:8px;font-size:.68rem;border-color:#eab308">'
+      +'⚠️ <b>'+_cmpData.cocosUnparsed.length+' posición(es) del CSV de Cocos sin ticker detectable</b> (el broker no puso nada entre paréntesis) — no entran en la comparación de abajo, revisalas a mano:'
+      +'<div style="margin-top:4px">'+_cmpData.cocosUnparsed.map(function(u){
+        return '<div>'+u.instrumento+' — cant. '+u.qty.toLocaleString('es-AR')+'</div>';
+      }).join('')+'</div>'
+    +'</div>';
   }
-  var html='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
+
+  if(!diffs.length){
+    el.innerHTML=unparsedHtml+'<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias — los portafolios coinciden.</div>';return;
+  }
+  var html=unparsedHtml+'<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
     +'<span style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">'+diffs.length+' diferencia(s)</span>'
     +'<span id="cmp-resolved-count" style="font-size:.65rem;font-family:var(--mono);color:var(--accent)">'+_cmpChecked.size+' / '+diffs.length+' resueltos</span>'
     +'</div>';
