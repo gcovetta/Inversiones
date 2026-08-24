@@ -3512,12 +3512,22 @@ function cmpParseBullText(txt){
     var line=lines[i].trim();
     if(!tickerRe.test(line))continue;
     var ticker=line;
+    // Entre el ticker y su fila de datos, Bull mete una línea de descripción
+    // libre del producto (ej. "CEDEAR AMBEV S.A.", o a veces solo "ALUAR" /
+    // "BBVA" / "ECOGAS" / "MIRGOR" — el nombre corto, que de casualidad también
+    // matchea el patrón de ticker). Antes acá solo se saltaban líneas en blanco,
+    // así que esa descripción rompía el parseo y casi ningún ticker se cargaba.
+    // Ahora se avanza hasta la primera línea que tenga un TAB (la fila de datos
+    // real), sin importar si de paso se cruza algo que parezca otro ticker.
     var j=i+1;
-    while(j<lines.length&&!lines[j].trim())j++;
+    while(j<lines.length && lines[j].indexOf('\t')<0) j++;
     if(j>=lines.length)continue;
-    var cols=lines[j].trim().split('\t');
-    if(cols.length<2)continue;
-    var qty=parseFloat(cols[1].trim().replace(/\./g,'').replace(',','.'));
+    var cols=lines[j].split('\t');
+    if(!cols.length)continue;
+    // La fila de datos no repite el ticker/producto (eso va en su propia línea
+    // aparte) — su primera columna YA es "Cantidad". Antes se leía cols[1]
+    // ("Último Precio"), que nunca daba un número de cantidad válido.
+    var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
     if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
   }
   return map;
