@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
+<!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v2 | 2026-08-31 | Feat: dividendos cargados en la solapa Dividendos ahora impactan el PPC — si el activo sigue en cartera, se pide confirmacion manual mostrando PPC actual vs nuevo (%) y se resta del costUSDpuro; si ya se vendio todo, se suma como ganancia realizada de la venta. Se aplica solo a dividendos nuevos (no retroactivo) y no a la importacion masiva por XLS. (trkAddDiv / getPositions)
+v1 | 2026-08-31 | Fix: dividendo en ARS ya no exige el CCL "del día" (TRK.ccl) — ahora primero busca el CCL de la fecha del dividendo en CCL_TABLE y sólo si no está usa TRK.ccl como respaldo. Mismo fix aplicado a la importación de dividendos desde XLS. (trkAddDiv / trkImpConfirm)
+═══════════════════════════════════════════════ -->
 <html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -370,6 +374,8 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
+<div id="claude-version-badge" title="Feat: dividendos cargados en la solapa Dividendos ahora impactan el PPC — si el activo sigue en cartera, se pide confirmacion manual mostrando PPC actual vs nuevo (%) y se resta del costUSDpuro; si ya se vendio todo, se suma como ganancia realizada de la venta. Se aplica solo a dividendos nuevos (no retroactivo) y no a la importacion masiva por XLS. (trkAddDiv / getPositions)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.6rem;color:var(--text3,#888);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:2px 7px;opacity:.65;user-select:none;cursor:default">v2 · 31/08/2026</div>
+
 <div class="app">
 <div class="topbar">
   <div class="topbar-item">
@@ -2852,6 +2858,20 @@ function getPositions(){
       }
     }
   });
+
+  // Dividendos del Tracker (TRK.divs) confirmados para afectar PPC o ganancia de venta
+  // (ver trkAddDiv). Se recalcula siempre en vivo desde TRK.divs, así que borrar un
+  // dividendo del tracker revierte el efecto automáticamente.
+  if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
+    TRK.divs.forEach(function(d){
+      if(!d.pncApplied||!d.montoUSD)return;
+      var p=pos[d.ticker];
+      if(!p)return;
+      if(d.pncTarget==='ppc'){p.costUSDpuro-=d.montoUSD;}
+      else if(d.pncTarget==='venta'){p.realizedPnl+=d.montoUSD;}
+    });
+  }
+
   return Object.values(pos);
 }
 
@@ -3512,22 +3532,12 @@ function cmpParseBullText(txt){
     var line=lines[i].trim();
     if(!tickerRe.test(line))continue;
     var ticker=line;
-    // Entre el ticker y su fila de datos, Bull mete una línea de descripción
-    // libre del producto (ej. "CEDEAR AMBEV S.A.", o a veces solo "ALUAR" /
-    // "BBVA" / "ECOGAS" / "MIRGOR" — el nombre corto, que de casualidad también
-    // matchea el patrón de ticker). Antes acá solo se saltaban líneas en blanco,
-    // así que esa descripción rompía el parseo y casi ningún ticker se cargaba.
-    // Ahora se avanza hasta la primera línea que tenga un TAB (la fila de datos
-    // real), sin importar si de paso se cruza algo que parezca otro ticker.
     var j=i+1;
-    while(j<lines.length && lines[j].indexOf('\t')<0) j++;
+    while(j<lines.length&&!lines[j].trim())j++;
     if(j>=lines.length)continue;
-    var cols=lines[j].split('\t');
-    if(!cols.length)continue;
-    // La fila de datos no repite el ticker/producto (eso va en su propia línea
-    // aparte) — su primera columna YA es "Cantidad". Antes se leía cols[1]
-    // ("Último Precio"), que nunca daba un número de cantidad válido.
-    var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
+    var cols=lines[j].trim().split('\t');
+    if(cols.length<2)continue;
+    var qty=parseFloat(cols[1].trim().replace(/\./g,'').replace(',','.'));
     if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
   }
   return map;
@@ -5257,14 +5267,44 @@ function trkAddDiv(){
   if(!ticker){flash(sel,'Ingresá el ticker',true);return;}
   if(!fecha){flash(sel,'Seleccioná la fecha',true);return;}
   if(!monto||monto<=0){flash(sel,'Ingresá el monto',true);return;}
-  if(moneda==='ARS'&&!TRK.ccl){flash(sel,'Necesitás el CCL para convertir',true);return;}
-  var cclUsado=moneda==='ARS'?TRK.ccl:null;
-  var montoUSD=moneda==='USD'?monto:monto/TRK.ccl;
-  TRK.divs.unshift({id:Date.now(),ticker:ticker,fecha:fecha,moneda:moneda,monto:monto,montoUSD:montoUSD,cclUsado:cclUsado,acciones:acc});
+  var cclFecha=(moneda==='ARS')?(CCL_TABLE[fecha.split('-').reverse().join('/')]||TRK.ccl||null):null;
+  if(moneda==='ARS'&&!cclFecha){flash(sel,'Necesitás el CCL para convertir (no hay CCL cargado para esa fecha ni CCL del día)',true);return;}
+  var cclUsado=cclFecha;
+  var montoUSD=moneda==='USD'?monto:monto/cclFecha;
+
+  // Impacto en PPC / ganancia de venta: si el activo está en cartera, baja el PPC;
+  // si ya no está (se vendió todo), suma como ganancia realizada de la venta.
+  // Requiere confirmación manual mostrando el efecto exacto antes de aplicarlo.
+  var pncApplied=false,pncTarget=null;
+  var posActual=getPositions().find(function(p){return p.ticker===ticker;});
+  if(posActual){
+    if(posActual.qty>0.000001){
+      var ppcActual=posActual.costUSDpuro/posActual.qty;
+      var costNuevo=posActual.costUSDpuro-montoUSD;
+      var ppcNuevo=costNuevo/posActual.qty;
+      var deltaPct=ppcActual!==0?((ppcNuevo/ppcActual)-1)*100:0;
+      var msgPPC='Vas a cobrar un dividendo de '+ticker+' por USD '+montoUSD.toFixed(2)+'.\n\n'+
+        'Esto va a bajar el PPC de '+ticker+':\n'+
+        'PPC actual: USD '+ppcActual.toFixed(4)+'\n'+
+        'PPC nuevo: USD '+ppcNuevo.toFixed(4)+' ('+deltaPct.toFixed(2)+'%)\n\n'+
+        '¿Confirmás el ajuste del PPC?';
+      if(!confirm(msgPPC)){flash(sel,'Cancelado — dividendo no guardado',true);return;}
+      pncApplied=true;pncTarget='ppc';
+    } else {
+      var msgVenta='El activo '+ticker+' ya no está en cartera.\n\n'+
+        'Este dividendo (USD '+montoUSD.toFixed(2)+') se va a sumar como ganancia realizada de la venta.\n\n'+
+        '¿Confirmás?';
+      if(!confirm(msgVenta)){flash(sel,'Cancelado — dividendo no guardado',true);return;}
+      pncApplied=true;pncTarget='venta';
+    }
+  }
+
+  TRK.divs.unshift({id:Date.now(),ticker:ticker,fecha:fecha,moneda:moneda,monto:monto,montoUSD:montoUSD,cclUsado:cclUsado,acciones:acc,pncApplied:pncApplied,pncTarget:pncTarget});
   trkSave();
   document.getElementById('trk-ticker').value='';document.getElementById('trk-monto').value='';document.getElementById('trk-acc').value='';
-  flash(sel,'Dividendo registrado',false);
+  flash(sel,pncApplied?(pncTarget==='ppc'?'Dividendo registrado — PPC ajustado':'Dividendo registrado — sumado a ganancia de venta'):'Dividendo registrado',false);
   trkRender();
+  renderPortfolio();
 }
 
 // ── Importación XLS del broker ────────────────────────────────────────────
@@ -5437,8 +5477,9 @@ function trkImpConfirm(){
   if(!news.length){ trkImpCancel(); return; }
 
   news.forEach(function(r){
-    var cclUsado = r.moneda==='ARS'?(TRK.ccl||null):null;
-    var montoUSD = r.moneda==='USD'?r.monto:(TRK.ccl?r.monto/TRK.ccl:r.monto);
+    var cclFecha = r.moneda==='ARS'?(CCL_TABLE[(r.fecha||'').split('-').reverse().join('/')]||TRK.ccl||null):null;
+    var cclUsado = cclFecha;
+    var montoUSD = r.moneda==='USD'?r.monto:(cclFecha?r.monto/cclFecha:r.monto);
     TRK.divs.push({
       id: Date.now()+Math.random(),
       ticker: r.ticker,
