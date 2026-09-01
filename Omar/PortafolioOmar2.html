@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v3 | 2026-08-31 | Fix: parser de Comparacion contra Bull (cmpParseBullText) no detectaba ninguna posicion — asumia que la fila de datos venia inmediatamente despues del ticker, pero Bull siempre intercala una linea de descripcion del activo en el medio, y ademas leia la columna equivocada como Cantidad (columna 2 en vez de la 1). Ahora salta la linea de descripcion y toma la Cantidad de la primera columna. (cmpParseBullText)
 v2 | 2026-08-31 | Feat: dividendos cargados en la solapa Dividendos ahora impactan el PPC — si el activo sigue en cartera, se pide confirmacion manual mostrando PPC actual vs nuevo (%) y se resta del costUSDpuro; si ya se vendio todo, se suma como ganancia realizada de la venta. Se aplica solo a dividendos nuevos (no retroactivo) y no a la importacion masiva por XLS. (trkAddDiv / getPositions)
 v1 | 2026-08-31 | Fix: dividendo en ARS ya no exige el CCL "del día" (TRK.ccl) — ahora primero busca el CCL de la fecha del dividendo en CCL_TABLE y sólo si no está usa TRK.ccl como respaldo. Mismo fix aplicado a la importación de dividendos desde XLS. (trkAddDiv / trkImpConfirm)
 ═══════════════════════════════════════════════ -->
@@ -374,7 +375,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: dividendos cargados en la solapa Dividendos ahora impactan el PPC — si el activo sigue en cartera, se pide confirmacion manual mostrando PPC actual vs nuevo (%) y se resta del costUSDpuro; si ya se vendio todo, se suma como ganancia realizada de la venta. Se aplica solo a dividendos nuevos (no retroactivo) y no a la importacion masiva por XLS. (trkAddDiv / getPositions)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.6rem;color:var(--text3,#888);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:2px 7px;opacity:.65;user-select:none;cursor:default">v2 · 31/08/2026</div>
+<div id="claude-version-badge" title="Fix: parser de Comparacion contra Bull (cmpParseBullText) no detectaba ninguna posicion — asumia que la fila de datos venia inmediatamente despues del ticker, pero Bull siempre intercala una linea de descripcion del activo en el medio, y ademas leia la columna equivocada como Cantidad (columna 2 en vez de la 1). Ahora salta la linea de descripcion y toma la Cantidad de la primera columna. (cmpParseBullText)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.6rem;color:var(--text3,#888);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:2px 7px;opacity:.65;user-select:none;cursor:default">v3 · 31/08/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -3142,9 +3143,19 @@ function cmpParseBullText(txt){
     var j=i+1;
     while(j<lines.length&&!lines[j].trim())j++;
     if(j>=lines.length)continue;
-    var cols=lines[j].trim().split('\t');
+    if(lines[j].indexOf('\t')===-1){
+      // Bull siempre agrega una línea de descripción del activo entre el ticker y la
+      // fila de datos (ej: 'ABEV' / 'CEDEAR AMBEV S.A.' / '106,00\tUSD 8,98\t...') — saltarla.
+      j++;
+      while(j<lines.length&&!lines[j].trim())j++;
+    }
+    if(j>=lines.length)continue;
+    var dataLine=lines[j];
+    if(dataLine.indexOf('\t')===-1)continue;
+    var cols=dataLine.trim().split('\t');
     if(cols.length<2)continue;
-    var qty=parseFloat(cols[1].trim().replace(/\./g,'').replace(',','.'));
+    // La primera columna de la fila de datos es la Cantidad (no la segunda).
+    var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
     if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
   }
   return map;
