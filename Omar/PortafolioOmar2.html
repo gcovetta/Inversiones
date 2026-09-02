@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v8 | 2026-09-02 | Fix: el % de upside contra el precio de venta objetivo (P. Venta / Objetivos / Notificaciones cerca del objetivo) daba resultados absurdamente altos para acciones argentinas con ADR en NYSE y ratio cargado (ej. BBAR: +308% en vez de +32,4% con precio objetivo de USD 20). Causa: targetUSD se carga en dolares por ADR/accion real, pero al convertir el precio de mercado (en ARS, sector argentina) a USD para comparar, el codigo dividia por CCL sin multiplicar por el ratio ADR/accion local — comparaba el precio de la accion local contra un target pensado en terminos de ADR. Se agrega '*ratio' en las 3 conversiones afectadas (deltaCell del portafolio, Notificaciones cerca del objetivo, y en GDC ademas la tabla de Objetivos). Tambien se agrego 'BBAR':3.0 a RATIOS_TABLE (faltaba, ratio ADR/accion local). No toca el precio de mercado mostrado en la tabla principal — ese nunca us el ratio para sector argentina y sigue igual. (renderPortfolio / renderNearTarget / renderTargetsTable)
+v7 | 2026-09-02 | Fix preventivo: agregado 'EWZ':2.0 a RATIOS_TABLE (faltaba en los 5 portafolios, ratio oficial 2:1 segun BYMA). No es la causa del ultimo reporte de precio incorrecto en EWZ (28500 vs 29300 real, ~2.7% de diferencia) — ese margen es demasiado chico para ser un bug de ratio/ticker (esos dan diferencias de 2x en adelante); EWZ ademas cotiza via Yahoo .BA directo (fromByma=true), que ignora RATIOS_TABLE por completo salvo que ese fetch falle y caiga al fallback de Finnhub. Se agrega igual como mantenimiento preventivo, mismo patron que ETHA. (RATIOS_TABLE)
+v6 | 2026-09-01 | Fix: perdida silenciosa de movimientos cuando el guardado en Supabase fallaba (red, pestana cerrada antes de terminar) y luego un reload traia la version vieja de la nube, pisando el movimiento que solo habia quedado guardado local (paso con una compra de MO en GDC). Ahora saveAndRender() guarda un snapshot 'pending_sync' en localStorage antes de intentar subirlo, e initFromSupabase() lo compara contra lo que trae Supabase: si detecta movimientos locales que la nube no tiene, reintenta guardarlos antes de aceptar los datos de la nube como fuente de verdad, y si el reintento tambien falla, conserva la copia local en vez de descartarla. (saveAndRender / initFromSupabase)
+v5 | 2026-08-31 | Fix: agregado 'ETHA':5.0 a RATIOS_TABLE (faltaba en los 5 portafolios). Es un CEDEAR nuevo en BYMA (ratio oficial 5:1 segun BYMA) que Yahoo .BA todavia no cotiza de forma confiable, asi que cae al fallback de Finnhub+ratio para sintetizar el precio ARS; sin el ratio, se usaba 1 en vez de 5 y el valor de mercado / ganancia % quedaba inflado (el +319% reportado en ETHA). (RATIOS_TABLE)
 v4 | 2026-08-31 | Fix: se saco 'argentina' del fallback a Finnhub en fetchAllQuotes — Finnhub es un proveedor de EEUU y para un ticker BYMA sin mapeo (getFinnhubTicker deja el ticker pelado) puede resolver a una accion/ADR de otro mercado con el mismo simbolo. Paso con LOMA (Loma Negra): al fallar Yahoo .BA, Finnhub devolvio el ADR de NYSE (~USD 10) en vez del precio real en ARS de BYMA (~3227), y se uso tal cual como si fuera ARS. Ahora si Yahoo .BA falla para un ticker argentina, se mantiene la ultima cotizacion cargada en vez de mostrar el precio de otro mercado. (fetchAllQuotes)
 v3 | 2026-08-31 | Fix: parser de Comparacion contra Bull (cmpParseBullText) no detectaba ninguna posicion — asumia que la fila de datos venia inmediatamente despues del ticker, pero Bull siempre intercala una linea de descripcion del activo en el medio, y ademas leia la columna equivocada como Cantidad (columna 2 en vez de la 1). Ahora salta la linea de descripcion y toma la Cantidad de la primera columna. (cmpParseBullText)
 v2 | 2026-08-31 | Feat: dividendos cargados en la solapa Dividendos ahora impactan el PPC — si el activo sigue en cartera, se pide confirmacion manual mostrando PPC actual vs nuevo (%) y se resta del costUSDpuro; si ya se vendio todo, se suma como ganancia realizada de la venta. Se aplica solo a dividendos nuevos (no retroactivo) y no a la importacion masiva por XLS. (trkAddDiv / getPositions)
@@ -376,7 +380,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: se saco 'argentina' del fallback a Finnhub en fetchAllQuotes — Finnhub es un proveedor de EEUU y para un ticker BYMA sin mapeo (getFinnhubTicker deja el ticker pelado) puede resolver a una accion/ADR de otro mercado con el mismo simbolo. Paso con LOMA (Loma Negra): al fallar Yahoo .BA, Finnhub devolvio el ADR de NYSE (~USD 10) en vez del precio real en ARS de BYMA (~3227), y se uso tal cual como si fuera ARS. Ahora si Yahoo .BA falla para un ticker argentina, se mantiene la ultima cotizacion cargada en vez de mostrar el precio de otro mercado. (fetchAllQuotes)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.6rem;color:var(--text3,#888);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:2px 7px;opacity:.65;user-select:none;cursor:default">v4 · 31/08/2026</div>
+<div id="claude-version-badge" title="Fix: el % de upside contra el precio de venta objetivo (P. Venta / Objetivos / Notificaciones cerca del objetivo) daba resultados absurdamente altos para acciones argentinas con ADR en NYSE y ratio cargado (ej. BBAR: +308% en vez de +32,4% con precio objetivo de USD 20). Causa: targetUSD se carga en dolares por ADR/accion real, pero al convertir el precio de mercado (en ARS, sector argentina) a USD para comparar, el codigo dividia por CCL sin multiplicar por el ratio ADR/accion local — comparaba el precio de la accion local contra un target pensado en terminos de ADR. Se agrega '*ratio' en las 3 conversiones afectadas (deltaCell del portafolio, Notificaciones cerca del objetivo, y en GDC ademas la tabla de Objetivos). Tambien se agrego 'BBAR':3.0 a RATIOS_TABLE (faltaba, ratio ADR/accion local). No toca el precio de mercado mostrado en la tabla principal — ese nunca us el ratio para sector argentina y sigue igual. (renderPortfolio / renderNearTarget / renderTargetsTable)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.6rem;color:var(--text3,#888);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:2px 7px;opacity:.65;user-select:none;cursor:default">v8 · 02/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -1712,7 +1716,7 @@ var PRELOADED = [];
 
 var BRL_TICKERS=new Set(['BBAS3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
 
-var RATIOS_TABLE = {"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "RBLX": 2, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "DIS": 12, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4, "URA": 5};
+var RATIOS_TABLE = {"BBAR":3.0,"EWZ":2.0,"ETHA":5.0,"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "RBLX": 2, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "DIS": 12, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4, "URA": 5};
 var BYMA_TO_NYSE = {'DISN':'DIS'};
 function getRatio(ticker){return RATIOS_TABLE[BYMA_TO_NYSE[ticker]||ticker]||1;}
 
@@ -2366,7 +2370,12 @@ function warnSaveFailed(){
 }
 function saveAndRender(){
   try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){}
-  sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok) warnSaveFailed(); });
+  // Snapshot de "lo que debería estar en la nube" — si sbSaveArrayRetry falla (red caída,
+  // pestaña cerrada antes de terminar), este snapshot sobrevive al reload e initFromSupabase()
+  // lo usa para no pisar movimientos reales con una versión vieja de Supabase.
+  // (Incidente: compra de MO cargada y perdida silenciosamente — 2026-09-01, GDC — mismo riesgo acá.)
+  try{localStorage.setItem('ptNYSE_pending_sync',JSON.stringify(movimientos));}catch(e){}
+  sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok){ warnSaveFailed(); } else { try{localStorage.removeItem('ptNYSE_pending_sync');}catch(e){} } });
   renderMovimientos();renderPortfolio();renderDivsCard();vsellPopulateSelect();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
 }
@@ -3378,7 +3387,7 @@ function renderPortfolio(){
     var _isArgentina=(sector==='argentina');
     var priceUSD=_rawPrice!=null?(
       _isBonoON  ? _rawPrice*ratio/(_tcHoy||1) :
-      _isArgentina ? _rawPrice/(CCL_HOY||1) :
+      _isArgentina ? _rawPrice*ratio/(CCL_HOY||1) :
       BRL_TICKERS.has(p.ticker) ? _rawPrice/(CCL_HOY||1) :
       (q&&q.fromByma) ? _rawPrice*ratio/(CCL_HOY||1) :
       _rawPrice
@@ -3569,7 +3578,7 @@ function renderNearTarget(){
     var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
     // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
     var _ntFromByma=q&&q.fromByma;
-    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price*ratio/(CCL_HOY||1):q.price);
+    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price*ratio/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price*ratio/(CCL_HOY||1):q.price);
     if(!(priceUSD>0))return;
     var upside=(targetUSD-priceUSD)/priceUSD*100;
     if(!(upside>=0)||upside>NT_THRESHOLD)return;
@@ -5354,6 +5363,27 @@ function trkCalcCCL(){
     // sbMov === []    → tabla vacía legítima (portfolio nuevo) → NO usar localStorage (puede estar contaminado)
     // sbMov.length>0  → datos reales → usar y cachear
     var sbMov = await sbLoadArray('movimientos');
+    // Reconciliar cambios locales sin confirmar en la nube (ver saveAndRender/ptNYSE_pending_sync).
+    // Si hay un snapshot pendiente con movimientos que Supabase no tiene, reintentar guardarlos
+    // ANTES de aceptar la versión de Supabase como fuente de verdad — evita perder compras/ventas
+    // cargadas justo antes de un corte de red o un reload.
+    try{
+      var _pendingRaw=localStorage.getItem('ptNYSE_pending_sync');
+      if(_pendingRaw){
+        var _pending=JSON.parse(_pendingRaw);
+        var _cloudIds={};(sbMov||[]).forEach(function(m){if(m&&m.id!=null)_cloudIds[m.id]=true;});
+        var _missing=_pending.filter(function(m){return m&&m.id!=null&&!_cloudIds[m.id];});
+        if(_missing.length){
+          console.warn('[initFromSupabase] '+_missing.length+' movimiento(s) local(es) no estaban en Supabase — reintentando guardarlos.');
+          var _resynced=await sbSaveArrayRetry('movimientos',_pending);
+          sbMov=_pending;
+          if(_resynced){ localStorage.removeItem('ptNYSE_pending_sync'); }
+          else { setTimeout(function(){warnSaveFailed();},500); }
+        } else {
+          localStorage.removeItem('ptNYSE_pending_sync');
+        }
+      }
+    }catch(e){ console.warn('[initFromSupabase] reconciliación de pendientes falló',e); }
     if(sbMov !== null && sbMov.length){
       // Supabase tiene datos → fuente de verdad
       movimientos = sbMov.filter(function(m){return m!=null;});
