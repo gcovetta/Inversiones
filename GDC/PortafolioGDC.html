@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v8 | 2026-09-03 | Fix: cotizaciones de Brasil no se actualizaban para tickers que cotizan directo en BRL en B3 (BRL_TICKERS, ej. BBAS3) — fetchYahooAR siempre agregaba el sufijo '.BA' (Buenos Aires/CEDEAR) sin importar el ticker, asi que para un ticker B3 directo pedia un simbolo que no existe en BYMA; el fallback a Finnhub tampoco tiene mapeo para B3 (ticker pelado, sin exchange), asi que esas posiciones nunca conseguian precio nuevo y quedaban con la ultima cotizacion cargada. Ahora fetchYahooAR acepta un sufijo opcional: en FASE 1 los tickers de BRL_TICKERS piden '.SA' (Bovespa) en vez de '.BA', y se excluyen del fallback a Finnhub (mismo riesgo de colision de simbolo con otro mercado que causo el bug de LOMA en v4). (fetchYahooAR / fetchBymaAll / fetchFinnhubFallback)
 v7 | 2026-09-02 | Fix: el % de upside contra el precio de venta objetivo (P. Venta / Objetivos / Notificaciones cerca del objetivo) daba resultados absurdamente altos para acciones argentinas con ADR en NYSE y ratio cargado (ej. BBAR: +308% en vez de +32,4% con precio objetivo de USD 20). Causa: targetUSD se carga en dolares por ADR/accion real, pero al convertir el precio de mercado (en ARS, sector argentina) a USD para comparar, el codigo dividia por CCL sin multiplicar por el ratio ADR/accion local — comparaba el precio de la accion local contra un target pensado en terminos de ADR. Se agrega '*ratio' en las 3 conversiones afectadas (deltaCell del portafolio, Notificaciones cerca del objetivo, y en GDC ademas la tabla de Objetivos). Tambien se agrego 'BBAR':3.0 a RATIOS_TABLE (faltaba, ratio ADR/accion local). No toca el precio de mercado mostrado en la tabla principal — ese nunca us el ratio para sector argentina y sigue igual. (renderPortfolio / renderNearTarget / renderTargetsTable)
 v6 | 2026-09-02 | Fix preventivo: agregado 'EWZ':2.0 a RATIOS_TABLE (faltaba en los 5 portafolios, ratio oficial 2:1 segun BYMA). No es la causa del ultimo reporte de precio incorrecto en EWZ (28500 vs 29300 real, ~2.7% de diferencia) — ese margen es demasiado chico para ser un bug de ratio/ticker (esos dan diferencias de 2x en adelante); EWZ ademas cotiza via Yahoo .BA directo (fromByma=true), que ignora RATIOS_TABLE por completo salvo que ese fetch falle y caiga al fallback de Finnhub. Se agrega igual como mantenimiento preventivo, mismo patron que ETHA. (RATIOS_TABLE)
 v5 | 2026-09-01 | Fix: perdida silenciosa de movimientos cuando el guardado en Supabase fallaba (red, pestana cerrada antes de terminar) y luego un reload traia la version vieja de la nube, pisando el movimiento que solo habia quedado guardado local (paso con una compra de MO en GDC). Ahora saveAndRender() guarda un snapshot 'pending_sync' en localStorage antes de intentar subirlo, e initFromSupabase() lo compara contra lo que trae Supabase: si detecta movimientos locales que la nube no tiene, reintenta guardarlos antes de aceptar los datos de la nube como fuente de verdad, y si el reintento tambien falla, conserva la copia local en vez de descartarla. (saveAndRender / initFromSupabase)
@@ -5909,8 +5910,8 @@ async function fetchArgEqAPI(){
   return parseData912Response(await r.json());
 }
 
-async function fetchYahooAR(ticker){
-  var symbol=ticker+'.BA';
+async function fetchYahooAR(ticker,suffix){
+  var symbol=ticker+(suffix||'.BA');
   var chartUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=2d';
   var quoteUrl='https://query2.finance.yahoo.com/v7/finance/quote?symbols='+encodeURIComponent(symbol)+'&corsDomain=finance.yahoo.com&formatted=false&lang=en-US&region=AR';
 
@@ -6016,7 +6017,7 @@ async function fetchAllQuotes(){
     await Promise.all(bymaPos.map(async function(p){
       var s=getSector(p.ticker);
       try{
-        var fbq=await fetchYahooAR(p.ticker);
+        var fbq=await fetchYahooAR(p.ticker,BRL_TICKERS.has(p.ticker)?'.SA':'.BA');
         // argentina: ya viene en ARS → guardar directo
         // BRL_TICKERS (B3 directo): guardar en ARS sin normalizar
         // Todo lo demás (nyse/brasil/europa/china/cripto CEDEAR): guardar ARS directo
@@ -6034,7 +6035,7 @@ async function fetchAllQuotes(){
   // ── FASE 2: Finnhub fallback para tickers donde Yahoo .BA falló (secuencial) ─
   async function fetchFinnhubFallback(){
     var fallbackPos=bymaPos.filter(function(p){
-      return finnhubFallbackSectors.has(getSector(p.ticker))&&!quotes[p.ticker];
+      return finnhubFallbackSectors.has(getSector(p.ticker))&&!quotes[p.ticker]&&!BRL_TICKERS.has(p.ticker);
     });
     if(!fallbackPos.length) return;
     for(var i=0;i<fallbackPos.length;i++){
