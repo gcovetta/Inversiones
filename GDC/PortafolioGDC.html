@@ -4993,14 +4993,20 @@ function cmpReadVetaWorkbook(ab){
   var invName=cmpFindSheetName(wb,/inversiones/i);
   if(!invName)return null;
   var invRows=XLSX.utils.sheet_to_json(wb.Sheets[invName],{header:1,defval:''});
-  var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='tituloespecie';});});
+  // El ticker viene en "Codigo" (o, en formatos viejos de Veta, "TituloEspecie");
+  // "TipoEspecie" es solo la categoría (Cedears/Títulos Públicos/Moneda) y no sirve como header-anchor.
+  var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){var n=cmpNorm(c);return n==='codigo'||n==='tituloespecie';});});
   var map={},nombres={};
   if(hdrIdx>=0){
     var hdr=invRows[hdrIdx].map(cmpNorm);
-    var tCol=hdr.indexOf('tituloespecie');
-    var dCol=hdr.indexOf('descripcionespecie');
+    var tCol=hdr.indexOf('codigo');
+    if(tCol<0)tCol=hdr.indexOf('tituloespecie');
+    var dCol=hdr.indexOf('denominacion');
+    if(dCol<0)dCol=hdr.indexOf('descripcionespecie');
     var totCol=hdr.indexOf('total');
+    var tipoCol=hdr.indexOf('tipoespecie');
     invRows.slice(hdrIdx+1).forEach(function(r){
+      if(tipoCol>=0&&cmpNorm(r[tipoCol])==='moneda')return; // efectivo, ya comparado vía Liquidez
       var ticker=String(r[tCol]||'').trim().toUpperCase();
       if(!ticker)return;
       var q=cmpParseArgNum(r[totCol]);
