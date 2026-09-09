@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v11 | 2026-09-09 | Fix: fetchArgEqAPI() pegaba a https://data912.com/live/arg_eq, que devuelve 404 (confirmado en Network tab del navegador) — el endpoint correcto para acciones argentinas en data912 es /live/arg_stocks (arg_eq no existe en su OpenAPI spec; los endpoints reales son arg_stocks, arg_cedears, arg_bonds, arg_corp, arg_notes, usa_stocks, usa_adrs, entre otros). Mismo schema que arg_bonds/arg_corp (symbol/c), asi que parseData912Response no necesita cambios. (fetchArgEqAPI)
+v10 | 2026-09-09 | Fix: la cadena de proxies de fetchYahooAR tenia dos servicios muertos — thingproxy.freeboard.io y jsonp.afeld.me — que ya no resuelven DNS (ERR_NAME_NOT_RESOLVED, confirmado en consola del navegador), y el llamado directo a Yahoo v7/finance/quote ahora devuelve 401 (Yahoo exige auth). Eso dejaba en la practica un solo proxy vivo (allorigins /get) compitiendo con corsproxy.io, que se satura (429 Too Many Requests) cuando hay muchos tickers en paralelo (acciones argentinas sin cobertura en data912, bonos/ONs de fallback). Se sacan los dos proxies muertos y se agregan api.codetabs.com/v1/proxy y api.allorigins.win/raw como reemplazo, restaurando la redundancia real. (fetchYahooAR)
+v9 | 2026-09-09 | Fix: cotizaciones de acciones argentinas (sector 'argentina') no se actualizaban — dependian unicamente de Yahoo .BA a traves de la cadena de proxies publicos (allorigins/corsproxy/thingproxy/jsonp.afeld), sin ningun fallback (se habia sacado Finnhub por el bug de LOMA), asi que si esa cadena entera fallaba (frecuente, son proxies publicos inestables) la accion se quedaba con la ultima cotizacion cargada. Se agrega fetchArgEqAPI() (data912 arg_eq, mismo patron ya confiable de bonos/ONs) como fuente primaria; Yahoo .BA queda de fallback por ticker. (fetchArgAll / fetchAllQuotes / fetchArgEqAPI)
 v8 | 2026-09-03 | Fix: cotizaciones de Brasil no se actualizaban para tickers que cotizan directo en BRL en B3 (BRL_TICKERS, ej. BBAS3) — fetchYahooAR siempre agregaba el sufijo '.BA' (Buenos Aires/CEDEAR) sin importar el ticker, asi que para un ticker B3 directo pedia un simbolo que no existe en BYMA; el fallback a Finnhub tampoco tiene mapeo para B3 (ticker pelado, sin exchange), asi que esas posiciones nunca conseguian precio nuevo y quedaban con la ultima cotizacion cargada. Ahora fetchYahooAR acepta un sufijo opcional: en FASE 1 los tickers de BRL_TICKERS piden '.SA' (Bovespa) en vez de '.BA', y se excluyen del fallback a Finnhub (mismo riesgo de colision de simbolo con otro mercado que causo el bug de LOMA en v4). (fetchYahooAR / fetchBymaAll / fetchFinnhubFallback)
 v7 | 2026-09-02 | Fix: el % de upside contra el precio de venta objetivo (P. Venta / Objetivos / Notificaciones cerca del objetivo) daba resultados absurdamente altos para acciones argentinas con ADR en NYSE y ratio cargado (ej. BBAR: +308% en vez de +32,4% con precio objetivo de USD 20). Causa: targetUSD se carga en dolares por ADR/accion real, pero al convertir el precio de mercado (en ARS, sector argentina) a USD para comparar, el codigo dividia por CCL sin multiplicar por el ratio ADR/accion local — comparaba el precio de la accion local contra un target pensado en terminos de ADR. Se agrega '*ratio' en las 3 conversiones afectadas (deltaCell del portafolio, Notificaciones cerca del objetivo, y en GDC ademas la tabla de Objetivos). Tambien se agrego 'BBAR':3.0 a RATIOS_TABLE (faltaba, ratio ADR/accion local). No toca el precio de mercado mostrado en la tabla principal — ese nunca us el ratio para sector argentina y sigue igual. (renderPortfolio / renderNearTarget / renderTargetsTable)
 v6 | 2026-09-02 | Fix preventivo: agregado 'EWZ':2.0 a RATIOS_TABLE (faltaba en los 5 portafolios, ratio oficial 2:1 segun BYMA). No es la causa del ultimo reporte de precio incorrecto en EWZ (28500 vs 29300 real, ~2.7% de diferencia) — ese margen es demasiado chico para ser un bug de ratio/ticker (esos dan diferencias de 2x en adelante); EWZ ademas cotiza via Yahoo .BA directo (fromByma=true), que ignora RATIOS_TABLE por completo salvo que ese fetch falle y caiga al fallback de Finnhub. Se agrega igual como mantenimiento preventivo, mismo patron que ETHA. (RATIOS_TABLE)
@@ -380,7 +383,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: cotizaciones de Brasil no se actualizaban para tickers que cotizan directo en BRL en B3 (BRL_TICKERS, ej. BBAS3) — fetchYahooAR siempre agregaba el sufijo '.BA' (Buenos Aires/CEDEAR) sin importar el ticker, asi que para un ticker B3 directo pedia un simbolo que no existe en BYMA; el fallback a Finnhub tampoco tiene mapeo para B3 (ticker pelado, sin exchange), asi que esas posiciones nunca conseguian precio nuevo y quedaban con la ultima cotizacion cargada. Ahora fetchYahooAR acepta un sufijo opcional: en FASE 1 los tickers de BRL_TICKERS piden '.SA' (Bovespa) en vez de '.BA', y se excluyen del fallback a Finnhub (mismo riesgo de colision de simbolo con otro mercado que causo el bug de LOMA en v4). (fetchYahooAR / fetchBymaAll / fetchFinnhubFallback)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v8 · 03/09/2026</div>
+<div id="claude-version-badge" title="Fix: fetchArgEqAPI() pegaba a /live/arg_eq (404 — no existe) en vez de /live/arg_stocks, el endpoint real de data912 para acciones argentinas. Confirmado en Network tab. (fetchArgEqAPI)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v11 · 09/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -4470,6 +4473,12 @@ async function fetchONsAPI(){
   if(!r.ok)throw new Error('HTTP '+r.status);
   return parseData912Response(await r.json());
 }
+// Acciones argentinas: arg_eq
+async function fetchArgEqAPI(){
+  var r=await fetchWithTimeout('https://data912.com/live/arg_stocks',{headers:{'Accept':'application/json'}},8000);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return parseData912Response(await r.json());
+}
 
 async function fetchYahooAR(ticker,suffix){
   var symbol=ticker+(suffix||'.BA');
@@ -4497,12 +4506,13 @@ async function fetchYahooAR(ticker,suffix){
     fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(chartUrl),{},7000)
       .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
       .then(function(j){var q=parseYahooChart(j);return q||Promise.reject('no price');}),
-    // thingproxy
-    fetchWithTimeout('https://thingproxy.freeboard.io/fetch/'+chartUrl,{},7000)
+    // codetabs (reemplaza a thingproxy.freeboard.io, que dejo de resolver DNS — ERR_NAME_NOT_RESOLVED)
+    fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(chartUrl),{},7000)
       .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
       .then(function(j){var q=parseYahooChart(j);return q||Promise.reject('no price');}),
-    // jsonp.afeld.me
-    fetchWithTimeout('https://jsonp.afeld.me/?url='+encodeURIComponent(chartUrl),{},7000)
+    // allorigins /raw (endpoint alternativo, bucket de rate-limit distinto al /get de arriba —
+    // reemplaza a jsonp.afeld.me, que tambien dejo de resolver DNS)
+    fetchWithTimeout('https://api.allorigins.win/raw?url='+encodeURIComponent(chartUrl),{},7000)
       .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
       .then(function(j){var q=parseYahooChart(j);return q||Promise.reject('no price');})
   ];
@@ -4544,7 +4554,13 @@ async function fetchAllQuotes(){
   //     precio real de mercado en BYMA (bug de RBLX/SPY con la lógica vieja Finnhub-primero).
   // FASE 2 (secuencial): Finnhub fallback SOLO para tickers donde Yahoo .BA falló
   // Bonos/ONs: data912 como siempre (paralelo con Fase 1)
-  var bymaPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='bonos'&&s!=='on';});
+  // 'argentina' se maneja aparte (fetchArgAll): antes dependia unicamente de Yahoo .BA a
+  // traves de la cadena de proxies publicos (allorigins/corsproxy/thingproxy/jsonp.afeld),
+  // que suele fallar entera y dejaba las acciones locales sin cotizacion nueva. data912
+  // expone /live/arg_stocks (misma familia de API ya usada y confiable para bonos/ONs) — se usa como
+  // fuente primaria y Yahoo .BA queda de fallback por ticker.
+  var bymaPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='bonos'&&s!=='on'&&s!=='argentina';});
+  var argPos=pos.filter(function(p){return getSector(p.ticker)==='argentina';});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
   // 'argentina' se sacó del fallback a Finnhub: Finnhub es un proveedor de EEUU y, para un
@@ -4580,6 +4596,23 @@ async function fetchAllQuotes(){
         quotes[p.ticker]=fbq;
       }catch(e){
         // No contar error todavía: Finnhub fallback cubre todos los sectores
+      }
+      updateProgress();
+    }));
+  }
+
+  // ── Acciones argentinas: data912 (arg_eq) → fallback Yahoo .BA por ticker ──
+  async function fetchArgAll(){
+    var map={};
+    try{map=await fetchArgEqAPI();}catch(e){}
+    await Promise.all(argPos.map(async function(p){
+      try{
+        var q=map[p.ticker.toUpperCase()];
+        if(q&&q.price>0){quotes[p.ticker]=q;}
+        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+      }catch(e){
+        // Sin dato nuevo: se mantiene la ultima cotizacion cargada (para 'argentina'
+        // no hay fallback a Finnhub, ver nota arriba)
       }
       updateProgress();
     }));
@@ -4632,7 +4665,7 @@ async function fetchAllQuotes(){
   }
 
   // Fase 1 + bonos/ON en paralelo, luego Fase 2 (fallback) sólo para lo que falló
-  await Promise.all([fetchBymaAll(),fetchBonosAll(),fetchONsAll()]);
+  await Promise.all([fetchBymaAll(),fetchArgAll(),fetchBonosAll(),fetchONsAll()]);
   await fetchFinnhubFallback();
 
   // Render final con todos los datos listos
@@ -6010,7 +6043,7 @@ function trkCalcCCL(){
         fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(mervUrl),{},7000)
           .then(function(r){return r.ok?r.json():Promise.reject();})
           .then(function(j){return parseYahooChart(j)||Promise.reject();}),
-        fetchWithTimeout('https://thingproxy.freeboard.io/fetch/'+mervUrl,{},7000)
+        fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(mervUrl),{},7000)
           .then(function(r){return r.ok?r.json():Promise.reject();})
           .then(function(j){return parseYahooChart(j)||Promise.reject();})
       ];
