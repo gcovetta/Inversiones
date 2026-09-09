@@ -3610,7 +3610,10 @@ function renderPortfolio(){
       '<td class="mono col-pventa">'+targetCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
-    var _passColor=!!_portTkFilter||!_colorFilterOn||((_fGreen&&_fGreen.checked)&&pnlPct!==null&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct!==null&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct!==null&&pnlPct<0);
+    // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
+    // pueden clasificar en verde/amarillo/rojo, y ocultarlos los hacía desaparecer de la
+    // tabla en vez de mostrarse con el precio vacío.
+    var _passColor=!!_portTkFilter||!_colorFilterOn||pnlPct===null||((_fGreen&&_fGreen.checked)&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct<0);
     var _passRV=!_rvFilterOn||((_fRVRed&&_fRVRed.checked)&&invColor==='var(--red)')||((_fRVYellow&&_fRVYellow.checked)&&invColor==='#eab308')||((_fRVWhite&&_fRVWhite.checked)&&invColor==='var(--text)');
     if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor&&_passRV) sectors[sector].push(row);
   });
