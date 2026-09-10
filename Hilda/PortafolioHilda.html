@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v15 | 2026-09-10 | Chore: se elimina la solapa "Dividendos" original (registro manual simple sin impacto en PPC, con su formulario y su historial en Supabase/localStorage bajo la key 'dividendos') a pedido del usuario — queda una sola forma de cargar dividendos: la pestaña "Dividendos CCL" (tracker con PPC e importación de broker). Se quita el botón de nav, el markup de la página, las funciones addDividendo/deleteDividendo/clearDividendos/renderDividendos/divPopulateSelect/calcDivUSD, la variable global dividendos y la línea de init que la vaciaba (ya estaba marcada como "no usado en este portafolio"). No se tocó nada de la pestaña "Dividendos CCL" (TRK.*). (showPage / renderPortfolio / initFromSupabase)
 v14 | 2026-09-10 | Fix: bug de filtración de datos entre portafolios — las claves de localStorage del tracker de dividendos (trk_divs_v1, trk_pin_v1, trk_session_v1, trk_ccl_v1) eran idénticas en los 5 portafolios (GDC/Omar/Juli/Hilda/Ana), y como los 5 se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta), un navegador que hubiera abierto más de uno terminaba compartiendo ese localStorage entre ellos — el fallback "si Supabase está vacío, uso lo que haya en localStorage" podía mostrar los dividendos de un portafolio en otro (confirmado en vivo en Juli, que mostraba el BB37D de GDC). La base de datos de cada portafolio en Supabase nunca estuvo mezclada (son proyectos separados) — el problema era solo el caché local compartido. Se le agrega el sufijo del portafolio a las 4 claves (_gdc/_omar/_juli/_hilda/_ana) y se borran las claves viejas sin sufijo al cargar, en los 5 archivos. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)
 v13 | 2026-09-10 | Feat: nueva pestaña "Dividendos CCL" (tracker con impacto en PPC e importación desde broker) — antes el código del tracker (TRK, trkRender, etc.) existía en el JS/CSS pero no era alcanzable: no había ni HTML ni botón de navegación para la página. Se agrega el botón de nav y el markup completo de la pestaña (igual a GDC/Omar/Juli): CCL del día, métricas, carga manual de dividendo, y un importador de 3 archivos separados (Pesos / Dólares / Dólar Cable) para el extracto "Cuenta Corriente" de Bull Market — detecta "DIVIDENDOS" (accion/CEDEAR) y "RENTA Y AMORTIZ" (bono/ON), sin duplicar filas ya cargadas. Las filas nuevas quedan en "Pendientes de revisión" para confirmar una por una el impacto en el PPC (o el destino a ganancia de venta si ya no hay posición) antes de sumarlas al historial. Se reemplaza también el importador viejo (TRK_IMP / trkImpParse HTML, formato Veta — no correspondía al broker real usado, Bull Market) y se corrige el borrado de fila (usaba data-id + parseInt, que truncaba ids fraccionarios generados por la importación) por comparación exacta de id. La pestaña "Dividendos" original (registro simple, sin PPC) se deja intacta para no perder datos ya cargados ahí. Nota: esta importación es sólo para Bull Market — Cocos Capital (el segundo broker que usás temporalmente) queda pendiente para un agregado futuro. (trkRender / trkDeleteDiv / trkImpParseBullMarket / trkQueuePendingRows / trkRenderPending / trkPendingConfirm / trkPendingDiscard)
 v12 | 2026-09-09 | Fix: fetchArgEqAPI() pegaba a https://data912.com/live/arg_eq, que devuelve 404 (confirmado en Network tab del navegador) — el endpoint correcto para acciones argentinas en data912 es /live/arg_stocks (arg_eq no existe en su OpenAPI spec; los endpoints reales son arg_stocks, arg_cedears, arg_bonds, arg_corp, arg_notes, usa_stocks, usa_adrs, entre otros). Mismo schema que arg_bonds/arg_corp (symbol/c), asi que parseData912Response no necesita cambios. (fetchArgEqAPI)
@@ -386,7 +387,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: las claves de localStorage del tracker de dividendos eran iguales en los 5 portafolios y, al compartir origen (gcovetta.github.io), se filtraban entre sí en el mismo navegador (ej. Juli mostrando el BB37D de GDC). Ahora cada una lleva el sufijo del portafolio. Las bases de Supabase nunca estuvieron mezcladas. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v14 · 10/09/2026</div>
+<div id="claude-version-badge" title="Se eliminó la solapa 'Dividendos' original (registro manual simple, sin impacto en PPC). Ahora queda una sola forma de cargar dividendos: 'Dividendos CCL' (tracker con PPC e importación de broker)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v15 · 10/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -507,7 +508,6 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;rubros&#39;,this)"><span>🏷</span>Rubros</button>
     <button class="nav-item" onclick="showPage(&#39;tipocambio&#39;,this)"><span>$</span>Tipo de Cambio</button>
     <button class="nav-item" onclick="showPage(&#39;ratios&#39;,this)"><span>⚙</span>Ratios</button>
-    <button class="nav-item" onclick="showPage(&#39;dividendos&#39;,this)"><span>💰</span>Dividendos</button>
     <button class="nav-item" onclick="showPage(&#39;tracker&#39;,this)"><span>💵</span>Dividendos CCL</button>
 
     <div class="nav-sec">Laboratorio</div>
@@ -963,41 +963,6 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
 
-    </div>
-
-    <!-- DIVIDENDOS -->
-    <div class="page" id="page-dividendos">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Registrar dividendo</span></div>
-        <div class="card-body">
-          <div class="fg">
-            <div class="fgrp"><label>Ticker</label><select id="d-ticker" style="text-transform:uppercase"><option value="">— seleccioná ticker —</option></select></div>
-            <div class="fgrp"><label>Fecha cobro</label><input id="d-fecha" type="date"></div>
-            <div class="fgrp"><label>Monto ARS</label><input id="d-ars" type="number" min="0" step="any" placeholder="0"></div>
-            <div class="fgrp"><label>CCL del día</label><input id="d-ccl" type="number" min="0" step="any" placeholder="auto"></div>
-            <div class="fgrp"><label>Monto USD (calc.)</label><input id="d-usd" type="text" readonly placeholder="—" style="color:var(--accent)"></div>
-          </div>
-          <div class="fgrp" style="margin-top:4px"><label>Notas</label><input id="d-notas" type="text" placeholder="ej: Q1 2026"></div>
-          <div class="gap-row" style="margin-top:10px">
-            <button class="btn btn-a" onclick="addDividendo()">+ Registrar</button>
-            <button class="btn btn-d" onclick="clearDividendos()" title="Borrar todos los dividendos">🗑 Borrar todo</button>
-            <span id="d-status"></span>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Historial de dividendos</span>
-          <span id="d-total" class="smsg"></span>
-        </div>
-        <div id="d-empty" class="empty-state">Sin dividendos registrados</div>
-        <div id="d-wrap" style="display:none">
-          <div class="gap-row" style="padding:.5rem 1rem;border-bottom:1px solid var(--border)">
-            <button class="btn btn-d" onclick="clearDividendos()" title="Borrar todos los dividendos">🗑 Borrar todo</button>
-          </div>
-          <div class="tw"><table><thead><tr><th>Fecha</th><th>Ticker</th><th>ARS</th><th>CCL</th><th>USD</th><th>Notas</th><th></th></tr></thead><tbody id="d-body"></tbody></table></div>
-        </div>
-      </div>
     </div>
 
     <!-- DIVIDENDOS CCL (tracker con PPC e import Bull Market) -->
@@ -2008,7 +1973,6 @@ function showPage(id,btn){
   if(btn)btn.classList.add('active');
   if(id==='tracker') initTracker();
   if(id==='movimientos') resetMFechaHoy();
-  if(id==='dividendos') divPopulateSelect();
   if(id==='arbitraje') arbRender();
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
@@ -2959,19 +2923,6 @@ function movModalClose(){
 
 
 
-function divPopulateSelect(){
-  var sel = document.getElementById('d-ticker');
-  if(!sel) return;
-  var current = sel.value;
-  var tickers = [];
-  var seen = {};
-  movimientos.forEach(function(m){ if(m&&m.ticker&&!seen[m.ticker]&&m.tipo!=='aporte'){seen[m.ticker]=true;tickers.push(m.ticker);} });
-  tickers.sort();
-  sel.innerHTML = '<option value="">— seleccioná ticker —</option>' +
-    tickers.map(function(t){
-      return '<option value="'+t+'"'+(t===current?' selected':'')+'>'+t+'</option>';
-    }).join('');
-}
 
 
 
@@ -3564,7 +3515,6 @@ function renderPortfolio(){
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
   var totalRpnl=all.reduce(function(a,p){return a+p.realizedPnl;},0);
-  var totalDivs=dividendos.reduce(function(a,d){return a+(d.usd||0);},0);
   if(!open.length){
     empty.style.display='';
     document.getElementById('panels-grid').style.display='none';
@@ -5142,79 +5092,6 @@ function importRatiosXLSX(input){
   };
   reader.readAsArrayBuffer(file);
 }
-var dividendos = [];
-document.addEventListener('DOMContentLoaded',function(){
-  var df=document.getElementById('d-fecha');
-  if(df){
-    df.value=new Date().toISOString().split('T')[0];
-    df.addEventListener('change',function(){var f=this.value.split('-').reverse().join('/');var c=getCCL(f);if(c){document.getElementById('d-ccl').value=c;calcDivUSD();}});
-  }
-  document.getElementById('d-ars').addEventListener('input',calcDivUSD);
-  document.getElementById('d-ccl').addEventListener('input',calcDivUSD);
-  divPopulateSelect();
-});
-
-function calcDivUSD(){
-  var ars=parseFloat(document.getElementById('d-ars').value);var ccl=parseFloat(document.getElementById('d-ccl').value);
-  document.getElementById('d-usd').value=(ars&&ccl)?(ars/ccl).toFixed(2):'—';
-}
-
-function addDividendo(){
-  var ticker=document.getElementById('d-ticker').value.trim().toUpperCase();
-  var fechaInput=document.getElementById('d-fecha').value;var fecha=fechaInput.split('-').reverse().join('/');
-  var ars=parseFloat(document.getElementById('d-ars').value);
-  var ccl=parseFloat(document.getElementById('d-ccl').value)||getCCL(fecha);
-  var notas=document.getElementById('d-notas').value;var sel=document.getElementById('d-status');
-  if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
-  if(!ars||ars<=0){flash(sel,'Ingresa el monto',true);return;}
-  var usd=ccl?ars/ccl:null;
-  dividendos.push({id:Date.now(),fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas});
-  try{localStorage.setItem('ptHilda_divs',JSON.stringify(dividendos));}catch(e){}
-  sbSetConfig('dividendos', dividendos);
-  renderPortfolio();
-  document.getElementById('d-ars').value='';document.getElementById('d-ccl').value='';document.getElementById('d-usd').value='';document.getElementById('d-notas').value='';
-  flash(sel,'Dividendo registrado',false);
-}
-
-function deleteDividendo(id){
-  var _st=document.getElementById('d-status');
-  if(_st) flash(_st,'Eliminando...', false);
-  dividendos=dividendos.filter(function(d){return String(d.id)!==String(id);});
-  try{
-    var pd=JSON.parse(localStorage.getItem('ptHilda_divs_del')||'[]');
-    if(pd.indexOf(String(id))<0) pd.push(String(id));
-    localStorage.setItem('ptHilda_divs_del',JSON.stringify(pd));
-  }catch(e){}
-  try{localStorage.setItem('ptHilda_divs',JSON.stringify(dividendos));}catch(e){}
-  renderPortfolio();
-  sbSetConfig('dividendos',dividendos).then(function(ok){
-    if(ok){
-      try{localStorage.removeItem('ptHilda_divs_del');}catch(e){}
-      if(_st) flash(_st,'Eliminado y guardado ✓',false);
-    } else {
-      if(_st) flash(_st,'Eliminado localmente (sin servidor)',true);
-    }
-  });
-}
-
-function clearDividendos(){
-  if(!confirm('Borrar todos los dividendos?'))return;
-  dividendos=[];try{localStorage.removeItem('ptHilda_divs');}catch(e){}
-  sbSetConfig('dividendos', []);
-  renderPortfolio();
-}
-
-function renderDividendos(){
-  var empty=document.getElementById('d-empty');var wrap=document.getElementById('d-wrap');var body=document.getElementById('d-body');var totalEl=document.getElementById('d-total');
-  if(!dividendos.length){empty.style.display='';wrap.style.display='none';totalEl.textContent='';return;}
-  empty.style.display='none';wrap.style.display='';
-  var totalUSD=dividendos.reduce(function(a,d){return a+(d.usd||0);},0);
-  totalEl.textContent='Total: $'+Math.round(totalUSD).toLocaleString('es-AR')+' USD';
-  body.innerHTML=dividendos.slice().sort(function(a,b){return b.fecha.split('/').reverse().join('').localeCompare(a.fecha.split('/').reverse().join(''));}).map(function(d){
-    return '<tr><td class="mono">'+d.fecha+'</td><td style="font-weight:700">'+d.ticker+'</td><td class="mono">$'+(d.ars||0).toLocaleString('es-AR')+'</td><td class="mono muted">'+(d.ccl||'—')+'</td><td class="mono pos">$'+Math.round(d.usd||0).toLocaleString('es-AR')+'</td><td class="muted">'+(d.notas||'')+'</td><td><button class="btn btn-d btn-sm" onclick="deleteDividendo('+d.id+')">x</button></td></tr>';
-  }).join('');
-}
-
 var SECTOR_LABELS={nyse:'🇺🇸 NYSE',europa:'🇪🇺 Europa',china:'🇨🇳 China',cripto:'₿ Cripto',brasil:'🇧🇷 Brasil'};
 function renderTargets(){
   var body=document.getElementById('targets-body');
@@ -6145,9 +6022,6 @@ function trkCalcCCL(){
       }
       document.getElementById('lupd').textContent='🟡 Tabla vacía en Supabase — local: '+movimientos.length+' movimientos';
     }
-
-    // Dividendos: no usado en este portafolio
-    dividendos = [];
 
     // 3. Tracker divs CCL
     var sbTrkDivs = await sbLoadArray('trk_divs');
