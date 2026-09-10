@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v15 | 2026-09-10 | Chore: SA24D confirmado como excepción a isBonoUSDDirecto() — termina en "D" pero es un bono en PESOS, no compra directa en dólares (mismo caso que BB37D/BC37D). Se agrega a BONOS_USD_DIRECTO_EXCEPCIONES en los 5 portafolios.
+v14 | 2026-09-10 | Feat: bonos comprados directo en USD (sufijo de ticker "C" = dólar cable, "D" = dólares directo, ej. AO29D) ahora valúan el costo/PPC directamente en dólares, sin pasar por MEP — antes getPositions() recalculaba el costo dividiendo el precio cargado por el MEP histórico y, al mostrarlo, lo volvía a multiplicar por el MEP del día, distorsionando el PPC de estos bonos con el ida y vuelta. Se agrega isBonoUSDDirecto() (con excepción explícita BB37D/BC37D, que terminan en "D" pero son bonos en pesos) y se aplica en getPositions (compra/venta), el módulo rápido Comprar/Vender del Portafolio, el modal de editar movimiento, y las columnas Inversión/PPC de la vista principal. Pendiente: DashBoard, Rend. Anual, Comparación, P. Venta (objetivo) y la importación de venta histórica todavía usan la conversión MEP vieja para estos tickers — no se tocaron en este cambio. (isBonoUSDDirecto / getPositions / vbuyConfirmar / vsellConfirmar / vsellPreview / movModalCalcUSD / movModalSave)
+v13 | 2026-09-10 | Fix: PETR3 (Petrobras ON, B3 directo) no traía cotización — faltaba en BRL_TICKERS (solo tenía 'BBAS3'), así que fetchYahooAR le pedía a Yahoo el sufijo de BYMA ('.BA') en vez de Bovespa ('.SA'), y el fallback a Finnhub no cubre B3 directo (mismo riesgo de colisión de símbolo que el bug de LOMA), así que la posición quedaba sin precio nuevo. Se agrega 'PETR3' a BRL_TICKERS en los 5 portafolios (reportado en Hilda). (BRL_TICKERS)
 v12 | 2026-09-10 | Fix: bug de filtración de datos entre portafolios — las claves de localStorage del tracker de dividendos (trk_divs_v1, trk_pin_v1, trk_session_v1, trk_ccl_v1) eran idénticas en los 5 portafolios (GDC/Omar/Juli/Hilda/Ana), y como los 5 se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta), un navegador que hubiera abierto más de uno terminaba compartiendo ese localStorage entre ellos — el fallback "si Supabase está vacío, uso lo que haya en localStorage" (usado tanto en el total "Dividendos" del dashboard como en renderDivsCard) podía mostrar los dividendos de un portafolio en otro. Confirmado en vivo en Juli, que mostraba el BB37D de GDC. La base de datos de cada portafolio en Supabase nunca estuvo mezclada (son proyectos separados) — el problema era solo el caché local compartido. Se le agrega el sufijo del portafolio a las 4 claves (_gdc/_omar/_juli/_hilda/_ana) y se borran las claves viejas sin sufijo al cargar, en los 5 archivos. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)
 v11 | 2026-09-09 | Fix: fetchArgEqAPI() pegaba a https://data912.com/live/arg_eq, que devuelve 404 (confirmado en Network tab del navegador) — el endpoint correcto para acciones argentinas en data912 es /live/arg_stocks (arg_eq no existe en su OpenAPI spec; los endpoints reales son arg_stocks, arg_cedears, arg_bonds, arg_corp, arg_notes, usa_stocks, usa_adrs, entre otros). Mismo schema que arg_bonds/arg_corp (symbol/c), asi que parseData912Response no necesita cambios. (fetchArgEqAPI)
 v10 | 2026-09-09 | Fix: la cadena de proxies de fetchYahooAR tenia dos servicios muertos — thingproxy.freeboard.io y jsonp.afeld.me — que ya no resuelven DNS (ERR_NAME_NOT_RESOLVED, confirmado en consola del navegador), y el llamado directo a Yahoo v7/finance/quote ahora devuelve 401 (Yahoo exige auth). Eso dejaba en la practica un solo proxy vivo (allorigins /get) compitiendo con corsproxy.io, que se satura (429 Too Many Requests) cuando hay muchos tickers en paralelo (acciones argentinas sin cobertura en data912, bonos/ONs de fallback). Se sacan los dos proxies muertos y se agregan api.codetabs.com/v1/proxy y api.allorigins.win/raw como reemplazo, restaurando la redundancia real. (fetchYahooAR)
@@ -384,7 +387,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: las claves de localStorage del tracker de dividendos eran iguales en los 5 portafolios y, al compartir origen (gcovetta.github.io), se filtraban entre sí en el mismo navegador (ej. Juli mostrando el BB37D de GDC). Ahora cada una lleva el sufijo del portafolio. Las bases de Supabase nunca estuvieron mezcladas. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v12 · 10/09/2026</div>
+<div id="claude-version-badge" title="Chore: SA24D confirmado como excepción (bono en pesos, no USD-directo) — se agrega a BONOS_USD_DIRECTO_EXCEPCIONES junto a BB37D/BC37D." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v15 · 10/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -1763,7 +1766,7 @@ var _HOY_KEY=(function(){var d=new Date();return(d.getDate()<10?'0':'')+d.getDat
 var CCL_HOY=CCL_TABLE[_HOY_KEY]||1487;
 var MEP_HOY=MEP_TABLE[_HOY_KEY]||CCL_HOY;
 var BRL_HOY=5.80; // BRL por USD — se actualiza con fetchTopbarRates()
-var BRL_TICKERS=new Set(['BBAS3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
+var BRL_TICKERS=new Set(['BBAS3','PETR3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
 
 var movimientos = [];
 var quotes = {};
@@ -1797,6 +1800,17 @@ function getSector(ticker){
     }
   }
   return 'nyse';
+}
+
+// Bonos comprados directo en USD (dólar cable "C" o dólares directo "D"): el PPC/valuación ya
+// está en dólares, no corresponde convertir vía MEP (ver claude/convenciones.md del proyecto).
+// Excepción: BB37D, BC37D y SA24D terminan en "C"/"D" pero son bonos en PESOS — esa letra es
+// parte del código del bono, no indica que se haya comprado directo en dólares.
+var BONOS_USD_DIRECTO_EXCEPCIONES=new Set(['BB37D','BC37D','SA24D']);
+function isBonoUSDDirecto(ticker){
+  if(getSector(ticker)!=='bonos')return false;
+  if(BONOS_USD_DIRECTO_EXCEPCIONES.has(ticker))return false;
+  return /[CD]$/.test(ticker);
 }
 
 var TICKER_MAP = {'DISN':'DIS','GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
@@ -2638,8 +2652,9 @@ function movModalCalcUSD(){
   var mktEl=document.getElementById('me-mkt');
   var esBonoON=mktEl&&(mktEl.value==='BONOS'||mktEl.value==='ON');
   var arsCalc=esBonoON?(ars/100):ars;
+  var _usdDirecto=isBonoUSDDirecto(ticker);
   var hint=document.getElementById('me-usd-hint');
-  if(hint){hint.textContent=(ars&&ccl)?'≈ USD '+(arsCalc*rt/ccl).toFixed(4):'';}
+  if(hint){hint.textContent=_usdDirecto?(ars?'≈ USD '+arsCalc.toFixed(4)+' (directo, sin MEP)':''):((ars&&ccl)?'≈ USD '+(arsCalc*rt/ccl).toFixed(4):'');}
 }
 
 function movModalSave(){
@@ -2669,7 +2684,10 @@ function movModalSave(){
   var esBonoONSave=mktSaveEl&&(mktSaveEl.value==='BONOS'||mktSaveEl.value==='ON');
   if(!isNaN(ars)&&ars>=0)m.precioARS=esBonoONSave?(ars/100):ars;
   if(!isNaN(ccl)&&ccl>0){m.ccl=ccl;}
-  if(m.ccl&&m.precioARS){
+  if(isBonoUSDDirecto(m.ticker)&&m.precioARS){
+    m.precioUSD=m.precioARS;
+    m.ratio=getRatio(m.ticker)||1;
+  } else if(m.ccl&&m.precioARS){
     var rt=getRatio(m.ticker)||1;
     m.precioUSD=m.precioARS*rt/m.ccl;
     m.ratio=rt;
@@ -2900,11 +2918,11 @@ function getPositions(){
       var _tc=(m.mercado==='BONOS'||m.mercado==='ON')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||0)
         :(getCCL(m.fecha)||m.ccl||0);
-      var usdPuro=_tc>0&&(m.precioARS||0)>0
+      var usdPuro=isBonoUSDDirecto(m.ticker)?(m.precioARS||0)*m.qty:(_tc>0&&(m.precioARS||0)>0
         ?(m.precioARS||0)*m.qty/_tc
         :((m.precioUSD||0)>0
           ?(m.precioUSD||0)*m.qty
-          :(m.precioARS||0)*m.qty/(MEP_HOY||CCL_HOY||1));
+          :(m.precioARS||0)*m.qty/(MEP_HOY||CCL_HOY||1)));
       p.costUSD+=usdPuro+comUSD;  // consistente con costUSDpuro: usa precioARS/tc_dia
       p.costARS+=(m.precioARS||0)*m.qty;
       p.costUSDpuro+=usdPuro;  // USD real pagado: precioARS*qty/MEP o CCL según mercado
@@ -2922,7 +2940,7 @@ function getPositions(){
       var _tcV=(m.mercado==='BONOS'||m.mercado==='ON')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
         :(getCCL(m.fecha)||m.ccl||CCL_HOY);
-      var ventaUSDpuro=_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0);
+      var ventaUSDpuro=isBonoUSDDirecto(m.ticker)?(m.precioARS||0):(_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0));
       var openLots=lots[key]||[];
       var qtyTotalOpen=openLots.reduce(function(s,l){return s+l.qtyOpen;},0);
 
@@ -3041,7 +3059,7 @@ function vbuyConfirmar(){
   var cclVal=getTC(fecha,mkt);
   if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP para esa fecha',true);return;}
   var ratio=getRatio(ticker);
-  var precioUSD=cclVal?precioARS*ratio/cclVal:null;
+  var precioUSD=isBonoUSDDirecto(ticker)?precioARS:(cclVal?precioARS*ratio/cclVal:null);
 
   movimientos.push({
     id:Date.now(), fecha:fecha, tipo:'compra', mercado:mkt, ticker:ticker, qty:qty,
@@ -3109,7 +3127,7 @@ function vsellPreview(){
   var precioARSInput=parseFloat(arsEl.value);
   var precioARS=esBonoON&&precioARSInput>0?precioARSInput/100:precioARSInput;
   var qtyVender=parseFloat(qtyEl.value);
-  var ventaUSDxUnit=(precioARS>0&&ccl>0)?precioARS/ccl:null;
+  var ventaUSDxUnit=isBonoUSDDirecto(ticker)?(precioARS>0?precioARS:null):((precioARS>0&&ccl>0)?precioARS/ccl:null);
 
   var posActual=getPositions().find(function(p){return p.ticker===ticker;});
   if(!posActual||posActual.qty<=0.000001){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
@@ -3173,7 +3191,7 @@ function vsellConfirmar(){
   var cclVal=cclManual>0?cclManual:getTC(fecha,mkt);
   if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP — completá el campo CCL',true);return;}
   var ratio=getRatio(ticker);
-  var precioUSD=cclVal?precioARS*ratio/cclVal:null;
+  var precioUSD=isBonoUSDDirecto(ticker)?precioARS:(cclVal?precioARS*ratio/cclVal:null);
 
   var posActual=getPositions().find(function(p){return p.ticker===ticker;});
   if(!posActual||qty>posActual.qty+0.000001){
@@ -3326,7 +3344,7 @@ function renderPortfolio(){
     var _isBRL=BRL_TICKERS.has(p.ticker);
     var _fromByma=q&&q.fromByma;
     var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL||_fromByma?price:(price/ratio)*CCL_HOY):null;
-    var inversionCedearARS=mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS;
+    var inversionCedearARS=isBonoUSDDirecto(p.ticker)?p.costUSDpuro*100:(mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS);
     var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:_fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
@@ -3425,9 +3443,11 @@ function renderPortfolio(){
     var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
     var ppcFromUSD=ppcUSD*_tcHoy*100;
     var mkt=p._mktARS||0;  // usar _mktARS de Pasada 1 (mercadoCedearARS aún no está declarada)
-    var ppcCedearARS=_isBonoON
-      ?ppcFromUSD
-      :(_isARS2?ppcUSD*CCL_HOY:ppcUSD*CCL_HOY);
+    var ppcCedearARS=isBonoUSDDirecto(p.ticker)
+      ?ppcUSD*100
+      :(_isBonoON
+        ?ppcFromUSD
+        :(_isARS2?ppcUSD*CCL_HOY:ppcUSD*CCL_HOY));
     var mercadoCedearARS=p._mktARS;
     var inversionCedearARS=p._invARS;
     var pnlPct=mercadoCedearARS!=null&&ppcCedearARS>0?(mercadoCedearARS-ppcCedearARS)/ppcCedearARS*100:null;p._pnlPct=pnlPct;
