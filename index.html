@@ -4,27 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portafolios — Inversiones</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0e0f11;--surface:#16181c;--surface2:#1e2026;--border:#2a2d35;--border2:#363a45;--text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;--accent:#7ee8a2;--accent2:#4ade80;--mono:'DM Mono',monospace;--sans:'Syne',sans-serif;--radius:10px}
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px}
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:15.5px}
+html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}
 header{padding:1rem 2rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
 .logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em}
 .subtitle{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-left:auto}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.5rem}
-h2{font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.5rem;text-align:center}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;width:100%;max-width:860px}
-a.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.5rem;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:.55rem;transition:border-color .15s,background .15s}
-a.card:hover{border-color:var(--accent);background:var(--surface2)}
+.section-label{font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.85rem;margin-top:1.8rem;text-align:left;width:100%;max-width:920px;padding-left:2px}
+.section-label:first-of-type{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.85rem;width:100%;max-width:920px;margin-bottom:.5rem}
+a.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem 1.4rem;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:.5rem;transition:border-color .15s,background .15s,box-shadow .15s}
+a.card:hover{border-color:var(--accent);background:var(--surface2);box-shadow:0 0 0 1px rgba(0,230,118,0.12),0 4px 20px rgba(0,0,0,0.4)}
 .card-top{display:flex;align-items:center;gap:.75rem}
-.card-avatar{width:44px;height:44px;border-radius:50%;border:2px solid var(--border2);object-fit:cover;flex-shrink:0;transition:border-color .15s}
+.card-avatar{width:44px;height:44px;border-radius:50%;border:2px solid var(--border2);object-fit:cover;flex-shrink:0;transition:border-color .15s;image-rendering:-webkit-optimize-contrast}
 a.card:hover .card-avatar{border-color:var(--accent)}
-.card-name{font-weight:700;font-size:1rem;letter-spacing:-.01em}
-.card-path{font-family:var(--mono);font-size:.62rem;color:var(--text3)}
-.card-arrow{font-size:.85rem;color:var(--accent);margin-top:auto;padding-top:.4rem}
+.card-icon{width:44px;height:44px;border-radius:12px;border:1px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.55rem;background:var(--surface2);transition:border-color .15s,background .15s}
+a.card:hover .card-icon{border-color:var(--accent);background:rgba(0,230,118,0.06)}
+.card-name{font-weight:700;font-size:.95rem;letter-spacing:-.01em;line-height:1.2}
+.card-path{font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:1px}
+.card-arrow{font-size:.85rem;color:var(--accent);margin-top:auto;padding-top:.35rem;opacity:.7;transition:opacity .15s,transform .15s}
+a.card:hover .card-arrow{opacity:1;transform:translateX(3px)}
 footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:.6rem;color:var(--text3);text-align:center}
 </style>
 </head>
@@ -35,7 +39,7 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
   <span class="subtitle">Portafolio Tracker</span>
 </header>
 <main>
-  <h2>Seleccionar portafolio</h2>
+  <div class="section-label">📊 Portafolios</div>
   <div class="grid">
     <a class="card" href="GDC/PortafolioGDC.html">
       <div class="card-top">
@@ -75,6 +79,42 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
         <div class="card-name">Juli</div>
       </div>
       <div class="card-path">Juli/PortafolioJuli.html</div>
+      <div class="card-arrow">→</div>
+    </a>
+  </div>
+
+  <div class="section-label">🛠 Herramientas</div>
+  <div class="grid">
+    <a class="card" href="https://gcovetta.github.io/portafolio-tracker/Control_de_Obra.html">
+      <div class="card-top">
+        <div class="card-icon">🏠</div>
+        <div class="card-name">Control Obra</div>
+      </div>
+      <div class="card-path">Control_de_Obra.html</div>
+      <div class="card-arrow">→</div>
+    </a>
+    <a class="card" href="https://gcovetta.github.io/Task/pendientes.html">
+      <div class="card-top">
+        <div class="card-icon">✅</div>
+        <div class="card-name">Tareas Pendientes</div>
+      </div>
+      <div class="card-path">Task/pendientes.html</div>
+      <div class="card-arrow">→</div>
+    </a>
+    <a class="card" href="https://gcovetta.github.io/comparador-obra/">
+      <div class="card-top">
+        <div class="card-icon">🔨</div>
+        <div class="card-name">Comparador Materiales</div>
+      </div>
+      <div class="card-path">comparador-obra/</div>
+      <div class="card-arrow">→</div>
+    </a>
+    <a class="card" href="https://gcovetta.github.io/portafolio-tracker/GastoTrack_6.html">
+      <div class="card-top">
+        <div class="card-icon">💰</div>
+        <div class="card-name">Control de Gastos</div>
+      </div>
+      <div class="card-path">GastoTrack_6.html</div>
       <div class="card-arrow">→</div>
     </a>
   </div>
