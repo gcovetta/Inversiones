@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v15 | 2026-09-10 | Fix: bug de filtración de datos entre portafolios — las claves de localStorage del tracker de dividendos (trk_divs_v1, trk_pin_v1, trk_session_v1, trk_ccl_v1) eran idénticas en los 5 portafolios (GDC/Omar/Juli/Hilda/Ana), y como los 5 se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta), un navegador que hubiera abierto más de uno terminaba compartiendo ese localStorage entre ellos — el fallback "si Supabase está vacío, uso lo que haya en localStorage" podía mostrar (y en el peor caso reescribir en Supabase) los dividendos de un portafolio en otro. Confirmado en vivo: Juli mostraba el BB37D de GDC. La base de datos de cada portafolio en Supabase nunca estuvo mezclada (son proyectos separados) — el problema era solo el caché local compartido. Se le agrega el sufijo del portafolio a las 4 claves (_gdc/_omar/_juli/_hilda/_ana) y se borran las claves viejas sin sufijo al cargar, en los 5 archivos. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)
 v14 | 2026-09-10 | Feat: la cola de "pendientes de revisión" de dividendos/cupones ahora es persistente (Supabase), no solo un preview de la pestaña abierta. Las filas de TRK.divs pueden tener estado:'pendiente' (agregadas sin montoUSD/pncApplied todavía) y aparecen en una tarjeta nueva "⏳ Pendientes de revisión" en la solapa Dividendos, con el mismo cálculo de impacto en PPC de antes y botones "Cargar" (confirma, aplica PPC, saca estado:'pendiente') y "✕ Descartar" (la borra sin registrar nada) por fila — así sobreviven a cerrar la pestaña o cambiar de dispositivo. La tabla principal e historial de totales ahora excluyen las filas pendientes (no suman al total hasta confirmarse). Se unificó la carga manual (subir XLS) y la automática en una sola función (trkQueuePendingRows), y se agregó un punto de entrada global window.trkAutoImportFromXLSX(base64, fname) para que la tarea programada diaria (vía javascript_tool en el navegador de Claude, sesión de Google ya logueada) le pase el archivo bajado de Veta directamente sin que el usuario lo suba a mano — llega listo en "Pendientes de revisión" para que Garo solo confirme el PPC de cada fila. Se retiraron trkImpRenderTable/trkImpLoadRow/trkImpCancel (reemplazadas por trkRenderPending/trkPendingConfirm/trkPendingDiscard). (trkQueuePendingRows / trkRenderPending / trkPendingConfirm / trkPendingDiscard / trkAutoImportFromXLSX / trkRender)
 v13 | 2026-09-09 | Feat: panel de importación de dividendos rediseñado a pedido — ahora incluye también los cupones (renta) de bonos/ONs, no solo dividendos de acciones/CEDEARs (se etiquetan RENTA vs DIV según palabras clave en la descripción de "Referencia", pero ya no se descartan). Se saca el botón de "Confirmar importación" en bloque: cada fila del preview muestra el impacto real en el PPC del activo (PPC actual → PPC nuevo y %, o "se suma a ganancia de venta" si ya no está en cartera, o "sin posición" si nunca se cargó) calculado con la misma lógica que la carga manual (trkAddDiv / getPositions), y un botón "Cargar" individual por fila — el usuario revisa y confirma de a una, viendo el efecto antes de aplicarlo. Las filas ya existentes (misma fecha+ticker+moneda+monto en TRK.divs) se muestran sin botón ("ya existe"); las que no tienen CCL cargado para su fecha se muestran con el botón deshabilitado y un aviso. El input sigue aceptando ambos formatos (xlsx real de Veta o el .xls viejo disfrazado de HTML) pero el flujo de revisión fila-por-fila aplica al nuevo formato. (trkImpParseVetaMovimientos / trkImpRenderTable / trkImpLoadRow / _trkImpPPCPreview / _trkImpMontoUSD)
 v12 | 2026-09-09 | Feat: importación automática de dividendos desde el export real de Veta Capital (Detalles > Movimientos > Actividad > "Descargar listado", filtrado por Concepto "Liquidación de CV"). trkImpParse ahora primero intenta leer el archivo como xlsx real (hoja "Movimientos") con trkImpParseVetaMovimientos: extrae ticker y descripción del instrumento desde el texto libre de "Referencia" (formato "Especie [NNNNN] TICKER - DESCRIPCION: Rta. X%..."), descarta cupones de bonos/ON por palabras clave en la descripción (BONO, OBLIGACION, LETRA, LECAP, etc. — quedan solo dividendos de acciones/CEDEARs), y usa la columna Cantidad (monto) + Especie ('ARS' o vacío=USD) para moneda. Si el archivo no matchea ese formato (no es xlsx real, es el .xls viejo disfrazado de HTML), cae al parser anterior sin cambios (trkImpParseOldHTML). El input de importación ahora lee el archivo como ArrayBuffer en vez de texto para soportar ambos formatos. Sigue sin tocar el PPC en la importación masiva (mismo comportamiento que antes), y pasa por el mismo preview/confirmación y deduplicación contra TRK.divs ya existentes. Verificado contra un export real: de 11 filas de "Liquidación de CV", identifica correctamente 6 dividendos (CCL, BHIP, TGNO4, LVS, BBD, MA) y excluye 5 cupones de bonos (BB37D, BC37D, AO29, AO28, AO27). (trkImpParse / trkImpParseVetaMovimientos / trkImpParseOldHTML / trkImpInit)
@@ -390,7 +391,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: cola de dividendos/cupones 'pendientes de revisión' persistente en Supabase — sobrevive a cerrar la pestaña. La tarea diaria automática deja las filas nuevas ahí (window.trkAutoImportFromXLSX), vos solo confirmás el impacto en el PPC una por una. (trkRenderPending / trkPendingConfirm)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v14 · 10/09/2026</div>
+<div id="claude-version-badge" title="Fix: las claves de localStorage del tracker de dividendos eran iguales en los 5 portafolios y, al compartir origen (gcovetta.github.io), se filtraban entre sí en el mismo navegador (ej. Juli mostrando el BB37D de GDC). Ahora cada una lleva el sufijo del portafolio. Las bases de Supabase nunca estuvieron mezcladas. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v15 · 10/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -4772,7 +4773,7 @@ function renderPortfolio(){
 
   // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
   var trkDivsTotal=0;
-  try{var td=TRK.divs||[];try{var _lsTrkP=localStorage.getItem('trk_divs_v1');if(_lsTrkP){var _lsTrkPD=JSON.parse(_lsTrkP);if(_lsTrkPD.length>td.length)td=_lsTrkPD;}}catch(_e){}
+  try{var td=TRK.divs||[];try{var _lsTrkP=localStorage.getItem(TRK.DKEY);if(_lsTrkP){var _lsTrkPD=JSON.parse(_lsTrkP);if(_lsTrkPD.length>td.length)td=_lsTrkPD;}}catch(_e){}
   if(true){td.forEach(function(d){var u=d.moneda==='USD'?(d.montoUSD||d.monto||0):(d.monto||0)/(CCL_TABLE[d.fecha]||CCL_HOY);trkDivsTotal+=u||0;});}}catch(e){}
   var movDivsTotal=movimientos.filter(function(m){return m.tipo==='dividendo';}).reduce(function(a,m){return a+(m.precioUSD||0);},0);
   var regDivsTotal=(dividendos||[]).reduce(function(a,d){return a+(d.usd||0);},0);
@@ -5787,7 +5788,7 @@ function renderDivsCard(){
   // Fuente 3: TRK.divs — ya cargado desde Supabase en init
   var trkRaw=[];
   trkRaw=TRK.divs||[];
-  try{var _lsTrkR=localStorage.getItem('trk_divs_v1');if(_lsTrkR){var _lsTrkD=JSON.parse(_lsTrkR);if(_lsTrkD.length>trkRaw.length)trkRaw=_lsTrkD;}}catch(e){}
+  try{var _lsTrkR=localStorage.getItem(TRK.DKEY);if(_lsTrkR){var _lsTrkD=JSON.parse(_lsTrkR);if(_lsTrkD.length>trkRaw.length)trkRaw=_lsTrkD;}}catch(e){}
   var trkDivs=trkRaw.map(function(d){
     var usd=0;
     if(d.moneda==='USD'){
@@ -6729,10 +6730,10 @@ function saveTarget(ticker){
 // TRACKER DE DIVIDENDOS CCL — con PIN + ojo privacidad
 // ════════════════════════════════════════════════════════
 var TRK = {
-  DKEY: 'trk_divs_v1',
-  PKEY: 'trk_pin_v1',
-  SKEY: 'trk_session_v1',
-  CKEY: 'trk_ccl_v1',
+  DKEY: 'trk_divs_v1_gdc',
+  PKEY: 'trk_pin_v1_gdc',
+  SKEY: 'trk_session_v1_gdc',
+  CKEY: 'trk_ccl_v1_gdc',
   divs: [],
   ccl: null,
   hidden: false,
@@ -6742,6 +6743,15 @@ var TRK = {
   MAX_LEN: 6,
   inited: false
 };
+
+// Migración única: las claves de localStorage del tracker de dividendos eran
+// idénticas en los 5 portafolios (trk_divs_v1 / trk_pin_v1 / etc.), y como los 5
+// se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta),
+// localStorage se compartía entre todos — un navegador que hubiera abierto otro
+// portafolio antes podía terminar mostrando (o incluso guardando) sus dividendos
+// acá. Cada app ahora usa una clave propia (sufijo _gdc/_omar/_juli/_hilda/_ana);
+// esto borra las claves viejas compartidas para que dejen de filtrarse.
+['trk_divs_v1','trk_pin_v1','trk_session_v1','trk_ccl_v1'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
 
 function trkHsh(s){return s.split('').reduce(function(a,c){return(((a<<5)-a)+c.charCodeAt(0))|0;},0).toString(36);}
 function trkSave(){

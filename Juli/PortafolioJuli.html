@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v14 | 2026-09-10 | Fix: bug de filtración de datos entre portafolios — las claves de localStorage del tracker de dividendos (trk_divs_v1, trk_pin_v1, trk_session_v1, trk_ccl_v1) eran idénticas en los 5 portafolios (GDC/Omar/Juli/Hilda/Ana), y como los 5 se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta), un navegador que hubiera abierto más de uno terminaba compartiendo ese localStorage entre ellos — el fallback "si Supabase está vacío, uso lo que haya en localStorage" podía mostrar los dividendos de un portafolio en otro. Confirmado en vivo justo acá: al abrir esta pestaña (recién agregada en v13) en un navegador que antes había abierto GDC, aparecía el BB37D de GDC. La base de datos de Juli en Supabase nunca tuvo esos datos (se confirmó vacía, 0 filas) — el problema era solo el caché local compartido. Se le agrega el sufijo del portafolio a las 4 claves (_gdc/_omar/_juli/_hilda/_ana) y se borran las claves viejas sin sufijo al cargar, en los 5 archivos. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)
 v13 | 2026-09-10 | Feat: nueva pestaña "Dividendos CCL" (tracker con impacto en PPC e importación desde broker) — antes el código del tracker (TRK, trkRender, etc.) existía en el JS/CSS pero no era alcanzable: no había ni HTML ni botón de navegación para la página. Se agrega el botón de nav y el markup completo de la pestaña (igual a GDC/Omar): CCL del día, métricas, carga manual de dividendo, y un importador de 3 archivos separados (Pesos / Dólares / Dólar Cable) para el extracto "Cuenta Corriente" de Bull Market — detecta "DIVIDENDOS" (accion/CEDEAR) y "RENTA Y AMORTIZ" (bono/ON), sin duplicar filas ya cargadas. Las filas nuevas quedan en "Pendientes de revisión" para confirmar una por una el impacto en el PPC (o el destino a ganancia de venta si ya no hay posición) antes de sumarlas al historial. Se reemplaza también el importador viejo (TRK_IMP / trkImpParse HTML, formato Veta — no correspondía al broker real usado, Bull Market) y se corrige el borrado de fila (usaba data-id + parseInt, que truncaba ids fraccionarios generados por la importación) por comparación exacta de id. La pestaña "Dividendos" original (registro simple, sin PPC) se deja intacta para no perder datos ya cargados ahí. (trkRender / trkDeleteDiv / trkImpParseBullMarket / trkQueuePendingRows / trkRenderPending / trkPendingConfirm / trkPendingDiscard)
 v12 | 2026-09-09 | Fix: fetchArgEqAPI() pegaba a https://data912.com/live/arg_eq, que devuelve 404 (confirmado en Network tab del navegador) — el endpoint correcto para acciones argentinas en data912 es /live/arg_stocks (arg_eq no existe en su OpenAPI spec; los endpoints reales son arg_stocks, arg_cedears, arg_bonds, arg_corp, arg_notes, usa_stocks, usa_adrs, entre otros). Mismo schema que arg_bonds/arg_corp (symbol/c), asi que parseData912Response no necesita cambios. (fetchArgEqAPI)
 v11 | 2026-09-09 | Fix: la cadena de proxies de fetchYahooAR tenia dos servicios muertos — thingproxy.freeboard.io y jsonp.afeld.me — que ya no resuelven DNS (ERR_NAME_NOT_RESOLVED, confirmado en consola del navegador), y el llamado directo a Yahoo v7/finance/quote ahora devuelve 401 (Yahoo exige auth). Eso dejaba en la practica un solo proxy vivo (allorigins /get) compitiendo con corsproxy.io, que se satura (429 Too Many Requests) cuando hay muchos tickers en paralelo (acciones argentinas sin cobertura en data912, bonos/ONs de fallback). Se sacan los dos proxies muertos y se agregan api.codetabs.com/v1/proxy y api.allorigins.win/raw como reemplazo, restaurando la redundancia real. (fetchYahooAR)
@@ -385,7 +386,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: nueva pestaña Dividendos CCL con importación de dividendos/cupones de Bull Market — 3 casilleros de carga por moneda (Pesos/Dólares/Dólar Cable) leyendo el extracto real de Cuenta Corriente, cola persistente de Pendientes de revisión con impacto en PPC por fila. (trkImpParseBullMarket / trkRenderPending / trkPendingConfirm)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v13 · 10/09/2026</div>
+<div id="claude-version-badge" title="Fix: las claves de localStorage del tracker de dividendos eran iguales en los 5 portafolios y, al compartir origen (gcovetta.github.io), se filtraban entre sí en el mismo navegador (mostraba el BB37D de GDC acá). Ahora cada una lleva el sufijo del portafolio. La base de Supabase de Juli nunca tuvo esos datos. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v14 · 10/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -4380,7 +4381,7 @@ function renderDivsCard(){
   // Fuente 3: TRK.divs — ya cargado desde Supabase en init
   var trkRaw=[];
   trkRaw=TRK.divs||[];
-  try{var _lsTrkR=localStorage.getItem('trk_divs_v1');if(_lsTrkR){var _lsTrkD=JSON.parse(_lsTrkR);if(_lsTrkD.length>trkRaw.length)trkRaw=_lsTrkD;}}catch(e){}
+  try{var _lsTrkR=localStorage.getItem(TRK.DKEY);if(_lsTrkR){var _lsTrkD=JSON.parse(_lsTrkR);if(_lsTrkD.length>trkRaw.length)trkRaw=_lsTrkD;}}catch(e){}
   var trkDivs=trkRaw.map(function(d){
     var usd=0;
     if(d.moneda==='USD'){
@@ -5054,10 +5055,10 @@ function saveTarget(ticker){
 // TRACKER DE DIVIDENDOS CCL — con PIN + ojo privacidad
 // ════════════════════════════════════════════════════════
 var TRK = {
-  DKEY: 'trk_divs_v1',
-  PKEY: 'trk_pin_v1',
-  SKEY: 'trk_session_v1',
-  CKEY: 'trk_ccl_v1',
+  DKEY: 'trk_divs_v1_juli',
+  PKEY: 'trk_pin_v1_juli',
+  SKEY: 'trk_session_v1_juli',
+  CKEY: 'trk_ccl_v1_juli',
   divs: [],
   ccl: null,
   hidden: false,
@@ -5067,6 +5068,15 @@ var TRK = {
   MAX_LEN: 6,
   inited: false
 };
+
+// Migración única: las claves de localStorage del tracker de dividendos eran
+// idénticas en los 5 portafolios (trk_divs_v1 / trk_pin_v1 / etc.), y como los 5
+// se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta),
+// localStorage se compartía entre todos — un navegador que hubiera abierto otro
+// portafolio antes podía terminar mostrando (o incluso guardando) sus dividendos
+// acá. Cada app ahora usa una clave propia (sufijo _gdc/_omar/_juli/_hilda/_ana);
+// esto borra las claves viejas compartidas para que dejen de filtrarse.
+['trk_divs_v1','trk_pin_v1','trk_session_v1','trk_ccl_v1'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
 
 function trkHsh(s){return s.split('').reduce(function(a,c){return(((a<<5)-a)+c.charCodeAt(0))|0;},0).toString(36);}
 function trkSave(){
