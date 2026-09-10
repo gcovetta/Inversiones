@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v13 | 2026-09-10 | Feat: importación de dividendos/cupones desde Bull Market rehecha — se reemplaza el viejo importador de HTML disfrazado de XLS (TRK_IMP.pending, confirmación en bloque) por 3 casilleros de carga ($ Pesos, Dólares, Dólar Cable, uno por moneda) que leen el extracto real de "Cuenta Corriente" (XLSX; comprobantes "DIVIDENDOS" y "RENTA Y AMORTIZ") y una cola persistente de "Pendientes de revisión" (estado:'pendiente' en TRK.divs, guardada en Supabase igual que un dividendo confirmado) con botones "Cargar" (muestra el impacto en el PPC antes de aplicarlo) y "✕ Descartar" por fila — mismo diseño que se implementó primero en GDC. trkRender ahora excluye las filas pendientes de la tabla/totales, y trkDeleteDiv pasa a buscar por id (evita el bug de precisión de parseInt(data-id) con ids fraccionarios de filas importadas). (trkImpParseBullMarket / trkQueuePendingRows / trkRenderPending / trkPendingConfirm / trkPendingDiscard / trkRender / trkDeleteDiv)
 v12 | 2026-09-09 | Fix: fetchArgEqAPI() pegaba a https://data912.com/live/arg_eq, que devuelve 404 (confirmado en Network tab del navegador) — el endpoint correcto para acciones argentinas en data912 es /live/arg_stocks (arg_eq no existe en su OpenAPI spec; los endpoints reales son arg_stocks, arg_cedears, arg_bonds, arg_corp, arg_notes, usa_stocks, usa_adrs, entre otros). Mismo schema que arg_bonds/arg_corp (symbol/c), asi que parseData912Response no necesita cambios. (fetchArgEqAPI)
 v11 | 2026-09-09 | Fix: la cadena de proxies de fetchYahooAR tenia dos servicios muertos — thingproxy.freeboard.io y jsonp.afeld.me — que ya no resuelven DNS (ERR_NAME_NOT_RESOLVED, confirmado en consola del navegador), y el llamado directo a Yahoo v7/finance/quote ahora devuelve 401 (Yahoo exige auth). Eso dejaba en la practica un solo proxy vivo (allorigins /get) compitiendo con corsproxy.io, que se satura (429 Too Many Requests) cuando hay muchos tickers en paralelo (acciones argentinas sin cobertura en data912, bonos/ONs de fallback). Se sacan los dos proxies muertos y se agregan api.codetabs.com/v1/proxy y api.allorigins.win/raw como reemplazo, restaurando la redundancia real. (fetchYahooAR)
 v10 | 2026-09-09 | Fix: cotizaciones de acciones argentinas (sector 'argentina') no se actualizaban — dependian unicamente de Yahoo .BA a traves de la cadena de proxies publicos (allorigins/corsproxy/thingproxy/jsonp.afeld), sin ningun fallback (se habia sacado Finnhub por el bug de LOMA), asi que si esa cadena entera fallaba (frecuente, son proxies publicos inestables) la accion se quedaba con la ultima cotizacion cargada. Se agrega fetchArgEqAPI() (data912 arg_eq, mismo patron ya confiable de bonos/ONs) como fuente primaria; Yahoo .BA queda de fallback por ticker. (fetchArgAll / fetchAllQuotes / fetchArgEqAPI)
@@ -384,7 +385,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: fetchArgEqAPI() pegaba a /live/arg_eq (404 — no existe) en vez de /live/arg_stocks, el endpoint real de data912 para acciones argentinas. Confirmado en Network tab. (fetchArgEqAPI)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.6rem;color:var(--text3,#888);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:2px 7px;opacity:.65;user-select:none;cursor:default">v12 · 09/09/2026</div>
+<div id="claude-version-badge" title="Feat: importación de dividendos/cupones de Bull Market rehecha — 3 casilleros de carga por moneda (Pesos/Dólares/Dólar Cable) leyendo el extracto real de Cuenta Corriente, cola persistente de Pendientes de revisión con impacto en PPC por fila. (trkImpParseBullMarket / trkRenderPending / trkPendingConfirm)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.6rem;color:var(--text3,#888);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:2px 7px;opacity:.65;user-select:none;cursor:default">v13 · 10/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -978,35 +979,46 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
 
-        <!-- Importar XLS del broker -->
+        <!-- Importar desde broker (Bull Market) -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Importar desde broker</span>
+            <span class="card-title">Importar desde broker (Bull Market)</span>
             <span id="trk-imp-badge" class="smsg"></span>
           </div>
           <div class="card-body">
             <div class="ibox" style="margin-bottom:10px">
-              Descargá el reporte <b>Movimientos Dividendos y Rentas Cobradas</b> desde tu broker en formato XLS y subilo acá. Se importan los tipos <b>DIV</b> y <b>RTA</b>; los rescates (RESC) se omiten. Los registros ya existentes no se duplican.
+              Descargá el extracto de <b>Cuenta Corriente</b> de Bull Market — Pesos, Dólares y Dólar Cable, cada uno por separado — y subí cada archivo en su casillero. Se detectan dividendos de acciones/CEDEARs ("DIVIDENDOS") y cupones de bonos/ONs ("RENTA Y AMORTIZ"). Los registros ya existentes no se duplican. Las filas nuevas quedan en <b>"Pendientes de revisión"</b> (abajo) para que confirmes una por una el impacto en el PPC.
             </div>
-            <div class="gap-row">
+            <div class="gap-row" style="flex-wrap:wrap;gap:10px">
               <label style="cursor:pointer;display:inline-flex;align-items:center">
-                <input type="file" id="trk-imp-file" accept=".xls,.xlsx,.htm,.html" style="display:none">
-                <span class="btn btn-a">↑ Subir archivo XLS</span>
+                <input type="file" id="trk-imp-file-ars" accept=".xls,.xlsx" style="display:none">
+                <span class="btn btn-a">↑ $ (Pesos)</span>
+              </label>
+              <label style="cursor:pointer;display:inline-flex;align-items:center">
+                <input type="file" id="trk-imp-file-usd" accept=".xls,.xlsx" style="display:none">
+                <span class="btn btn-a">↑ Dólares</span>
+              </label>
+              <label style="cursor:pointer;display:inline-flex;align-items:center">
+                <input type="file" id="trk-imp-file-cable" accept=".xls,.xlsx" style="display:none">
+                <span class="btn btn-a">↑ Dólar Cable</span>
               </label>
               <span id="trk-imp-status" class="smsg"></span>
             </div>
-            <div id="trk-imp-preview" style="display:none;margin-top:12px">
-              <div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px" id="trk-imp-preview-label"></div>
-              <div class="tw" style="max-height:220px;overflow-y:auto">
-                <table>
-                  <thead><tr><th>Ticker</th><th>Fecha</th><th>Tipo</th><th>Mon.</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th><th style="text-align:center">Estado</th></tr></thead>
-                  <tbody id="trk-imp-tbody"></tbody>
-                </table>
-              </div>
-              <div class="gap-row" style="margin-top:10px">
-                <button class="btn btn-a" id="trk-imp-confirm-btn">✓ Confirmar importación</button>
-                <button class="btn" id="trk-imp-cancel-btn">Cancelar</button>
-              </div>
+          </div>
+        </div>
+
+        <!-- Pendientes de revisión (las 3 casilleros de carga convergen acá) -->
+        <div class="card" id="trk-pending-card" style="display:none">
+          <div class="card-header">
+            <span class="card-title">⏳ Pendientes de revisión</span>
+            <span id="trk-pending-badge" class="smsg"></span>
+          </div>
+          <div class="card-body" style="padding-top:0">
+            <div class="tw" style="max-height:340px;overflow-y:auto">
+              <table>
+                <thead><tr><th>Ticker</th><th>Fecha</th><th>Tipo</th><th>Mon.</th><th style="text-align:right">Monto</th><th>Impacto PPC</th><th style="text-align:center">Acción</th></tr></thead>
+                <tbody id="trk-pending-tbody"></tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -5087,37 +5099,45 @@ function trkToggleEye(){
 
 function trkFmt2(n){return parseFloat(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
+function trkDeleteDiv(id){
+  var idx=TRK.divs.findIndex(function(d){return d.id===id;});
+  if(idx<0) return;
+  TRK.divs.splice(idx,1);
+  trkSave();
+  trkRender();
+  renderDivsCard();
+}
+
 function trkRender(){
   var tbody=document.getElementById('trk-tbody');
   var empty=document.getElementById('trk-empty');
   var wrap=document.getElementById('trk-table-wrap');
+  var confirmedDivs=TRK.divs.filter(function(d){return d.estado!=='pendiente';});
   tbody.innerHTML='';
-  if(!TRK.divs.length){empty.style.display='block';wrap.style.display='none';}
+  if(!confirmedDivs.length){empty.style.display='block';wrap.style.display='none';}
   else{
     empty.style.display='none';wrap.style.display='';
-    TRK.divs.forEach(function(d){
+    confirmedDivs.forEach(function(d){
       var tr=document.createElement('tr');
       var mOrig=d.moneda==='USD'?'USD '+trkFmt2(d.monto):'$ '+trkFmt2(d.monto);
       var mUSD='USD '+trkFmt2(d.montoUSD);
       var cclF=d.cclUsado?'$'+Math.round(d.cclUsado).toLocaleString('es-AR'):'—';
       var accF=d.acciones?d.acciones.toLocaleString('es-AR'):'—';
       var fechaF=d.fecha.split('-').reverse().join('/');
-      tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" data-id="'+d.id+'">x</button></td>';
+      tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" onclick="trkDeleteDiv('+d.id+')">x</button></td>';
       tbody.appendChild(tr);
     });
-    tbody.querySelectorAll('.btn-d').forEach(function(btn){
-      btn.addEventListener('click',function(){TRK.divs=TRK.divs.filter(function(x){return x.id!==parseInt(btn.dataset.id);});trkSave();trkRender();});
-    });
   }
-  var totalUSD=TRK.divs.reduce(function(s,d){return s+d.montoUSD;},0);
+  var totalUSD=confirmedDivs.reduce(function(s,d){return s+d.montoUSD;},0);
   var now=new Date();var mes=now.getMonth();var anio=now.getFullYear();
-  var mesUSD=TRK.divs.filter(function(d){var fd=new Date(d.fecha+'T12:00:00');return fd.getMonth()===mes&&fd.getFullYear()===anio;}).reduce(function(s,d){return s+d.montoUSD;},0);
+  var mesUSD=confirmedDivs.filter(function(d){var fd=new Date(d.fecha+'T12:00:00');return fd.getMonth()===mes&&fd.getFullYear()===anio;}).reduce(function(s,d){return s+d.montoUSD;},0);
   document.getElementById('trk-m-usd').textContent='USD '+trkFmt2(totalUSD);
   document.getElementById('trk-m-mes').textContent='USD '+trkFmt2(mesUSD);
-  document.getElementById('trk-m-count').textContent=TRK.divs.length;
+  document.getElementById('trk-m-count').textContent=confirmedDivs.length;
   if(TRK.ccl&&totalUSD>0)document.getElementById('trk-m-ars-sub').textContent='≈ $'+Math.round(totalUSD*TRK.ccl).toLocaleString('es-AR')+' ARS';
   else document.getElementById('trk-m-ars-sub').textContent='';
-  document.getElementById('trk-total-badge').textContent=TRK.divs.length?'Total: USD '+trkFmt2(totalUSD):'';
+  document.getElementById('trk-total-badge').textContent=confirmedDivs.length?'Total: USD '+trkFmt2(totalUSD):'';
+  trkRenderPending();
   if(TRK.hidden)document.querySelectorAll('.trk-sensitive').forEach(function(el){el.classList.add('trk-blurred');});
 }
 
@@ -5171,20 +5191,21 @@ function trkAddDiv(){
   renderPortfolio();
 }
 
-// ── Importación XLS del broker ────────────────────────────────────────────
-var TRK_IMP = { pending: [] };
-
+// ── Importación desde broker (Bull Market) ──────────────────────────────────
 function trkImpInit(){
-  document.getElementById('trk-imp-file').addEventListener('change', function(e){
-    var file = e.target.files[0];
-    if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev){ trkImpParse(ev.target.result, file.name); };
-    reader.readAsText(file, 'utf-8');
-    this.value = ''; // reset input para poder subir el mismo archivo de nuevo
+  [['trk-imp-file-ars','ARS'],['trk-imp-file-usd','USD'],['trk-imp-file-cable','USD']].forEach(function(pair){
+    var el = document.getElementById(pair[0]);
+    if(!el) return;
+    var moneda = pair[1];
+    el.addEventListener('change', function(e){
+      var file = e.target.files[0];
+      if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev){ trkImpParseBM(ev.target.result, file.name, moneda); };
+      reader.readAsArrayBuffer(file);
+      this.value = ''; // reset input para poder subir el mismo archivo de nuevo
+    });
   });
-  document.getElementById('trk-imp-confirm-btn').addEventListener('click', trkImpConfirm);
-  document.getElementById('trk-imp-cancel-btn').addEventListener('click', trkImpCancel);
 }
 
 function trkImpParseNum(s){
@@ -5208,168 +5229,257 @@ function trkImpBuildKey(row){
   return (row.fecha||'')+'|'+(row.ticker||'')+'|'+(row.moneda||'')+'|'+(row.monto||0);
 }
 
-function trkImpParse(html, fname){
+function trkImpParseBMNum(v){
+  if(typeof v==='number') return v;
+  return trkImpParseNum(String(v==null?'':v));
+}
+function trkImpParseBMDate(v){
+  if(v instanceof Date){
+    var y=v.getFullYear(),mo=String(v.getMonth()+1).padStart(2,'0'),d=String(v.getDate()).padStart(2,'0');
+    return y+'-'+mo+'-'+d;
+  }
+  if(typeof v==='number'){
+    // Serial Excel (días desde 1899-12-30) — mismo criterio que el importador de movimientos Bull Market
+    var ms=(v-25569)*86400000;
+    var d2=new Date(ms);
+    if(isNaN(d2.getTime())) return null;
+    var y2=d2.getUTCFullYear(),mo2=String(d2.getUTCMonth()+1).padStart(2,'0'),dd2=String(d2.getUTCDate()).padStart(2,'0');
+    return y2+'-'+mo2+'-'+dd2;
+  }
+  return trkImpParseDate(String(v==null?'':v));
+}
+
+// Bull Market exporta el extracto de "Cuenta Corriente" (Pesos / Dólares / Dólar
+// Cable) como XLSX, uno por moneda — la moneda de cada fila queda determinada por
+// CUÁL de los 3 archivos se sube (el archivo no trae columna de moneda propia).
+// El <dimension> declarado por Bull Market suele venir mal (menos filas de las
+// reales), así que primero se recalcula el rango real a partir de las celdas
+// existentes. Se importan los comprobantes "DIVIDENDOS" (acciones/CEDEARs) y
+// "RENTA Y AMORTIZ" (cupones de bonos/ONs); el resto (compras, ventas, cauciones,
+// retenciones, etc.) se ignora.
+function trkImpParseBullMarket(wb, moneda){
+  var shName = wb.SheetNames[0];
+  if(!shName) return null;
+  var ws = wb.Sheets[shName];
+
+  var range={s:{r:0,c:0},e:{r:0,c:0}};
+  Object.keys(ws).filter(function(k){return k[0]!=='!';}).forEach(function(k){
+    var coord=XLSX.utils.decode_cell(k);
+    if(coord.r>range.e.r)range.e.r=coord.r;
+    if(coord.c>range.e.c)range.e.c=coord.c;
+  });
+  if(range.e.r<1) return null;
+
+  function gc(r,c){
+    var cell=ws[XLSX.utils.encode_cell({r:r,c:c})];
+    return cell?(cell.v!==undefined?cell.v:''):'';
+  }
+  function norm(s){return String(s==null?'':s).trim().toLowerCase();}
+
+  var hdr=[];
+  for(var c=0;c<=range.e.c;c++) hdr.push(norm(gc(0,c)));
+  var cLiq     = hdr.findIndex(function(h){return h.indexOf('liquida')>=0;});
+  var cComp    = hdr.indexOf('comprobante');
+  var cEspecie = hdr.indexOf('especie');
+  var cImporte = hdr.indexOf('importe');
+  if(cLiq<0||cComp<0||cEspecie<0||cImporte<0) return null;
+
+  var out=[];
+  for(var r=1;r<=range.e.r;r++){
+    var comp=norm(gc(r,cComp));
+    var tipo=null;
+    if(comp==='dividendos') tipo='DIV';
+    else if(comp.indexOf('renta')>=0 && comp.indexOf('amortiz')>=0) tipo='RENTA';
+    else continue;
+
+    var ticker=String(gc(r,cEspecie)||'').trim().toUpperCase();
+    if(!ticker) continue;
+
+    var fecha=trkImpParseBMDate(gc(r,cLiq));
+    if(!fecha) continue;
+
+    var monto=trkImpParseBMNum(gc(r,cImporte));
+    if(!monto||monto<=0) continue;
+
+    out.push({fecha:fecha,ticker:ticker,tipo:tipo,moneda:moneda,monto:monto,acciones:null,descr:ticker+' — '+gc(r,cComp)});
+  }
+  return out.length?out:null;
+}
+
+// Convierte el monto de una fila pendiente de importación a USD, usando el mismo
+// criterio que la carga manual (trkAddDiv): CCL de la fecha en CCL_TABLE, y si no
+// está, el CCL de referencia (TRK.ccl). Si la fila ya está en USD, no hace falta CCL.
+function _trkImpMontoUSD(row){
+  if(row.moneda==='USD') return {montoUSD:row.monto,cclUsado:null,ok:true};
+  var cclFecha=CCL_TABLE[(row.fecha||'').split('-').reverse().join('/')]||TRK.ccl||null;
+  if(!cclFecha) return {montoUSD:null,cclUsado:null,ok:false};
+  return {montoUSD:row.monto/cclFecha,cclUsado:cclFecha,ok:true};
+}
+
+// Calcula el impacto en el PPC del activo que tendría cargar esta fila, sin
+// aplicarlo — para mostrarlo en el panel antes de que el usuario confirme.
+function _trkImpPPCPreview(row){
+  var conv=_trkImpMontoUSD(row);
+  if(!conv.ok) return {ok:false};
+  var posActual=getPositions().find(function(p){return p.ticker===row.ticker;});
+  if(!posActual) return {ok:true,montoUSD:conv.montoUSD,cclUsado:conv.cclUsado,target:null};
+  if(posActual.qty>0.000001){
+    var ppcActual=posActual.costUSDpuro/posActual.qty;
+    var costNuevo=posActual.costUSDpuro-conv.montoUSD;
+    var ppcNuevo=costNuevo/posActual.qty;
+    var deltaPct=ppcActual!==0?((ppcNuevo/ppcActual)-1)*100:0;
+    return {ok:true,montoUSD:conv.montoUSD,cclUsado:conv.cclUsado,target:'ppc',ppcActual:ppcActual,ppcNuevo:ppcNuevo,deltaPct:deltaPct};
+  }
+  return {ok:true,montoUSD:conv.montoUSD,cclUsado:conv.cclUsado,target:'venta'};
+}
+
+function trkImpParseBM(input, fname, moneda){
   var status = document.getElementById('trk-imp-status');
-  var preview = document.getElementById('trk-imp-preview');
   status.className='smsg';
   status.textContent = 'Procesando...';
 
   try{
-    // Quitar BOM si existe
-    if(html.charCodeAt(0)===0xFEFF) html=html.slice(1);
+    var wb=XLSX.read(new Uint8Array(input),{type:'array'});
+    var rows=trkImpParseBullMarket(wb, moneda);
 
-    // Estrategia: en vez de capturar <tr>...</tr> con multilinea (que falla en JS),
-    // extraemos todos los <td> del documento en orden y los agrupamos por <tr>
-    // Para eso detectamos los límites de <tr> y reconstruimos los grupos.
-
-    // 1. Limpiar el HTML dejando solo la estructura de tabla
-    // Reemplazar saltos de línea y tabs para aplanar
-    var flat = html.replace(/[\r\n\t]+/g, ' ');
-
-    // 2. Extraer grupos de celdas por fila: partir por <tr
-    var trBlocks = flat.split(/<tr[\s>]/i);
-    var tagRe = /<[^>]+>/g;
-    var tdRe  = /<td[^>]*>(.*?)<\/td>/gi;
-
-    var rows = [];
-
-    for(var b=0; b<trBlocks.length; b++){
-      var block = trBlocks[b];
-      // Extraer todas las <td> de este bloque
-      var cells = [];
-      var m;
-      tdRe.lastIndex = 0;
-      while((m = tdRe.exec(block)) !== null){
-        var raw = m[1].replace(tagRe,'').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').trim();
-        cells.push(raw);
-      }
-
-      // Estructura real del broker:
-      // [0]=vacío(checkbox) [1]=fecha [2]=tipo [3]=nro [4]=especie [5]=moneda|portafolio [6]=portafolio|divi [7]=divi|%divi
-      // Si hay columna moneda (PESOS): [5]=PESOS [6]=portafolio [7]=divi/renta
-      // Si no hay columna moneda (USD): [5]=portafolio [6]=divi/renta
-
-      if(cells.length < 7) continue;
-
-      // La fecha está en cells[1] (cells[0] es el td vacío)
-      var fecha = trkImpParseDate(cells[1]);
-      if(!fecha) continue;
-
-      var cpbt    = (cells[2]||'').trim().toUpperCase();
-      var especie = (cells[4]||'').trim().toUpperCase();
-
-      if(!especie) continue;
-      if(cpbt === 'RESC' || cpbt === 'RES') continue;
-
-      // Estructura fija del broker:
-      // [0]=vacío [1]=fecha [2]=tipo [3]=nro.cpbt [4]=especie
-      // [5]=moneda (vacío=USD, 'PESOS'=ARS, o nombre especie en casos raros)
-      // [6]=portafolio (acciones) [7]=Divi/Renta ← monto real [8]=%divi ...
-      var c5 = (cells[5]||'').trim();
-      var moneda = (c5.toUpperCase() === 'PESOS') ? 'ARS' : 'USD';
-      var portafolio = trkImpParseNum(cells[6]);
-      var diviRenta  = trkImpParseNum(cells[7]);
-
-      if(diviRenta === 0) continue;
-
-      rows.push({
-        fecha:    fecha,
-        ticker:   especie,
-        tipo:     cpbt,
-        moneda:   moneda,
-        monto:    diviRenta,
-        acciones: portafolio || null
-      });
-    }
-
-    if(!rows.length){
+    if(!rows||!rows.length){
       status.className='emsg';
-      status.textContent='No se encontraron filas de dividendos en el archivo.';
+      status.textContent='No se encontraron filas de dividendos/renta en el archivo.';
       return;
     }
 
-    // Detectar duplicados contra TRK.divs ya guardados
-    var existKeys = {};
-    TRK.divs.forEach(function(d){
-      existKeys[trkImpBuildKey(d)] = true;
-    });
-
-    rows.forEach(function(r){
-      r._key = trkImpBuildKey(r);
-      r._dup = !!existKeys[r._key];
-    });
-
-    TRK_IMP.pending = rows;
-
-    // Render preview
-    var tbody = document.getElementById('trk-imp-tbody');
-    tbody.innerHTML = rows.map(function(r){
-      var monLabel = r.moneda==='ARS'
-        ? '<span class="badge badge-aporte">ARS</span>'
-        : '<span class="badge badge-usd">USD</span>';
-      var estado = r._dup
-        ? '<span style="color:var(--text3);font-family:var(--mono);font-size:.62rem">ya existe</span>'
-        : '<span style="color:var(--accent);font-family:var(--mono);font-size:.62rem">nuevo</span>';
-      return '<tr style="'+(r._dup?'opacity:.45':'')+'">'+
-        '<td style="font-weight:700">'+r.ticker+'</td>'+
-        '<td class="mono">'+r.fecha+'</td>'+
-        '<td><span class="badge badge-dividendo" style="font-size:.55rem">'+r.tipo+'</span></td>'+
-        '<td>'+monLabel+'</td>'+
-        '<td class="mono" style="text-align:right">'+r.monto.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'+
-        '<td class="mono muted" style="text-align:right">'+(r.acciones?r.acciones.toLocaleString('es-AR'):'—')+'</td>'+
-        '<td style="text-align:center">'+estado+'</td>'+
-      '</tr>';
-    }).join('');
-
-    var newCount = rows.filter(function(r){return !r._dup;}).length;
-    var dupCount = rows.length - newCount;
-    document.getElementById('trk-imp-preview-label').textContent =
-      rows.length + ' filas encontradas — ' + newCount + ' nuevas, ' + dupCount + ' ya existentes';
-    document.getElementById('trk-imp-badge').textContent = fname;
-    preview.style.display = 'block';
-    status.textContent = '';
+    var res=trkQueuePendingRows(rows);
+    document.getElementById('trk-imp-badge').textContent = fname||'';
+    status.className='smsg';
+    status.textContent = res.added
+      ? (res.added+' fila(s) nueva(s) agregadas a "Pendientes de revisión" ↓ ('+res.dup+' ya existían)')
+      : ('Sin filas nuevas — las '+res.dup+' encontradas ya estaban cargadas o pendientes.');
+    setTimeout(function(){status.textContent='';},8000);
 
   } catch(err){
     status.className='emsg';
     status.textContent = 'Error al procesar: ' + err.message;
-    console.error('trkImpParse error:', err);
+    console.error('trkImpParseBM error:', err);
   }
 }
 
-function trkImpConfirm(){
-  var news = TRK_IMP.pending.filter(function(r){return !r._dup;});
-  if(!news.length){ trkImpCancel(); return; }
+// Punto de entrada único para encolar filas nuevas (carga manual, y automática si
+// se configura más adelante): dedupea contra TRK.divs (confirmados + pendientes)
+// y las agrega con estado:'pendiente' — persistidas en Supabase igual que
+// cualquier dividendo, listas para que el usuario las confirme una por una en el
+// panel "Pendientes de revisión".
+function trkQueuePendingRows(rows){
+  var existKeys = {};
+  TRK.divs.forEach(function(d){ existKeys[trkImpBuildKey(d)] = true; });
 
-  news.forEach(function(r){
-    var cclFecha = r.moneda==='ARS'?(CCL_TABLE[(r.fecha||'').split('-').reverse().join('/')]||TRK.ccl||null):null;
-    var cclUsado = cclFecha;
-    var montoUSD = r.moneda==='USD'?r.monto:(cclFecha?r.monto/cclFecha:r.monto);
-    TRK.divs.push({
+  var added=0, dup=0;
+  rows.forEach(function(r){
+    var key=trkImpBuildKey(r);
+    if(existKeys[key]){ dup++; return; }
+    existKeys[key]=true;
+    added++;
+    TRK.divs.unshift({
       id: Date.now()+Math.random(),
       ticker: r.ticker,
       fecha: r.fecha,
       moneda: r.moneda,
       monto: r.monto,
-      montoUSD: montoUSD,
-      cclUsado: cclUsado,
+      montoUSD: null,
+      cclUsado: null,
       acciones: r.acciones||null,
+      pncApplied: false,
+      pncTarget: null,
+      tipo: r.tipo||'DIV',
+      descr: r.descr||null,
+      estado: 'pendiente',
       fuente: 'import'
     });
   });
-  // Ordenar por fecha desc
-  TRK.divs.sort(function(a,b){return b.fecha.localeCompare(a.fecha);});
-  trkSave();
-  trkImpCancel();
-  var sel = document.getElementById('trk-imp-status');
-  sel.className='smsg'; sel.textContent = news.length+' dividendos importados correctamente.';
-  setTimeout(function(){sel.textContent='';},5000);
-  trkRender();
+
+  if(added){
+    TRK.divs.sort(function(a,b){return b.fecha.localeCompare(a.fecha);});
+    trkSave();
+    trkRender();
+  }
+  return {added:added, dup:dup, total:rows.length};
 }
 
-function trkImpCancel(){
-  TRK_IMP.pending = [];
-  document.getElementById('trk-imp-preview').style.display='none';
-  document.getElementById('trk-imp-badge').textContent='';
+function trkRenderPending(){
+  var card=document.getElementById('trk-pending-card');
+  var tbody=document.getElementById('trk-pending-tbody');
+  var badge=document.getElementById('trk-pending-badge');
+  var pend=TRK.divs.filter(function(d){return d.estado==='pendiente';});
+
+  if(!pend.length){ card.style.display='none'; return; }
+  card.style.display='';
+  badge.textContent=pend.length+' fila(s) esperando confirmación';
+
+  tbody.innerHTML = pend.map(function(d){
+    var monLabel = d.moneda==='ARS'
+      ? '<span class="badge badge-aporte">ARS</span>'
+      : '<span class="badge badge-usd">USD</span>';
+    var tipoLabel = d.tipo==='RENTA'
+      ? '<span class="badge" style="font-size:.55rem;background:var(--surface2);color:var(--amber);border:1px solid var(--amber)">RENTA</span>'
+      : '<span class="badge badge-dividendo" style="font-size:.55rem">DIV</span>';
+
+    var ppc='<span class="muted">—</span>';
+    var accionHtml='';
+    var pv=_trkImpPPCPreview(d);
+    if(!pv.ok){
+      ppc='<span style="color:var(--red)">Sin CCL para '+d.fecha+'</span>';
+      accionHtml='<button class="btn btn-sm" disabled title="Cargá el CCL de esa fecha primero">Cargar</button>';
+    } else if(pv.target==='ppc'){
+      ppc='<span class="mono">USD '+pv.ppcActual.toFixed(4)+' → USD '+pv.ppcNuevo.toFixed(4)+' <b style="color:'+(pv.deltaPct<0?'var(--red)':'var(--accent)')+'">('+pv.deltaPct.toFixed(2)+'%)</b></span>';
+      accionHtml='<button class="btn btn-a btn-sm" onclick="trkPendingConfirm('+d.id+')">Cargar</button>';
+    } else if(pv.target==='venta'){
+      ppc='<span class="mono">+USD '+pv.montoUSD.toFixed(2)+' a ganancia de venta</span>';
+      accionHtml='<button class="btn btn-a btn-sm" onclick="trkPendingConfirm('+d.id+')">Cargar</button>';
+    } else {
+      ppc='<span class="muted">Sin posición — no afecta PPC</span>';
+      accionHtml='<button class="btn btn-a btn-sm" onclick="trkPendingConfirm('+d.id+')">Cargar</button>';
+    }
+    accionHtml += ' <button class="btn btn-d btn-sm" onclick="trkPendingDiscard('+d.id+')" title="Descartar — no es un dividendo real / no lo quiero registrar">✕</button>';
+
+    return '<tr title="'+(d.descr?String(d.descr).replace(/"/g,'&quot;'):'')+'">'+
+      '<td style="font-weight:700">'+d.ticker+'</td>'+
+      '<td class="mono">'+d.fecha+'</td>'+
+      '<td>'+tipoLabel+'</td>'+
+      '<td>'+monLabel+'</td>'+
+      '<td class="mono" style="text-align:right">'+d.monto.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'+
+      '<td style="font-size:.65rem">'+ppc+'</td>'+
+      '<td style="text-align:center;white-space:nowrap">'+accionHtml+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function trkPendingConfirm(id){
+  var d = TRK.divs.find(function(x){return x.id===id && x.estado==='pendiente';});
+  if(!d) return;
+
+  var conv = _trkImpMontoUSD(d);
+  if(!conv.ok){
+    alert('No se puede cargar: no hay CCL cargado para la fecha '+d.fecha+' (ni CCL de referencia). Cargá el CCL de esa fecha en la calculadora de CCL y volvé a intentar.');
+    return;
+  }
+
+  var pv = _trkImpPPCPreview(d);
+  d.montoUSD = conv.montoUSD;
+  d.cclUsado = conv.cclUsado;
+  d.pncApplied = pv.target==='ppc' || pv.target==='venta';
+  d.pncTarget = pv.target;
+  delete d.estado; // confirmado
+
+  trkSave();
+  trkRender();
+  renderPortfolio();
+}
+
+function trkPendingDiscard(id){
+  var idx=TRK.divs.findIndex(function(x){return x.id===id && x.estado==='pendiente';});
+  if(idx<0) return;
+  TRK.divs.splice(idx,1);
+  trkSave();
+  trkRender();
 }
 
 function trkCalcCCL(){
