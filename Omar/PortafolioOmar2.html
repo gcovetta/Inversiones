@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v20 | 2026-09-11 | Perf: la actualización de precios llamaba a renderPortfolio() (recalcula getPositions() sobre TODO el historial de movimientos + reconstruye la tabla entera) una vez por CADA ticker que llegaba — con 70-100+ posiciones resolviendo casi en paralelo, eso son 70-100+ renders completos en pocos segundos, bloqueando el hilo principal y sintiéndose lento/trabado. Se agrupan con requestAnimationFrame: como mucho 1 render real por frame de pantalla, sin perder la sensación de 'se van actualizando los precios en vivo'. También se corrige vsellPopulateSelect(), que llamaba a getPositions() de nuevo dentro de un .map() (una vez por cada posición abierta, en vez de una sola vez reusada). No cambia ningún cálculo ni dato — solo cuántas veces se recalcula/redibuja lo mismo. (updateProgress / vsellPopulateSelect)
 v19 | 2026-09-11 | Fix: fetchYahooAR() (usado como única fuente para BBAS3/PETR3 vía BRL_TICKERS, y como fallback para acciones argentinas/bonos/ONs sin cobertura en data912, ej. GLOB y D31M7) tenía corsproxy.io en su lista de proxies en paralelo — corsproxy.io ahora exige API key paga (confirmado en vivo: devuelve 401 'A valid API key is required'), así que ese proxy nunca va a traer datos. Se lo saca de la carrera de Promise.any en fetchYahooAR de los 5 portafolios (sigue en otros puntos del código — EWZ topbar, MERVAL/IMV, S&P/QQQ, EcoValores TIR — no tocados en este cambio). Esto no arregla por completo la falta de cotización de esos tickers: en las pruebas de hoy, allorigins.win también falló puntualmente contra Yahoo (aunque responde bien a otros destinos) y api.codetabs.com no fue alcanzable — puede ser un problema más amplio de Yahoo/los proxies gratuitos, no exclusivo de este portafolio (se repite en los 5). (fetchYahooAR)
 v18 | 2026-09-10 | Chore: SA24D confirmado como excepción a isBonoUSDDirecto() — termina en "D" pero es un bono en PESOS, no compra directa en dólares (mismo caso que BB37D/BC37D). Se agrega a BONOS_USD_DIRECTO_EXCEPCIONES en los 5 portafolios.
 v17 | 2026-09-10 | Feat: bonos comprados directo en USD (sufijo de ticker "C" = dólar cable, "D" = dólares directo, ej. AO29D) ahora valúan el costo/PPC directamente en dólares, sin pasar por MEP — antes getPositions() recalculaba el costo dividiendo el precio cargado por el MEP histórico y, al mostrarlo, lo volvía a multiplicar por el MEP del día, distorsionando el PPC de estos bonos con el ida y vuelta. Se agrega isBonoUSDDirecto() (con excepción explícita BB37D/BC37D, que terminan en "D" pero son bonos en pesos) y se aplica en getPositions (compra/venta), el módulo rápido Comprar/Vender del Portafolio, el modal de editar movimiento, y las columnas Inversión/PPC de la vista principal. Pendiente: DashBoard, Rend. Anual, Comparación, P. Venta (objetivo) y la importación de venta histórica todavía usan la conversión MEP vieja para estos tickers — no se tocaron en este cambio. (isBonoUSDDirecto / getPositions / vbuyConfirmar / vsellConfirmar / vsellPreview / movModalCalcUSD / movModalSave)
@@ -391,7 +392,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: se saca corsproxy.io (ahora requiere API key paga) de fetchYahooAR. No arregla del todo BBAS3/PETR3/GLOB/D31M7 — parece un problema más amplio de proxies/Yahoo." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v19 · 11/09/2026</div>
+<div id="claude-version-badge" title="Perf: se agrupan (throttle con requestAnimationFrame) los renders del Portafolio durante Actualizar precios — antes rehacía la tabla entera por cada ticker (70-100+ veces), ahora como mucho 1 por frame." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v20 · 11/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -2836,13 +2837,17 @@ function vsellPopulateSelect(){
   var sel = document.getElementById('vsell-ticker');
   if(!sel) return;
   var current = sel.value;
+  var allPos = getPositions(); // una sola pasada por el historial, reusada abajo (antes se llamaba
+                                // de nuevo dentro del .map, una vez por ticker)
+  var posByTicker = {};
+  allPos.forEach(function(p){ if(!posByTicker[p.ticker]) posByTicker[p.ticker]=p; });
   var tickers = [];
   var seen = {};
-  getPositions().forEach(function(p){ if(p.qty>0.000001 && !seen[p.ticker]){seen[p.ticker]=true;tickers.push(p.ticker);} });
+  allPos.forEach(function(p){ if(p.qty>0.000001 && !seen[p.ticker]){seen[p.ticker]=true;tickers.push(p.ticker);} });
   tickers.sort();
   sel.innerHTML = '<option value="">— ticker —</option>' +
     tickers.map(function(t){
-      var pos = getPositions().find(function(p){return p.ticker===t;});
+      var pos = posByTicker[t];
       var label = t + (pos && pos.qty > 0 ? ' ('+Math.round(pos.qty)+')' : '');
       return '<option value="'+t+'"'+(t===current?' selected':'')+'>'+label+'</option>';
     }).join('');
@@ -4315,11 +4320,20 @@ async function fetchAllQuotes(){
 
   var total=pos.length,done=0,errors=0;
 
+  // Coalescer de renders: renderPortfolio() recalcula getPositions() (recorre TODO el historial
+  // de movimientos, ordena, etc.) y reconstruye la tabla entera — carísimo para llamarlo una vez
+  // por cada ticker que llega (70-100+ veces por actualización). Se agrupa a lo sumo 1 render por
+  // frame con requestAnimationFrame: varias respuestas que llegan casi juntas comparten un solo
+  // render en vez de una cada una. La barra de progreso (texto/ancho) sigue actualizándose al toque.
+  var _renderPending=false;
   function updateProgress(){
     done++;
     pfill.style.width=Math.round(done/total*100)+'%';
     status.textContent=done+'/'+total+'...';
-    renderPortfolio();
+    if(!_renderPending){
+      _renderPending=true;
+      requestAnimationFrame(function(){_renderPending=false;renderPortfolio();});
+    }
   }
 
   function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
