@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v19 | 2026-09-11 | Fix: en el desplegable Ticker del módulo Vender (Portafolio) no aparecían las posiciones al cargar la página de cero — a diferencia de los otros 4 portafolios, el flujo exitoso de initFromSupabase() de Hilda nunca llamaba a vsellPopulateSelect() (solo se llamaba en el fallback de error, al cambiar de pestaña, o después de guardar un movimiento). Si 'Portafolio' ya era la pestaña visible al cargar, ninguno de esos disparadores corría y el desplegable quedaba con un solo ítem placeholder aunque getPositions() sí tenía las posiciones bien (confirmado con el log [Hilda init], 92 abiertas). Se agrega la llamada a vsellPopulateSelect()/vsellResetFecha()/vbuyResetFecha() también en el camino exitoso, igual que en GDC/Ana/Omar/Juli. (initFromSupabase)
 v18 | 2026-09-10 | Chore: SA24D confirmado como excepción a isBonoUSDDirecto() — termina en "D" pero es un bono en PESOS, no compra directa en dólares (mismo caso que BB37D/BC37D). Se agrega a BONOS_USD_DIRECTO_EXCEPCIONES en los 5 portafolios.
 v17 | 2026-09-10 | Feat: bonos comprados directo en USD (sufijo de ticker "C" = dólar cable, "D" = dólares directo, ej. AO29D) ahora valúan el costo/PPC directamente en dólares, sin pasar por MEP — antes getPositions() recalculaba el costo dividiendo el precio cargado por el MEP histórico y, al mostrarlo, lo volvía a multiplicar por el MEP del día, distorsionando el PPC de estos bonos con el ida y vuelta. Se agrega isBonoUSDDirecto() (con excepción explícita BB37D/BC37D, que terminan en "D" pero son bonos en pesos) y se aplica en getPositions (compra/venta), el módulo rápido Comprar/Vender del Portafolio, el modal de editar movimiento, y las columnas Inversión/PPC de la vista principal. Pendiente: DashBoard, Rend. Anual, Comparación, P. Venta (objetivo) y la importación de venta histórica todavía usan la conversión MEP vieja para estos tickers — no se tocaron en este cambio. (isBonoUSDDirecto / getPositions / vbuyConfirmar / vsellConfirmar / vsellPreview / movModalCalcUSD / movModalSave)
 v16 | 2026-09-10 | Fix: PETR3 (Petrobras ON, B3 directo) no traía cotización — faltaba en BRL_TICKERS (solo tenía 'BBAS3'), así que fetchYahooAR le pedía a Yahoo el sufijo de BYMA ('.BA') en vez de Bovespa ('.SA'), y el fallback a Finnhub no cubre B3 directo (mismo riesgo de colisión de símbolo que el bug de LOMA), así que la posición quedaba sin precio nuevo. Se agrega 'PETR3' a BRL_TICKERS en los 5 portafolios (reportado en Hilda). (BRL_TICKERS)
@@ -390,7 +391,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Chore: SA24D confirmado como excepción (bono en pesos, no USD-directo) — se agrega a BONOS_USD_DIRECTO_EXCEPCIONES junto a BB37D/BC37D." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v18 · 10/09/2026</div>
+<div id="claude-version-badge" title="Fix: el desplegable de Vender no cargaba tickers al abrir la página de cero (faltaba vsellPopulateSelect en el init exitoso)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v19 · 11/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -6200,6 +6201,9 @@ function trkCalcCCL(){
     try{ renderRatios(); }catch(e){ console.error('renderRatios crash',e); }
     try{ renderTargets(); }catch(e){ console.error('renderTargets crash',e); }
     portUnblur();
+    try{ vsellPopulateSelect(); }catch(e){ console.error('vsellPopulateSelect crash',e); }
+    try{ vsellResetFecha(); }catch(e){}
+    try{ vbuyResetFecha(); }catch(e){}
     var _loadMsg = movimientos.length ? ('✓ '+movimientos.length+' movimientos cargados') : '⚠️ Sin datos — Supabase vacío y localStorage vacío';
     document.getElementById('lupd').dataset.lastupd = _loadMsg;
     document.getElementById('lupd').textContent = _loadMsg;
