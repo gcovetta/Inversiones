@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v21 | 2026-09-11 | Fix (raíz real de BBAS3/PETR3/GLOB/D31M7 sin cotización): fetchBymaAll/fetchArgAll/fetchBonosAll/fetchONsAll lanzaban TODOS los tickers de la cartera (60-90+) en paralelo contra fetchYahooAR — probado en vivo hoy: api.allorigins.win (hoy el único proxy que funciona, ver v19) responde bien a 1 pedido (~2.5s) pero falla los 30 pedidos si se lo satura con 30 en simultáneo ('Failed to fetch' confirmado en los 30). BBAS3/PETR3 (BRL_TICKERS, sin fallback a Finnhub por diseño) y GLOB/D31M7 (sector sin cobertura en data912, 'argentina' tampoco tiene fallback a Finnhub) dependen de un único intento a Yahoo — si ese intento cae en medio de la ráfaga de 60-90 pedidos simultáneos del resto de la cartera, se quedan sin cotización esa actualización. El resto de los sectores (nyse/brasil-CEDEAR/europa/china/cripto) sufren el mismo choque contra allorigins pero lo disimulan porque tienen un segundo intento vía Finnhub (Fase 2, secuencial). Se agrega mapWithConcurrency() y se acota a 5 pedidos en vuelo por vez en las 4 funciones de fetch — no cambia qué se pide ni de dónde, solo cuántos van al mismo tiempo. (mapWithConcurrency / fetchBymaAll / fetchArgAll / fetchBonosAll / fetchONsAll)
 v20 | 2026-09-11 | Perf: la actualización de precios llamaba a renderPortfolio() (recalcula getPositions() sobre TODO el historial de movimientos + reconstruye la tabla entera) una vez por CADA ticker que llegaba — con 70-100+ posiciones resolviendo casi en paralelo, eso son 70-100+ renders completos en pocos segundos, bloqueando el hilo principal y sintiéndose lento/trabado. Se agrupan con requestAnimationFrame: como mucho 1 render real por frame de pantalla, sin perder la sensación de 'se van actualizando los precios en vivo'. También se corrige vsellPopulateSelect(), que llamaba a getPositions() de nuevo dentro de un .map() (una vez por cada posición abierta, en vez de una sola vez reusada). No cambia ningún cálculo ni dato — solo cuántas veces se recalcula/redibuja lo mismo. (updateProgress / vsellPopulateSelect)
 v19 | 2026-09-11 | Fix: fetchYahooAR() (usado como única fuente para BBAS3/PETR3 vía BRL_TICKERS, y como fallback para acciones argentinas/bonos/ONs sin cobertura en data912, ej. GLOB y D31M7) tenía corsproxy.io en su lista de proxies en paralelo — corsproxy.io ahora exige API key paga (confirmado en vivo: devuelve 401 'A valid API key is required'), así que ese proxy nunca va a traer datos. Se lo saca de la carrera de Promise.any en fetchYahooAR de los 5 portafolios (sigue en otros puntos del código — EWZ topbar, MERVAL/IMV, S&P/QQQ, EcoValores TIR — no tocados en este cambio). Esto no arregla por completo la falta de cotización de esos tickers: en las pruebas de hoy, allorigins.win también falló puntualmente contra Yahoo (aunque responde bien a otros destinos) y api.codetabs.com no fue alcanzable — puede ser un problema más amplio de Yahoo/los proxies gratuitos, no exclusivo de este portafolio (se repite en los 5). (fetchYahooAR)
 v18 | 2026-09-10 | Chore: SA24D confirmado como excepción a isBonoUSDDirecto() — termina en "D" pero es un bono en PESOS, no compra directa en dólares (mismo caso que BB37D/BC37D). Se agrega a BONOS_USD_DIRECTO_EXCEPCIONES en los 5 portafolios.
@@ -392,7 +393,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Perf: se agrupan (throttle con requestAnimationFrame) los renders del Portafolio durante Actualizar precios — antes rehacía la tabla entera por cada ticker (70-100+ veces), ahora como mucho 1 por frame." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v20 · 11/09/2026</div>
+<div id="claude-version-badge" title="Fix: BBAS3/PETR3/GLOB/D31M7 sin cotización — la app bombardeaba el proxy de Yahoo con 60-90 pedidos a la vez y colapsaba. Se acota a 5 concurrentes (mapWithConcurrency)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v21 · 11/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -4604,8 +4605,28 @@ async function fetchAllQuotes(){
   function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
 
   // ── FASE 1: Yahoo .BA para todas las posiciones no-bono/ON (paralelo) ──
+
+  // Limita cuántos fetchYahooAR() concurrentes se disparan a la vez. Probado en vivo (2026-09-11):
+  // api.allorigins.win (el único proxy vivo hoy, ver changelog) responde bien a 1 pedido (~2.5s)
+  // pero falla los 30 pedidos si se lo bombardea en paralelo ("Failed to fetch" en los 30, confirmado
+  // con Promise.all de 30 tickers reales). fetchBymaAll/fetchArgAll/etc lanzaban TODOS los tickers
+  // (60-90+) al mismo tiempo — de ahí que BBAS3/PETR3 (sin fallback a Finnhub, ver nota abajo) y
+  // GLOB/D31M7 (sin cobertura en data912) se quedaran sin cotización: su único intento a Yahoo caía
+  // en medio de esa ráfaga. Se acota a `limit` pedidos en vuelo por vez.
+  var YAHOO_CONCURRENCY=5;
+  function mapWithConcurrency(items, limit, worker){
+    var idx=0, results=new Array(items.length);
+    function next(){
+      if(idx>=items.length) return Promise.resolve();
+      var i=idx++;
+      return Promise.resolve(worker(items[i], i)).then(function(r){results[i]=r;return next();});
+    }
+    var runners=[];
+    for(var k=0;k<Math.min(limit, items.length);k++) runners.push(next());
+    return Promise.all(runners).then(function(){return results;});
+  }
   async function fetchBymaAll(){
-    await Promise.all(bymaPos.map(async function(p){
+    await mapWithConcurrency(bymaPos, YAHOO_CONCURRENCY, async function(p){
       var s=getSector(p.ticker);
       try{
         var fbq=await fetchYahooAR(p.ticker,BRL_TICKERS.has(p.ticker)?'.SA':'.BA');
@@ -4617,14 +4638,14 @@ async function fetchAllQuotes(){
         // No contar error todavía: Finnhub fallback cubre todos los sectores
       }
       updateProgress();
-    }));
+    });
   }
 
   // ── Acciones argentinas: data912 (arg_eq) → fallback Yahoo .BA por ticker ──
   async function fetchArgAll(){
     var map={};
     try{map=await fetchArgEqAPI();}catch(e){}
-    await Promise.all(argPos.map(async function(p){
+    await mapWithConcurrency(argPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()];
         if(q&&q.price>0){quotes[p.ticker]=q;}
@@ -4634,7 +4655,7 @@ async function fetchAllQuotes(){
         // no hay fallback a Finnhub, ver nota arriba)
       }
       updateProgress();
-    }));
+    });
   }
 
   // ── FASE 2: Finnhub fallback para tickers donde Yahoo .BA falló (secuencial) ──
@@ -4657,14 +4678,14 @@ async function fetchAllQuotes(){
   async function fetchBonosAll(){
     var map={};
     try{map=await fetchBonosAPI();}catch(e){}
-    await Promise.all(bonosPos.map(async function(p){
+    await mapWithConcurrency(bonosPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()];
         if(q&&q.price>0){quotes[p.ticker]=q;}
         else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
       }catch(e){errors++;}
       updateProgress();
-    }));
+    });
   }
 
   // ── ONs corporativas: data912 arg_corp → fallback arg_bonds → fallback Yahoo ──
@@ -4673,14 +4694,14 @@ async function fetchAllQuotes(){
     try{map=await fetchONsAPI();}catch(e){}
     var mapBonds={};
     try{mapBonds=await fetchBonosAPI();}catch(e){}
-    await Promise.all(onPos.map(async function(p){
+    await mapWithConcurrency(onPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()]||mapBonds[p.ticker.toUpperCase()];
         if(q&&q.price>0){quotes[p.ticker]=q;}
         else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
       }catch(e){errors++;}
       updateProgress();
-    }));
+    });
   }
 
   // Fase 1 + bonos/ON en paralelo, luego Fase 2 (fallback) sólo para lo que falló
