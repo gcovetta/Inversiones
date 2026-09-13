@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v24 | 2026-09-13 | Fix critico (recuperacion de datos): Portafolio 3 (VetaJeep) habia desaparecido de la UI. Investigado en el historial de git: el commit 8e1289d (2026-08-18) agrego esta tercera cartera (boton de nav, selector en Comprar/Movimientos, badge, etiqueta en la tabla), pero el commit 223e76f (2026-08-31, un 'Add files via upload' generico — probablemente se subio por error una copia vieja del archivo) la removio por completo, sin dejar rastro en ningun commit posterior — confirmado revisando TODO el historial (git log -S) del archivo. Los MOVIMIENTOS con cartera='vetajeep' nunca se tocaron (viven en Supabase, no en este HTML) — la logica de filtrado por CARTERA_ACTIVA en getPositions()/renderMovimientos() ya es generica y los sigue reconociendo perfectamente, lo unico que faltaba era la UI para volver a seleccionar esa cartera. Se restaura exactamente el codigo removido en 223e76f, adaptado a la estructura actual del archivo (boton de nav, opcion en el selector de Comprar, opcion en el filtro de Movimientos, rama de color/badge en syncCarteraUI, tag VETAJEEP en la tabla de movimientos). (syncCarteraUI / setCarteraActiva / renderMovimientos)
 v23 | 2026-09-13 | Fix (BBAS3/PETR3, definitivo): Garo confirmo que los compra en pesos como CEDEAR, no como tenencia directa en Brasil/BRL — se saca BBAS3/PETR3 de BRL_TICKERS (que ahora queda vacio, pero se deja el mecanismo por si algun dia carga una tenencia realmente directa en BRL). Ademas, aprovechando que data912/arg_cedears resulto tener cobertura enorme (probado en vivo: 1006 tickers, incluye AAPL/MSFT/TSLA/GOOGL/ABEV/BBD/ITUB/MELI/VALE/BBAS3/PETR3...), se lo agrega como fuente PRIMARIA en fetchBymaAll (antes solo se usaba en fetchArgAll para sector 'argentina') — Yahoo via proxy gratuito queda de fallback solo para lo que data912 no tenga, en vez de ser la unica fuente para todo NYSE/brasil/europa/china/cripto. Esto deberia mejorar la confiabilidad de cotizaciones mucho mas alla de BBAS3/PETR3 (cualquier CEDEAR que hoy dependa del proxy fragil de Yahoo). (BRL_TICKERS / fetchBymaAll / fetchArgCedearsAPI)
 v22 | 2026-09-13 | Fix (causa real de GLOB/BIOX/D31M7 sin cotización): probando en vivo, data912 SI tiene estos tickers — pero clasificados en endpoints que la app nunca consultaba. GLOB y BIOX son CEDEARs (acciones extranjeras listadas en BYMA), y data912 los separa de arg_stocks (solo acciones nativas argentinas) en un endpoint aparte, arg_cedears — por eso fetchArgEqAPI() nunca los encontraba y cada uno dependia de un unico intento fragil a Yahoo via proxy gratuito. D31M7 (ON) tampoco esta en arg_corp/arg_bonds — data912 lo clasifica en arg_notes, un cuarto endpoint no consultado. Se agregan fetchArgCedearsAPI() y fetchArgNotesAPI() como fuentes adicionales (antes de caer a Yahoo) en fetchArgAll/fetchONsAll. Tambien se mejora parseData912Response para derivar prevClose desde pct_change cuando el endpoint no trae prev_close (caso de arg_cedears/arg_notes) — antes esos tickers hubieran mostrado 0% de variacion diaria. PETR3/BBAS3 (BRL_TICKERS) quedan pendientes a proposito: data912/arg_cedears SI los tiene, pero con precio en pesos (como CEDEAR), no en reales (como posicion directa en B3/BRL) — mezclar esa fuente ahi cambiaria la moneda de origen del precio sin confirmar con Garo si en realidad los tiene como CEDEAR o como tenencia directa en Brasil. (parseData912Response / fetchArgCedearsAPI / fetchArgNotesAPI / fetchArgAll / fetchONsAll)
 v21 | 2026-09-11 | Fix (raíz real de BBAS3/PETR3/GLOB/D31M7 sin cotización): fetchBymaAll/fetchArgAll/fetchBonosAll/fetchONsAll lanzaban TODOS los tickers de la cartera (60-90+) en paralelo contra fetchYahooAR — probado en vivo hoy: api.allorigins.win (hoy el único proxy que funciona, ver v19) responde bien a 1 pedido (~2.5s) pero falla los 30 pedidos si se lo satura con 30 en simultáneo ('Failed to fetch' confirmado en los 30). BBAS3/PETR3 (BRL_TICKERS, sin fallback a Finnhub por diseño) y GLOB/D31M7 (sector sin cobertura en data912, 'argentina' tampoco tiene fallback a Finnhub) dependen de un único intento a Yahoo — si ese intento cae en medio de la ráfaga de 60-90 pedidos simultáneos del resto de la cartera, se quedan sin cotización esa actualización. El resto de los sectores (nyse/brasil-CEDEAR/europa/china/cripto) sufren el mismo choque contra allorigins pero lo disimulan porque tienen un segundo intento vía Finnhub (Fase 2, secuencial). Se agrega mapWithConcurrency() y se acota a 5 pedidos en vuelo por vez en las 4 funciones de fetch — no cambia qué se pide ni de dónde, solo cuántos van al mismo tiempo. (mapWithConcurrency / fetchBymaAll / fetchArgAll / fetchBonosAll / fetchONsAll)
@@ -395,7 +396,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: BBAS3/PETR3 se compran en pesos como CEDEAR (confirmado) — se sacan de BRL_TICKERS y se agrega data912/arg_cedears como fuente primaria en fetchBymaAll para todos los CEDEARs." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v23 · 13/09/2026</div>
+<div id="claude-version-badge" title="Fix crítico: se restaura Portafolio 3 (VetaJeep), que había desaparecido por un upload viejo que pisó el archivo en agosto. Los datos en Supabase nunca se tocaron." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v24 · 13/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -492,6 +493,7 @@ tr:hover td{background:var(--surface2)}
     <div class="nav-sec">Vistas</div>
     <button class="nav-item active" id="nav-cartera-principal" onclick="setCarteraActiva(&#39;principal&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio</button>
     <button class="nav-item" id="nav-cartera-cocos" onclick="setCarteraActiva(&#39;cocos&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio 2 (Cocos)</button>
+    <button class="nav-item" id="nav-cartera-vetajeep" onclick="setCarteraActiva(&#39;vetajeep&#39;);showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio 3 (VetaJeep)</button>
     <button class="nav-item" onclick="showPage(&#39;movimientos&#39;,this)"><span>↕</span>Movimientos</button>
     <div class="nav-sec">R. Variable</div>
     <div style="padding:.2rem .85rem .1rem">
@@ -808,7 +810,7 @@ tr:hover td{background:var(--surface2)}
             <div class="fgrp" id="g-mkt"><label>Mercado</label><select id="m-mkt"><option value="USA">NYSE / NASDAQ</option><option value="ETF">ETF (USA)</option><option value="ARGENTINA">Argentina</option><option value="BONOS">Bonos</option><option value="ON">ON</option><option value="BRASIL">Brasil</option><option value="EUROPA">Europa</option><option value="CHINA">China</option><option value="CRIPTO">Cripto</option></select></div>
             <div class="fgrp" id="g-ticker"><label>Ticker</label><input id="m-ticker" type="text" placeholder="AAPL, IBIT..." style="text-transform:uppercase"></div>
             <div class="fgrp"><label>Fecha</label><input id="m-fecha" type="date"></div>
-            <div class="fgrp"><label>Cartera</label><select id="m-cartera" title="A qué cartera pertenece este movimiento"><option value="principal">Principal</option><option value="cocos">Portafolio 2 (Cocos)</option></select></div>
+            <div class="fgrp"><label>Cartera</label><select id="m-cartera" title="A qué cartera pertenece este movimiento"><option value="principal">Principal</option><option value="cocos">Portafolio 2 (Cocos)</option><option value="vetajeep">Portafolio 3 (VetaJeep)</option></select></div>
           </div>
           <div id="row-normal">
             <div class="fg">
@@ -876,6 +878,7 @@ tr:hover td{background:var(--surface2)}
               <option value="">Todas las carteras</option>
               <option value="principal">Principal</option>
               <option value="cocos">Portafolio 2 (Cocos)</option>
+              <option value="vetajeep">Portafolio 3 (VetaJeep)</option>
             </select>
             <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--mono);font-size:.68rem;color:var(--red);height:28px;padding:0 4px" title="Mostrar sólo compras/ventas (no bonos/ON) cuyo CCL no está en la tabla histórica para esa fecha exacta (se usó un valor cargado a mano como fallback)">
               <input type="checkbox" id="mov-filter-noccl" onchange="renderMovimientos()" style="accent-color:var(--red);width:12px;height:12px;cursor:pointer;margin:0">
@@ -1698,9 +1701,11 @@ var MEP_HOY = MEP_TABLE[_HOY_KEY] || CCL_HOY; // se actualiza al hacer fetch
 var movimientos = [];
 var quotes = {};
 
-// Cartera activa: 'principal' (la de siempre) o 'cocos' (cartera vieja, en liquidación, operada con Cocos Capital).
+// Cartera activa: 'principal' (la de siempre), 'cocos' (cartera vieja, en liquidación, operada con Cocos Capital)
+// o 'vetajeep' (Portafolio 3, VetaJeep — restaurada 2026-09-13: la UI se había perdido en un upload viejo,
+// pero los movimientos con cartera='vetajeep' siguieron en Supabase todo este tiempo, sin tocarse).
 // Todo movimiento se etiqueta con m.cartera al crearse; getPositions() sólo agrega los de CARTERA_ACTIVA,
-// así las dos carteras nunca se mezclan en posiciones, valores ni gráficos.
+// así las tres carteras nunca se mezclan en posiciones, valores ni gráficos.
 var CARTERA_ACTIVA = (function(){try{return localStorage.getItem('ptNYSE_cartera_activa')||'principal';}catch(e){return 'principal';}})();
 
 var PRELOADED = [];
@@ -1849,21 +1854,25 @@ function showPage(id,btn){
   }
 }
 
-// ─── Cartera activa (Principal vs Portafolio 2 / Cocos Capital) ───
+// ─── Cartera activa (Principal / Portafolio 2 Cocos / Portafolio 3 VetaJeep) ───
 function syncCarteraUI(){
   var badge=document.getElementById('cartera-activa-badge');
   if(badge){
     if(CARTERA_ACTIVA==='cocos'){
       badge.textContent='Portafolio 2 · Cocos Capital';
       badge.style.background='#2a1650';badge.style.color='#c9a6ff';badge.style.borderColor='#5b2f8f';
+    } else if(CARTERA_ACTIVA==='vetajeep'){
+      badge.textContent='Portafolio 3 · VetaJeep';
+      badge.style.background='#2b2410';badge.style.color='#e0c674';badge.style.borderColor='#5c4a1f';
     } else {
       badge.textContent='Principal';
       badge.style.background='#0a2218';badge.style.color='var(--accent)';badge.style.borderColor='#143a24';
     }
   }
-  var bp=document.getElementById('nav-cartera-principal'),bc=document.getElementById('nav-cartera-cocos');
+  var bp=document.getElementById('nav-cartera-principal'),bc=document.getElementById('nav-cartera-cocos'),bv=document.getElementById('nav-cartera-vetajeep');
   if(bp)bp.classList.toggle('active',CARTERA_ACTIVA==='principal');
   if(bc)bc.classList.toggle('active',CARTERA_ACTIVA==='cocos');
+  if(bv)bv.classList.toggle('active',CARTERA_ACTIVA==='vetajeep');
   var mCartSel=document.getElementById('m-cartera'); if(mCartSel) mCartSel.value=CARTERA_ACTIVA;
 }
 function setCarteraActiva(c){
@@ -2585,7 +2594,7 @@ function renderMovimientos(){
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
       '<td><span class="mkt">'+mLabel+'</span></td>'+
-      '<td style="font-weight:600">'+m.ticker+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':'')+'</td>'+
+      '<td style="font-weight:600">'+m.ticker+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':'')+((m.cartera==='vetajeep')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2b2410;color:#e0c674;border:1px solid #5c4a1f">VETAJEEP</span>':'')+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
       '<td class="mono">'+(m.precioARS?'$'+m.precioARS.toLocaleString('es-AR'):'')+'</td>'+
       '<td class="mono muted">'+_mCCLstr+'</td>'+
@@ -2655,7 +2664,7 @@ function getPositions(){
 
   // Procesar en orden CRONOLÓGICO (no orden de carga) para que el consumo de lotes
   // por venta respete qué compras existían efectivamente a esa fecha.
-  // Sólo movimientos de la cartera activa (principal/cocos) — evita mezclar las dos carteras.
+  // Sólo movimientos de la cartera activa (principal/cocos/vetajeep) — evita mezclar las carteras.
   var ordenados = movimientos.filter(function(m){return m&&(m.cartera||'principal')===CARTERA_ACTIVA;}).sort(function(a,b){
     var fa=(a&&a.fecha||'').split('/'), fb=(b&&b.fecha||'').split('/');
     var da = fa.length===3? fa[2]+fa[1].padStart(2,'0')+fa[0].padStart(2,'0') : '0';
