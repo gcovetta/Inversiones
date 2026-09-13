@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v23 | 2026-09-13 | Fix (BBAS3/PETR3, definitivo): Garo confirmo que los compra en pesos como CEDEAR, no como tenencia directa en Brasil/BRL — se saca BBAS3/PETR3 de BRL_TICKERS (que ahora queda vacio, pero se deja el mecanismo por si algun dia carga una tenencia realmente directa en BRL). Ademas, aprovechando que data912/arg_cedears resulto tener cobertura enorme (probado en vivo: 1006 tickers, incluye AAPL/MSFT/TSLA/GOOGL/ABEV/BBD/ITUB/MELI/VALE/BBAS3/PETR3...), se lo agrega como fuente PRIMARIA en fetchBymaAll (antes solo se usaba en fetchArgAll para sector 'argentina') — Yahoo via proxy gratuito queda de fallback solo para lo que data912 no tenga, en vez de ser la unica fuente para todo NYSE/brasil/europa/china/cripto. Esto deberia mejorar la confiabilidad de cotizaciones mucho mas alla de BBAS3/PETR3 (cualquier CEDEAR que hoy dependa del proxy fragil de Yahoo). (BRL_TICKERS / fetchBymaAll / fetchArgCedearsAPI)
+v22 | 2026-09-13 | Fix (causa real de GLOB/BIOX/D31M7 sin cotización): probando en vivo, data912 SI tiene estos tickers — pero clasificados en endpoints que la app nunca consultaba. GLOB y BIOX son CEDEARs (acciones extranjeras listadas en BYMA), y data912 los separa de arg_stocks (solo acciones nativas argentinas) en un endpoint aparte, arg_cedears — por eso fetchArgEqAPI() nunca los encontraba y cada uno dependia de un unico intento fragil a Yahoo via proxy gratuito. D31M7 (ON) tampoco esta en arg_corp/arg_bonds — data912 lo clasifica en arg_notes, un cuarto endpoint no consultado. Se agregan fetchArgCedearsAPI() y fetchArgNotesAPI() como fuentes adicionales (antes de caer a Yahoo) en fetchArgAll/fetchONsAll. Tambien se mejora parseData912Response para derivar prevClose desde pct_change cuando el endpoint no trae prev_close (caso de arg_cedears/arg_notes) — antes esos tickers hubieran mostrado 0% de variacion diaria. PETR3/BBAS3 (BRL_TICKERS) quedan pendientes a proposito: data912/arg_cedears SI los tiene, pero con precio en pesos (como CEDEAR), no en reales (como posicion directa en B3/BRL) — mezclar esa fuente ahi cambiaria la moneda de origen del precio sin confirmar con Garo si en realidad los tiene como CEDEAR o como tenencia directa en Brasil. (parseData912Response / fetchArgCedearsAPI / fetchArgNotesAPI / fetchArgAll / fetchONsAll)
 v21 | 2026-09-11 | Fix (raíz real de BBAS3/PETR3/GLOB/D31M7 sin cotización): fetchBymaAll/fetchArgAll/fetchBonosAll/fetchONsAll lanzaban TODOS los tickers de la cartera (60-90+) en paralelo contra fetchYahooAR — probado en vivo hoy: api.allorigins.win (hoy el único proxy que funciona, ver v19) responde bien a 1 pedido (~2.5s) pero falla los 30 pedidos si se lo satura con 30 en simultáneo ('Failed to fetch' confirmado en los 30). BBAS3/PETR3 (BRL_TICKERS, sin fallback a Finnhub por diseño) y GLOB/D31M7 (sector sin cobertura en data912, 'argentina' tampoco tiene fallback a Finnhub) dependen de un único intento a Yahoo — si ese intento cae en medio de la ráfaga de 60-90 pedidos simultáneos del resto de la cartera, se quedan sin cotización esa actualización. El resto de los sectores (nyse/brasil-CEDEAR/europa/china/cripto) sufren el mismo choque contra allorigins pero lo disimulan porque tienen un segundo intento vía Finnhub (Fase 2, secuencial). Se agrega mapWithConcurrency() y se acota a 5 pedidos en vuelo por vez en las 4 funciones de fetch — no cambia qué se pide ni de dónde, solo cuántos van al mismo tiempo. (mapWithConcurrency / fetchBymaAll / fetchArgAll / fetchBonosAll / fetchONsAll)
 v20 | 2026-09-11 | Perf: la actualización de precios llamaba a renderPortfolio() (recalcula getPositions() sobre TODO el historial de movimientos + reconstruye la tabla entera) una vez por CADA ticker que llegaba — con 70-100+ posiciones resolviendo casi en paralelo, eso son 70-100+ renders completos en pocos segundos, bloqueando el hilo principal y sintiéndose lento/trabado. Se agrupan con requestAnimationFrame: como mucho 1 render real por frame de pantalla, sin perder la sensación de 'se van actualizando los precios en vivo'. También se corrige vsellPopulateSelect(), que llamaba a getPositions() de nuevo dentro de un .map() (una vez por cada posición abierta, en vez de una sola vez reusada). No cambia ningún cálculo ni dato — solo cuántas veces se recalcula/redibuja lo mismo. (updateProgress / vsellPopulateSelect)
 v19 | 2026-09-11 | Fix: fetchYahooAR() (usado como única fuente para BBAS3/PETR3 vía BRL_TICKERS, y como fallback para acciones argentinas/bonos/ONs sin cobertura en data912, ej. GLOB y D31M7) tenía corsproxy.io en su lista de proxies en paralelo — corsproxy.io ahora exige API key paga (confirmado en vivo: devuelve 401 'A valid API key is required'), así que ese proxy nunca va a traer datos. Se lo saca de la carrera de Promise.any en fetchYahooAR de los 5 portafolios (sigue en otros puntos del código — EWZ topbar, MERVAL/IMV, S&P/QQQ, EcoValores TIR — no tocados en este cambio). Esto no arregla por completo la falta de cotización de esos tickers: en las pruebas de hoy, allorigins.win también falló puntualmente contra Yahoo (aunque responde bien a otros destinos) y api.codetabs.com no fue alcanzable — puede ser un problema más amplio de Yahoo/los proxies gratuitos, no exclusivo de este portafolio (se repite en los 5). (fetchYahooAR)
@@ -393,7 +395,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: BBAS3/PETR3/GLOB/D31M7 sin cotización — la app bombardeaba el proxy de Yahoo con 60-90 pedidos a la vez y colapsaba. Se acota a 5 concurrentes (mapWithConcurrency)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v21 · 11/09/2026</div>
+<div id="claude-version-badge" title="Fix: BBAS3/PETR3 se compran en pesos como CEDEAR (confirmado) — se sacan de BRL_TICKERS y se agrega data912/arg_cedears como fuente primaria en fetchBymaAll para todos los CEDEARs." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v23 · 13/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -1703,7 +1705,7 @@ var CARTERA_ACTIVA = (function(){try{return localStorage.getItem('ptNYSE_cartera
 
 var PRELOADED = [];
 
-var BRL_TICKERS=new Set(['BBAS3','PETR3']); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR)
+var BRL_TICKERS=new Set([]); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR). BBAS3/PETR3 sacados 2026-09-13: Garo confirmó que los compra en pesos como CEDEAR, no tenencia directa en Brasil.
 
 var RATIOS_TABLE = {"BBAR":3.0,"EWZ":2.0,"ETHA":5.0,"A3": 1,"CLSIO": 1,"LECAO": 1,"LECHO": 1,"MR36O": 1,"MRCAO": 1,"MRCPO": 1,"MRCZO": 1,"SNEAO": 1,"TZV27": 1,"BC37D": 1,"CUAP": 1,"DICP": 1,"ERF25": 1,"GD29": 1,"GD38": 1,"GD41": 1,"PARP": 1,"PBY26": 1,"SA24D": 1,"TVPA": 1,"TX31": 1,"TZXM7": 1,"TZXS7": 1,"TZXS8": 1,"AGRO": 1,"BHIP": 1,"BIOX": 1,"BOLT": 1,"CADO": 1,"CAPX": 1,"CARC": 1,"CECO2": 1,"CELU": 1,"COME": 1,"CTIO": 1,"DGCE": 1,"EDN": 1,"FERR": 1,"FIPL": 1,"GLOB": 18,"HARG": 1,"LONG": 1,"METR": 1,"MIRG": 1,"MOLI": 1,"OEST": 1,"PATA": 1,"TXAR": 1, "ADBE": 44, "AMZN": 144, "AVGO": 39, "CRM": 18, "DEO": 6, "DOCU": 22, "FSLR": 18, "HOG": 3, "IBIT": 10, "RBLX": 2, "JD": 4, "LAC": 1, "META": 24, "MSFT": 30, "NFLX": 48, "NKE": 12, "NVDA": 24, "SNOW": 30, "SPOT": 28, "STLA": 5, "TEAM": 47, "UBER": 1, "UNH": 33, "UPST": 1, "ABEV": 3, "ITUB": 1, "VALE": 2, "DIS": 12, "GGB": 0.25, "MELI": 120, "NU": 2, "PAGS": 3, "SID": 0.125, "STNE": 3, "XP": 4, "URA": 5};
 var BYMA_TO_NYSE = {'DISN':'DIS'};
@@ -4197,8 +4199,14 @@ function parseData912Response(data){
   function parseItem(ticker,item){
     if(!item||typeof item!=='object')return;
     var price=item.last??item.price??item.close??item.c??item.bid??0;
-    var prev=item.prev_close??item.prevClose??item.previous_close??item.open??item.pc??price;
-    price=parseFloat(price)||0;prev=parseFloat(prev)||price;
+    price=parseFloat(price)||0;
+    // arg_cedears/arg_notes no traen prev_close/prevClose/etc, pero sí pct_change — se usa
+    // para derivar el cierre anterior en vez de caer a "sin variación" (prev=price).
+    var prevRaw=item.prev_close??item.prevClose??item.previous_close??item.open??item.pc??null;
+    var prev;
+    if(prevRaw!=null){ prev=parseFloat(prevRaw)||price; }
+    else if(item.pct_change!=null&&price>0){ prev=price/(1+parseFloat(item.pct_change)/100); }
+    else { prev=price; }
     if(price>0)map[ticker.toUpperCase()]={price:price,prevClose:prev,changePct:prev?(price-prev)/prev*100:0};
   }
   if(Array.isArray(data)){
@@ -4226,6 +4234,20 @@ async function fetchONsAPI(){
 // Acciones argentinas: arg_eq
 async function fetchArgEqAPI(){
   var r=await fetchWithTimeout('https://data912.com/live/arg_stocks',{headers:{'Accept':'application/json'}},8000);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return parseData912Response(await r.json());
+}
+// CEDEARs en BYMA (acciones extranjeras listadas como CEDEAR, ej. GLOB, BIOX — data912 las separa
+// de arg_stocks, que es solo para acciones nativas argentinas). Fallback para 'argentina' cuando
+// arg_stocks no cubre el ticker.
+async function fetchArgCedearsAPI(){
+  var r=await fetchWithTimeout('https://data912.com/live/arg_cedears',{headers:{'Accept':'application/json'}},8000);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return parseData912Response(await r.json());
+}
+// ONs/notas que data912 no clasifica en arg_corp (ej. D31M7). Fallback adicional para ON.
+async function fetchArgNotesAPI(){
+  var r=await fetchWithTimeout('https://data912.com/live/arg_notes',{headers:{'Accept':'application/json'}},8000);
   if(!r.ok)throw new Error('HTTP '+r.status);
   return parseData912Response(await r.json());
 }
@@ -4361,11 +4383,19 @@ async function fetchAllQuotes(){
     return Promise.all(runners).then(function(){return results;});
   }
   async function fetchBymaAll(){
+    // data912 arg_cedears cubre la enorme mayoría de CEDEARs (probado en vivo: AAPL, MSFT, ABEV,
+    // BBD, ITUB, MELI, VALE, TSLA, GOOGL, BBAS3, PETR3... 1000+ tickers) — mucho más confiable que
+    // Yahoo vía proxy gratuito. Se consulta una sola vez acá y se usa como fuente primaria; Yahoo
+    // queda de fallback solo para lo que data912 no tenga.
+    var mapCedears={};
+    try{mapCedears=await fetchArgCedearsAPI();}catch(e){}
     await mapWithConcurrency(bymaPos, YAHOO_CONCURRENCY, async function(p){
       var s=getSector(p.ticker);
       try{
-        var fbq=await fetchYahooAR(p.ticker,BRL_TICKERS.has(p.ticker)?'.SA':'.BA');
-        if(s!=='argentina'&&!BRL_TICKERS.has(p.ticker)){
+        var esBRLDirecto=BRL_TICKERS.has(p.ticker);
+        var cq=esBRLDirecto?null:mapCedears[p.ticker.toUpperCase()];
+        var fbq=(cq&&cq.price>0)?cq:await fetchYahooAR(p.ticker,esBRLDirecto?'.SA':'.BA');
+        if(s!=='argentina'&&!esBRLDirecto){
           fbq.fromByma=true;
         }
         quotes[p.ticker]=fbq;
@@ -4380,9 +4410,11 @@ async function fetchAllQuotes(){
   async function fetchArgAll(){
     var map={};
     try{map=await fetchArgEqAPI();}catch(e){}
+    var mapCedears={};
+    try{mapCedears=await fetchArgCedearsAPI();}catch(e){}
     await mapWithConcurrency(argPos, YAHOO_CONCURRENCY, async function(p){
       try{
-        var q=map[p.ticker.toUpperCase()];
+        var q=map[p.ticker.toUpperCase()]||mapCedears[p.ticker.toUpperCase()];
         if(q&&q.price>0){quotes[p.ticker]=q;}
         else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
       }catch(e){
@@ -4427,9 +4459,11 @@ async function fetchAllQuotes(){
   async function fetchONsAll(){
     var map={};
     try{map=await fetchONsAPI();}catch(e){}
+    var mapNotes={};
+    try{mapNotes=await fetchArgNotesAPI();}catch(e){}
     await mapWithConcurrency(onPos, YAHOO_CONCURRENCY, async function(p){
       try{
-        var q=map[p.ticker.toUpperCase()];
+        var q=map[p.ticker.toUpperCase()]||mapNotes[p.ticker.toUpperCase()];
         if(q&&q.price>0){quotes[p.ticker]=q;}
         else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
       }catch(e){errors++;}
