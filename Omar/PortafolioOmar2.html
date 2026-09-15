@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v25 | 2026-09-15 | Fix (Omar, confirmado por Garo): al cargar un dividendo en 'Dividendos CCL', el impacto en PPC decia que el ticker (ej. AO29) 'no tiene posiciones' aunque si la tenia — trkAddDiv() y _trkImpPPCPreview() buscaban la posicion con getPositions().find(...), que SOLO devuelve las posiciones de la cartera activa en pantalla (CARTERA_ACTIVA: principal/cocos/vetajeep). Si Omar tenia seleccionada Cocos o VetaJeep al cargar un dividendo de un ticker que solo esta en Principal, el tracker no lo encontraba y lo trataba como venta realizada en vez de bajar el PPC. Se agrega trkFindPosicionEnCualquierCartera(ticker), que busca en las 3 carteras (prefiere la activa si aparece ahi, si no la primera que encuentre) y se usa en ambos lugares. La aplicacion real del ajuste (dentro de getPositions(), ya existente) no necesito cambios — ya es dinamica por cartera cada vez que se recalcula. Probado en Node antes de subir. (trkFindPosicionEnCualquierCartera / trkAddDiv / _trkImpPPCPreview)
 v24 | 2026-09-13 | Fix critico (recuperacion de datos): Portafolio 3 (VetaJeep) habia desaparecido de la UI. Investigado en el historial de git: el commit 8e1289d (2026-08-18) agrego esta tercera cartera (boton de nav, selector en Comprar/Movimientos, badge, etiqueta en la tabla), pero el commit 223e76f (2026-08-31, un 'Add files via upload' generico — probablemente se subio por error una copia vieja del archivo) la removio por completo, sin dejar rastro en ningun commit posterior — confirmado revisando TODO el historial (git log -S) del archivo. Los MOVIMIENTOS con cartera='vetajeep' nunca se tocaron (viven en Supabase, no en este HTML) — la logica de filtrado por CARTERA_ACTIVA en getPositions()/renderMovimientos() ya es generica y los sigue reconociendo perfectamente, lo unico que faltaba era la UI para volver a seleccionar esa cartera. Se restaura exactamente el codigo removido en 223e76f, adaptado a la estructura actual del archivo (boton de nav, opcion en el selector de Comprar, opcion en el filtro de Movimientos, rama de color/badge en syncCarteraUI, tag VETAJEEP en la tabla de movimientos). (syncCarteraUI / setCarteraActiva / renderMovimientos)
 v23 | 2026-09-13 | Fix (BBAS3/PETR3, definitivo): Garo confirmo que los compra en pesos como CEDEAR, no como tenencia directa en Brasil/BRL — se saca BBAS3/PETR3 de BRL_TICKERS (que ahora queda vacio, pero se deja el mecanismo por si algun dia carga una tenencia realmente directa en BRL). Ademas, aprovechando que data912/arg_cedears resulto tener cobertura enorme (probado en vivo: 1006 tickers, incluye AAPL/MSFT/TSLA/GOOGL/ABEV/BBD/ITUB/MELI/VALE/BBAS3/PETR3...), se lo agrega como fuente PRIMARIA en fetchBymaAll (antes solo se usaba en fetchArgAll para sector 'argentina') — Yahoo via proxy gratuito queda de fallback solo para lo que data912 no tenga, en vez de ser la unica fuente para todo NYSE/brasil/europa/china/cripto. Esto deberia mejorar la confiabilidad de cotizaciones mucho mas alla de BBAS3/PETR3 (cualquier CEDEAR que hoy dependa del proxy fragil de Yahoo). (BRL_TICKERS / fetchBymaAll / fetchArgCedearsAPI)
 v22 | 2026-09-13 | Fix (causa real de GLOB/BIOX/D31M7 sin cotización): probando en vivo, data912 SI tiene estos tickers — pero clasificados en endpoints que la app nunca consultaba. GLOB y BIOX son CEDEARs (acciones extranjeras listadas en BYMA), y data912 los separa de arg_stocks (solo acciones nativas argentinas) en un endpoint aparte, arg_cedears — por eso fetchArgEqAPI() nunca los encontraba y cada uno dependia de un unico intento fragil a Yahoo via proxy gratuito. D31M7 (ON) tampoco esta en arg_corp/arg_bonds — data912 lo clasifica en arg_notes, un cuarto endpoint no consultado. Se agregan fetchArgCedearsAPI() y fetchArgNotesAPI() como fuentes adicionales (antes de caer a Yahoo) en fetchArgAll/fetchONsAll. Tambien se mejora parseData912Response para derivar prevClose desde pct_change cuando el endpoint no trae prev_close (caso de arg_cedears/arg_notes) — antes esos tickers hubieran mostrado 0% de variacion diaria. PETR3/BBAS3 (BRL_TICKERS) quedan pendientes a proposito: data912/arg_cedears SI los tiene, pero con precio en pesos (como CEDEAR), no en reales (como posicion directa en B3/BRL) — mezclar esa fuente ahi cambiaria la moneda de origen del precio sin confirmar con Garo si en realidad los tiene como CEDEAR o como tenencia directa en Brasil. (parseData912Response / fetchArgCedearsAPI / fetchArgNotesAPI / fetchArgAll / fetchONsAll)
@@ -396,7 +397,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix crítico: se restaura Portafolio 3 (VetaJeep), que había desaparecido por un upload viejo que pisó el archivo en agosto. Los datos en Supabase nunca se tocaron." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v24 · 13/09/2026</div>
+<div id="claude-version-badge" title="Fix: el impacto en PPC de un dividendo decía 'sin posición' si el ticker estaba en otra cartera (Cocos/VetaJeep) distinta a la activa en pantalla. Ahora busca en las 3." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v25 · 15/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -5135,7 +5136,8 @@ function trkAddDiv(){
   // si ya no está (se vendió todo), suma como ganancia realizada de la venta.
   // Requiere confirmación manual mostrando el efecto exacto antes de aplicarlo.
   var pncApplied=false,pncTarget=null;
-  var posActual=getPositions().find(function(p){return p.ticker===ticker;});
+  var _match=trkFindPosicionEnCualquierCartera(ticker);
+  var posActual=_match?_match.pos:null;
   if(posActual){
     if(posActual.qty>0.000001){
       var ppcActual=posActual.costUSDpuro/posActual.qty;
@@ -5284,6 +5286,27 @@ function trkImpParseBullMarket(wb, moneda){
 // Convierte el monto de una fila pendiente de importación a USD, usando el mismo
 // criterio que la carga manual (trkAddDiv): CCL de la fecha en CCL_TABLE, y si no
 // está, el CCL de referencia (TRK.ccl). Si la fila ya está en USD, no hace falta CCL.
+// Los dividendos del broker no vienen etiquetados por cartera — antes esto buscaba la posición
+// sólo en la cartera activa en pantalla (CARTERA_ACTIVA), así que si Omar tenía seleccionada
+// "Cocos" o "VetaJeep" al cargar un dividendo de un ticker que sólo está en "Principal" (ej. AO29),
+// el tracker decía "no tiene posiciones" — falso, sólo estaba mirando la cartera equivocada.
+// Se busca en las 3 carteras; si aparece en más de una (mismo ticker en dos carteras), se prefiere
+// la que está activa en pantalla, y si no está ahí, la primera que se encuentre.
+function trkFindPosicionEnCualquierCartera(ticker){
+  var CARTERAS=['principal','cocos','vetajeep'];
+  var activaOriginal=CARTERA_ACTIVA;
+  var encontradas=[];
+  CARTERAS.forEach(function(c){
+    CARTERA_ACTIVA=c;
+    var p=getPositions().find(function(x){return x.ticker===ticker&&x.qty>0.000001;});
+    if(p) encontradas.push({cartera:c,pos:p});
+  });
+  CARTERA_ACTIVA=activaOriginal;
+  if(!encontradas.length) return null;
+  var enActiva=encontradas.find(function(e){return e.cartera===activaOriginal;});
+  return enActiva||encontradas[0];
+}
+
 function _trkImpMontoUSD(row){
   if(row.moneda==='USD') return {montoUSD:row.monto,cclUsado:null,ok:true};
   var cclFecha=CCL_TABLE[(row.fecha||'').split('-').reverse().join('/')]||TRK.ccl||null;
@@ -5296,7 +5319,8 @@ function _trkImpMontoUSD(row){
 function _trkImpPPCPreview(row){
   var conv=_trkImpMontoUSD(row);
   if(!conv.ok) return {ok:false};
-  var posActual=getPositions().find(function(p){return p.ticker===row.ticker;});
+  var _match=trkFindPosicionEnCualquierCartera(row.ticker);
+  var posActual=_match?_match.pos:null;
   if(!posActual) return {ok:true,montoUSD:conv.montoUSD,cclUsado:conv.cclUsado,target:null};
   if(posActual.qty>0.000001){
     var ppcActual=posActual.costUSDpuro/posActual.qty;
