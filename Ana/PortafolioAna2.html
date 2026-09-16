@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v21 | 2026-09-16 | Feat: se porta desde GDC el paquete completo de "Próximos Cobros" + indicador de salud de cotizaciones (implementado y probado ahí primero, v24-v34): FLUJOS_BONOS con 10 bonos/ON cargados (BB37D, BC37D, AO27, AO28, AO29, DICP, TX31, PARP, SNEAO, MRCAO — detalle y fuente en claude/flujos_bonos.md del Project), calcularCalendarioCobros() (escala el flujo por qty/100, filtra fechas futuras), solapa nueva "📅 Flujos" (Herramientas) con calendario completo + cards de Próximo cobro/30 días/90 días, las mismas cards al pie de Portafolio, y un badge "F" junto al ticker cuando hay cobro dentro de 30 días (tooltip con fecha+monto). Se agrega también el indicador de salud de cotizaciones: puntito junto al precio de mercado (verde=data912, azul=Yahoo, naranja=Finnhub, rojo parpadeante=no se pudo refrescar en el último "Actualizar precios") vía _stampQuote()/_quoteRunId en cada fetch de cotización. Y el badge "D": en acciones/CEDEARs (no en bonos, que ya tienen F), estima si el próximo dividendo cae dentro de 30 días a partir del historial (mira tanto el array "dividendos" manual como TRK.divs confirmados — este portafolio conserva ambos). Los tooltips de F/D/puntito usan CSS puro (.qhelp/.qhelp-tip), no el atributo title nativo (a Garo no le abría en Brave). Ninguno de estos cambios toca cálculos de valuación, PPC ni precios existentes — es una capa informativa aparte, ya verificada en producción en GDC antes de portarla acá. (FLUJOS_BONOS / calcularCalendarioCobros / calcularDivHistUpcoming30 / _stampQuote / quoteHealthDot / renderPortfolio / renderFlujosPage)
 v20 | 2026-09-13 | Fix (BBAS3/PETR3, definitivo): Garo confirmo que los compra en pesos como CEDEAR, no como tenencia directa en Brasil/BRL — se saca BBAS3/PETR3 de BRL_TICKERS (que ahora queda vacio, pero se deja el mecanismo por si algun dia carga una tenencia realmente directa en BRL). Ademas, aprovechando que data912/arg_cedears resulto tener cobertura enorme (probado en vivo: 1006 tickers, incluye AAPL/MSFT/TSLA/GOOGL/ABEV/BBD/ITUB/MELI/VALE/BBAS3/PETR3...), se lo agrega como fuente PRIMARIA en fetchBymaAll (antes solo se usaba en fetchArgAll para sector 'argentina') — Yahoo via proxy gratuito queda de fallback solo para lo que data912 no tenga, en vez de ser la unica fuente para todo NYSE/brasil/europa/china/cripto. Esto deberia mejorar la confiabilidad de cotizaciones mucho mas alla de BBAS3/PETR3 (cualquier CEDEAR que hoy dependa del proxy fragil de Yahoo). (BRL_TICKERS / fetchBymaAll / fetchArgCedearsAPI)
 v19 | 2026-09-13 | Fix (causa real de GLOB/BIOX/D31M7 sin cotización): probando en vivo, data912 SI tiene estos tickers — pero clasificados en endpoints que la app nunca consultaba. GLOB y BIOX son CEDEARs (acciones extranjeras listadas en BYMA), y data912 los separa de arg_stocks (solo acciones nativas argentinas) en un endpoint aparte, arg_cedears — por eso fetchArgEqAPI() nunca los encontraba y cada uno dependia de un unico intento fragil a Yahoo via proxy gratuito. D31M7 (ON) tampoco esta en arg_corp/arg_bonds — data912 lo clasifica en arg_notes, un cuarto endpoint no consultado. Se agregan fetchArgCedearsAPI() y fetchArgNotesAPI() como fuentes adicionales (antes de caer a Yahoo) en fetchArgAll/fetchONsAll. Tambien se mejora parseData912Response para derivar prevClose desde pct_change cuando el endpoint no trae prev_close (caso de arg_cedears/arg_notes) — antes esos tickers hubieran mostrado 0% de variacion diaria. PETR3/BBAS3 (BRL_TICKERS) quedan pendientes a proposito: data912/arg_cedears SI los tiene, pero con precio en pesos (como CEDEAR), no en reales (como posicion directa en B3/BRL) — mezclar esa fuente ahi cambiaria la moneda de origen del precio sin confirmar con Garo si en realidad los tiene como CEDEAR o como tenencia directa en Brasil. (parseData912Response / fetchArgCedearsAPI / fetchArgNotesAPI / fetchArgAll / fetchONsAll)
 v18 | 2026-09-11 | Fix (raíz real de BBAS3/PETR3/GLOB/D31M7 sin cotización): fetchBymaAll/fetchArgAll/fetchBonosAll/fetchONsAll lanzaban TODOS los tickers de la cartera (60-90+) en paralelo contra fetchYahooAR — probado en vivo hoy: api.allorigins.win (hoy el único proxy que funciona, ver v19) responde bien a 1 pedido (~2.5s) pero falla los 30 pedidos si se lo satura con 30 en simultáneo ('Failed to fetch' confirmado en los 30). BBAS3/PETR3 (BRL_TICKERS, sin fallback a Finnhub por diseño) y GLOB/D31M7 (sector sin cobertura en data912, 'argentina' tampoco tiene fallback a Finnhub) dependen de un único intento a Yahoo — si ese intento cae en medio de la ráfaga de 60-90 pedidos simultáneos del resto de la cartera, se quedan sin cotización esa actualización. El resto de los sectores (nyse/brasil-CEDEAR/europa/china/cripto) sufren el mismo choque contra allorigins pero lo disimulan porque tienen un segundo intento vía Finnhub (Fase 2, secuencial). Se agrega mapWithConcurrency() y se acota a 5 pedidos en vuelo por vez en las 4 funciones de fetch — no cambia qué se pide ni de dónde, solo cuántos van al mismo tiempo. (mapWithConcurrency / fetchBymaAll / fetchArgAll / fetchBonosAll / fetchONsAll)
@@ -86,6 +87,12 @@ tr.marked-watch{background:rgba(251,191,36,.04)}
 .mark-note-input:focus{border-color:var(--accent)}
 .mark-pop-actions{display:flex;gap:5px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* Tooltip propio (no usa el atributo title nativo — a Garo el tooltip nativo no le abría en
+   Brave, solo le cambiaba el cursor a un signo de pregunta sin mostrar contenido). Se activa
+   con :hover en CSS puro, sin JS. */
+.qhelp{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.qhelp .qhelp-tip{visibility:hidden;opacity:0;position:absolute;bottom:135%;left:50%;transform:translateX(-50%);background:#0d1420;border:1px solid var(--border2,#264070);border-radius:6px;padding:5px 9px;font-size:.68rem;white-space:nowrap;color:var(--text2,#7a9cc5);z-index:200;transition:opacity .1s;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:var(--mono),monospace;pointer-events:none}
+.qhelp:hover .qhelp-tip,.qhelp:focus .qhelp-tip{visibility:visible;opacity:1}
 header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
 .logo{font-weight:700;font-size:1rem;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;font-family:var(--sans)}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
@@ -114,7 +121,8 @@ header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;a
 .card-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .card-title{font-weight:600;font-size:.83rem}
 .card-body{padding:1rem}
-.tw{overflow-x:auto;width:100%;max-width:100%;box-sizing:border-box}
+.tw{overflow-x:auto;width:100%;max-width:100%;box-sizing:border-box;scrollbar-width:none}
+.tw::-webkit-scrollbar{display:none}
 #mov-card{display:flex;flex-direction:column}
 #mov-card .card-header{position:sticky;top:0;z-index:5;background:var(--surface);flex-shrink:0}
 #mov-wrap{overflow-x:auto;overflow-y:auto;width:100%;box-sizing:border-box;flex:1;max-height:calc(100vh - 320px)}
@@ -392,7 +400,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: BBAS3/PETR3 se compran en pesos como CEDEAR (confirmado) — se sacan de BRL_TICKERS y se agrega data912/arg_cedears como fuente primaria en fetchBymaAll para todos los CEDEARs." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v20 · 13/09/2026</div>
+<div id="claude-version-badge" title="Feat: Próximos Cobros (calendario de flujos de bonos/ON) + indicador de salud de cotizaciones + badges F/D, portado desde GDC." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v21 · 16/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -504,6 +512,7 @@ tr:hover td{background:var(--surface2)}
     </div>
     <div class="nav-sec">Herramientas</div>
     <button class="nav-item" onclick="showPage(&#39;arbitraje&#39;,this)"><span>⇄</span>Arbitraje</button>
+    <button class="nav-item" onclick="showPage(&#39;flujos&#39;,this)"><span>📅</span>Flujos</button>
     <button class="nav-item" onclick="showPage(&#39;dashboard&#39;,this)"><span>📊</span>DashBoard</button>
     <button class="nav-item" onclick="showPage(&#39;rendanual&#39;,this)"><span>📈</span>Rend. Anual</button>
     <button class="nav-item" onclick="showPage(&#39;comparacion&#39;,this)"><span>⇔</span>Comparación</button>
@@ -791,6 +800,10 @@ tr:hover td{background:var(--surface2)}
             <button class="btn" id="vsell-btn-confirmar" onclick="vsellConfirmar()" disabled style="background:var(--red);border-color:var(--red);color:#fff;font-weight:600">✔ Confirmar venta</button>
           </div>
         </div>
+      </div>
+      <div class="card" style="overflow:visible;display:inline-block;width:fit-content;max-width:100%">
+        <div class="card-header"><span class="card-title">📅 Próximos Cobros</span><span style="font-size:.65rem;color:var(--text3);margin-left:8px">bonos/ON — ver solapa Flujos para el detalle</span></div>
+        <div id="flujo-mini-content" style="padding:.6rem 1rem;font-family:var(--mono);font-size:.78rem;display:flex;gap:22px;flex-wrap:wrap"></div>
       </div>
       <div id="pos-footer-bar" style="position:sticky;bottom:.6rem;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.35);padding:.5rem .9rem;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;overflow:hidden;margin:1.2rem auto 0 auto;width:fit-content;max-width:100%">
         <span class="card-title">Posiciones abiertas</span>
@@ -1146,6 +1159,40 @@ tr:hover td{background:var(--surface2)}
           </div>
           <div id="arb-container"><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD29" onchange="arbUpdate(0,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(0,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AL30" onchange="arbUpdate(0,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(0,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.5%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(0,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(0)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="92310" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88600" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-0"><span class="arb-ratio-amber">104.19%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.025" placeholder="$1.00" oninput="arbUpdate(0,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD29" placeholder="ticker" oninput="arbUpdate(0,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(0,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="91390" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88660" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-1"><span class="arb-ratio-red">103.08%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.040" placeholder="$1.00" oninput="arbUpdate(0,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AL30" placeholder="ticker" oninput="arbUpdate(0,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.213" placeholder="—" oninput="arbUpdate(0,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(0)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD41" onchange="arbUpdate(1,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(1,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(1,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(1,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="107%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(1,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(1)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104540" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112720" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-0"><span class="arb-ratio-red">92.74%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.085" placeholder="$1.00" oninput="arbUpdate(1,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD41" placeholder="ticker" oninput="arbUpdate(1,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(1,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104350" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112900" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-1"><span class="arb-ratio-red">92.43%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.080" placeholder="$1.00" oninput="arbUpdate(1,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(1,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="934" placeholder="—" oninput="arbUpdate(1,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(1)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="TXAR" onchange="arbUpdate(2,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(2,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="ALUA" onchange="arbUpdate(2,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(2,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="130%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(2,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(2)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="873" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="668" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-0"><span class="arb-ratio-green">130.69%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.033" placeholder="$1.00" oninput="arbUpdate(2,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(2,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="284.40" placeholder="—" oninput="arbUpdate(2,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="878" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="674" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-1"><span class="arb-ratio-amber">130.27%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.270" placeholder="$1.00" oninput="arbUpdate(2,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="ALUAR" placeholder="ticker" oninput="arbUpdate(2,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(2,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(2)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD38" onchange="arbUpdate(3,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(3,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(3,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(3,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.3%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(3,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(3)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116620" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111790" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-0"><span class="arb-ratio-amber">104.32%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="" placeholder="$1.00" oninput="arbUpdate(3,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="ticker" oninput="arbUpdate(3,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(3,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116690" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111870" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-1"><span class="arb-ratio-amber">104.31%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.044" placeholder="$1.00" oninput="arbUpdate(3,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD38" placeholder="ticker" oninput="arbUpdate(3,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.000" placeholder="—" oninput="arbUpdate(3,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(3)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div></div>
         </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-flujos" style="padding:0">
+      <div id="flujos-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
+
+        <div class="ibox" style="margin-bottom:1rem;font-size:.68rem">
+          Calendario de renta y amortización de los bonos/ON que tenés en cartera, calculado a partir del flujo cargado por ticker (por cada 100 nominales) escalado a tu cantidad real. No afecta ningún cálculo de valuación del portafolio — es solo informativo.
+        </div>
+
+        <div id="flujo-page-resumen" style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap"></div>
+
+        <div id="flujo-page-sinflujo" class="ibox" style="display:none;margin-bottom:1rem;font-size:.68rem;border-color:var(--amber);color:var(--amber)"></div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">📅 Calendario de cobros</span></div>
+          <div class="card-body" style="padding:.6rem 1rem">
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.76rem">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--border2)">
+                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Fecha</th>
+                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Faltan</th>
+                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Ticker</th>
+                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Tipo</th>
+                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Monto</th>
+                  </tr>
+                </thead>
+                <tbody id="flujo-page-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1775,6 +1822,40 @@ var BRL_TICKERS=new Set([]); // tickers que cotizan en BRL (B3 directo, no NYSE/
 
 var movimientos = [];
 var quotes = {};
+// Id incremental de la última corrida de fetchAllQuotes(). Cada cotización exitosa se estampa
+// con el runId vigente al momento de guardarse — renderPortfolio compara contra el runId actual
+// para saber si ese precio se refrescó en el último intento o quedó "viejo" (ver indicador de
+// fuente/salud de cotizaciones, badge junto al precio en la tabla de Portafolio).
+var _quoteRunId=0;
+// Estampa fuente/corrida/hora en una cotización recién guardada — alimenta el indicador de
+// salud de cotizaciones (puntito de color junto al precio en la tabla de Portafolio).
+function _stampQuote(ticker,source){
+  var q=quotes[ticker];
+  if(!q) return;
+  q.source=source;q.runId=_quoteRunId;q.ts=Date.now();
+}
+function _quoteAgeTxt(ts){
+  var s=Math.round((Date.now()-ts)/1000);
+  if(s<5) return 'recién';
+  if(s<60) return 'hace '+s+'s';
+  var m=Math.round(s/60);
+  if(m<60) return 'hace '+m+'m';
+  var h=Math.round(m/60);
+  return 'hace '+h+'h';
+}
+// Puntito de color junto al precio en Portafolio: de dónde salió la cotización y si se
+// refrescó en el último "Actualizar precios" o quedó vieja (stale). No cambia ningún precio
+// ni cálculo — es la misma capa informativa que el badge "F" de Próximos Cobros.
+function quoteHealthDot(q){
+  if(!q||q.price==null||!q.source) return '';
+  var stale=q.runId!=null&&q.runId!==_quoteRunId;
+  var colorVar=stale?'var(--red)':q.source==='data912'?'var(--accent)':q.source==='yahoo'?'var(--blue)':q.source==='finnhub'?'var(--orange)':'var(--blue)';
+  var label=stale?'No se pudo refrescar en el último intento':q.source==='data912'?'Fuente: data912 (primaria)':q.source==='yahoo'?'Fuente: Yahoo Finance (fallback)':q.source==='finnhub'?'Fuente: Finnhub (fallback)':'Fuente: CAFCI / ArgentinaDatos';
+  var age=q.ts?_quoteAgeTxt(q.ts):'';
+  var title=label+(age?' — '+(stale?'último precio conocido '+age:'actualizado '+age):'');
+  return '<span class="qhelp" style="width:6px;height:6px;border-radius:50%;margin-left:5px;vertical-align:middle;background:'+colorVar+(stale?';animation:pulse 1.4s infinite':'')+'"><span class="qhelp-tip">'+title.replace(/</g,'&lt;')+'</span></span>';
+}
+
 
 var PRELOADED = [];
 
@@ -1817,6 +1898,419 @@ function isBonoUSDDirecto(ticker){
   if(BONOS_USD_DIRECTO_EXCEPCIONES.has(ticker))return false;
   return /[CD]$/.test(ticker);
 }
+
+var FLUJOS_BONOS={
+  'BB37D':{moneda:'USD',flujos:[
+    {f:'2027-03-01',r:2.94,a:0.0},
+    {f:'2027-09-01',r:2.94,a:0.0},
+    {f:'2028-03-01',r:2.94,a:0.0},
+    {f:'2028-09-01',r:2.94,a:0.75},
+    {f:'2029-03-01',r:2.92,a:0.75},
+    {f:'2029-09-01',r:2.89,a:0.75},
+    {f:'2030-03-01',r:2.87,a:6.15},
+    {f:'2030-09-01',r:2.69,a:6.15},
+    {f:'2031-03-01',r:2.51,a:6.35},
+    {f:'2031-09-01',r:2.32,a:6.35},
+    {f:'2032-03-01',r:2.14,a:6.35},
+    {f:'2032-09-01',r:1.95,a:6.35},
+    {f:'2033-03-01',r:1.76,a:6.35},
+    {f:'2033-09-01',r:1.58,a:6.35},
+    {f:'2034-03-01',r:1.39,a:5.9},
+    {f:'2034-09-01',r:1.22,a:5.9},
+    {f:'2035-03-01',r:1.04,a:5.9},
+    {f:'2035-09-01',r:0.87,a:5.9},
+    {f:'2036-03-01',r:0.7,a:5.9},
+    {f:'2036-09-01',r:0.52,a:5.9},
+    {f:'2037-03-01',r:0.35,a:5.98},
+    {f:'2037-09-01',r:0.18,a:5.97},
+  ]},
+  'BC37D':{moneda:'USD',flujos:[
+    {f:'2027-03-01',r:2.62,a:0.0},
+    {f:'2027-09-01',r:2.62,a:0.0},
+    {f:'2028-03-01',r:2.62,a:0.0},
+    {f:'2028-09-01',r:2.62,a:0.75},
+    {f:'2029-03-01',r:2.61,a:0.75},
+    {f:'2029-09-01',r:2.59,a:0.75},
+    {f:'2030-03-01',r:2.57,a:6.15},
+    {f:'2030-09-01',r:2.4,a:6.15},
+    {f:'2031-03-01',r:2.24,a:6.35},
+    {f:'2031-09-01',r:2.08,a:6.35},
+    {f:'2032-03-01',r:1.91,a:6.35},
+    {f:'2032-09-01',r:1.74,a:6.35},
+    {f:'2033-03-01',r:1.58,a:6.35},
+    {f:'2033-09-01',r:1.41,a:6.35},
+    {f:'2034-03-01',r:1.24,a:5.9},
+    {f:'2034-09-01',r:1.09,a:5.9},
+    {f:'2035-03-01',r:0.93,a:5.9},
+    {f:'2035-09-01',r:0.78,a:5.9},
+    {f:'2036-03-01',r:0.62,a:5.9},
+    {f:'2036-09-01',r:0.47,a:5.9},
+    {f:'2037-03-01',r:0.31,a:5.98},
+    {f:'2037-09-01',r:0.16,a:5.97},
+  ]},
+  'AO27':{moneda:'USD',flujos:[
+    {f:'2026-09-30',r:0.5,a:0.0},
+    {f:'2026-10-30',r:0.5,a:0.0},
+    {f:'2026-11-30',r:0.5,a:0.0},
+    {f:'2026-12-30',r:0.5,a:0.0},
+    {f:'2027-01-29',r:0.48,a:0.0},
+    {f:'2027-02-26',r:0.45,a:0.0},
+    {f:'2027-03-31',r:0.57,a:0.0},
+    {f:'2027-04-30',r:0.5,a:0.0},
+    {f:'2027-05-31',r:0.5,a:0.0},
+    {f:'2027-06-30',r:0.5,a:0.0},
+    {f:'2027-07-30',r:0.5,a:0.0},
+    {f:'2027-08-31',r:0.5,a:0.0},
+    {f:'2027-09-30',r:0.5,a:0.0},
+    {f:'2027-10-29',r:0.48,a:100.0},
+  ]},
+  'AO28':{moneda:'USD',flujos:[
+    {f:'2026-09-30',r:0.5,a:0.0},
+    {f:'2026-10-30',r:0.5,a:0.0},
+    {f:'2026-11-30',r:0.5,a:0.0},
+    {f:'2026-12-30',r:0.5,a:0.0},
+    {f:'2027-01-29',r:0.48,a:0.0},
+    {f:'2027-02-26',r:0.45,a:0.0},
+    {f:'2027-03-31',r:0.57,a:0.0},
+    {f:'2027-04-30',r:0.5,a:0.0},
+    {f:'2027-05-31',r:0.5,a:0.0},
+    {f:'2027-06-30',r:0.5,a:0.0},
+    {f:'2027-07-30',r:0.5,a:0.0},
+    {f:'2027-08-31',r:0.5,a:0.0},
+    {f:'2027-09-30',r:0.5,a:0.0},
+    {f:'2027-10-29',r:0.48,a:0.0},
+    {f:'2027-11-30',r:0.52,a:0.0},
+    {f:'2027-12-30',r:0.5,a:0.0},
+    {f:'2028-01-31',r:0.5,a:0.0},
+    {f:'2028-02-29',r:0.48,a:0.0},
+    {f:'2028-03-31',r:0.52,a:0.0},
+    {f:'2028-04-28',r:0.47,a:0.0},
+    {f:'2028-05-31',r:0.53,a:0.0},
+    {f:'2028-06-30',r:0.5,a:0.0},
+    {f:'2028-07-31',r:0.5,a:0.0},
+    {f:'2028-08-31',r:0.5,a:0.0},
+    {f:'2028-09-29',r:0.48,a:0.0},
+    {f:'2028-10-31',r:0.52,a:100.0},
+  ]},
+  'AO29':{moneda:'USD',flujos:[
+    {f:'2026-09-30',r:0.5,a:0.0},
+    {f:'2026-10-30',r:0.5,a:0.0},
+    {f:'2026-11-30',r:0.5,a:0.0},
+    {f:'2026-12-30',r:0.5,a:0.0},
+    {f:'2027-01-29',r:0.48,a:0.0},
+    {f:'2027-02-26',r:0.45,a:0.0},
+    {f:'2027-03-31',r:0.57,a:0.0},
+    {f:'2027-04-30',r:0.5,a:0.0},
+    {f:'2027-05-31',r:0.5,a:0.0},
+    {f:'2027-06-30',r:0.5,a:0.0},
+    {f:'2027-07-30',r:0.5,a:0.0},
+    {f:'2027-08-31',r:0.5,a:0.0},
+    {f:'2027-09-30',r:0.5,a:0.0},
+    {f:'2027-10-29',r:0.48,a:0.0},
+    {f:'2027-11-30',r:0.52,a:0.0},
+    {f:'2027-12-30',r:0.5,a:0.0},
+    {f:'2028-01-31',r:0.5,a:0.0},
+    {f:'2028-02-29',r:0.48,a:0.0},
+    {f:'2028-03-31',r:0.52,a:0.0},
+    {f:'2028-04-28',r:0.47,a:0.0},
+    {f:'2028-05-31',r:0.53,a:0.0},
+    {f:'2028-06-30',r:0.5,a:0.0},
+    {f:'2028-07-31',r:0.5,a:0.0},
+    {f:'2028-08-31',r:0.5,a:0.0},
+    {f:'2028-09-29',r:0.48,a:0.0},
+    {f:'2028-10-31',r:0.52,a:0.0},
+    {f:'2028-11-30',r:0.5,a:0.0},
+    {f:'2028-12-29',r:0.48,a:0.0},
+    {f:'2029-01-31',r:0.52,a:0.0},
+    {f:'2029-02-28',r:0.47,a:0.0},
+    {f:'2029-03-28',r:0.5,a:0.0},
+    {f:'2029-04-30',r:0.53,a:0.0},
+    {f:'2029-05-31',r:0.5,a:0.0},
+    {f:'2029-06-29',r:0.48,a:0.0},
+    {f:'2029-07-31',r:0.52,a:0.0},
+    {f:'2029-08-31',r:0.5,a:0.0},
+    {f:'2029-09-28',r:0.47,a:0.0},
+    {f:'2029-10-31',r:0.53,a:100.0},
+  ]},
+  'DICP':{moneda:'ARS',flujos:[
+    {f:'2026-12-30',r:1587.96,a:3631.71},
+    {f:'2027-06-30',r:1482.1,a:3631.71},
+    {f:'2027-12-30',r:1376.24,a:3631.71},
+    {f:'2028-06-30',r:1270.37,a:3631.71},
+    {f:'2028-12-30',r:1164.51,a:3631.71},
+    {f:'2029-06-30',r:1058.64,a:3631.71},
+    {f:'2029-12-30',r:952.78,a:3631.71},
+    {f:'2030-06-30',r:846.91,a:3631.71},
+    {f:'2030-12-30',r:741.05,a:3631.71},
+    {f:'2031-06-30',r:635.19,a:3631.71},
+    {f:'2031-12-30',r:529.32,a:3631.71},
+    {f:'2032-06-30',r:423.46,a:3631.71},
+    {f:'2032-12-30',r:317.59,a:3631.71},
+    {f:'2033-06-30',r:211.73,a:3631.71},
+    {f:'2033-12-30',r:105.86,a:3631.71},
+  ]},
+  'TX31':{moneda:'ARS',flujos:[
+    {f:'2026-11-30',r:22.0,a:0.0},
+    {f:'2027-05-30',r:22.0,a:175.99},
+    {f:'2027-11-30',r:19.8,a:175.99},
+    {f:'2028-05-30',r:17.6,a:175.99},
+    {f:'2028-11-30',r:15.4,a:175.99},
+    {f:'2029-05-30',r:13.2,a:175.99},
+    {f:'2029-11-30',r:11.0,a:175.99},
+    {f:'2030-05-30',r:8.8,a:175.99},
+    {f:'2030-11-30',r:6.6,a:175.99},
+    {f:'2031-05-30',r:4.4,a:175.99},
+    {f:'2031-11-30',r:2.2,a:175.99},
+  ]},
+  'PARP':{moneda:'ARS',flujos:[
+    {f:'2026-09-30',r:506.19,a:0.0},
+    {f:'2027-03-31',r:506.19,a:0.0},
+    {f:'2027-09-30',r:506.19,a:0.0},
+    {f:'2028-03-31',r:506.19,a:0.0},
+    {f:'2028-09-30',r:506.19,a:0.0},
+    {f:'2029-03-31',r:506.19,a:0.0},
+    {f:'2029-09-30',r:709.24,a:2859.84},
+    {f:'2030-03-31',r:673.78,a:2859.84},
+    {f:'2030-09-30',r:638.32,a:2859.84},
+    {f:'2031-03-31',r:602.85,a:2859.84},
+    {f:'2031-09-30',r:567.39,a:2859.84},
+    {f:'2032-03-31',r:531.93,a:2859.84},
+    {f:'2032-09-30',r:496.47,a:2859.84},
+    {f:'2033-03-31',r:461.01,a:2859.84},
+    {f:'2033-09-30',r:425.54,a:2859.84},
+    {f:'2034-03-31',r:390.08,a:2859.84},
+    {f:'2034-09-30',r:354.62,a:2859.84},
+    {f:'2035-03-31',r:319.16,a:2859.84},
+    {f:'2035-09-30',r:283.7,a:2859.84},
+    {f:'2036-03-31',r:248.23,a:2859.84},
+    {f:'2036-09-30',r:212.77,a:2859.84},
+    {f:'2037-03-31',r:177.31,a:2859.84},
+    {f:'2037-09-30',r:141.85,a:2859.84},
+    {f:'2038-03-31',r:106.39,a:2859.84},
+    {f:'2038-09-30',r:70.92,a:2859.84},
+    {f:'2038-12-31',r:17.73,a:2859.84},
+  ]},
+  'SNEAO':{moneda:'ARS',flujos:[
+    {f:'2027-01-14',r:5177.3,a:0.0},
+    {f:'2027-07-14',r:5092.89,a:6418.87},
+    {f:'2028-01-14',r:4918.43,a:6418.87},
+    {f:'2028-07-14',r:4608.92,a:12837.73},
+    {f:'2029-01-14',r:4141.84,a:12837.73},
+    {f:'2029-07-14',r:3565.02,a:89864.13},
+  ]},
+  // MRCAO (ON GEMSA): Garo tiene dudas de que efectivamente pague — se carga el flujo tal cual
+  // lo muestra Bull igual, sin "corregir" nada (el total de amortización no da 100 como en los
+  // bonos soberanos, es un ON con amortizaciones ya parciales antes de este tramo del flujo).
+  'MRCAO':{moneda:'USD',flujos:[
+    {f:'2026-12-01',r:1.68,a:10.00},
+    {f:'2027-06-01',r:1.19,a:10.00},
+    {f:'2027-12-01',r:0.69,a:14.00},
+  ]},
+};
+// ── Próximos Cobros: calendario de renta/amortización de bonos y ON ──────
+// FLUJOS_BONOS se carga a mano por ticker (fecha, renta y amortización "por
+// cada 100 nominales", igual al formato del calculador de flujos de Bull
+// Market) — ver claude/flujos_bonos.md en el Project para la fuente de cada
+// bono y cómo pedirle a Garo el flujo de uno nuevo que falte.
+function _flujosHoyStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function _flujosFechaLimiteStr(dias){
+  var lim=new Date();lim.setHours(0,0,0,0);lim.setDate(lim.getDate()+dias);
+  return lim.getFullYear()+'-'+String(lim.getMonth()+1).padStart(2,'0')+'-'+String(lim.getDate()).padStart(2,'0');
+}
+function _flujosDiasHasta(fechaISO){
+  var hoy=new Date();hoy.setHours(0,0,0,0);
+  var f=new Date(fechaISO+'T00:00:00');
+  return Math.round((f-hoy)/86400000);
+}
+function _flujosFechaDDMM(fechaISO){
+  var p=fechaISO.split('-');return p[2]+'/'+p[1]+'/'+p[0];
+}
+// Recorre las posiciones abiertas de bonos/ON, busca el flujo cargado de cada
+// ticker y lo escala por qty/100. No toca ningún cálculo de valuación del
+// portafolio — es una capa informativa aparte.
+function calcularCalendarioCobros(){
+  var hoy=_flujosHoyStr();
+  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
+  var items=[],sinFlujo=[];
+  pos.forEach(function(p){
+    var tabla=FLUJOS_BONOS[p.ticker];
+    var sector=getSector(p.ticker);
+    if(!tabla){
+      if(sector==='bonos'||sector==='on') sinFlujo.push(p.ticker);
+      return;
+    }
+    var factor=p.qty/100;
+    tabla.flujos.filter(function(fl){return fl.f>=hoy;}).forEach(function(fl){
+      var renta=Math.round(fl.r*factor*100)/100;
+      var amort=Math.round(fl.a*factor*100)/100;
+      items.push({
+        fecha:fl.f,ticker:p.ticker,moneda:tabla.moneda,
+        renta:renta,amort:amort,total:Math.round((renta+amort)*100)/100
+      });
+    });
+  });
+  items.sort(function(a,b){return a.fecha<b.fecha?-1:a.fecha>b.fecha?1:a.ticker.localeCompare(b.ticker);});
+  return {items:items,sinFlujo:sinFlujo,hoy:hoy};
+}
+function _flujosSumaEnRango(items,dias){
+  var lim=_flujosFechaLimiteStr(dias);
+  var tot={USD:0,ARS:0};
+  items.forEach(function(it){if(it.fecha<=lim){tot[it.moneda]=(tot[it.moneda]||0)+it.total;}});
+  return tot;
+}
+function _flujosFmtMoneda(mon,val){
+  if(!val) return null;
+  return mon+' '+val.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function _flujosFmtTotales(tot){
+  var partes=[];
+  if(tot.USD) partes.push(_flujosFmtMoneda('USD',tot.USD));
+  if(tot.ARS) partes.push(_flujosFmtMoneda('ARS',tot.ARS));
+  return partes.length?partes.join(' + '):'<span style="color:var(--text3)">—</span>';
+}
+// items ya viene ordenado por fecha — agrupa TODOS los que caen el mismo día que el primero.
+// Antes "Próximo cobro" mostraba solo cal.items[0] (ej. solo AO27 el 30/09), aunque AO28/AO29/PARP
+// paguen ese mismo día — Garo lo reportó viendo que la card solo listaba uno de los cuatro.
+function _flujosProximoGrupo(items){
+  if(!items.length) return null;
+  var fecha=items[0].fecha;
+  return {fecha:fecha,items:items.filter(function(it){return it.fecha===fecha;})};
+}
+// ── Badge "D": estimación de próximo dividendo por historial (solo acciones/CEDEARs) ──────
+// A pedido de Garo: en bonos/ON NO se usa (ya tienen el flujo exacto cargado — badge F). En
+// acciones/CEDEARs no hay flujo exacto conocido, así que D se muestra SOLO cuando el historial
+// sugiere que el próximo pago cae dentro de 30 días (no "alguna vez pagó", como antes).
+function _parseFechaDDMMYYYY(s){
+  if(!s) return null;
+  var p=String(s).split('/');
+  if(p.length!==3) return null;
+  var d=new Date(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0')+'T00:00:00');
+  return isNaN(d.getTime())?null:d;
+}
+// Con 2+ pagos históricos usa el intervalo promedio entre ellos; con 1 solo pago asume anual
+// (365 días — el patrón más común en ADRs/CEDEARs de pago único). No es un flujo exacto como
+// el de los bonos (no existe ese dato para acciones) — es una estimación, por eso D nunca
+// muestra monto, a diferencia de F.
+function _estimarProximoDividendo(fechasOrdenadas){
+  if(!fechasOrdenadas.length) return null;
+  var intervaloDias=365;
+  if(fechasOrdenadas.length>=2){
+    var diffs=[];
+    for(var i=1;i<fechasOrdenadas.length;i++) diffs.push((fechasOrdenadas[i]-fechasOrdenadas[i-1])/86400000);
+    intervaloDias=diffs.reduce(function(a,b){return a+b;},0)/diffs.length;
+    if(intervaloDias<30) intervaloDias=30; // evita estimaciones/loops absurdos con datos sucios
+  }
+  var hoy=new Date();hoy.setHours(0,0,0,0);
+  var next=new Date(fechasOrdenadas[fechasOrdenadas.length-1].getTime());
+  var guard=0;
+  while(next<hoy&&guard<60){next=new Date(next.getTime()+intervaloDias*86400000);guard++;}
+  return next;
+}
+function calcularDivHistUpcoming30(){
+  var registros={};
+  function agregar(ticker,fechaStr){
+    var d=_parseFechaDDMMYYYY(fechaStr);
+    if(!d||!ticker) return;
+    (registros[ticker]=registros[ticker]||[]).push(d);
+  }
+  dividendos.forEach(function(x){agregar(x.ticker,x.fecha);});
+  if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
+    TRK.divs.forEach(function(x){if(x.estado!=='pendiente')agregar(x.ticker,x.fecha);});
+  }
+  var lim=new Date();lim.setHours(0,0,0,0);lim.setDate(lim.getDate()+30);
+  var set=new Set();
+  Object.keys(registros).forEach(function(ticker){
+    var sector=getSector(ticker);
+    if(sector==='bonos'||sector==='on') return; // ya tienen F — no duplicar con D
+    var fechas=registros[ticker].sort(function(a,b){return a-b;});
+    var prox=_estimarProximoDividendo(fechas);
+    if(prox&&prox<=lim) set.add(ticker);
+  });
+  return set;
+}
+// Mapa ticker→próximo evento dentro de 30 días, para el puntito "F" en la tabla de Portafolio.
+function _flujosMapaProx30(cal){
+  var lim=_flujosFechaLimiteStr(30);
+  var map={};
+  cal.items.forEach(function(it){
+    if(it.fecha<=lim && !map[it.ticker]) map[it.ticker]=it;
+  });
+  return map;
+}
+// Card chica al pie de "Portafolio" (Próximo cobro / 30 días / 90 días).
+function renderFlujosMiniResumen(cal){
+  var el=document.getElementById('flujo-mini-content');
+  if(!el) return;
+  if(!cal.items.length){
+    el.innerHTML='<span style="color:var(--text3)">Sin cobros de bonos/ON pendientes con flujo cargado.</span>';
+    return;
+  }
+  var grupo=_flujosProximoGrupo(cal.items);
+  var t30=_flujosSumaEnRango(cal.items,30);
+  var t90=_flujosSumaEnRango(cal.items,90);
+  function bloque(label,val,sub){
+    return '<div><div style="color:var(--text3);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">'+label+'</div>'+
+      '<div style="font-weight:700;font-size:.95rem;color:var(--text);font-family:var(--mono)">'+val+'</div>'+
+      (sub?'<div style="color:var(--text2);font-size:.68rem;margin-top:2px">'+sub+'</div>':'')+
+    '</div>';
+  }
+  var proxSub=grupo.items.map(function(it){return it.ticker+' '+_flujosFmtMoneda(it.moneda,it.total);}).join(' · ');
+  el.innerHTML=bloque('Próximo cobro',_flujosFechaDDMM(grupo.fecha)+' <span style="color:var(--text3);font-weight:400;font-size:.78rem">('+_flujosDiasHasta(grupo.fecha)+' días)</span>',proxSub)+
+    bloque('Próximos 30 días',_flujosFmtTotales(t30))+
+    bloque('Próximos 90 días',_flujosFmtTotales(t90));
+}
+// Página completa "Flujos" (Herramientas → Flujos): calendario detallado.
+function renderFlujosPage(){
+  var cal=calcularCalendarioCobros();
+  var elRes=document.getElementById('flujo-page-resumen');
+  if(elRes){
+    var grupo=_flujosProximoGrupo(cal.items);
+    var t30=_flujosSumaEnRango(cal.items,30);
+    var t90=_flujosSumaEnRango(cal.items,90);
+    function card(label,val,sub){
+      return '<div class="card" style="min-width:170px;flex:1;padding:.7rem 1rem">'+
+        '<div style="color:var(--text3);font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">'+label+'</div>'+
+        '<div style="font-family:var(--mono);font-size:1.05rem;font-weight:700">'+val+'</div>'+
+        (sub?'<div style="color:var(--text3);font-size:.66rem;margin-top:3px;font-family:var(--mono)">'+sub+'</div>':'')+
+      '</div>';
+    }
+    elRes.innerHTML=grupo
+      ?card('Próximo cobro',_flujosFechaDDMM(grupo.fecha),'en '+_flujosDiasHasta(grupo.fecha)+' días · '+grupo.items.map(function(it){return it.ticker+' '+_flujosFmtMoneda(it.moneda,it.total);}).join(', '))+
+       card('Próximos 30 días',_flujosFmtTotales(t30))+
+       card('Próximos 90 días',_flujosFmtTotales(t90))
+      :card('Próximo cobro','—','sin cobros pendientes');
+  }
+  var tbody=document.getElementById('flujo-page-tbody');
+  if(tbody){
+    if(!cal.items.length){
+      tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--text3)">No hay bonos/ON en cartera con flujo cargado.</td></tr>';
+    } else {
+      var lastFecha=null;
+      tbody.innerHTML=cal.items.map(function(it){
+        var esNuevaFecha=it.fecha!==lastFecha;lastFecha=it.fecha;
+        var dias=_flujosDiasHasta(it.fecha);
+        var tipo=it.amort>0?'<span style="font-size:.63rem;padding:1px 6px;border-radius:4px;background:rgba(68,138,255,.13);color:var(--blue)">Cupón+Amort.</span>':'<span style="font-size:.63rem;padding:1px 6px;border-radius:4px;background:rgba(0,230,118,.13);color:var(--accent)">Cupón</span>';
+        var badgeDias='<span style="display:inline-block;background:'+(dias<=30?'rgba(0,230,118,.13)':'rgba(68,138,255,.13)')+';color:'+(dias<=30?'var(--accent)':'var(--blue)')+';border:1px solid '+(dias<=30?'var(--accent)':'var(--blue)')+';border-radius:5px;padding:1px 7px;font-size:.66rem;font-weight:700">'+dias+' días</span>';
+        return '<tr style="'+(esNuevaFecha?'border-top:2px solid var(--border2)':'')+'">'+
+          '<td class="mono" style="font-weight:700">'+(esNuevaFecha?_flujosFechaDDMM(it.fecha):'')+'</td>'+
+          '<td>'+(esNuevaFecha?badgeDias:'')+'</td>'+
+          '<td style="font-weight:700">'+it.ticker+'</td>'+
+          '<td>'+tipo+'</td>'+
+          '<td class="mono">'+_flujosFmtMoneda(it.moneda,it.total)+'</td>'+
+        '</tr>';
+      }).join('');
+    }
+  }
+  var elWarn=document.getElementById('flujo-page-sinflujo');
+  if(elWarn){
+    elWarn.style.display=cal.sinFlujo.length?'':'none';
+    if(cal.sinFlujo.length) elWarn.textContent='Tenés bonos/ON en cartera sin flujo cargado todavía: '+cal.sinFlujo.join(', ')+'. Pasame el flujo (formato Bull, 100 nominales) y lo agrego.';
+  }
+}
+
 
 var TICKER_MAP = {'DISN':'DIS','GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
 function getFinnhubTicker(ticker){return TICKER_MAP[ticker]||ticker;}
@@ -1915,6 +2409,7 @@ function showPage(id,btn){
   if(id==='movimientos') resetMFechaHoy();
   if(id==='dividendos') divPopulateSelect();
   if(id==='arbitraje') arbRender();
+  if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
   if(id==='rubros') renderRubros();
@@ -3323,6 +3818,14 @@ function renderVentaEstadisticas(){
 function renderPortfolio(){
   var all=getPositions();
   var open=all.filter(function(p){return Math.abs(p.qty)>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
+  // Próximos Cobros: calendario de flujos de bonos/ON (no depende de cotizaciones).
+  var _calCobros=calcularCalendarioCobros();
+  var _flujoProx30Map=_flujosMapaProx30(_calCobros);
+  renderFlujosMiniResumen(_calCobros);
+  // Badge "D": solo acciones/CEDEARs (los bonos/ON ya tienen F con el flujo exacto, no hace
+  // falta duplicar), y solo cuando el historial estima que el próximo dividendo cae dentro de
+  // 30 días — ver calcularDivHistUpcoming30 (mira dividendos + TRK.divs confirmados).
+  var _divHistorySet=calcularDivHistUpcoming30();
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
   var totalRpnl=all.reduce(function(a,p){return a+p.realizedPnl;},0);
@@ -3490,8 +3993,13 @@ function renderPortfolio(){
 
     var mktARS=mercadoCedearARS!=null?'$'+Math.round(mercadoCedearARS).toLocaleString('es-AR'):null;
     var ppcARS='$'+Math.round(ppcCedearARS).toLocaleString('es-AR');
+    var _qHealth=quoteHealthDot(q);
 
     var finishFlag=finishTickers.has(p.ticker)?'<span title="A finish" style="font-size:.7rem;margin-left:4px">🏁</span>':'';
+    var _flujoEv=_flujoProx30Map[p.ticker];
+    var _flujoTitle=_flujoEv?('Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' — '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total)):'';
+    var flujoFlag=_flujoEv?'<span class="qhelp" style="color:var(--accent);font-size:.62rem;font-weight:800;margin-left:3px">F<span class="qhelp-tip">'+_flujoTitle.replace(/</g,'&lt;')+'</span></span>':'';
+    var divHistFlag=_divHistorySet.has(p.ticker)?'<span class="qhelp" style="color:var(--blue);font-size:.62rem;font-weight:800;margin-left:3px">D<span class="qhelp-tip">Por tu historial, estimamos un dividendo dentro de 30 días</span></span>':'';
     var _mark=MARKS[p.ticker];
     var _markClass=_mark?' marked-'+_mark.type:'';
     var _markIcon=_mark?(_mark.type==='sell'?'🔴':_mark.type==='buy'?'🟢':'⭐'):'🏷';
@@ -3500,11 +4008,11 @@ function renderPortfolio(){
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
-        p.ticker+finishFlag+_markNote+
+        p.ticker+finishFlag+flujoFlag+divHistFlag+_markNote+
       '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
       '<td class="mono">'+invARS+'</td>'+
-      '<td class="mono">'+(mktARS?mktARS:'<span style="color:var(--text3)">—</span>')+'</td>'+
+      '<td class="mono">'+(mktARS?mktARS+_qHealth:'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td class="mono muted">'+ppcARS+'</td>'+
       '<td class="mono col-pventa">'+targetCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
@@ -4587,6 +5095,7 @@ async function fetchAllQuotes(){
   fetchTopbarRates();
   var pos=getPositions().filter(function(p){return Math.abs(p.qty)>0.000001;});
   if(!pos.length){flash(document.getElementById('ref-status'),'No hay posiciones',true);return;}
+  _quoteRunId++; // nueva corrida: lo que no se refresque en este ciclo queda marcado "stale"
   // NO limpiar quotes — mantener cotizaciones viejas hasta que lleguen las nuevas
   try{localStorage.removeItem('ptAna_q3');localStorage.removeItem('ptAna_q3_ts');}catch(e){}
   var icon=document.getElementById('ref-icon');var status=document.getElementById('ref-status');var prog=document.getElementById('pos-prog');var pfill=document.getElementById('pfill');
@@ -4672,11 +5181,13 @@ async function fetchAllQuotes(){
       try{
         var esBRLDirecto=BRL_TICKERS.has(p.ticker);
         var cq=esBRLDirecto?null:mapCedears[p.ticker.toUpperCase()];
-        var fbq=(cq&&cq.price>0)?cq:await fetchYahooAR(p.ticker,esBRLDirecto?'.SA':'.BA');
+        var _esData912=cq&&cq.price>0;
+        var fbq=_esData912?cq:await fetchYahooAR(p.ticker,esBRLDirecto?'.SA':'.BA');
         if(s!=='argentina'&&!esBRLDirecto){
           fbq.fromByma=true;
         }
         quotes[p.ticker]=fbq;
+        _stampQuote(p.ticker,_esData912?'data912':'yahoo');
       }catch(e){
         // No contar error todavía: Finnhub fallback cubre todos los sectores
       }
@@ -4693,8 +5204,8 @@ async function fetchAllQuotes(){
     await mapWithConcurrency(argPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()]||mapCedears[p.ticker.toUpperCase()];
-        if(q&&q.price>0){quotes[p.ticker]=q;}
-        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+        if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
+        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){
         // Sin dato nuevo: se mantiene la ultima cotizacion cargada (para 'argentina'
         // no hay fallback a Finnhub, ver nota arriba)
@@ -4713,6 +5224,7 @@ async function fetchAllQuotes(){
       var p=fallbackPos[i];
       try{
         quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
+        _stampQuote(p.ticker,'finnhub');
         renderPortfolio();
       }catch(e){ errors++; }
       if(i<fallbackPos.length-1)await delay(1100);
@@ -4726,8 +5238,8 @@ async function fetchAllQuotes(){
     await mapWithConcurrency(bonosPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()];
-        if(q&&q.price>0){quotes[p.ticker]=q;}
-        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+        if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
+        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){errors++;}
       updateProgress();
     });
@@ -4744,8 +5256,8 @@ async function fetchAllQuotes(){
     await mapWithConcurrency(onPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()]||mapBonds[p.ticker.toUpperCase()]||mapNotes[p.ticker.toUpperCase()];
-        if(q&&q.price>0){quotes[p.ticker]=q;}
-        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+        if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
+        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){errors++;}
       updateProgress();
     });
