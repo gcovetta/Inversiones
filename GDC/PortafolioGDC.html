@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v31 | 2026-09-16 | Fix (feedback de Garo con captura): (1) los badges F/D con círculo de 14px estaban empujando el ancho de la tabla de Portafolio más allá del contenedor, disparando el scrollbar horizontal de `.tw` — la "línea más oscura" al pie de cada card de sector que no le gustaba. Se cambian F/D de círculo con fondo/borde a solo una letra chica en negrita (sin caja), mucho más angosta, sin tocar el tooltip (sigue funcionando igual, clase .qhelp). (2) La card "Próximos Cobros" al pie de Portafolio: se saca la leyenda "Sin flujo cargado: ..." (quedaba superpuesta/difícil de leer) y se aumenta contraste/tamaño de los valores (Próximo cobro / 30 días / 90 días) — ahora en var(--text) mono .95rem en vez de heredar el tamaño base con menos peso visual. (renderPortfolio / renderFlujosMiniResumen / flujoFlag / divHistFlag)
 v30 | 2026-09-16 | Fix (raíz real del tooltip que "no abría"): Garo reportó que al pasar el mouse por el badge F solo le cambiaba el cursor a un signo de pregunta, sin mostrar el texto — era el atributo `title` nativo del navegador (Brave), que v27 ya había simplificado a una línea sin resultado; el cursor `help` (forma de "?") se veía pero el tooltip nativo nunca renderizaba. Se reemplaza el mecanismo completo: badges F, D y el puntito de salud de cotizaciones ahora usan un tooltip propio en CSS puro (clase .qhelp/.qhelp-tip, position:absolute + :hover, sin JS ni atributo title) en vez de depender del tooltip nativo del sistema operativo/navegador. (CSS .qhelp / flujoFlag / divHistFlag / quoteHealthDot)
 v29 | 2026-09-16 | Feat: se agrega MRCAO (ON GEMSA, USD 9,875%, vto. 01/12/2027) a FLUJOS_BONOS — Garo avisó que tiene dudas de que este ON efectivamente pague; se cargó el flujo tal cual lo muestra Bull (arranca en VR 24,00 en vez de 100,00 porque ya venía amortizando antes de este tramo — el total de amortización acá es 34,00, no 100, y eso es esperado, no un error de carga; detalle en claude/flujos_bonos.md). También se agrega el badge "D" junto al ticker en Portafolio: aparece en cualquier activo (no solo bonos) que tenga al menos un dividendo cobrado antes según el historial ya cargado en `dividendos` — a pedido de Garo, sin mostrar monto (varía según cantidad y no hay flujo futuro conocido como en los bonos, es solo el antecedente de que pagó alguna vez). Se arma con un Set de tickers de `dividendos` en cada render, no requiere ninguna tabla nueva. Van 10 bonos/ON con flujo cargado. (FLUJOS_BONOS / _divHistorySet / renderPortfolio)
 v28 | 2026-09-16 | Feat: se agrega SNEAO (ON San Miguel Clase XIII A, dólar linked, vto. 14/07/2029) a FLUJOS_BONOS — moneda ARS, 6 pagos semestrales entre 01/2027 y 07/2029 (fuente y detalle en claude/flujos_bonos.md del Project). Van 9 bonos/ON con flujo cargado. (FLUJOS_BONOS)
@@ -412,7 +413,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: tooltips de F/D/puntito de cotización pasan a CSS puro (ya no usan el title nativo, que en Brave solo mostraba el cursor de ayuda sin abrir el tooltip)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v30 · 16/09/2026</div>
+<div id="claude-version-badge" title="Fix: badges F/D achicados (ya no disparan scroll horizontal en Portafolio) + card Próximos Cobros más legible." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v31 · 16/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2649,24 +2650,21 @@ function renderFlujosMiniResumen(cal){
   var el=document.getElementById('flujo-mini-content');
   if(!el) return;
   if(!cal.items.length){
-    el.innerHTML='<span style="color:var(--text3)">Sin cobros de bonos/ON pendientes con flujo cargado.</span>'+
-      (cal.sinFlujo.length?'<div style="margin-top:4px;font-size:.68rem;color:var(--text3)">Sin flujo cargado: '+cal.sinFlujo.join(', ')+'</div>':'');
+    el.innerHTML='<span style="color:var(--text3)">Sin cobros de bonos/ON pendientes con flujo cargado.</span>';
     return;
   }
   var prox=cal.items[0];
   var t30=_flujosSumaEnRango(cal.items,30);
   var t90=_flujosSumaEnRango(cal.items,90);
   function bloque(label,val,sub){
-    return '<div><div style="color:var(--text3);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">'+label+'</div>'+
-      '<div style="font-weight:700">'+val+'</div>'+
-      (sub?'<div style="color:var(--text3);font-size:.66rem;margin-top:1px">'+sub+'</div>':'')+
+    return '<div><div style="color:var(--text3);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">'+label+'</div>'+
+      '<div style="font-weight:700;font-size:.95rem;color:var(--text);font-family:var(--mono)">'+val+'</div>'+
+      (sub?'<div style="color:var(--text2);font-size:.68rem;margin-top:2px">'+sub+'</div>':'')+
     '</div>';
   }
-  var html=bloque('Próximo cobro',_flujosFechaDDMM(prox.fecha)+' <span style="color:var(--text3);font-weight:400">('+_flujosDiasHasta(prox.fecha)+' días)</span>',prox.ticker+' — '+_flujosFmtMoneda(prox.moneda,prox.total))+
+  el.innerHTML=bloque('Próximo cobro',_flujosFechaDDMM(prox.fecha)+' <span style="color:var(--text3);font-weight:400;font-size:.78rem">('+_flujosDiasHasta(prox.fecha)+' días)</span>',prox.ticker+' — '+_flujosFmtMoneda(prox.moneda,prox.total))+
     bloque('Próximos 30 días',_flujosFmtTotales(t30))+
     bloque('Próximos 90 días',_flujosFmtTotales(t90));
-  if(cal.sinFlujo.length) html+='<div style="align-self:center;font-size:.66rem;color:var(--text3)">Sin flujo cargado: '+cal.sinFlujo.join(', ')+'</div>';
-  el.innerHTML=html;
 }
 // Página completa "Flujos" (Herramientas → Flujos): calendario detallado.
 function renderFlujosPage(){
@@ -5181,8 +5179,8 @@ function renderPortfolio(){
     var finishFlag=finishTickers.has(p.ticker)?'<span title="A finish" style="font-size:.7rem;margin-left:4px">🏁</span>':'';
     var _flujoEv=_flujoProx30Map[p.ticker];
     var _flujoTitle=_flujoEv?('Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' — '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total)):'';
-    var flujoFlag=_flujoEv?'<span class="qhelp" style="width:14px;height:14px;border-radius:50%;background:rgba(0,230,118,.18);color:var(--accent);border:1px solid var(--accent);font-size:.56rem;font-weight:800;margin-left:4px;vertical-align:middle">F<span class="qhelp-tip">'+_flujoTitle.replace(/</g,'&lt;')+'</span></span>':'';
-    var divHistFlag=_divHistorySet.has(p.ticker)?'<span class="qhelp" style="width:14px;height:14px;border-radius:50%;background:rgba(68,138,255,.18);color:var(--blue);border:1px solid var(--blue);font-size:.56rem;font-weight:800;margin-left:4px;vertical-align:middle">D<span class="qhelp-tip">Ya cobraste dividendos de este ticker antes</span></span>':'';
+    var flujoFlag=_flujoEv?'<span class="qhelp" style="color:var(--accent);font-size:.62rem;font-weight:800;margin-left:3px">F<span class="qhelp-tip">'+_flujoTitle.replace(/</g,'&lt;')+'</span></span>':'';
+    var divHistFlag=_divHistorySet.has(p.ticker)?'<span class="qhelp" style="color:var(--blue);font-size:.62rem;font-weight:800;margin-left:3px">D<span class="qhelp-tip">Ya cobraste dividendos de este ticker antes</span></span>':'';
     var cristianFlag=p.owner==='cristian'?'<span title="Activo de Cristian" style="font-size:.65rem;background:#3b1f6e;color:#a78bfa;border:1px solid #6d28d9;border-radius:3px;padding:0 3px;margin-left:3px">C</span>':'';
     var _mark=MARKS[p.ticker];
     var _markClass=_mark?' marked-'+_mark.type:'';
