@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v25 | 2026-09-16 | Feat: indicador de salud de cotizaciones (recomendación #4, mockup aprobado en opción "puntito junto al precio"). Cada asignación exitosa a quotes[ticker] (en fetchBymaAll/fetchArgAll/fetchFinnhubFallback/fetchBonosAll/fetchONsAll/fetchFCIAll) ahora pasa por _stampQuote(), que le agrega source ('data912'|'yahoo'|'finnhub'|'cafci'), runId (la corrida de fetchAllQuotes vigente, var global _quoteRunId que se incrementa al arrancar cada refresh) y ts (hora del guardado). En la tabla de Portafolio, junto al precio de mercado, aparece un puntito de color: verde=data912 (fuente primaria), azul=Yahoo, naranja=Finnhub, y rojo parpadeante cuando el último "Actualizar precios" NO logró refrescar ese ticker (quotes[ticker].runId quedó de una corrida anterior) — en ese caso se sigue mostrando el último precio conocido, con tooltip de fuente y antigüedad ("hace Xs/m/h"). No cambia ningún precio, cálculo de valuación ni PPC — es la misma capa informativa aparte que Próximos Cobros (v24). Probado en Node con una simulación de 2 corridas antes de subirlo: un ticker no refrescado en la 2da corrida queda correctamente marcado stale, uno sí refrescado con nueva fuente queda fresh con el color correcto. (_stampQuote / _quoteRunId / quoteHealthDot / fetchAllQuotes / renderPortfolio)
 v24 | 2026-09-16 | Feat: "Próximos Cobros" — calendario de renta/amortización de bonos y ON. Se agrega FLUJOS_BONOS (cronograma "por 100 nominales" cargado a mano por ticker, formato del calculador de flujos de Bull Market — fuente y cómo pedir un flujo nuevo en claude/flujos_bonos.md del Project; por ahora cargados BB37D/BC37D/AO27/AO28/AO29/DICP/TX31/PARP) y calcularCalendarioCobros(), que recorre las posiciones abiertas de bonos/ON, busca cada ticker en FLUJOS_BONOS, filtra las fechas futuras y escala renta/amortización por qty/100 (validado a mano contra el flujo real de BB37D x 1.435 nominales antes de programarlo). No toca ningún cálculo de valuación/PPC existente — es una capa informativa aparte. Se agrega: (1) solapa nueva "📅 Flujos" en Herramientas con el calendario completo agrupado por fecha y cards de Próximo cobro / Próximos 30 días / Próximos 90 días (USD y ARS separados, nunca sumados); (2) las mismas 3 cards al pie de la vista Portafolio (card "Próximos Cobros", entre Dividendos cobrados y la barra de Posiciones abiertas); (3) un puntito redondo "F" junto al ticker en la tabla de Portafolio cuando ese bono tiene un cobro dentro de los próximos 30 días, con tooltip de fecha/monto/moneda, para avisar que vender esa posición antes de esa fecha pierde ese cobro. Si hay un bono/ON en cartera sin flujo cargado todavía, se lista aparte (mensaje amarillo) en vez de omitirse en silencio. (FLUJOS_BONOS / calcularCalendarioCobros / renderFlujosPage / renderFlujosMiniResumen / renderPortfolio)
 v23 | 2026-09-13 | Fix (BBAS3/PETR3, definitivo): Garo confirmo que los compra en pesos como CEDEAR, no como tenencia directa en Brasil/BRL — se saca BBAS3/PETR3 de BRL_TICKERS (que ahora queda vacio, pero se deja el mecanismo por si algun dia carga una tenencia realmente directa en BRL). Ademas, aprovechando que data912/arg_cedears resulto tener cobertura enorme (probado en vivo: 1006 tickers, incluye AAPL/MSFT/TSLA/GOOGL/ABEV/BBD/ITUB/MELI/VALE/BBAS3/PETR3...), se lo agrega como fuente PRIMARIA en fetchBymaAll (antes solo se usaba en fetchArgAll para sector 'argentina') — Yahoo via proxy gratuito queda de fallback solo para lo que data912 no tenga, en vez de ser la unica fuente para todo NYSE/brasil/europa/china/cripto. Esto deberia mejorar la confiabilidad de cotizaciones mucho mas alla de BBAS3/PETR3 (cualquier CEDEAR que hoy dependa del proxy fragil de Yahoo). (BRL_TICKERS / fetchBymaAll / fetchArgCedearsAPI)
 v22 | 2026-09-13 | Fix (causa real de GLOB/BIOX/D31M7 sin cotización): probando en vivo, data912 SI tiene estos tickers — pero clasificados en endpoints que la app nunca consultaba. GLOB y BIOX son CEDEARs (acciones extranjeras listadas en BYMA), y data912 los separa de arg_stocks (solo acciones nativas argentinas) en un endpoint aparte, arg_cedears — por eso fetchArgEqAPI() nunca los encontraba y cada uno dependia de un unico intento fragil a Yahoo via proxy gratuito. D31M7 (ON) tampoco esta en arg_corp/arg_bonds — data912 lo clasifica en arg_notes, un cuarto endpoint no consultado. Se agregan fetchArgCedearsAPI() y fetchArgNotesAPI() como fuentes adicionales (antes de caer a Yahoo) en fetchArgAll/fetchONsAll. Tambien se mejora parseData912Response para derivar prevClose desde pct_change cuando el endpoint no trae prev_close (caso de arg_cedears/arg_notes) — antes esos tickers hubieran mostrado 0% de variacion diaria. PETR3/BBAS3 (BRL_TICKERS) quedan pendientes a proposito: data912/arg_cedears SI los tiene, pero con precio en pesos (como CEDEAR), no en reales (como posicion directa en B3/BRL) — mezclar esa fuente ahi cambiaria la moneda de origen del precio sin confirmar con Garo si en realidad los tiene como CEDEAR o como tenencia directa en Brasil. (parseData912Response / fetchArgCedearsAPI / fetchArgNotesAPI / fetchArgAll / fetchONsAll)
@@ -400,7 +401,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: Próximos Cobros — calendario de renta/amortización de bonos/ON (solapa Flujos, cards en Portafolio, badge F junto al ticker con cobro dentro de 30 días)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v24 · 16/09/2026</div>
+<div id="claude-version-badge" title="Feat: indicador de salud de cotizaciones — puntito junto al precio (verde=data912, azul=Yahoo, naranja=Finnhub, rojo=no se pudo refrescar)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v25 · 16/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2272,6 +2273,39 @@ var BRL_TICKERS=new Set([]); // tickers que cotizan en BRL (B3 directo, no NYSE/
 
 var movimientos = [];
 var quotes = {};
+// Id incremental de la última corrida de fetchAllQuotes(). Cada cotización exitosa se estampa
+// con el runId vigente al momento de guardarse — renderPortfolio compara contra el runId actual
+// para saber si ese precio se refrescó en el último intento o quedó "viejo" (ver indicador de
+// fuente/salud de cotizaciones, badge junto al precio en la tabla de Portafolio).
+var _quoteRunId=0;
+// Estampa fuente/corrida/hora en una cotización recién guardada — alimenta el indicador de
+// salud de cotizaciones (puntito de color junto al precio en la tabla de Portafolio).
+function _stampQuote(ticker,source){
+  var q=quotes[ticker];
+  if(!q) return;
+  q.source=source;q.runId=_quoteRunId;q.ts=Date.now();
+}
+function _quoteAgeTxt(ts){
+  var s=Math.round((Date.now()-ts)/1000);
+  if(s<5) return 'recién';
+  if(s<60) return 'hace '+s+'s';
+  var m=Math.round(s/60);
+  if(m<60) return 'hace '+m+'m';
+  var h=Math.round(m/60);
+  return 'hace '+h+'h';
+}
+// Puntito de color junto al precio en Portafolio: de dónde salió la cotización y si se
+// refrescó en el último "Actualizar precios" o quedó vieja (stale). No cambia ningún precio
+// ni cálculo — es la misma capa informativa que el badge "F" de Próximos Cobros.
+function quoteHealthDot(q){
+  if(!q||q.price==null||!q.source) return '';
+  var stale=q.runId!=null&&q.runId!==_quoteRunId;
+  var colorVar=stale?'var(--red)':q.source==='data912'?'var(--accent)':q.source==='yahoo'?'var(--blue)':q.source==='finnhub'?'var(--orange)':'var(--blue)';
+  var label=stale?'No se pudo refrescar en el último intento':q.source==='data912'?'Fuente: data912 (primaria)':q.source==='yahoo'?'Fuente: Yahoo Finance (fallback)':q.source==='finnhub'?'Fuente: Finnhub (fallback)':'Fuente: CAFCI / ArgentinaDatos';
+  var age=q.ts?_quoteAgeTxt(q.ts):'';
+  var title=label+(age?' — '+(stale?'último precio conocido '+age:'actualizado '+age):'');
+  return '<span title="'+title.replace(/"/g,'&quot;')+'" style="display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:5px;vertical-align:middle;cursor:help;background:'+colorVar+(stale?';animation:pulse 1.4s infinite':'')+'"></span>';
+}
 var RSI_CACHE = {}; // ticker -> {value, ts}. RSI(14) diario, no aplica a bonos/ONs
 var TIR_CACHE = {}; // ticker -> {value, ts}. TIR% desde EcoValores, solo Bonos (cobertura parcial, no cubre ONs)
 
@@ -5111,6 +5145,7 @@ function renderPortfolio(){
 
     var mktARS=mercadoCedearARS!=null?'$'+Math.round(mercadoCedearARS).toLocaleString('es-AR'):null;
     var ppcARS='$'+Math.round(ppcCedearARS).toLocaleString('es-AR');
+    var _qHealth=quoteHealthDot(q);
 
     var finishFlag=finishTickers.has(p.ticker)?'<span title="A finish" style="font-size:.7rem;margin-left:4px">🏁</span>':'';
     var _flujoEv=_flujoProx30Map[p.ticker];
@@ -5143,7 +5178,7 @@ function renderPortfolio(){
       '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
       '<td class="mono">'+invARS+'</td>'+
-      '<td class="mono">'+(mktARS?mktARS:'<span style="color:var(--text3)">—</span>')+'</td>'+
+      '<td class="mono">'+(mktARS?mktARS+_qHealth:'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td class="mono muted">'+ppcARS+'</td>'+
       '<td class="mono col-pventa">'+targetCell+'</td>'+
       '<td class="mono col-rsi">'+rsiCell+'</td>'+
@@ -6422,6 +6457,7 @@ async function fetchAllQuotes(){
   fetchTopbarRates();
   var pos=getPositions().filter(function(p){return p.qty>0.000001;});
   if(!pos.length){flash(document.getElementById('ref-status'),'No hay posiciones',true);return;}
+  _quoteRunId++; // nueva corrida: lo que no se refresque en este ciclo queda marcado "stale"
   // NO limpiar quotes — mantener cotizaciones viejas hasta que lleguen las nuevas
   try{localStorage.removeItem('ptNYSE_q3');localStorage.removeItem('ptNYSE_q3_ts');}catch(e){}
   var icon=document.getElementById('ref-icon');var status=document.getElementById('ref-status');var prog=document.getElementById('pos-prog');var pfill=document.getElementById('pfill');
@@ -6512,7 +6548,8 @@ async function fetchAllQuotes(){
       try{
         var esBRLDirecto=BRL_TICKERS.has(p.ticker);
         var cq=esBRLDirecto?null:mapCedears[p.ticker.toUpperCase()];
-        var fbq=(cq&&cq.price>0)?cq:await fetchYahooAR(p.ticker,esBRLDirecto?'.SA':'.BA');
+        var _esData912=cq&&cq.price>0;
+        var fbq=_esData912?cq:await fetchYahooAR(p.ticker,esBRLDirecto?'.SA':'.BA');
         // argentina: ya viene en ARS → guardar directo
         // BRL_TICKERS (B3 directo): guardar en ARS sin normalizar
         // Todo lo demás (nyse/brasil/europa/china/cripto CEDEAR): guardar ARS directo
@@ -6520,6 +6557,7 @@ async function fetchAllQuotes(){
           fbq.fromByma=true; // precio en ARS/CEDEAR — renderPortfolio lo usa directamente (sin CCL race)
         }
         quotes[p.ticker]=fbq;
+        _stampQuote(p.ticker,_esData912?'data912':'yahoo');
       }catch(e){
         // No contar error todavía: Finnhub fallback cubre todos los sectores
       }
@@ -6536,8 +6574,8 @@ async function fetchAllQuotes(){
     await mapWithConcurrency(argPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()]||mapCedears[p.ticker.toUpperCase()];
-        if(q&&q.price>0){quotes[p.ticker]=q;}
-        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+        if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
+        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){
         // Sin dato nuevo: se mantiene la última cotización cargada (mismo criterio
         // que antes — para 'argentina' no hay fallback a Finnhub, ver nota arriba)
@@ -6557,6 +6595,7 @@ async function fetchAllQuotes(){
       try{
         // Finnhub: USD por acción subyacente → renderPortfolio hace (price/ratio)*CCL_HOY
         quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
+        _stampQuote(p.ticker,'finnhub');
         renderPortfolio(); // actualizar UI al llegar cada precio
       }catch(e){ errors++; }
       if(i<fallbackPos.length-1)await delay(1100);
@@ -6570,8 +6609,8 @@ async function fetchAllQuotes(){
     await mapWithConcurrency(bonosPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()];
-        if(q&&q.price>0){quotes[p.ticker]=q;}
-        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+        if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
+        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){errors++;}
       updateProgress();
     });
@@ -6588,8 +6627,8 @@ async function fetchAllQuotes(){
     await mapWithConcurrency(onPos, YAHOO_CONCURRENCY, async function(p){
       try{
         var q=map[p.ticker.toUpperCase()]||mapBonds[p.ticker.toUpperCase()]||mapNotes[p.ticker.toUpperCase()];
-        if(q&&q.price>0){quotes[p.ticker]=q;}
-        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);}
+        if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
+        else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){errors++;}
       updateProgress();
     });
@@ -6620,6 +6659,7 @@ async function fetchAllQuotes(){
         if(cur){
           // VCP en ARS por cuotaparte — igual que argentina (fromByma=true)
           quotes[p.ticker]={price:parseFloat(cur.vcp),prevClose:prev?parseFloat(prev.vcp):parseFloat(cur.vcp),fromByma:true,fromFci:true};
+          _stampQuote(p.ticker,'cafci');
         }
       }catch(e){/* ArgentinaDatos no disponible — sin precio actualizado */}
       updateProgress();
