@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v33 | 2026-09-16 | Fix (Próximo cobro mostraba solo 1 de 4 activos que pagan el mismo día): la card "Próximos Cobros" (mini en Portafolio y la grande en la solapa Flujos) tomaba `cal.items[0]` como "el" próximo cobro — como la lista está ordenada por fecha y después por ticker, si varios bonos pagan el mismo día (ej. 30/09/2026: AO27+AO28+AO29+PARP) solo se veía el primero alfabético (AO27), como si los otros tres no cobraran nada ese día. Se agrega _flujosProximoGrupo(items), que agrupa TODOS los ítems con la fecha más próxima en vez de quedarse con el primero — ahora la card lista los 4 con su monto cada uno. Verificado con los montos reales que reportó Garo (AO27 USD 23,35 / AO28 USD 7,00 / AO29 USD 26,84 / PARP ARS 18.931,51, los 4 el 30/09/2026): coincide exacto. (_flujosProximoGrupo / renderFlujosMiniResumen / renderFlujosPage)
+v32 | 2026-09-16 | Fix (badge D no aparecía en tickers con dividendos reales — ej. ITUB/MSFT): el badge solo miraba el array `dividendos` (carga manual desde la solapa Dividendos), pero los dividendos que entran por la importación automática de Veta (v12/v14, `TRK.divs`) nunca se copian a `dividendos` — quedan solo ahí. `_divHistorySet` ahora suma también los tickers de TRK.divs con estado!=='pendiente' (mismo criterio de "confirmado" que ya usa el resto del código, ej. renderPortfolio línea ~4984). No era un filtro de 30 días como el badge F (ese no existe en D, nunca existió) — era que faltaba esta segunda fuente. (renderPortfolio / _divHistorySet)
 v31 | 2026-09-16 | Fix (feedback de Garo con captura): (1) los badges F/D con círculo de 14px estaban empujando el ancho de la tabla de Portafolio más allá del contenedor, disparando el scrollbar horizontal de `.tw` — la "línea más oscura" al pie de cada card de sector que no le gustaba. Se cambian F/D de círculo con fondo/borde a solo una letra chica en negrita (sin caja), mucho más angosta, sin tocar el tooltip (sigue funcionando igual, clase .qhelp). (2) La card "Próximos Cobros" al pie de Portafolio: se saca la leyenda "Sin flujo cargado: ..." (quedaba superpuesta/difícil de leer) y se aumenta contraste/tamaño de los valores (Próximo cobro / 30 días / 90 días) — ahora en var(--text) mono .95rem en vez de heredar el tamaño base con menos peso visual. (renderPortfolio / renderFlujosMiniResumen / flujoFlag / divHistFlag)
 v30 | 2026-09-16 | Fix (raíz real del tooltip que "no abría"): Garo reportó que al pasar el mouse por el badge F solo le cambiaba el cursor a un signo de pregunta, sin mostrar el texto — era el atributo `title` nativo del navegador (Brave), que v27 ya había simplificado a una línea sin resultado; el cursor `help` (forma de "?") se veía pero el tooltip nativo nunca renderizaba. Se reemplaza el mecanismo completo: badges F, D y el puntito de salud de cotizaciones ahora usan un tooltip propio en CSS puro (clase .qhelp/.qhelp-tip, position:absolute + :hover, sin JS ni atributo title) en vez de depender del tooltip nativo del sistema operativo/navegador. (CSS .qhelp / flujoFlag / divHistFlag / quoteHealthDot)
 v29 | 2026-09-16 | Feat: se agrega MRCAO (ON GEMSA, USD 9,875%, vto. 01/12/2027) a FLUJOS_BONOS — Garo avisó que tiene dudas de que este ON efectivamente pague; se cargó el flujo tal cual lo muestra Bull (arranca en VR 24,00 en vez de 100,00 porque ya venía amortizando antes de este tramo — el total de amortización acá es 34,00, no 100, y eso es esperado, no un error de carga; detalle en claude/flujos_bonos.md). También se agrega el badge "D" junto al ticker en Portafolio: aparece en cualquier activo (no solo bonos) que tenga al menos un dividendo cobrado antes según el historial ya cargado en `dividendos` — a pedido de Garo, sin mostrar monto (varía según cantidad y no hay flujo futuro conocido como en los bonos, es solo el antecedente de que pagó alguna vez). Se arma con un Set de tickers de `dividendos` en cada render, no requiere ninguna tabla nueva. Van 10 bonos/ON con flujo cargado. (FLUJOS_BONOS / _divHistorySet / renderPortfolio)
@@ -413,7 +415,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: badges F/D achicados (ya no disparan scroll horizontal en Portafolio) + card Próximos Cobros más legible." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v31 · 16/09/2026</div>
+<div id="claude-version-badge" title="Fix: Próximo cobro ahora lista TODOS los activos que pagan la fecha más próxima, no solo el primero alfabético." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v33 · 16/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2636,6 +2638,14 @@ function _flujosFmtTotales(tot){
   if(tot.ARS) partes.push(_flujosFmtMoneda('ARS',tot.ARS));
   return partes.length?partes.join(' + '):'<span style="color:var(--text3)">—</span>';
 }
+// items ya viene ordenado por fecha — agrupa TODOS los que caen el mismo día que el primero.
+// Antes "Próximo cobro" mostraba solo cal.items[0] (ej. solo AO27 el 30/09), aunque AO28/AO29/PARP
+// paguen ese mismo día — Garo lo reportó viendo que la card solo listaba uno de los cuatro.
+function _flujosProximoGrupo(items){
+  if(!items.length) return null;
+  var fecha=items[0].fecha;
+  return {fecha:fecha,items:items.filter(function(it){return it.fecha===fecha;})};
+}
 // Mapa ticker→próximo evento dentro de 30 días, para el puntito "F" en la tabla de Portafolio.
 function _flujosMapaProx30(cal){
   var lim=_flujosFechaLimiteStr(30);
@@ -2653,7 +2663,7 @@ function renderFlujosMiniResumen(cal){
     el.innerHTML='<span style="color:var(--text3)">Sin cobros de bonos/ON pendientes con flujo cargado.</span>';
     return;
   }
-  var prox=cal.items[0];
+  var grupo=_flujosProximoGrupo(cal.items);
   var t30=_flujosSumaEnRango(cal.items,30);
   var t90=_flujosSumaEnRango(cal.items,90);
   function bloque(label,val,sub){
@@ -2662,7 +2672,8 @@ function renderFlujosMiniResumen(cal){
       (sub?'<div style="color:var(--text2);font-size:.68rem;margin-top:2px">'+sub+'</div>':'')+
     '</div>';
   }
-  el.innerHTML=bloque('Próximo cobro',_flujosFechaDDMM(prox.fecha)+' <span style="color:var(--text3);font-weight:400;font-size:.78rem">('+_flujosDiasHasta(prox.fecha)+' días)</span>',prox.ticker+' — '+_flujosFmtMoneda(prox.moneda,prox.total))+
+  var proxSub=grupo.items.map(function(it){return it.ticker+' '+_flujosFmtMoneda(it.moneda,it.total);}).join(' · ');
+  el.innerHTML=bloque('Próximo cobro',_flujosFechaDDMM(grupo.fecha)+' <span style="color:var(--text3);font-weight:400;font-size:.78rem">('+_flujosDiasHasta(grupo.fecha)+' días)</span>',proxSub)+
     bloque('Próximos 30 días',_flujosFmtTotales(t30))+
     bloque('Próximos 90 días',_flujosFmtTotales(t90));
 }
@@ -2671,7 +2682,7 @@ function renderFlujosPage(){
   var cal=calcularCalendarioCobros();
   var elRes=document.getElementById('flujo-page-resumen');
   if(elRes){
-    var prox=cal.items[0];
+    var grupo=_flujosProximoGrupo(cal.items);
     var t30=_flujosSumaEnRango(cal.items,30);
     var t90=_flujosSumaEnRango(cal.items,90);
     function card(label,val,sub){
@@ -2681,8 +2692,8 @@ function renderFlujosPage(){
         (sub?'<div style="color:var(--text3);font-size:.66rem;margin-top:3px;font-family:var(--mono)">'+sub+'</div>':'')+
       '</div>';
     }
-    elRes.innerHTML=prox
-      ?card('Próximo cobro',_flujosFechaDDMM(prox.fecha),'en '+_flujosDiasHasta(prox.fecha)+' días')+
+    elRes.innerHTML=grupo
+      ?card('Próximo cobro',_flujosFechaDDMM(grupo.fecha),'en '+_flujosDiasHasta(grupo.fecha)+' días · '+grupo.items.map(function(it){return it.ticker+' '+_flujosFmtMoneda(it.moneda,it.total);}).join(', '))+
        card('Próximos 30 días',_flujosFmtTotales(t30))+
        card('Próximos 90 días',_flujosFmtTotales(t90))
       :card('Próximo cobro','—','sin cobros pendientes');
@@ -5001,10 +5012,17 @@ function renderPortfolio(){
   var _calCobros=calcularCalendarioCobros();
   var _flujoProx30Map=_flujosMapaProx30(_calCobros);
   renderFlujosMiniResumen(_calCobros);
-  // Badge "D": tickers con al menos un dividendo cobrado antes (según el historial ya cargado
-  // en Dividendos/tracker) — sin monto, porque a diferencia de los bonos acá no hay un flujo
-  // futuro conocido, solo el antecedente de que ese activo sí pagó dividendos alguna vez.
+  // Badge "D": tickers con al menos un dividendo cobrado antes — sin monto, porque a diferencia
+  // de los bonos acá no hay un flujo futuro conocido, solo el antecedente de que ese activo sí
+  // pagó dividendos alguna vez. Hay DOS fuentes de historial y hay que mirar las dos: la carga
+  // manual (array `dividendos`, tarjeta "Dividendos cobrados") y la importación automática de
+  // Veta (TRK.divs — el pipeline de v12/v14, confirmados = estado!=='pendiente'). Un dividendo
+  // importado automático nunca llega a `dividendos`, solo a TRK.divs, así que mirar solo
+  // `dividendos` dejaba afuera justamente los importados (ej. ITUB/MSFT reportado por Garo).
   var _divHistorySet=new Set(dividendos.map(function(d){return d.ticker;}));
+  if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
+    TRK.divs.forEach(function(d){if(d.estado!=='pendiente'&&d.ticker)_divHistorySet.add(d.ticker);});
+  }
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
   var totalRpnl=all.reduce(function(a,p){return a+p.realizedPnl;},0);
