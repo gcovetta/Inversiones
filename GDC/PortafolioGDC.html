@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v29 | 2026-09-16 | Feat: se agrega MRCAO (ON GEMSA, USD 9,875%, vto. 01/12/2027) a FLUJOS_BONOS — Garo avisó que tiene dudas de que este ON efectivamente pague; se cargó el flujo tal cual lo muestra Bull (arranca en VR 24,00 en vez de 100,00 porque ya venía amortizando antes de este tramo — el total de amortización acá es 34,00, no 100, y eso es esperado, no un error de carga; detalle en claude/flujos_bonos.md). También se agrega el badge "D" junto al ticker en Portafolio: aparece en cualquier activo (no solo bonos) que tenga al menos un dividendo cobrado antes según el historial ya cargado en `dividendos` — a pedido de Garo, sin mostrar monto (varía según cantidad y no hay flujo futuro conocido como en los bonos, es solo el antecedente de que pagó alguna vez). Se arma con un Set de tickers de `dividendos` en cada render, no requiere ninguna tabla nueva. Van 10 bonos/ON con flujo cargado. (FLUJOS_BONOS / _divHistorySet / renderPortfolio)
+v28 | 2026-09-16 | Feat: se agrega SNEAO (ON San Miguel Clase XIII A, dólar linked, vto. 14/07/2029) a FLUJOS_BONOS — moneda ARS, 6 pagos semestrales entre 01/2027 y 07/2029 (fuente y detalle en claude/flujos_bonos.md del Project). Van 9 bonos/ON con flujo cargado. (FLUJOS_BONOS)
+v27 | 2026-09-16 | Fix: Garo reportó que el tooltip del badge "F" (Próximos Cobros) no se abría al pasar el mouse — el título multilínea de v26 (Cupón/Amortización/Total en líneas separadas con \n) parece no renderizar bien como tooltip nativo en su navegador. Se vuelve a una sola línea simple: "Próximo cobro: <fecha> — <moneda> <total>", que es el formato que sí andaba antes de v26. (flujoFlag)
 v26 | 2026-09-16 | Mejora: el tooltip del badge "F" (Próximos Cobros) ahora desglosa Cupón (interés) y, si corresponde, Amortización (capital) por separado además del total — antes solo mostraba el monto combinado. No agrega ningún cálculo nuevo: renta/amort ya estaban calculados en calcularCalendarioCobros(), es solo mostrar los dos campos que ya existían en vez de solo la suma. Sin impacto de performance (mismo dato, ya en memoria). (flujoFlag)
 v25 | 2026-09-16 | Feat: indicador de salud de cotizaciones (recomendación #4, mockup aprobado en opción "puntito junto al precio"). Cada asignación exitosa a quotes[ticker] (en fetchBymaAll/fetchArgAll/fetchFinnhubFallback/fetchBonosAll/fetchONsAll/fetchFCIAll) ahora pasa por _stampQuote(), que le agrega source ('data912'|'yahoo'|'finnhub'|'cafci'), runId (la corrida de fetchAllQuotes vigente, var global _quoteRunId que se incrementa al arrancar cada refresh) y ts (hora del guardado). En la tabla de Portafolio, junto al precio de mercado, aparece un puntito de color: verde=data912 (fuente primaria), azul=Yahoo, naranja=Finnhub, y rojo parpadeante cuando el último "Actualizar precios" NO logró refrescar ese ticker (quotes[ticker].runId quedó de una corrida anterior) — en ese caso se sigue mostrando el último precio conocido, con tooltip de fuente y antigüedad ("hace Xs/m/h"). No cambia ningún precio, cálculo de valuación ni PPC — es la misma capa informativa aparte que Próximos Cobros (v24). Probado en Node con una simulación de 2 corridas antes de subirlo: un ticker no refrescado en la 2da corrida queda correctamente marcado stale, uno sí refrescado con nueva fuente queda fresh con el color correcto. (_stampQuote / _quoteRunId / quoteHealthDot / fetchAllQuotes / renderPortfolio)
 v24 | 2026-09-16 | Feat: "Próximos Cobros" — calendario de renta/amortización de bonos y ON. Se agrega FLUJOS_BONOS (cronograma "por 100 nominales" cargado a mano por ticker, formato del calculador de flujos de Bull Market — fuente y cómo pedir un flujo nuevo en claude/flujos_bonos.md del Project; por ahora cargados BB37D/BC37D/AO27/AO28/AO29/DICP/TX31/PARP) y calcularCalendarioCobros(), que recorre las posiciones abiertas de bonos/ON, busca cada ticker en FLUJOS_BONOS, filtra las fechas futuras y escala renta/amortización por qty/100 (validado a mano contra el flujo real de BB37D x 1.435 nominales antes de programarlo). No toca ningún cálculo de valuación/PPC existente — es una capa informativa aparte. Se agrega: (1) solapa nueva "📅 Flujos" en Herramientas con el calendario completo agrupado por fecha y cards de Próximo cobro / Próximos 30 días / Próximos 90 días (USD y ARS separados, nunca sumados); (2) las mismas 3 cards al pie de la vista Portafolio (card "Próximos Cobros", entre Dividendos cobrados y la barra de Posiciones abiertas); (3) un puntito redondo "F" junto al ticker en la tabla de Portafolio cuando ese bono tiene un cobro dentro de los próximos 30 días, con tooltip de fecha/monto/moneda, para avisar que vender esa posición antes de esa fecha pierde ese cobro. Si hay un bono/ON en cartera sin flujo cargado todavía, se lista aparte (mensaje amarillo) en vez de omitirse en silencio. (FLUJOS_BONOS / calcularCalendarioCobros / renderFlujosPage / renderFlujosMiniResumen / renderPortfolio)
@@ -402,7 +405,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Mejora: tooltip del badge F (Próximos Cobros) desglosa Cupón y Amortización por separado, no solo el total." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v26 · 16/09/2026</div>
+<div id="claude-version-badge" title="Feat: MRCAO agregado a FLUJOS_BONOS (10 bonos/ON) + badge D junto al ticker para activos con historial de dividendos cobrados." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v29 · 16/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2543,6 +2546,22 @@ var FLUJOS_BONOS={
     {f:'2038-03-31',r:106.39,a:2859.84},
     {f:'2038-09-30',r:70.92,a:2859.84},
     {f:'2038-12-31',r:17.73,a:2859.84},
+  ]},
+  'SNEAO':{moneda:'ARS',flujos:[
+    {f:'2027-01-14',r:5177.3,a:0.0},
+    {f:'2027-07-14',r:5092.89,a:6418.87},
+    {f:'2028-01-14',r:4918.43,a:6418.87},
+    {f:'2028-07-14',r:4608.92,a:12837.73},
+    {f:'2029-01-14',r:4141.84,a:12837.73},
+    {f:'2029-07-14',r:3565.02,a:89864.13},
+  ]},
+  // MRCAO (ON GEMSA): Garo tiene dudas de que efectivamente pague — se carga el flujo tal cual
+  // lo muestra Bull igual, sin "corregir" nada (el total de amortización no da 100 como en los
+  // bonos soberanos, es un ON con amortizaciones ya parciales antes de este tramo del flujo).
+  'MRCAO':{moneda:'USD',flujos:[
+    {f:'2026-12-01',r:1.68,a:10.00},
+    {f:'2027-06-01',r:1.19,a:10.00},
+    {f:'2027-12-01',r:0.69,a:14.00},
   ]},
 };
 // ── Próximos Cobros: calendario de renta/amortización de bonos y ON ──────
@@ -4977,6 +4996,10 @@ function renderPortfolio(){
   var _calCobros=calcularCalendarioCobros();
   var _flujoProx30Map=_flujosMapaProx30(_calCobros);
   renderFlujosMiniResumen(_calCobros);
+  // Badge "D": tickers con al menos un dividendo cobrado antes (según el historial ya cargado
+  // en Dividendos/tracker) — sin monto, porque a diferencia de los bonos acá no hay un flujo
+  // futuro conocido, solo el antecedente de que ese activo sí pagó dividendos alguna vez.
+  var _divHistorySet=new Set(dividendos.map(function(d){return d.ticker;}));
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
   var totalRpnl=all.reduce(function(a,p){return a+p.realizedPnl;},0);
@@ -5150,15 +5173,9 @@ function renderPortfolio(){
 
     var finishFlag=finishTickers.has(p.ticker)?'<span title="A finish" style="font-size:.7rem;margin-left:4px">🏁</span>':'';
     var _flujoEv=_flujoProx30Map[p.ticker];
-    var _flujoTitle=_flujoEv?(function(){
-      var l='Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' ('+_flujosDiasHasta(_flujoEv.fecha)+' días)';
-      l+='\nCupón (interés): '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.renta);
-      if(_flujoEv.amort>0) l+='\nAmortización (capital): '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.amort);
-      l+='\nTotal: '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total);
-      l+='\nSi vendés antes de esa fecha, no lo cobrás';
-      return l;
-    })():'';
+    var _flujoTitle=_flujoEv?('Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' — '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total)):'';
     var flujoFlag=_flujoEv?'<span title="'+_flujoTitle.replace(/"/g,'&quot;')+'" style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(0,230,118,.18);color:var(--accent);border:1px solid var(--accent);font-size:.56rem;font-weight:800;margin-left:4px;cursor:help;vertical-align:middle">F</span>':'';
+    var divHistFlag=_divHistorySet.has(p.ticker)?'<span title="Ya cobraste dividendos de este ticker antes" style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(68,138,255,.18);color:var(--blue);border:1px solid var(--blue);font-size:.56rem;font-weight:800;margin-left:4px;cursor:help;vertical-align:middle">D</span>':'';
     var cristianFlag=p.owner==='cristian'?'<span title="Activo de Cristian" style="font-size:.65rem;background:#3b1f6e;color:#a78bfa;border:1px solid #6d28d9;border-radius:3px;padding:0 3px;margin-left:3px">C</span>':'';
     var _mark=MARKS[p.ticker];
     var _markClass=_mark?' marked-'+_mark.type:'';
@@ -5183,7 +5200,7 @@ function renderPortfolio(){
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
-        p.ticker+finishFlag+flujoFlag+_markNote+
+        p.ticker+finishFlag+flujoFlag+divHistFlag+_markNote+
       '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
       '<td class="mono">'+invARS+'</td>'+
