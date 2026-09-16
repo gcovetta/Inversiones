@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v34 | 2026-09-16 | Cambio de lógica del badge D a pedido de Garo: (1) ya no se muestra en bonos/ON (esos ya tienen F con el flujo exacto cargado, D ahí era redundante); (2) en acciones/CEDEARs ya no es "alguna vez pagó dividendos" sino una estimación de que el PRÓXIMO pago cae dentro de 30 días, calculada a partir del historial (dividendos + TRK.divs confirmados): con 2+ pagos usa el intervalo promedio entre ellos, con 1 solo pago asume anual (365 días, patrón típico de ADRs de pago único) — nunca muestra monto porque sigue siendo una estimación, no un flujo exacto como los bonos. Se agregan _parseFechaDDMMYYYY / _estimarProximoDividendo / calcularDivHistUpcoming30. Además, se saca el scrollbar horizontal visible de las tablas de Portafolio (.tw) — Garo seguía viendo la línea sombreada pese al achique de v31; se oculta con scrollbar-width:none / ::-webkit-scrollbar{display:none} (mismo patrón que ya usan .sidebar/#mobile-filters en el código), sin sacarle la capacidad de scroll si hiciera falta. (calcularDivHistUpcoming30 / renderPortfolio / CSS .tw)
 v33 | 2026-09-16 | Fix (Próximo cobro mostraba solo 1 de 4 activos que pagan el mismo día): la card "Próximos Cobros" (mini en Portafolio y la grande en la solapa Flujos) tomaba `cal.items[0]` como "el" próximo cobro — como la lista está ordenada por fecha y después por ticker, si varios bonos pagan el mismo día (ej. 30/09/2026: AO27+AO28+AO29+PARP) solo se veía el primero alfabético (AO27), como si los otros tres no cobraran nada ese día. Se agrega _flujosProximoGrupo(items), que agrupa TODOS los ítems con la fecha más próxima en vez de quedarse con el primero — ahora la card lista los 4 con su monto cada uno. Verificado con los montos reales que reportó Garo (AO27 USD 23,35 / AO28 USD 7,00 / AO29 USD 26,84 / PARP ARS 18.931,51, los 4 el 30/09/2026): coincide exacto. (_flujosProximoGrupo / renderFlujosMiniResumen / renderFlujosPage)
 v32 | 2026-09-16 | Fix (badge D no aparecía en tickers con dividendos reales — ej. ITUB/MSFT): el badge solo miraba el array `dividendos` (carga manual desde la solapa Dividendos), pero los dividendos que entran por la importación automática de Veta (v12/v14, `TRK.divs`) nunca se copian a `dividendos` — quedan solo ahí. `_divHistorySet` ahora suma también los tickers de TRK.divs con estado!=='pendiente' (mismo criterio de "confirmado" que ya usa el resto del código, ej. renderPortfolio línea ~4984). No era un filtro de 30 días como el badge F (ese no existe en D, nunca existió) — era que faltaba esta segunda fuente. (renderPortfolio / _divHistorySet)
 v31 | 2026-09-16 | Fix (feedback de Garo con captura): (1) los badges F/D con círculo de 14px estaban empujando el ancho de la tabla de Portafolio más allá del contenedor, disparando el scrollbar horizontal de `.tw` — la "línea más oscura" al pie de cada card de sector que no le gustaba. Se cambian F/D de círculo con fondo/borde a solo una letra chica en negrita (sin caja), mucho más angosta, sin tocar el tooltip (sigue funcionando igual, clase .qhelp). (2) La card "Próximos Cobros" al pie de Portafolio: se saca la leyenda "Sin flujo cargado: ..." (quedaba superpuesta/difícil de leer) y se aumenta contraste/tamaño de los valores (Próximo cobro / 30 días / 90 días) — ahora en var(--text) mono .95rem en vez de heredar el tamaño base con menos peso visual. (renderPortfolio / renderFlujosMiniResumen / flujoFlag / divHistFlag)
@@ -134,7 +135,8 @@ header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;a
 .card-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .card-title{font-weight:600;font-size:.83rem}
 .card-body{padding:1rem}
-.tw{overflow-x:auto;width:100%;max-width:100%;box-sizing:border-box}
+.tw{overflow-x:auto;width:100%;max-width:100%;box-sizing:border-box;scrollbar-width:none}
+.tw::-webkit-scrollbar{display:none}
 #mov-card{display:flex;flex-direction:column}
 #mov-card .card-header{position:sticky;top:0;z-index:5;background:var(--surface);flex-shrink:0}
 #mov-wrap{overflow-x:auto;overflow-y:auto;width:100%;box-sizing:border-box;flex:1;max-height:calc(100vh - 320px)}
@@ -415,7 +417,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: Próximo cobro ahora lista TODOS los activos que pagan la fecha más próxima, no solo el primero alfabético." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v33 · 16/09/2026</div>
+<div id="claude-version-badge" title="Cambio: D solo en acciones (no bonos) y solo si el historial estima un dividendo dentro de 30 días. Scrollbar horizontal de Portafolio oculto." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v34 · 16/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2645,6 +2647,58 @@ function _flujosProximoGrupo(items){
   if(!items.length) return null;
   var fecha=items[0].fecha;
   return {fecha:fecha,items:items.filter(function(it){return it.fecha===fecha;})};
+}
+// ── Badge "D": estimación de próximo dividendo por historial (solo acciones/CEDEARs) ──────
+// A pedido de Garo: en bonos/ON NO se usa (ya tienen el flujo exacto cargado — badge F). En
+// acciones/CEDEARs no hay flujo exacto conocido, así que D se muestra SOLO cuando el historial
+// sugiere que el próximo pago cae dentro de 30 días (no "alguna vez pagó", como antes).
+function _parseFechaDDMMYYYY(s){
+  if(!s) return null;
+  var p=String(s).split('/');
+  if(p.length!==3) return null;
+  var d=new Date(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0')+'T00:00:00');
+  return isNaN(d.getTime())?null:d;
+}
+// Con 2+ pagos históricos usa el intervalo promedio entre ellos; con 1 solo pago asume anual
+// (365 días — el patrón más común en ADRs/CEDEARs de pago único). No es un flujo exacto como
+// el de los bonos (no existe ese dato para acciones) — es una estimación, por eso D nunca
+// muestra monto, a diferencia de F.
+function _estimarProximoDividendo(fechasOrdenadas){
+  if(!fechasOrdenadas.length) return null;
+  var intervaloDias=365;
+  if(fechasOrdenadas.length>=2){
+    var diffs=[];
+    for(var i=1;i<fechasOrdenadas.length;i++) diffs.push((fechasOrdenadas[i]-fechasOrdenadas[i-1])/86400000);
+    intervaloDias=diffs.reduce(function(a,b){return a+b;},0)/diffs.length;
+    if(intervaloDias<30) intervaloDias=30; // evita estimaciones/loops absurdos con datos sucios
+  }
+  var hoy=new Date();hoy.setHours(0,0,0,0);
+  var next=new Date(fechasOrdenadas[fechasOrdenadas.length-1].getTime());
+  var guard=0;
+  while(next<hoy&&guard<60){next=new Date(next.getTime()+intervaloDias*86400000);guard++;}
+  return next;
+}
+function calcularDivHistUpcoming30(){
+  var registros={};
+  function agregar(ticker,fechaStr){
+    var d=_parseFechaDDMMYYYY(fechaStr);
+    if(!d||!ticker) return;
+    (registros[ticker]=registros[ticker]||[]).push(d);
+  }
+  dividendos.forEach(function(x){agregar(x.ticker,x.fecha);});
+  if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
+    TRK.divs.forEach(function(x){if(x.estado!=='pendiente')agregar(x.ticker,x.fecha);});
+  }
+  var lim=new Date();lim.setHours(0,0,0,0);lim.setDate(lim.getDate()+30);
+  var set=new Set();
+  Object.keys(registros).forEach(function(ticker){
+    var sector=getSector(ticker);
+    if(sector==='bonos'||sector==='on') return; // ya tienen F — no duplicar con D
+    var fechas=registros[ticker].sort(function(a,b){return a-b;});
+    var prox=_estimarProximoDividendo(fechas);
+    if(prox&&prox<=lim) set.add(ticker);
+  });
+  return set;
 }
 // Mapa ticker→próximo evento dentro de 30 días, para el puntito "F" en la tabla de Portafolio.
 function _flujosMapaProx30(cal){
@@ -5012,17 +5066,10 @@ function renderPortfolio(){
   var _calCobros=calcularCalendarioCobros();
   var _flujoProx30Map=_flujosMapaProx30(_calCobros);
   renderFlujosMiniResumen(_calCobros);
-  // Badge "D": tickers con al menos un dividendo cobrado antes — sin monto, porque a diferencia
-  // de los bonos acá no hay un flujo futuro conocido, solo el antecedente de que ese activo sí
-  // pagó dividendos alguna vez. Hay DOS fuentes de historial y hay que mirar las dos: la carga
-  // manual (array `dividendos`, tarjeta "Dividendos cobrados") y la importación automática de
-  // Veta (TRK.divs — el pipeline de v12/v14, confirmados = estado!=='pendiente'). Un dividendo
-  // importado automático nunca llega a `dividendos`, solo a TRK.divs, así que mirar solo
-  // `dividendos` dejaba afuera justamente los importados (ej. ITUB/MSFT reportado por Garo).
-  var _divHistorySet=new Set(dividendos.map(function(d){return d.ticker;}));
-  if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
-    TRK.divs.forEach(function(d){if(d.estado!=='pendiente'&&d.ticker)_divHistorySet.add(d.ticker);});
-  }
+  // Badge "D": solo acciones/CEDEARs (los bonos/ON ya tienen F con el flujo exacto, no hace
+  // falta duplicar), y solo cuando el historial estima que el próximo dividendo cae dentro de
+  // 30 días — ver calcularDivHistUpcoming30 (mira dividendos + TRK.divs confirmados).
+  var _divHistorySet=calcularDivHistUpcoming30();
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
   var totalRpnl=all.reduce(function(a,p){return a+p.realizedPnl;},0);
@@ -5198,7 +5245,7 @@ function renderPortfolio(){
     var _flujoEv=_flujoProx30Map[p.ticker];
     var _flujoTitle=_flujoEv?('Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' — '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total)):'';
     var flujoFlag=_flujoEv?'<span class="qhelp" style="color:var(--accent);font-size:.62rem;font-weight:800;margin-left:3px">F<span class="qhelp-tip">'+_flujoTitle.replace(/</g,'&lt;')+'</span></span>':'';
-    var divHistFlag=_divHistorySet.has(p.ticker)?'<span class="qhelp" style="color:var(--blue);font-size:.62rem;font-weight:800;margin-left:3px">D<span class="qhelp-tip">Ya cobraste dividendos de este ticker antes</span></span>':'';
+    var divHistFlag=_divHistorySet.has(p.ticker)?'<span class="qhelp" style="color:var(--blue);font-size:.62rem;font-weight:800;margin-left:3px">D<span class="qhelp-tip">Por tu historial, estimamos un dividendo dentro de 30 días</span></span>':'';
     var cristianFlag=p.owner==='cristian'?'<span title="Activo de Cristian" style="font-size:.65rem;background:#3b1f6e;color:#a78bfa;border:1px solid #6d28d9;border-radius:3px;padding:0 3px;margin-left:3px">C</span>':'';
     var _mark=MARKS[p.ticker];
     var _markClass=_mark?' marked-'+_mark.type:'';
