@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v27 | 2026-09-16 | Fix (aclaración de Garo): "Próximos Cobros" (calendario de Flujos, badge F, mini card en Portafolio) pasa a mirar SIEMPRE la cartera Principal, sin importar cuál esté activa en pantalla — los bonos con flujo cargado solo los tiene ahí, nunca en Cocos ni VetaJeep. v26 lo había dejado atado a CARTERA_ACTIVA (igual que el resto del Portafolio), pero para este cálculo puntual no es lo que corresponde. Se agrega getPositionsPrincipal() (fuerza CARTERA_ACTIVA='principal', llama a getPositions(), restaura el valor original) y calcularCalendarioCobros() la usa en vez de getPositions() directo. El badge D (dividendos) no se tocó — no depende de getPositions(), ya era agnóstico de cartera. Probado en Node simulando estar parado en Cocos: el calendario sigue trayendo los bonos de Principal y CARTERA_ACTIVA queda intacta después del cálculo. (getPositionsPrincipal / calcularCalendarioCobros)
 v26 | 2026-09-16 | Feat: se porta desde GDC el paquete completo de "Próximos Cobros" + indicador de salud de cotizaciones (implementado y probado ahí primero, v24-v34): FLUJOS_BONOS con 10 bonos/ON cargados (BB37D, BC37D, AO27, AO28, AO29, DICP, TX31, PARP, SNEAO, MRCAO — detalle y fuente en claude/flujos_bonos.md del Project), calcularCalendarioCobros() (escala el flujo por qty/100, filtra fechas futuras), solapa nueva "📅 Flujos" (Herramientas) con calendario completo + cards de Próximo cobro/30 días/90 días, las mismas cards al pie de Portafolio, y un badge "F" junto al ticker cuando hay cobro dentro de 30 días (tooltip con fecha+monto). Se agrega también el indicador de salud de cotizaciones: puntito junto al precio de mercado (verde=data912, azul=Yahoo, naranja=Finnhub, rojo parpadeante=no se pudo refrescar en el último "Actualizar precios") vía _stampQuote()/_quoteRunId en cada fetch de cotización. Y el badge "D": en acciones/CEDEARs (no en bonos, que ya tienen F), estima si el próximo dividendo cae dentro de 30 días a partir del historial en TRK.divs (este portafolio no tiene el array "dividendos" manual — se eliminó en v15 — así que la estimación mira solo TRK.divs confirmados). IMPORTANTE (específico de Omar): tanto el calendario de Flujos como el badge D usan getPositions() tal cual, que en este archivo solo devuelve la cartera activa (CARTERA_ACTIVA: principal/cocos/vetajeep) — es decir, "Flujos" muestra los cobros de la cartera que estés mirando en pantalla, igual que el resto del Portafolio (totales, tabla), y cambia si cambiás de cartera. Si en algún momento Garo prefiere ver el total combinado de las 3 carteras ahí, es un cambio aparte a pedir explícitamente (no se asumió acá). Los tooltips de F/D/puntito usan CSS puro (.qhelp/.qhelp-tip), no el atributo title nativo. Ninguno de estos cambios toca cálculos de valuación, PPC ni precios existentes. (FLUJOS_BONOS / calcularCalendarioCobros / calcularDivHistUpcoming30 / _stampQuote / quoteHealthDot / renderPortfolio / renderFlujosPage)
 v25 | 2026-09-15 | Fix (Omar, confirmado por Garo): al cargar un dividendo en 'Dividendos CCL', el impacto en PPC decia que el ticker (ej. AO29) 'no tiene posiciones' aunque si la tenia — trkAddDiv() y _trkImpPPCPreview() buscaban la posicion con getPositions().find(...), que SOLO devuelve las posiciones de la cartera activa en pantalla (CARTERA_ACTIVA: principal/cocos/vetajeep). Si Omar tenia seleccionada Cocos o VetaJeep al cargar un dividendo de un ticker que solo esta en Principal, el tracker no lo encontraba y lo trataba como venta realizada en vez de bajar el PPC. Se agrega trkFindPosicionEnCualquierCartera(ticker), que busca en las 3 carteras (prefiere la activa si aparece ahi, si no la primera que encuentre) y se usa en ambos lugares. La aplicacion real del ajuste (dentro de getPositions(), ya existente) no necesito cambios — ya es dinamica por cartera cada vez que se recalcula. Probado en Node antes de subir. (trkFindPosicionEnCualquierCartera / trkAddDiv / _trkImpPPCPreview)
 v24 | 2026-09-13 | Fix critico (recuperacion de datos): Portafolio 3 (VetaJeep) habia desaparecido de la UI. Investigado en el historial de git: el commit 8e1289d (2026-08-18) agrego esta tercera cartera (boton de nav, selector en Comprar/Movimientos, badge, etiqueta en la tabla), pero el commit 223e76f (2026-08-31, un 'Add files via upload' generico — probablemente se subio por error una copia vieja del archivo) la removio por completo, sin dejar rastro en ningun commit posterior — confirmado revisando TODO el historial (git log -S) del archivo. Los MOVIMIENTOS con cartera='vetajeep' nunca se tocaron (viven en Supabase, no en este HTML) — la logica de filtrado por CARTERA_ACTIVA en getPositions()/renderMovimientos() ya es generica y los sigue reconociendo perfectamente, lo unico que faltaba era la UI para volver a seleccionar esa cartera. Se restaura exactamente el codigo removido en 223e76f, adaptado a la estructura actual del archivo (boton de nav, opcion en el selector de Comprar, opcion en el filtro de Movimientos, rama de color/badge en syncCarteraUI, tag VETAJEEP en la tabla de movimientos). (syncCarteraUI / setCarteraActiva / renderMovimientos)
@@ -405,7 +406,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: Próximos Cobros (calendario de flujos de bonos/ON) + indicador de salud de cotizaciones + badges F/D, portado desde GDC." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v26 · 16/09/2026</div>
+<div id="claude-version-badge" title="Fix: Próximos Cobros (Flujos/badge F) ahora siempre mira la cartera Principal, sin importar cuál esté activa en pantalla." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v27 · 16/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -2061,12 +2062,25 @@ function _flujosDiasHasta(fechaISO){
 function _flujosFechaDDMM(fechaISO){
   var p=fechaISO.split('-');return p[2]+'/'+p[1]+'/'+p[0];
 }
-// Recorre las posiciones abiertas de bonos/ON, busca el flujo cargado de cada
-// ticker y lo escala por qty/100. No toca ningún cálculo de valuación del
-// portafolio — es una capa informativa aparte.
+// Garo confirmó: los bonos con flujo cargado (AO27/AO28/AO29/BB37D/etc.) solo los tiene en la
+// cartera Principal — "Próximos Cobros" (calendario, badge F, mini card, solapa Flujos) debe
+// mostrar SIEMPRE Principal, sin importar qué cartera esté activa en pantalla (Cocos/VetaJeep
+// no participan). Se fuerza CARTERA_ACTIVA='principal' para este cálculo puntual y se restaura
+// el valor original enseguida — no cambia qué cartera ve el resto de la UI.
+function getPositionsPrincipal(){
+  var activaOriginal=CARTERA_ACTIVA;
+  CARTERA_ACTIVA='principal';
+  var pos=getPositions();
+  CARTERA_ACTIVA=activaOriginal;
+  return pos;
+}
+// Recorre las posiciones abiertas de bonos/ON (SIEMPRE de la cartera Principal, ver
+// getPositionsPrincipal — no la cartera activa en pantalla), busca el flujo cargado de cada
+// ticker y lo escala por qty/100. No toca ningún cálculo de valuación del portafolio — es una
+// capa informativa aparte.
 function calcularCalendarioCobros(){
   var hoy=_flujosHoyStr();
-  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
+  var pos=getPositionsPrincipal().filter(function(p){return p.qty>0.000001;});
   var items=[],sinFlujo=[];
   pos.forEach(function(p){
     var tabla=FLUJOS_BONOS[p.ticker];
