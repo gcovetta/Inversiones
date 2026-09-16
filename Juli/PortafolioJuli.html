@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v26 | 2026-09-16 | Feat: se agrega SA24D (Bono Pcia. Salta USD 8,5%, vto. 01/12/2027) a FLUJOS_BONOS — moneda USD (el flujo viene expresado "dólares cable"/CCL, que es un pago en USD vía CCL, no pesos — SA24D está en BONOS_USD_DIRECTO_EXCEPCIONES para el cálculo de PPC/costo, pero eso es independiente de en qué moneda se paga el cupón). Van 18 bonos/ON con flujo cargado. Probado en Node antes de subir. (FLUJOS_BONOS)
+v25 | 2026-09-16 | Feat: se agregan 7 bonos/ON nuevos a FLUJOS_BONOS — ERF25 (Entre Ríos USD 8,75%), PBA27 (Bs.As. Tamar+7%, ARS), PBA28 (Bs.As. CER+9%, ARS), DEC2O (Edesa USD 8%, pago único), D30S6 (Letra Tesoro cero cupón vinc. USD, ARS, pago único), D31M7 (Letra dólar linked, ARS, pago único), DNC3O (ON Edenor USD 9,75%, pago único). ERF25 es como MRCAO: ya venía amortizando antes de este tramo (VR arranca en 27, no 100), así que el total de amortización no da 100 — cargado tal cual lo muestra Bull. Van 17 bonos/ON con flujo cargado en total (detalle y fuente de cada uno en claude/flujos_bonos.md del Project). Probado en Node con posiciones de prueba en los 7 tickers antes de subir. (FLUJOS_BONOS)
 v24 | 2026-09-16 | Feat: se porta desde GDC el paquete completo de "Próximos Cobros" + indicador de salud de cotizaciones (implementado y probado ahí primero, v24-v34): FLUJOS_BONOS con 10 bonos/ON cargados (BB37D, BC37D, AO27, AO28, AO29, DICP, TX31, PARP, SNEAO, MRCAO — detalle y fuente en claude/flujos_bonos.md del Project), calcularCalendarioCobros() (escala el flujo por qty/100, filtra fechas futuras), solapa nueva "📅 Flujos" (Herramientas) con calendario completo + cards de Próximo cobro/30 días/90 días, las mismas cards al pie de Portafolio, y un badge "F" junto al ticker cuando hay cobro dentro de 30 días (tooltip con fecha+monto). Se agrega también el indicador de salud de cotizaciones: puntito junto al precio de mercado (verde=data912, azul=Yahoo, naranja=Finnhub, rojo parpadeante=no se pudo refrescar en el último "Actualizar precios") vía _stampQuote()/_quoteRunId en cada fetch de cotización. Y el badge "D": en acciones/CEDEARs (no en bonos, que ya tienen F), estima si el próximo dividendo cae dentro de 30 días a partir del historial en TRK.divs (este portafolio no tiene el array "dividendos" manual — se eliminó en v15 — así que la estimación mira solo TRK.divs confirmados). Los tooltips de F/D/puntito usan CSS puro (.qhelp/.qhelp-tip), no el atributo title nativo (a Garo no le abría en Brave). Ninguno de estos cambios toca cálculos de valuación, PPC ni precios existentes — es una capa informativa aparte, ya verificada en producción en GDC antes de portarla acá. (FLUJOS_BONOS / calcularCalendarioCobros / calcularDivHistUpcoming30 / _stampQuote / quoteHealthDot / renderPortfolio / renderFlujosPage)
 v23 | 2026-09-13 | Fix (BBAS3/PETR3, definitivo): Garo confirmo que los compra en pesos como CEDEAR, no como tenencia directa en Brasil/BRL — se saca BBAS3/PETR3 de BRL_TICKERS (que ahora queda vacio, pero se deja el mecanismo por si algun dia carga una tenencia realmente directa en BRL). Ademas, aprovechando que data912/arg_cedears resulto tener cobertura enorme (probado en vivo: 1006 tickers, incluye AAPL/MSFT/TSLA/GOOGL/ABEV/BBD/ITUB/MELI/VALE/BBAS3/PETR3...), se lo agrega como fuente PRIMARIA en fetchBymaAll (antes solo se usaba en fetchArgAll para sector 'argentina') — Yahoo via proxy gratuito queda de fallback solo para lo que data912 no tenga, en vez de ser la unica fuente para todo NYSE/brasil/europa/china/cripto. Esto deberia mejorar la confiabilidad de cotizaciones mucho mas alla de BBAS3/PETR3 (cualquier CEDEAR que hoy dependa del proxy fragil de Yahoo). (BRL_TICKERS / fetchBymaAll / fetchArgCedearsAPI)
 v22 | 2026-09-13 | Fix (causa real de GLOB/BIOX/D31M7 sin cotización): probando en vivo, data912 SI tiene estos tickers — pero clasificados en endpoints que la app nunca consultaba. GLOB y BIOX son CEDEARs (acciones extranjeras listadas en BYMA), y data912 los separa de arg_stocks (solo acciones nativas argentinas) en un endpoint aparte, arg_cedears — por eso fetchArgEqAPI() nunca los encontraba y cada uno dependia de un unico intento fragil a Yahoo via proxy gratuito. D31M7 (ON) tampoco esta en arg_corp/arg_bonds — data912 lo clasifica en arg_notes, un cuarto endpoint no consultado. Se agregan fetchArgCedearsAPI() y fetchArgNotesAPI() como fuentes adicionales (antes de caer a Yahoo) en fetchArgAll/fetchONsAll. Tambien se mejora parseData912Response para derivar prevClose desde pct_change cuando el endpoint no trae prev_close (caso de arg_cedears/arg_notes) — antes esos tickers hubieran mostrado 0% de variacion diaria. PETR3/BBAS3 (BRL_TICKERS) quedan pendientes a proposito: data912/arg_cedears SI los tiene, pero con precio en pesos (como CEDEAR), no en reales (como posicion directa en B3/BRL) — mezclar esa fuente ahi cambiaria la moneda de origen del precio sin confirmar con Garo si en realidad los tiene como CEDEAR o como tenencia directa en Brasil. (parseData912Response / fetchArgCedearsAPI / fetchArgNotesAPI / fetchArgAll / fetchONsAll)
@@ -403,7 +405,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: Próximos Cobros (calendario de flujos de bonos/ON) + indicador de salud de cotizaciones + badges F/D, portado desde GDC." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v24 · 16/09/2026</div>
+<div id="claude-version-badge" title="Feat: SA24D agregado a FLUJOS_BONOS (18 bonos/ON en Próximos Cobros)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v26 · 16/09/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -2103,6 +2105,40 @@ var FLUJOS_BONOS={
     {f:'2026-12-01',r:1.68,a:10.00},
     {f:'2027-06-01',r:1.19,a:10.00},
     {f:'2027-12-01',r:0.69,a:14.00},
+  ]},
+  'ERF25':{moneda:'USD',flujos:[
+    {f:'2027-02-08',r:1.49,a:9.0},
+    {f:'2027-08-08',r:1.11,a:9.0},
+    {f:'2028-02-08',r:0.74,a:9.0},
+    {f:'2028-08-08',r:0.37,a:9.0},
+  ]},
+  'PBA27':{moneda:'ARS',flujos:[
+    {f:'2026-10-30',r:7.56,a:0.0},
+    {f:'2027-01-30',r:7.56,a:0.0},
+    {f:'2027-04-30',r:7.4,a:100.0},
+  ]},
+  'PBA28':{moneda:'ARS',flujos:[
+    {f:'2026-10-30',r:5.02,a:0.0},
+    {f:'2027-04-30',r:5.02,a:0.0},
+    {f:'2027-10-30',r:5.02,a:0.0},
+    {f:'2028-04-28',r:4.96,a:111.52},
+  ]},
+  'DEC2O':{moneda:'USD',flujos:[
+    {f:'2027-02-24',r:4.28,a:100.0},
+  ]},
+  'D30S6':{moneda:'ARS',flujos:[
+    {f:'2026-09-30',r:0.0,a:151032.16},
+  ]},
+  'D31M7':{moneda:'ARS',flujos:[
+    {f:'2027-03-31',r:0.0,a:151032.16},
+  ]},
+  'DNC3O':{moneda:'USD',flujos:[
+    {f:'2026-11-22',r:4.92,a:100.0},
+  ]},
+  'SA24D':{moneda:'USD',flujos:[
+    {f:'2026-12-01',r:1.59,a:12.5},
+    {f:'2027-06-01',r:1.06,a:12.5},
+    {f:'2027-12-01',r:0.53,a:12.5},
   ]},
 };
 // ── Próximos Cobros: calendario de renta/amortización de bonos y ON ──────
