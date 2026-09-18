@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v37 | 2026-09-18 | Feat: TIR real (YTM) calculada con el flujo exacto de FLUJOS_BONOS en vez de depender solo de EcoValores. Se agregan calcularTIRReal(ticker) + _xirrCalc/_xirrNPV (XIRR actual/365 por bisección, sin asumir reinversión de cupones) — descuenta el cronograma futuro completo del ticker contra su precio de mercado de hoy (bonos/ON en USD: precio ARS ÷ MEP_HOY, mismo TC que ya usa el resto del portafolio para estos sectores; bonos en ARS: precio y flujo comparados directo, sin conversión, TIR queda en términos nominales de pesos). La columna TIR de Portafolio (bonos Y ON — antes ON siempre mostraba "—", ya que TIR_CACHE/EcoValores nunca cubrió ONs) ahora usa la TIR real para cualquier ticker con flujo cargado, con fallback a TIR de EcoValores solo para bonos sin flujo todavía. Validado contra una planilla externa de Garo con TIR online: BB37D 11,77% vs 11,77% (exacto), AO29 10,22% vs 10,24% (a la par). Pedido de Garo, ronda 2 de ideas de funcionalidad (ver claude/flujos_bonos.md del Project). (calcularTIRReal / _xirrCalc / renderPortfolio)
 v36 | 2026-09-16 | Feat: se agrega SA24D (Bono Pcia. Salta USD 8,5%, vto. 01/12/2027) a FLUJOS_BONOS — moneda USD (el flujo viene expresado "dólares cable"/CCL, que es un pago en USD vía CCL, no pesos — SA24D está en BONOS_USD_DIRECTO_EXCEPCIONES para el cálculo de PPC/costo, pero eso es independiente de en qué moneda se paga el cupón). Van 18 bonos/ON con flujo cargado. Probado en Node antes de subir. (FLUJOS_BONOS)
 v35 | 2026-09-16 | Feat: se agregan 7 bonos/ON nuevos a FLUJOS_BONOS — ERF25 (Entre Ríos USD 8,75%), PBA27 (Bs.As. Tamar+7%, ARS), PBA28 (Bs.As. CER+9%, ARS), DEC2O (Edesa USD 8%, pago único), D30S6 (Letra Tesoro cero cupón vinc. USD, ARS, pago único), D31M7 (Letra dólar linked, ARS, pago único), DNC3O (ON Edenor USD 9,75%, pago único). ERF25 es como MRCAO: ya venía amortizando antes de este tramo (VR arranca en 27, no 100), así que el total de amortización no da 100 — cargado tal cual lo muestra Bull. Van 17 bonos/ON con flujo cargado en total (detalle y fuente de cada uno en claude/flujos_bonos.md del Project). Probado en Node con posiciones de prueba en los 7 tickers antes de subir. (FLUJOS_BONOS)
 v34 | 2026-09-16 | Cambio de lógica del badge D a pedido de Garo: (1) ya no se muestra en bonos/ON (esos ya tienen F con el flujo exacto cargado, D ahí era redundante); (2) en acciones/CEDEARs ya no es "alguna vez pagó dividendos" sino una estimación de que el PRÓXIMO pago cae dentro de 30 días, calculada a partir del historial (dividendos + TRK.divs confirmados): con 2+ pagos usa el intervalo promedio entre ellos, con 1 solo pago asume anual (365 días, patrón típico de ADRs de pago único) — nunca muestra monto porque sigue siendo una estimación, no un flujo exacto como los bonos. Se agregan _parseFechaDDMMYYYY / _estimarProximoDividendo / calcularDivHistUpcoming30. Además, se saca el scrollbar horizontal visible de las tablas de Portafolio (.tw) — Garo seguía viendo la línea sombreada pese al achique de v31; se oculta con scrollbar-width:none / ::-webkit-scrollbar{display:none} (mismo patrón que ya usan .sidebar/#mobile-filters en el código), sin sacarle la capacidad de scroll si hiciera falta. (calcularDivHistUpcoming30 / renderPortfolio / CSS .tw)
@@ -419,7 +420,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: SA24D agregado a FLUJOS_BONOS (18 bonos/ON en Próximos Cobros)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v36 · 16/09/2026</div>
+<div id="claude-version-badge" title="Feat: TIR real (YTM) con el flujo exacto de FLUJOS_BONOS, para bonos y ON." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v37 · 18/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2632,6 +2633,66 @@ function _flujosDiasHasta(fechaISO){
 }
 function _flujosFechaDDMM(fechaISO){
   var p=fechaISO.split('-');return p[2]+'/'+p[1]+'/'+p[0];
+}
+// ── TIR real (YTM) con el flujo exacto de FLUJOS_BONOS ───────────────────
+// A diferencia de TIR_CACHE (EcoValores, solo Bonos, cobertura parcial), esto
+// calcula la TIR exacta de CUALQUIER ticker con flujo cargado en FLUJOS_BONOS
+// (bonos y ON) descontando su cronograma futuro real contra el precio de
+// mercado de hoy. XIRR actual/365, sin asumir reinversión de cupones.
+// Validado 2026-09-18 contra la planilla de Garo (fuente distinta, con
+// actualización online): BB37D 11,77% vs 11,77% (exacto), AO29 10,22% vs
+// 10,24% (a la par, la diferencia es sub-decimal por timing del precio).
+function _xirrNPV(precio,flujos,hoyUTC,r){
+  var total=-precio;
+  for(var i=0;i<flujos.length;i++){
+    var d=new Date(flujos[i].f+'T00:00:00Z');
+    var t=(d-hoyUTC)/86400000/365;
+    if(t<0) continue;
+    total+=flujos[i].m/Math.pow(1+r,t);
+  }
+  return total;
+}
+function _xirrCalc(precio,flujos){
+  if(!precio||precio<=0||!flujos||!flujos.length) return null;
+  var hoy=new Date();
+  var hoyUTC=new Date(Date.UTC(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()));
+  var lo=-0.9,hi=5.0;
+  var flo=_xirrNPV(precio,flujos,hoyUTC,lo),fhi=_xirrNPV(precio,flujos,hoyUTC,hi);
+  if(isNaN(flo)||isNaN(fhi)||flo*fhi>0) return null; // sin raíz en el rango esperado (dato raro)
+  for(var i=0;i<100;i++){
+    var mid=(lo+hi)/2;var fm=_xirrNPV(precio,flujos,hoyUTC,mid);
+    if(Math.abs(fm)<1e-9) return mid;
+    if(flo*fm<0){hi=mid;fhi=fm;} else {lo=mid;flo=fm;}
+  }
+  return (lo+hi)/2;
+}
+// Devuelve {tir, moneda} en % o null si falta cotización o el ticker no tiene
+// flujo cargado. Bonos/ON en USD: precio ARS de mercado ÷ MEP_HOY (mismo TC
+// que usa el resto del portafolio para estos sectores — ver isBonoUSDDirecto
+// y getTC). Bonos en ARS (CER, dólar-linked ya expresado en pesos, etc.): se
+// compara el precio ARS directo contra el flujo ARS, sin conversión — el
+// resultado queda en términos nominales de pesos, igual que la calculan la
+// mayoría de las planillas/calculadoras para bonos peso.
+function calcularTIRReal(ticker){
+  var tabla=FLUJOS_BONOS[ticker];
+  if(!tabla) return null;
+  var q=quotes[ticker];
+  if(!q||q.price==null) return null;
+  var ratio=getRatio(ticker)||1;
+  var precio;
+  if(tabla.moneda==='USD'){
+    var tc=MEP_HOY||CCL_HOY;
+    if(!tc) return null;
+    precio=q.price*ratio/tc;
+  } else {
+    precio=q.price*ratio;
+  }
+  if(!precio||precio<=0) return null;
+  var hoyISO=_flujosHoyStr();
+  var flujosFuturos=tabla.flujos.filter(function(x){return x.f>hoyISO;}).map(function(x){return {f:x.f,m:(x.r||0)+(x.a||0)};});
+  if(!flujosFuturos.length) return null;
+  var r=_xirrCalc(precio,flujosFuturos);
+  return r==null?null:{tir:r*100,moneda:tabla.moneda};
 }
 // Recorre las posiciones abiertas de bonos/ON, busca el flujo cargado de cada
 // ticker y lo escala por qty/100. No toca ningún cálculo de valuación del
@@ -5289,13 +5350,21 @@ function renderPortfolio(){
     var _markBtnCls='mark-btn'+(_mark?' active':'');
     var _markNote=_mark&&_mark.note?'<span class="mark-note-tag" title="'+_mark.note.replace(/"/g,'&quot;')+'">'+_mark.note.replace(/</g,'&lt;')+'</span>':'';
 
-    // RSI (14) para todo menos Bonos/ONs. Para Bonos: TIR (EcoValores, cobertura parcial). ONs: sin fuente, siempre '—'.
+    // RSI (14) para todo menos Bonos/ONs. Para Bonos/ON con flujo cargado en FLUJOS_BONOS: TIR real
+    // (XIRR exacto contra el cronograma, ver calcularTIRReal). Si no hay flujo cargado todavía,
+    // fallback a TIR de EcoValores (solo Bonos, cobertura parcial). Sin ninguna de las dos: '—'.
     var rsiCell;
     if(_isBonoON){
-      var _tirEntry=(sector==='bonos')?TIR_CACHE[p.ticker]:null;
-      rsiCell=_tirEntry&&_tirEntry.value!=null
-        ?'<span style="color:var(--text);font-weight:600">'+_tirEntry.value.toFixed(2)+'%</span>'
-        :'<span style="color:var(--text3)">—</span>';
+      var _tirReal=(typeof FLUJOS_BONOS!=='undefined'&&FLUJOS_BONOS[p.ticker])?calcularTIRReal(p.ticker):null;
+      if(_tirReal){
+        var _tirTip='TIR real: XIRR (act/365) del flujo exacto de FLUJOS_BONOS contra el precio de mercado de hoy, en '+_tirReal.moneda;
+        rsiCell='<span style="color:var(--text);font-weight:600" title="'+_tirTip+'">'+_tirReal.tir.toFixed(2)+'%'+(_tirReal.moneda==='ARS'?' <span style="color:var(--text3);font-size:.6rem">$</span>':'')+'</span>';
+      } else {
+        var _tirEntry=(sector==='bonos')?TIR_CACHE[p.ticker]:null;
+        rsiCell=_tirEntry&&_tirEntry.value!=null
+          ?'<span style="color:var(--text2);font-weight:600" title="TIR EcoValores (estimación externa, cobertura parcial)">'+_tirEntry.value.toFixed(2)+'%</span>'
+          :'<span style="color:var(--text3)">—</span>';
+      }
     } else {
       var _rsiEntry=RSI_CACHE[p.ticker];
       rsiCell=_rsiEntry&&_rsiEntry.value!=null
