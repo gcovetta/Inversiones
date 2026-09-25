@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v41 | 2026-09-24 | Feat (única vez, solo GDC): card "Histórico Veta → PPC" en la solapa Dividendos para importar el .xls viejo "Movimientos Dividendos y Rentas Cobradas". Toma DIV y RTA en efectivo (renta + amortización − gastos; excluye pagos en especie, CANJ y RESC), y resta del PPC solo si el activo sigue en cartera y lo tenías a la fecha del cobro según movimientos (sin Cristian), en proporción a las nominales de esa fecha que seguís teniendo (mínimo de tenencia desde el cobro / tenencia del broker). ARS se convierte con CCL (MEP para bonos/ON) de la fecha o hasta 7 días antes. Si el cobro ya estaba en TRK.divs sin aplicar (±7 días) se actualiza en vez de duplicar. Preview por activo y por cobro, confirmación, y botón Revertir. getPositions() ahora usa d.montoPPC si existe. (hvParse/hvAnalyze/hvRender/hvApply/hvRevert, getPositions)
 v40 | 2026-09-18 | Fix + hardening (Garo reportó que el MEP del 09/09/2026 es 1531, no lo que iba a promediar el backfill de v39): ese día tenía 4 movimientos de bonos con CCL/MEP guardado muy distinto entre sí (TX31 con 1487 vs AO29 con ~1525-1531 — un tipeo mal cargado en TX31), y backfillTCDesdeMovimientos() los promediaba a ciegas, lo que hubiera dejado la tabla con un valor mal (~1518). Se agrega detección de dispersión: si un día tiene min/max con más de 15 (ARS) de diferencia, esa fecha NO se completa sola — queda listada aparte en el alert ("revisalas a mano en $ Tipo de Cambio") en vez de inventar un promedio con un dato sucio adentro. Se carga manualmente MEP_TABLE['09/09/2026']=1531 (el valor correcto que confirmó Garo) para dejar esa fecha resuelta ya mismo. (backfillTCDesdeMovimientos / BACKFILL_DISPERSION_MAX / MEP_TABLE)
 v39 | 2026-09-18 | Fix (bug real, reportado por Garo: ~30 fechas jul-sep/2026 con ⚠ CCL/MEP en Movimientos, todas cargadas desde el módulo rápido de Comprar/Vender): vbuyConfirmar() y vsellConfirmar() calculaban cclVal (vía getTC) y lo guardaban en el movimiento, pero nunca lo persistían en CCL_TABLE/MEP_TABLE — solo addMov() (el formulario largo, que Garo casi no usa) lo hacía, y encima con el bug de usar CCL_HOY/MEP_HOY ("hoy") en vez del valor real de la fecha del movimiento, así que una carga con fecha pasada podía pisar mal la tabla. Se agrega tcStampearFecha(fecha,esBonoON,valor) — usa el valor REAL del movimiento (cclVal), nunca pisa una fecha ya cargada — y se la llama desde addMov/vbuyConfirmar/vsellConfirmar. También se agrega backfillTCDesdeMovimientos() + botón "🔧 Completar tabla CCL/MEP" en Movimientos, que recorre TODO el historial y completa los huecos ya existentes con el m.ccl de cada movimiento (promedio si un mismo día tiene varios valores) — soluciona de una vez las ~30 fechas ya afectadas, sin tocar nada que ya esté cargado. (tcStampearFecha / backfillTCDesdeMovimientos / addMov / vbuyConfirmar / vsellConfirmar)
 v38 | 2026-09-18 | Fix (feedback de Garo): la columna TIR mostraba un "$" chiquito al lado del % en los bonos en pesos (DICP, TX31, PARP, PBA27, PBA28, SNEAO) para marcar que esa TIR está en términos nominales de pesos y no en dólares — molestaba visualmente. Se saca el "$"; la aclaración de moneda sigue disponible en el tooltip al pasar el mouse (title="TIR real: ... en ARS/USD"), solo que ya no se ve siempre en la celda. (renderPortfolio)
@@ -423,7 +424,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: MEP del 09/09/2026 corregido a 1531 + el auto-completar ya no promedia días con valores muy dispares, los reporta para revisar a mano." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v40 · 18/09/2026</div>
+<div id="claude-version-badge" title="Feat (única vez, solo GDC): card &quot;Histórico Veta → PPC&quot; en la solapa Dividendos para importar el .xls viejo &quot;Movimientos Dividendos y Rentas Cobradas&quot;. Toma DIV y RTA en efectivo (renta + amortización − gastos; excluye pagos en especie, CANJ y RESC), y resta del PPC solo si el activo sigue en cartera y lo tenías a la fecha del cobro según movimientos (sin Cristian), en proporción a las nominales de esa fecha que seguís teniendo (mínimo de tenencia desde el cobro / tenencia del broker). ARS se convierte con CCL (MEP para bonos/ON) de la fecha o hasta 7 días antes. Si el cobro ya estaba en TRK.divs sin aplicar (±7 días) se actualiza en vez de duplicar. Preview por activo y por cobro, confirmación, y botón Revertir. getPositions() ahora usa d.montoPPC si existe. (hvParse/hvAnalyze/hvRender/hvApply/hvRevert, getPositions)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v41 · 24/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -1136,6 +1137,28 @@ tr:hover td{background:var(--surface2)}
               </label>
               <span id="trk-imp-status" class="smsg"></span>
             </div>
+          </div>
+        </div>
+
+        <!-- Histórico Veta → PPC (importación única, formato viejo) -->
+        <div class="card" id="hv-card">
+          <div class="card-header">
+            <span class="card-title">📜 Histórico Veta → PPC (única vez)</span>
+            <button class="card-toggle" onclick="cardToggle(this)">▾</button>
+          </div>
+          <div class="card-body">
+            <div class="ibox" style="margin-bottom:10px">
+              Subí el listado viejo de Veta <b>"Movimientos Dividendos y Rentas Cobradas"</b> (.xls). Se toman dividendos (DIV) y rentas (RTA) cobrados en efectivo, amortización incluida, y se restan del PPC <b>solo</b> si el activo sigue en cartera y lo tenías a la fecha del cobro — en proporción a las nominales de ese momento que todavía conservás. Pagos en especie, canjes y rescates se excluyen. Nada se aplica hasta que confirmes, y se puede revertir.
+            </div>
+            <div class="gap-row">
+              <label style="cursor:pointer;display:inline-flex;align-items:center">
+                <input type="file" accept=".xls,.htm,.html" style="display:none" onchange="hvFile(this)">
+                <span class="btn btn-a">↑ Subir .xls histórico</span>
+              </label>
+              <button class="btn btn-sm btn-d" onclick="hvRevert()">Revertir importación histórica</button>
+              <span id="hv-status" class="smsg"></span>
+            </div>
+            <div id="hv-result"></div>
           </div>
         </div>
 
@@ -5232,10 +5255,12 @@ function getPositions(owner){
   // 'cristian' porque el dividendo del tracker no tiene owner asociado.
   if(owner!=='cristian'&&typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
     TRK.divs.forEach(function(d){
-      if(!d.pncApplied||!d.montoUSD)return;
+      // montoPPC (si existe) = parte del dividendo que corresponde a nominales que todavía tenés (histórico Veta, v41)
+      var _mPPC=(d.montoPPC!=null)?d.montoPPC:d.montoUSD;
+      if(!d.pncApplied||!_mPPC)return;
       var p=pos[d.ticker];
       if(!p)return;
-      if(d.pncTarget==='ppc'){p.costUSDpuro-=d.montoUSD;}
+      if(d.pncTarget==='ppc'){p.costUSDpuro-=_mPPC;}
       else if(d.pncTarget==='venta'){p.realizedPnl+=d.montoUSD;}
     });
   }
@@ -8040,6 +8065,206 @@ function trkAddDiv(){
   flash(sel,pncApplied?(pncTarget==='ppc'?'Dividendo registrado — PPC ajustado':'Dividendo registrado — sumado a ganancia de venta'):'Dividendo registrado',false);
   trkRender();
   renderPortfolio();
+}
+
+// ══ Histórico Veta → PPC (importación ÚNICA, formato viejo "Movimientos Dividendos y
+// Rentas Cobradas" .xls = HTML disfrazado). Toma DIV y RTA en efectivo (renta +
+// amortización − gastos), y solo resta del PPC si: (a) el activo sigue en cartera hoy,
+// (b) según los movimientos de la app lo tenías a la fecha del cobro, y (c) en proporción
+// a las nominales de ese momento que todavía conservás (mínimo de tenencia desde el cobro
+// hasta hoy / tenencia del broker a esa fecha). Nada se aplica sin confirmar; se revierte
+// con hvRevert(). Los registros quedan en TRK.divs con fuente:'veta_hist' y montoPPC.
+var HVETA={rows:[],excl:[]};
+function _hvYMD(fechaAR){var f=(fechaAR||'').split('/');return f.length===3?f[2]+f[1].padStart(2,'0')+f[0].padStart(2,'0'):'0';}
+function _hvIsoYMD(iso){return (iso||'').replace(/-/g,'');}
+function _hvDays(a,b){return Math.abs((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/86400000);}
+function _hvFmt(n,d){return (n||0).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function _hvTC(iso,mercado){
+  // TC de la fecha del cobro, o el día anterior más cercano (hasta 7 días). Nunca el de hoy.
+  var esBono=(mercado==='BONOS'||mercado==='ON'||mercado==='FCI');
+  var d=new Date(iso+'T12:00:00');
+  for(var i=0;i<=7;i++){
+    var k=(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();
+    var v=esBono?(MEP_TABLE[k]||CCL_TABLE[k]):CCL_TABLE[k];
+    if(v) return {tc:v,fecha:k,tipo:(esBono&&MEP_TABLE[k])?'MEP':'CCL'};
+    d.setDate(d.getDate()-1);
+  }
+  return null;
+}
+function hvParse(html){
+  if(html.charCodeAt(0)===0xFEFF) html=html.slice(1);
+  var doc=new DOMParser().parseFromString(html,'text/html');
+  var rows=[],excl=[];
+  Array.prototype.forEach.call(doc.querySelectorAll('tr'),function(tr){
+    var c=Array.prototype.map.call(tr.querySelectorAll('td'),function(td){return (td.textContent||'').replace(/ /g,' ').trim();});
+    if(c.length<12) return;
+    var fecha=trkImpParseDate(c[1]); if(!fecha) return;
+    var cpbt=(c[2]||'').toUpperCase(), esp=(c[4]||'').toUpperCase(), mon=(c[5]||'').toUpperCase();
+    if(!esp) return;
+    var r={fecha:fecha,ticker:esp,tipo:cpbt,qtyBroker:trkImpParseNum(c[6]),divi:trkImpParseNum(c[7]),amort:trkImpParseNum(c[9]),gastos:trkImpParseNum(c[11])};
+    if(cpbt!=='DIV'&&cpbt!=='RTA'){r.motivo=cpbt==='CANJ'?'Canje de especie (no es un cobro)':(cpbt==='RESC'?'Rescate / vencimiento':'Comprobante '+cpbt);excl.push(r);return;}
+    if(mon!==''&&mon!=='PESOS'){r.motivo='Pago en especie ('+mon+'), no en efectivo';excl.push(r);return;}
+    r.moneda=(mon==='PESOS')?'ARS':'USD';
+    r.monto=r.divi+r.amort-r.gastos;
+    if(!(r.monto>0)){r.motivo='Monto 0';excl.push(r);return;}
+    rows.push(r);
+  });
+  return {rows:rows,excl:excl};
+}
+function hvAnalyze(parsed){
+  // Línea de tiempo de tenencia por ticker (solo posiciones propias, igual que getPositions())
+  var tl={};
+  movimientos.forEach(function(m){
+    if(!m||m.owner==='cristian')return;
+    if(m.tipo!=='compra'&&m.tipo!=='venta')return;
+    (tl[m.ticker]=tl[m.ticker]||[]).push({ymd:_hvYMD(m.fecha),d:(m.tipo==='compra'?1:-1)*(m.qty||0),id:m.id||0});
+  });
+  Object.keys(tl).forEach(function(k){tl[k].sort(function(a,b){return a.ymd<b.ymd?-1:(a.ymd>b.ymd?1:a.id-b.id);});});
+  var posMap={};getPositions().forEach(function(p){posMap[p.ticker]=p;});
+  var usados={};
+  var rows=[],excl=parsed.excl.slice();
+  parsed.rows.forEach(function(r){
+    var ev=tl[r.ticker], p=posMap[r.ticker];
+    if(!ev||!p){r.motivo='No figura en tus movimientos';excl.push(r);return;}
+    var ymd=_hvIsoYMD(r.fecha), q=0;
+    ev.forEach(function(e){if(e.ymd<ymd)q+=e.d;});
+    r.qtyFecha=q;
+    var run=q,min=q;
+    ev.forEach(function(e){if(e.ymd>=ymd){run+=e.d;if(run<min)min=run;}});
+    r.qtyHoy=run;r.qtyMin=Math.max(min,0);
+    if(run<=0.000001){r.motivo='Ya no está en cartera';excl.push(r);return;}
+    if(q<=0.000001){r.motivo='En la app no lo tenías a esa fecha'+(r.qtyBroker?' (broker: '+_hvFmt(r.qtyBroker,0)+')':'');excl.push(r);return;}
+    var base=r.qtyBroker>0?r.qtyBroker:q;
+    r.factor=Math.min(r.qtyMin,base)/base;
+    if(r.factor<=0.000001){r.motivo='Vendiste todas las que tenías a esa fecha (después recompraste)';excl.push(r);return;}
+    r.warnQty=r.qtyBroker>0&&Math.abs(q-r.qtyBroker)/r.qtyBroker>0.02;
+    r.mercado=p.mercado;
+    if(r.moneda==='USD'){r.tc=null;r.montoUSD=r.monto;}
+    else{
+      var t=_hvTC(r.fecha,p.mercado);
+      if(!t){r.motivo='Sin CCL/MEP cargado para esa fecha';excl.push(r);return;}
+      r.tc=t.tc;r.tcTipo=t.tipo;r.montoUSD=r.monto/t.tc;
+    }
+    r.montoPPC=r.montoUSD*r.factor;
+    // ¿Ya está en el tracker? (mismo ticker y moneda, ±7 días)
+    var ex=TRK.divs.find(function(d){return !usados[d.id]&&d.ticker===r.ticker&&d.moneda===r.moneda&&d.fecha&&_hvDays(d.fecha,r.fecha)<=7;});
+    if(ex){
+      usados[ex.id]=true;
+      if(ex.fuente==='veta_hist'||ex.hvFactor!=null){r.motivo='Ya importado en una corrida anterior';excl.push(r);return;}
+      if(ex.pncApplied){r.motivo='Ya estaba en el tracker y aplicado al PPC ('+ex.fecha+')';excl.push(r);return;}
+      r.existId=ex.id;r.existFecha=ex.fecha;
+    }
+    r.sel=true;
+    rows.push(r);
+  });
+  rows.sort(function(a,b){return a.ticker<b.ticker?-1:(a.ticker>b.ticker?1:a.fecha.localeCompare(b.fecha));});
+  excl.sort(function(a,b){return a.ticker<b.ticker?-1:(a.ticker>b.ticker?1:a.fecha.localeCompare(b.fecha));});
+  HVETA.rows=rows;HVETA.excl=excl;
+}
+function hvFile(inp){
+  var f=inp.files&&inp.files[0]; if(!f)return;
+  var st=document.getElementById('hv-status');
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    try{
+      var parsed=hvParse(ev.target.result);
+      if(!parsed.rows.length&&!parsed.excl.length){st.className='emsg';st.textContent='No reconozco el formato — ¿es el .xls viejo "Movimientos Dividendos y Rentas Cobradas"?';return;}
+      hvAnalyze(parsed);
+      st.className='smsg';st.textContent=f.name;
+      hvRender();
+    }catch(e){st.className='emsg';st.textContent='Error: '+e.message;console.error(e);}
+  };
+  rd.readAsText(f,'utf-8');
+  inp.value='';
+}
+function hvToggle(i,v){HVETA.rows[i].sel=v;hvRender();}
+function hvToggleTk(tk,v){HVETA.rows.forEach(function(r){if(r.ticker===tk)r.sel=v;});hvRender();}
+function hvToggleAll(v){HVETA.rows.forEach(function(r){r.sel=v;});hvRender();}
+function hvRender(){
+  var box=document.getElementById('hv-result'); if(!box)return;
+  var rows=HVETA.rows, excl=HVETA.excl;
+  var posMap={};getPositions().forEach(function(p){posMap[p.ticker]=p;});
+  var tks={},orden=[];
+  rows.forEach(function(r){if(!tks[r.ticker]){tks[r.ticker]={n:0,nSel:0,usd:0};orden.push(r.ticker);}var t=tks[r.ticker];t.n++;if(r.sel){t.nSel++;t.usd+=r.montoPPC;}});
+  var totUSD=0,totN=0;
+  var sumHtml=orden.map(function(tk){
+    var t=tks[tk],p=posMap[tk];totUSD+=t.usd;totN+=t.nSel;
+    var ppcA=p.costUSDpuro/p.qty, ppcN=(p.costUSDpuro-t.usd)/p.qty, dp=ppcA?((ppcN/ppcA)-1)*100:0;
+    var neg=ppcN<0;
+    return '<tr><td><input type="checkbox" '+(t.nSel===t.n?'checked':'')+' onchange="hvToggleTk(\''+tk+'\',this.checked)"></td>'+
+      '<td style="font-weight:700">'+tk+'</td><td class="mono" style="text-align:right">'+t.nSel+'/'+t.n+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(t.usd,2)+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(ppcA,4)+'</td>'+
+      '<td class="mono" style="text-align:right'+(neg?';color:var(--red)':'')+'">'+_hvFmt(ppcN,4)+(neg?' ⚠':'')+'</td>'+
+      '<td class="mono" style="text-align:right;color:'+(dp<0?'var(--red)':'var(--text2)')+'">'+dp.toFixed(2)+'%</td></tr>';
+  }).join('');
+  var detHtml=rows.map(function(r,i){
+    return '<tr'+(r.sel?'':' style="opacity:.45"')+'><td><input type="checkbox" '+(r.sel?'checked':'')+' onchange="hvToggle('+i+',this.checked)"></td>'+
+      '<td style="font-weight:700">'+r.ticker+'</td><td class="mono">'+r.fecha+'</td><td>'+r.tipo+(r.amort?' <span class="muted" title="Incluye amortización: '+_hvFmt(r.amort,2)+'">+am</span>':'')+'</td><td>'+r.moneda+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(r.monto,2)+'</td>'+
+      '<td class="mono" style="text-align:right">'+(r.tc?_hvFmt(r.tc,0)+' '+r.tcTipo:'—')+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(r.montoUSD,2)+'</td>'+
+      '<td class="mono" style="text-align:right'+(r.warnQty?';color:var(--amber)':'')+'" title="Broker a la fecha / app a la fecha / mínimo desde el cobro / hoy">'+_hvFmt(r.qtyBroker,0)+' / '+_hvFmt(r.qtyFecha,0)+' / '+_hvFmt(r.qtyMin,0)+' / '+_hvFmt(r.qtyHoy,0)+(r.warnQty?' ⚠':'')+'</td>'+
+      '<td class="mono" style="text-align:right">'+(r.factor*100).toFixed(0)+'%</td>'+
+      '<td class="mono" style="text-align:right;font-weight:700">'+_hvFmt(r.montoPPC,2)+'</td>'+
+      '<td style="font-size:.6rem">'+(r.existId!=null?'<span style="color:var(--amber)" title="Ya estaba en el tracker sin aplicar al PPC — se marca como aplicado en vez de duplicarlo">actualiza '+r.existFecha+'</span>':'nuevo')+'</td></tr>';
+  }).join('');
+  var exHtml=excl.map(function(r){
+    return '<tr><td style="font-weight:700">'+r.ticker+'</td><td class="mono">'+r.fecha+'</td><td>'+r.tipo+'</td><td class="mono" style="text-align:right">'+_hvFmt(r.monto!=null?r.monto:r.divi,2)+'</td><td style="font-size:.65rem">'+r.motivo+'</td></tr>';
+  }).join('');
+  var th='style="text-align:right"';
+  box.innerHTML=
+    '<div class="gap-row" style="margin:10px 0">'+
+      '<b class="mono">'+totN+' cobros · USD '+_hvFmt(totUSD,2)+' a restar de PPC en '+orden.filter(function(t){return tks[t].nSel;}).length+' activos</b>'+
+      '<button class="btn btn-sm" onclick="hvToggleAll(true)">Todos</button><button class="btn btn-sm" onclick="hvToggleAll(false)">Ninguno</button>'+
+      '<button class="btn btn-a" onclick="hvApply()" '+(totN?'':'disabled')+'>Aplicar al PPC</button>'+
+    '</div>'+
+    '<div class="card-title" style="margin:6px 0">Impacto por activo</div>'+
+    '<div class="tw" style="max-height:320px;overflow-y:auto"><table><thead><tr><th></th><th>Ticker</th><th '+th+'>Cobros</th><th '+th+'>USD a restar</th><th '+th+'>PPC actual</th><th '+th+'>PPC nuevo</th><th '+th+'>Var.</th></tr></thead><tbody>'+sumHtml+'</tbody></table></div>'+
+    '<details style="margin-top:10px"><summary class="card-title" style="cursor:pointer">Detalle por cobro ('+rows.length+')</summary>'+
+    '<div class="tw" style="max-height:420px;overflow-y:auto"><table><thead><tr><th></th><th>Ticker</th><th>Fecha</th><th>Tipo</th><th>Mon.</th><th '+th+'>Monto</th><th '+th+'>TC</th><th '+th+'>USD</th><th '+th+' title="Broker a la fecha / app a la fecha / mínimo desde el cobro / hoy">Nominales B/A/mín/hoy</th><th '+th+'>% aplica</th><th '+th+'>USD a PPC</th><th></th></tr></thead><tbody>'+detHtml+'</tbody></table></div></details>'+
+    '<details style="margin-top:10px"><summary class="card-title" style="cursor:pointer">Excluidos ('+excl.length+')</summary>'+
+    '<div class="tw" style="max-height:320px;overflow-y:auto"><table><thead><tr><th>Ticker</th><th>Fecha</th><th>Tipo</th><th '+th+'>Monto</th><th>Motivo</th></tr></thead><tbody>'+exHtml+'</tbody></table></div></details>';
+}
+function hvApply(){
+  var sel=HVETA.rows.filter(function(r){return r.sel;});
+  if(!sel.length)return;
+  var tot=sel.reduce(function(s,r){return s+r.montoPPC;},0);
+  var nTk={};sel.forEach(function(r){nTk[r.ticker]=1;});
+  if(!confirm('Vas a restar USD '+tot.toFixed(2)+' del PPC de '+Object.keys(nTk).length+' activos ('+sel.length+' cobros históricos de Veta).\n\nSe puede deshacer con "Revertir importación histórica".\n\n¿Confirmás?'))return;
+  sel.forEach(function(r){
+    if(r.existId!=null){
+      var e=TRK.divs.find(function(x){return x.id===r.existId;}); if(!e)return;
+      e._hvPrev={montoUSD:e.montoUSD,cclUsado:e.cclUsado,pncApplied:e.pncApplied,pncTarget:e.pncTarget,estado:e.estado||null};
+      if(e.montoUSD==null)e.montoUSD=(e.moneda==='USD')?e.monto:(r.tc?e.monto/r.tc:r.montoUSD);
+      if(e.cclUsado==null&&r.tc)e.cclUsado=r.tc;
+      e.montoPPC=r.montoPPC;e.hvFactor=r.factor;e.pncApplied=true;e.pncTarget='ppc';
+      delete e.estado;
+    } else {
+      TRK.divs.push({id:Date.now()+Math.random(),ticker:r.ticker,fecha:r.fecha,moneda:r.moneda,monto:r.monto,montoUSD:r.montoUSD,montoPPC:r.montoPPC,cclUsado:r.tc||null,acciones:r.qtyBroker||null,pncApplied:true,pncTarget:'ppc',tipo:r.tipo==='RTA'?'RENTA':'DIV',fuente:'veta_hist',hvFactor:r.factor});
+    }
+  });
+  TRK.divs.sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  trkSave();trkRender();renderPortfolio();
+  HVETA.rows=[];HVETA.excl=[];
+  document.getElementById('hv-result').innerHTML='';
+  var st=document.getElementById('hv-status');st.className='smsg';st.textContent='Aplicado: '+sel.length+' cobros, USD '+tot.toFixed(2)+' restados del PPC.';
+}
+function hvRevert(){
+  var nNew=TRK.divs.filter(function(d){return d.fuente==='veta_hist';}).length;
+  var nUpd=TRK.divs.filter(function(d){return d._hvPrev;}).length;
+  if(!nNew&&!nUpd){alert('No hay importación histórica aplicada.');return;}
+  if(!confirm('Se van a borrar '+nNew+' cobros históricos importados y restaurar '+nUpd+' que ya estaban en el tracker. El PPC vuelve a como estaba.\n\n¿Confirmás?'))return;
+  TRK.divs=TRK.divs.filter(function(d){return d.fuente!=='veta_hist';});
+  TRK.divs.forEach(function(d){
+    if(!d._hvPrev)return;
+    var p=d._hvPrev;
+    d.montoUSD=p.montoUSD;d.cclUsado=p.cclUsado;d.pncApplied=p.pncApplied;d.pncTarget=p.pncTarget;
+    if(p.estado)d.estado=p.estado;
+    delete d.montoPPC;delete d.hvFactor;delete d._hvPrev;
+  });
+  trkSave();trkRender();renderPortfolio();
+  var st=document.getElementById('hv-status');st.className='smsg';st.textContent='Importación histórica revertida.';
 }
 
 // ── Importación XLS del broker ────────────────────────────────────────────
