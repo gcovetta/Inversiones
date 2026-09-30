@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v47 | 2026-09-30 | Feat: Noticias — titulares traducidos al español (Google Translate en lotes, fallback MyMemory), con caché local para traducir cada titular una sola vez; el original en inglés queda en el tooltip. Checkbox "Español" en la cabecera para apagarlo. (nwsTr, nwsTrFlush, nwsTrToggle)
 v46 | 2026-09-30 | Feat: Noticias — bloque fijo "Panorama por país" arriba de todo: por cada país con exposición (EE.UU., Brasil, Europa, China, Cripto, Argentina), ordenado por peso, las 3 noticias macro más relevantes (inflación, Fed/tasas, empleo, PBI, bancos centrales, elecciones, fiscal) + variación del ETF de referencia (SPY/EWZ/VGK/FXI/IBIT/ARGT) + link a Google News. Registro local de 72 h de noticias generales para no perder el dato de la mañana. (nwsLoadPanorama, nwsPanoramaHTML, nwsLogMerge, NWS_MACRO)
 v45 | 2026-09-30 | Feat: Noticias — contexto país/sector: cuando ≥2 posiciones del mismo sector (Brasil, China, Europa, Cripto, EE.UU.) se mueven fuerte en la misma dirección, aparece una card con noticias del país (ETF proxy EWZ/FXI/VGK/IBIT/SPY + noticias generales de Finnhub filtradas por palabras clave) y link a Google News. Fix: clasificación de impacto con límites de palabra ("Beaten-down" ya no cuenta como "beat") y más filtros de notas de ruido. BBAS3 busca noticias como BDORY. (nwsLoadSector, nwsGrupoHTML, NWS_PAIS, NWS_SYM)
 v44 | 2026-09-30 | Feat: nueva solapa "Noticias" — noticias de las últimas 48 h / 7 días de los CEDEAR/NYSE en cartera (Finnhub company-news), ordenadas por peso, clasificadas Alto/Medio/Bajo por palabras clave, filtro por impacto, y sección "¿Por qué se movieron hoy?" para los tickers con variación ≥ umbral (default 3%, variación del subyacente en USA). Badge en el menú con la cantidad de movimientos fuertes tras cada actualización de cotizaciones. (nwsLoad/nwsRender/nwsAfterQuotes, hook en fetchAllQuotes y showPage)
@@ -440,7 +441,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: Noticias — bloque fijo &quot;Panorama por país&quot; arriba de todo: por cada país con exposición (EE.UU., Brasil, Europa, China, Cripto, Argentina), ordenado por peso, las 3 noticias macro más relevantes (inflación, Fed/tasas, empleo, PBI, bancos centrales, elecciones, fiscal) + variación del ETF de referencia (SPY/EWZ/VGK/FXI/IBIT/ARGT) + link a Google News. Registro local de 72 h de noticias generales para no perder el dato de la mañana. (nwsLoadPanorama, nwsPanoramaHTML, nwsLogMerge, NWS_MACRO)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v46 · 30/09/2026</div>
+<div id="claude-version-badge" title="Feat: Noticias — titulares traducidos al español (Google Translate en lotes, fallback MyMemory), con caché local para traducir cada titular una sola vez; el original en inglés queda en el tooltip. Checkbox &quot;Español&quot; en la cabecera para apagarlo. (nwsTr, nwsTrFlush, nwsTrToggle)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v47 · 30/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -1917,6 +1918,7 @@ tr:hover td{background:var(--surface2)}
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.72rem;color:var(--text2)">
             <label>Ventana <select id="nws-dias" onchange="nwsLoad(true)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);padding:2px 6px;font-size:.72rem"><option value="2" selected>48 h</option><option value="7">7 días</option></select></label>
             <label title="Variación diaria a partir de la cual un ticker se considera 'movimiento fuerte'">Umbral <input id="nws-umbral" type="number" value="3" step="0.5" min="0.5" style="width:58px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);padding:2px 6px;font-size:.72rem" onchange="nwsRender();nwsAfterQuotes()">%</label>
+            <label title="Traduce los titulares al español (pasá el mouse para ver el original)" style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="nws-tr" onchange="nwsTrToggle(this)" checked> Español</label>
             <button class="btn btn-sm" onclick="nwsLoad(true)">⟳ Actualizar</button>
           </div>
         </div>
@@ -5933,13 +5935,58 @@ function nwsPanoramaHTML(){
   });
   return h+'</div>';
 }
+
+// ─── Traducción de titulares al español (v47) ──────────────────────────────
+// Google Translate (endpoint público gtx, en lotes) con fallback a MyMemory por titular.
+// Las traducciones se guardan en localStorage: cada titular se traduce una sola vez.
+var NWS_TR_LS='gdc_nws_tr_v1';
+var nwsTrMap=(function(){try{return JSON.parse(localStorage.getItem(NWS_TR_LS)||'{}')||{};}catch(e){return {};}})();
+var nwsTrOn=(function(){try{return localStorage.getItem('gdc_nws_tr_on')!=='0';}catch(e){return true;}})();
+var nwsTrPend={},nwsTrTried={},nwsTrBusy=false;
+document.addEventListener('DOMContentLoaded',function(){var c=document.getElementById('nws-tr');if(c)c.checked=nwsTrOn;});
+function nwsTr(t){if(!nwsTrOn||!t)return t;var k=t.trim();if(nwsTrMap[k])return nwsTrMap[k];if(!nwsTrTried[k])nwsTrPend[k]=1;return t;}
+function nwsTrToggle(el){nwsTrOn=!!el.checked;try{localStorage.setItem('gdc_nws_tr_on',nwsTrOn?'1':'0');}catch(e){}nwsRender();}
+function nwsTrSave(){
+  try{var ks=Object.keys(nwsTrMap);if(ks.length>2000)ks.slice(0,ks.length-2000).forEach(function(k){delete nwsTrMap[k];});localStorage.setItem(NWS_TR_LS,JSON.stringify(nwsTrMap));}catch(e){}
+}
+async function nwsTrGoogle(list){
+  var url='https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=es&dt=t&q='+encodeURIComponent(list.join('\n'));
+  var r=await fetchWithTimeout(url,{},10000);if(!r.ok)throw new Error('HTTP '+r.status);
+  var d=await r.json();var out=(d&&d[0]||[]).map(function(x){return x&&x[0]||'';}).join('').split('\n');
+  if(out.length!==list.length)throw new Error('lote desalineado');
+  return out;
+}
+async function nwsTrMyMemory(t){
+  var r=await fetchWithTimeout('https://api.mymemory.translated.net/get?q='+encodeURIComponent(t)+'&langpair=en|es',{},8000);
+  if(!r.ok)throw new Error('HTTP '+r.status);var d=await r.json();
+  var tr=d&&d.responseData&&d.responseData.translatedText;if(!tr||/MYMEMORY WARNING/i.test(tr))throw new Error('sin cupo');return tr;
+}
+async function nwsTrFlush(){
+  if(nwsTrBusy||!nwsTrOn)return;
+  var ks=Object.keys(nwsTrPend);if(!ks.length)return;
+  nwsTrBusy=true;nwsTrPend={};ks.forEach(function(k){nwsTrTried[k]=1;});
+  // lotes de ~1500 caracteres para no pasarse del largo de URL
+  var lotes=[],cur=[],len=0;
+  ks.forEach(function(k){var l=encodeURIComponent(k).length+3;if(cur.length&&len+l>1500){lotes.push(cur);cur=[];len=0;}cur.push(k.replace(/\n/g,' '));len+=l;});
+  if(cur.length)lotes.push(cur);
+  var n=0;
+  for(var i=0;i<lotes.length;i++){
+    var L=lotes[i];
+    try{var out=await nwsTrGoogle(L);L.forEach(function(k,j){if(out[j]&&out[j].trim())nwsTrMap[k]=out[j].trim();});n+=L.length;}
+    catch(e){
+      for(var j=0;j<L.length&&j<15;j++){try{nwsTrMap[L[j]]=await nwsTrMyMemory(L[j]);n++;}catch(x){break;}}
+    }
+  }
+  nwsTrSave();nwsTrBusy=false;
+  if(n)nwsRender();
+}
 function nwsSetFiltro(f,btn){nwsFiltro=f;document.querySelectorAll('#nws-filtros .nws-chip').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');nwsRender();}
 function nwsToggle(t){nwsExpand[t]=!nwsExpand[t];nwsRender();}
 function nwsItemHTML(n){
   var col=n.tag?'var(--blue)':{hi:'var(--red)',md:'var(--amber)',lo:'var(--text3)'}[n.lvl],lab=n.tag||{hi:'Alto',md:'Medio',lo:'Bajo'}[n.lvl];
   return '<div style="display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border)">'
     +'<span style="font-size:.6rem;font-family:var(--mono);color:'+col+';border:1px solid '+col+';border-radius:20px;padding:1px 7px;height:fit-content;white-space:nowrap">'+lab+'</span>'
-    +'<div style="flex:1;min-width:0"><a href="'+nwsEsc(n.url)+'" target="_blank" rel="noopener" title="'+nwsEsc(n.summary)+'" style="color:var(--text);text-decoration:none;font-size:.8rem;line-height:1.4">'+nwsEsc(n.headline)+'</a>'
+    +'<div style="flex:1;min-width:0"><a href="'+nwsEsc(n.url)+'" target="_blank" rel="noopener" title="'+nwsEsc((nwsTrOn?'Original: '+n.headline+(n.summary?'\n\n':''):'')+(n.summary||''))+'" style="color:var(--text);text-decoration:none;font-size:.8rem;line-height:1.4">'+nwsEsc(nwsTr(n.headline))+'</a>'
     +'<div style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">'+nwsEsc(n.source)+' · '+nwsAgo(n.datetime)+'</div></div></div>';
 }
 function nwsRender(){
@@ -5990,6 +6037,7 @@ function nwsRender(){
   var ts=new Date(nwsCache.ts);
   html+='<div style="font-size:.65rem;color:var(--text3);margin-top:.6rem">Actualizado '+ts.toLocaleString('es-AR')+' · la variación es la del subyacente en USA (Finnhub). Pasá el mouse por un titular para ver el resumen.</div>';
   list.innerHTML=html;
+  setTimeout(nwsTrFlush,0);
 }
 // Se llama al final de fetchAllQuotes: marca en el menú cuántas posiciones se movieron ≥ umbral
 function nwsAfterQuotes(){
