@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v43 | 2026-09-29 | Feat: al pasar el mouse por un mes del gráfico "Flujo cobrado", el tooltip lista los tickers que más pagaron ese mes (top 8, de mayor a menor, con USD, % del mes, ◆ renta / ● dividendo, ×N si cobró varias veces) y el resto agrupado. (trkFlujoData guarda by[y].tk[m], tooltip footer en trkRenderFlujo)
 v42 | 2026-09-29 | Feat: card "Flujo cobrado" en la solapa Dividendos — KPIs (en lo que va del año vs mismo período del año anterior, promedio mensual, flujo anual de los últimos 12 meses, total del año anterior), gráfico mensual apilado dividendos/renta de bonos-ON con línea del año anterior y selector de año, y tabla mes × año con totales. Toma TRK.divs confirmados en USD con la misma conversión del historial; renta = tipo RENTA o ticker de sector bonos/on. (trkRenderFlujo / trkFlujoData / trkDivUSD / trkDivEsRenta, hook en trkRender)
 v41 | 2026-09-24 | Feat (única vez, solo GDC): card "Histórico Veta → PPC" en la solapa Dividendos para importar el .xls viejo "Movimientos Dividendos y Rentas Cobradas". Toma DIV y RTA en efectivo (renta + amortización − gastos; excluye pagos en especie, CANJ y RESC), y resta del PPC solo si el activo sigue en cartera y lo tenías a la fecha del cobro según movimientos (sin Cristian), en proporción a las nominales de esa fecha que seguís teniendo (mínimo de tenencia desde el cobro / tenencia del broker). ARS se convierte con CCL (MEP para bonos/ON) de la fecha o hasta 7 días antes. Si el cobro ya estaba en TRK.divs sin aplicar (±7 días) se actualiza en vez de duplicar. Preview por activo y por cobro, confirmación, y botón Revertir. getPositions() ahora usa d.montoPPC si existe. (hvParse/hvAnalyze/hvRender/hvApply/hvRevert, getPositions)
 v40 | 2026-09-18 | Fix + hardening (Garo reportó que el MEP del 09/09/2026 es 1531, no lo que iba a promediar el backfill de v39): ese día tenía 4 movimientos de bonos con CCL/MEP guardado muy distinto entre sí (TX31 con 1487 vs AO29 con ~1525-1531 — un tipeo mal cargado en TX31), y backfillTCDesdeMovimientos() los promediaba a ciegas, lo que hubiera dejado la tabla con un valor mal (~1518). Se agrega detección de dispersión: si un día tiene min/max con más de 15 (ARS) de diferencia, esa fecha NO se completa sola — queda listada aparte en el alert ("revisalas a mano en $ Tipo de Cambio") en vez de inventar un promedio con un dato sucio adentro. Se carga manualmente MEP_TABLE['09/09/2026']=1531 (el valor correcto que confirmó Garo) para dejar esa fecha resuelta ya mismo. (backfillTCDesdeMovimientos / BACKFILL_DISPERSION_MAX / MEP_TABLE)
@@ -435,7 +436,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: card &quot;Flujo cobrado&quot; en la solapa Dividendos — KPIs (en lo que va del año vs mismo período del año anterior, promedio mensual, flujo anual de los últimos 12 meses, total del año anterior), gráfico mensual apilado dividendos/renta de bonos-ON con línea del año anterior y selector de año, y tabla mes × año con totales. Toma TRK.divs confirmados en USD con la misma conversión del historial; renta = tipo RENTA o ticker de sector bonos/on. (trkRenderFlujo / trkFlujoData / trkDivUSD / trkDivEsRenta, hook en trkRender)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v42 · 29/09/2026</div>
+<div id="claude-version-badge" title="Feat: al pasar el mouse por un mes del gráfico &quot;Flujo cobrado&quot;, el tooltip lista los tickers que más pagaron ese mes (top 8, de mayor a menor, con USD, % del mes, ◆ renta / ● dividendo, ×N si cobró varias veces) y el resto agrupado. (trkFlujoData guarda by[y].tk[m], tooltip footer en trkRenderFlujo)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v43 · 29/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -8050,6 +8051,7 @@ function trkRender(){
 // año y mes, en USD con la misma conversión que el historial (CCL de la fecha ±7
 // días → cclUsado → montoUSD). Usa el monto completo cobrado (no montoPPC).
 var TRK_FLUJO={anio:null,chart:null};
+var TRK_FLUJO_TOPN=8; // tickers que muestra el tooltip del gráfico, de mayor a menor
 var TRK_MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 function trkDivUSD(d){
   if(d.moneda==='USD') return d.monto||0;
@@ -8075,8 +8077,12 @@ function trkFlujoData(){
     var y=parseInt(p[0],10), m=parseInt(p[1],10)-1;
     if(!(y>1990)||m<0||m>11) return;
     var usd=trkDivUSD(d); if(!isFinite(usd)||!usd) return;
-    if(!by[y]) by[y]={div:[0,0,0,0,0,0,0,0,0,0,0,0],renta:[0,0,0,0,0,0,0,0,0,0,0,0],n:0};
-    by[y][trkDivEsRenta(d)?'renta':'div'][m]+=usd;
+    if(!by[y]) by[y]={div:[0,0,0,0,0,0,0,0,0,0,0,0],renta:[0,0,0,0,0,0,0,0,0,0,0,0],tk:[{},{},{},{},{},{},{},{},{},{},{},{}],n:0};
+    var _esR=trkDivEsRenta(d);
+    by[y][_esR?'renta':'div'][m]+=usd;
+    var _tk=by[y].tk[m], _tn=(d.ticker||'?').toUpperCase();
+    if(!_tk[_tn]) _tk[_tn]={usd:0,n:0,renta:_esR};
+    _tk[_tn].usd+=usd; _tk[_tn].n++;
     by[y].n++;
   });
   return by;
@@ -8130,7 +8136,23 @@ function trkRenderFlujo(){
       options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
         plugins:{legend:{position:'bottom',labels:{color:'#7a9cc5',boxWidth:10,font:{size:10}}},
           tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': USD '+trkFmt2(c.parsed.y);},
-            footer:function(items){var t=0;items.forEach(function(it){if(it.dataset.type==='bar')t+=it.parsed.y;});return 'Total '+ySel+': USD '+trkFmt2(t);}}}},
+            footer:function(items){
+              var t=0;items.forEach(function(it){if(it.dataset.type==='bar')t+=it.parsed.y;});
+              var out=['Total '+ySel+': USD '+trkFmt2(t)];
+              var m=items.length?items[0].dataIndex:-1, tk=(m>=0&&by[ySel])?by[ySel].tk[m]:null;
+              if(tk){
+                var arr=Object.keys(tk).map(function(k){return {t:k,usd:tk[k].usd,n:tk[k].n,r:tk[k].renta};}).sort(function(a,b){return b.usd-a.usd;});
+                if(arr.length){
+                  out.push('');out.push('Mayores pagos:');
+                  arr.slice(0,TRK_FLUJO_TOPN).forEach(function(a){
+                    out.push((a.r?'◆ ':'● ')+a.t+'  USD '+trkFmt2(a.usd)+(t>0?'  ('+Math.round(a.usd/t*100)+'%)':'')+(a.n>1?'  ×'+a.n:''));
+                  });
+                  if(arr.length>TRK_FLUJO_TOPN){var resto=arr.slice(TRK_FLUJO_TOPN).reduce(function(s2,a){return s2+a.usd;},0);out.push('+'+(arr.length-TRK_FLUJO_TOPN)+' más  USD '+trkFmt2(resto));}
+                }
+              }
+              return out;
+            }},
+            footerFont:{weight:'normal',size:11},footerColor:'#e8f0ff',footerSpacing:3}},
         scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#7a9cc5',font:{size:10}}},
           y:{stacked:true,beginAtZero:true,grid:{color:'rgba(38,64,112,.45)'},ticks:{color:'#7a9cc5',font:{size:10},callback:function(v){return 'U$S '+Math.round(v).toLocaleString('es-AR');}}}}}
     });
