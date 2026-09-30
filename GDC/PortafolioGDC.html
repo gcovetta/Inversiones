@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v45 | 2026-09-30 | Feat: Noticias — contexto país/sector: cuando ≥2 posiciones del mismo sector (Brasil, China, Europa, Cripto, EE.UU.) se mueven fuerte en la misma dirección, aparece una card con noticias del país (ETF proxy EWZ/FXI/VGK/IBIT/SPY + noticias generales de Finnhub filtradas por palabras clave) y link a Google News. Fix: clasificación de impacto con límites de palabra ("Beaten-down" ya no cuenta como "beat") y más filtros de notas de ruido. BBAS3 busca noticias como BDORY. (nwsLoadSector, nwsGrupoHTML, NWS_PAIS, NWS_SYM)
 v44 | 2026-09-30 | Feat: nueva solapa "Noticias" — noticias de las últimas 48 h / 7 días de los CEDEAR/NYSE en cartera (Finnhub company-news), ordenadas por peso, clasificadas Alto/Medio/Bajo por palabras clave, filtro por impacto, y sección "¿Por qué se movieron hoy?" para los tickers con variación ≥ umbral (default 3%, variación del subyacente en USA). Badge en el menú con la cantidad de movimientos fuertes tras cada actualización de cotizaciones. (nwsLoad/nwsRender/nwsAfterQuotes, hook en fetchAllQuotes y showPage)
 v43 | 2026-09-29 | Feat: al pasar el mouse por un mes del gráfico "Flujo cobrado", el tooltip lista los tickers que más pagaron ese mes (top 8, de mayor a menor, con USD, % del mes, ◆ renta / ● dividendo, ×N si cobró varias veces) y el resto agrupado. (trkFlujoData guarda by[y].tk[m], tooltip footer en trkRenderFlujo)
 v42 | 2026-09-29 | Feat: card "Flujo cobrado" en la solapa Dividendos — KPIs (en lo que va del año vs mismo período del año anterior, promedio mensual, flujo anual de los últimos 12 meses, total del año anterior), gráfico mensual apilado dividendos/renta de bonos-ON con línea del año anterior y selector de año, y tabla mes × año con totales. Toma TRK.divs confirmados en USD con la misma conversión del historial; renta = tipo RENTA o ticker de sector bonos/on. (trkRenderFlujo / trkFlujoData / trkDivUSD / trkDivEsRenta, hook en trkRender)
@@ -438,7 +439,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: nueva solapa &quot;Noticias&quot; — noticias de las últimas 48 h / 7 días de los CEDEAR/NYSE en cartera (Finnhub company-news), ordenadas por peso, clasificadas Alto/Medio/Bajo por palabras clave, filtro por impacto, y sección &quot;¿Por qué se movieron hoy?&quot; para los tickers con variación ≥ umbral (default 3%, variación del subyacente en USA). Badge en el menú con la cantidad de movimientos fuertes tras cada actualización de cotizaciones. (nwsLoad/nwsRender/nwsAfterQuotes, hook en fetchAllQuotes y showPage)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v44 · 30/09/2026</div>
+<div id="claude-version-badge" title="Feat: Noticias — contexto país/sector: cuando ≥2 posiciones del mismo sector (Brasil, China, Europa, Cripto, EE.UU.) se mueven fuerte en la misma dirección, aparece una card con noticias del país (ETF proxy EWZ/FXI/VGK/IBIT/SPY + noticias generales de Finnhub filtradas por palabras clave) y link a Google News. Fix: clasificación de impacto con límites de palabra (&quot;Beaten-down&quot; ya no cuenta como &quot;beat&quot;) y más filtros de notas de ruido. BBAS3 busca noticias como BDORY. (nwsLoadSector, nwsGrupoHTML, NWS_PAIS, NWS_SYM)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v45 · 30/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -5704,9 +5705,43 @@ var NWS_SECTORS={nyse:1,europa:1,china:1,cripto:1,brasil:1};
 var NWS_TTL=3*3600*1000, NWS_LS='gdc_nws_v1';
 var nwsFiltro='hi', nwsExpand={}, nwsBusy=false;
 var nwsCache=(function(){try{return JSON.parse(localStorage.getItem(NWS_LS)||'null')||{};}catch(e){return {};}})();
-var NWS_JUNK=/(stocks? to (buy|watch)|top \d+|best stocks|\d+ (stocks|reasons)|should you (buy|sell)|is it (time|too late)|motley fool|zacks rank|millionaire|here'?s why|what to know|vs\.? .* (stock|which)|prediction:)/i;
-var NWS_HI=/(earnings|quarterly results|q[1-4] results|beats?|miss(es|ed)?|guidance|outlook|forecast|downgrad|upgrad|acqui|merger|buyout|takeover|to buy .* for \$|lawsuit|sued|probe|investigat|\bsec\b|\bdoj\b|\bftc\b|antitrust|\bfda\b|recall|bankrupt|ceo (steps|resign|out|exit)|names? .* ceo|layoffs?|job cuts|dividend (cut|suspen|hike|increase|raise)|buyback|repurchase|stock split|tariff|export (ban|curb|restriction)|halt|plunge|soar|tumble|surge|crash)/i;
-var NWS_MD=/(analyst|price target|rating|partner|deal|contract|launch|unveil|dividend|regulat|sanction|stake|insider|stake|expan|invest|approv|chip|ai\b)/i;
+var NWS_JUNK=/(stocks? to (buy|watch|own|hold)|\btop \d+|best stocks|\b\d+ (stocks|reasons|things)|should you (buy|sell)|is it (time|too late)|motley fool|zacks rank|millionaire|here'?s why|what to know|prediction:|\bcould (rise|soar|double|triple|jump|surge|climb)|\bhow (this|these|to)\b|\d+% upside|beaten[- ]down|is .{1,40} a buy\b|buy the dip|forever stock|no-brainer|screaming buy|smartest .* buy|(stock|shares) .{0,20}vs\.? )/i;
+var NWS_HI=/(\bearnings\b|quarterly results|\bq[1-4] (results|revenue|profit|sales)|\bbeats?\b|\bmiss(es|ed)?\b|\bguidance\b|\boutlook\b|\bforecasts?\b|downgrad|upgrad|\bacquir|\bacquisition|\bmerger\b|\bbuyout\b|\btakeover\b|lawsuit|\bsued\b|\bprobe\b|investigat|\bsec\b|\bdoj\b|\bftc\b|antitrust|\bfda\b|\brecall\b|bankrupt|\bceo (steps|resign|out|exit)|names? .{1,30} ceo|\blayoffs?\b|job cuts|dividend (cut|suspen|hike|increase|raise)|\bbuyback\b|repurchase|stock split|\btariffs?\b|export (ban|curb|restriction|control)|trading halt|\bplunge|\bsoars?\b|\btumbles?\b|\bsurges?\b|\bcrash|\brate (cut|hike)s?|\bcuts? rates|raises? rates|central bank|\bselic\b|\belections?\b|\binflation\b|\bfiscal\b|\bdefault\b|\bimpeach)/i;
+var NWS_MD=/(\banalysts?\b|price target|\b(raises|lifts|cuts|lowers|boosts) .{0,30}targets?\b|\brating\b|partner|\bdeal\b|contract|\blaunch|\bunveil|dividend|regulat|sanction|\bstake\b|insider|expan|\binvest|approv|\bchips?\b|\bai\b)/i;
+// Símbolo alternativo para buscar noticias en Finnhub (ADR en USA) cuando el ticker de cartera no es US
+var NWS_SYM={'BBAS3':'BDORY'};
+// Contexto país/sector: si ≥2 posiciones del mismo sector se mueven fuerte en la misma dirección
+var NWS_GRUPO_MIN=2;
+var NWS_PAIS={
+  brasil:{label:'Brasil',flag:'🇧🇷',proxy:'EWZ',cat:'general',q:'Brasil Ibovespa bolsa',kw:/(brazil|brasil|ibovespa|bovespa|\blula\b|haddad|\bselic\b|banco central do brasil|\bbcb\b|\breais?\b|petrobras|\bvale\b|\bb3\b|itau|bradesco|banco do brasil)/i},
+  china:{label:'China',flag:'🇨🇳',proxy:'FXI',cat:'general',q:'China bolsa acciones',kw:/(china|chinese|beijing|\bpboc\b|yuan|hang seng|xi jinping|shanghai|shenzhen)/i},
+  europa:{label:'Europa',flag:'🇪🇺',proxy:'VGK',cat:'general',q:'bolsas europeas',kw:/(europe|european|\becb\b|lagarde|euro ?zone|stoxx|\bdax\b|\bftse\b|germany|france|britain|\buk\b)/i},
+  cripto:{label:'Cripto',flag:'🪙',proxy:'IBIT',cat:'crypto',q:'bitcoin ethereum',kw:null},
+  nyse:{label:'EE.UU.',flag:'🇺🇸',proxy:'SPY',cat:'general',q:'Wall Street acciones',kw:/(\bfed\b|federal reserve|powell|inflation|\bcpi\b|\bpce\b|jobs report|payrolls|treasur|\byields?\b|s&p 500|nasdaq|wall street|dow jones|recession|tariff|shutdown)/i}
+};
+var nwsSecBusy={};
+function nwsGLink(q){return 'https://news.google.com/search?q='+encodeURIComponent(q+' when:2d')+'&hl=es-419&gl=AR&ceid=AR:es-419';}
+async function nwsLoadSector(sec){
+  var cfg=NWS_PAIS[sec];if(!cfg||nwsSecBusy[sec])return;nwsSecBusy[sec]=true;
+  var dias=nwsDias(),fromTs=Date.now()/1000-dias*86400,to=new Date(),from=new Date(fromTs*1000);
+  var out={news:[],q:null},seen={};
+  function add(arr,tag){(Array.isArray(arr)?arr:[]).forEach(function(n){
+    if(!n||!n.headline||!n.datetime||n.datetime<fromTs)return;
+    if(tag==='gen'&&cfg.kw&&!cfg.kw.test(n.headline+' '+(n.summary||'')))return;
+    var k=n.headline.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);if(seen[k])return;seen[k]=1;
+    out.news.push({headline:n.headline,source:n.source,url:n.url,datetime:n.datetime,summary:(n.summary||'').slice(0,280)});});}
+  try{add(await nwsFetchJSON(FBASE+'/company-news?symbol='+cfg.proxy+'&from='+nwsYmd(from)+'&to='+nwsYmd(to)+'&token='+FKEY),'etf');}catch(e){}
+  try{
+    nwsCache.gen=nwsCache.gen||{};
+    if(!nwsCache.gen[cfg.cat])nwsCache.gen[cfg.cat]=await nwsFetchJSON(FBASE+'/news?category='+cfg.cat+'&token='+FKEY);
+    add(nwsCache.gen[cfg.cat],'gen');
+  }catch(e){}
+  try{var q=await nwsFetchJSON(FBASE+'/quote?symbol='+cfg.proxy+'&token='+FKEY);if(q&&q.c)out.q={c:q.c,chg:q.pc?(q.c-q.pc)/q.pc*100:0};}catch(e){}
+  out.news.sort(function(a,b){return b.datetime-a.datetime;});out.news=out.news.slice(0,30);
+  nwsCache.sec=nwsCache.sec||{};nwsCache.sec[sec]=out;
+  try{var c=Object.assign({},nwsCache);delete c.gen;localStorage.setItem(NWS_LS,JSON.stringify(c));}catch(e){}
+  nwsSecBusy[sec]=false;nwsRender();
+}
 function nwsEsc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function nwsAgo(ts){var m=Math.max(0,Math.round((Date.now()-ts*1000)/60000));if(m<60)return 'hace '+m+' min';var h=Math.round(m/60);if(h<24)return 'hace '+h+' h';return 'hace '+Math.round(h/24)+' d';}
 function nwsYmd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -5723,7 +5758,7 @@ function nwsCartera(){
   var pos=getPositions().filter(function(p){return p.qty>0.000001;});
   var tot=0;pos.forEach(function(p){p._v=nwsValUSD(p);tot+=p._v;});
   return pos.filter(function(p){return NWS_SECTORS[getSector(p.ticker)];})
-    .map(function(p){return {ticker:p.ticker,sym:getFinnhubTicker(p.ticker),w:tot>0?p._v/tot*100:0,localChg:quotes[p.ticker]?quotes[p.ticker].changePct:null};})
+    .map(function(p){return {ticker:p.ticker,sector:getSector(p.ticker),sym:NWS_SYM[p.ticker]||getFinnhubTicker(p.ticker),w:tot>0?p._v/tot*100:0,localChg:quotes[p.ticker]?quotes[p.ticker].changePct:null};})
     .sort(function(a,b){return b.w-a.w;});
 }
 function nwsClasif(n,chgAbs,umbral){
@@ -5780,6 +5815,29 @@ async function nwsLoad(force){
   if(st)st.textContent=errs?(errs+' tickers sin respuesta de Finnhub'):'';
   nwsRender();nwsAfterQuotes();
 }
+function nwsGrupoHTML(g,umbral){
+  var cfg=NWS_PAIS[g.sec],d=nwsCache.sec&&nwsCache.sec[g.sec];
+  if(!d&&!nwsSecBusy[g.sec])setTimeout(function(){nwsLoadSector(g.sec);},0);
+  var col=g.up?'var(--accent)':'var(--red)';
+  var tks=g.rows.map(function(r){return r.p.ticker+' '+(r.chg>=0?'+':'')+r.chg.toFixed(2).replace('.',',')+'%';}).join(' · ');
+  var h='<div style="border:1px solid var(--amber);border-radius:var(--radius);background:var(--surface2);padding:.65rem .9rem;margin-bottom:.6rem">'
+    +'<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px"><span style="font-weight:600;font-size:.92rem">'+cfg.flag+' '+cfg.label+'</span>'
+    +'<span style="font-size:.72rem;color:'+col+'">'+g.rows.length+' posiciones '+(g.up?'suben':'bajan')+' fuerte</span>'
+    +'<span style="font-size:.68rem;color:var(--text3);font-family:var(--mono)">'+nwsEsc(tks)+'</span>'
+    +(d&&d.q?'<span style="font-size:.72rem;font-family:var(--mono);color:'+(d.q.chg>=0?'var(--accent)':'var(--red)')+'">'+cfg.proxy+' '+(d.q.chg>=0?'+':'')+d.q.chg.toFixed(2).replace('.',',')+'%</span>':'')
+    +'<span style="font-size:.6rem;font-family:var(--mono);color:var(--amber);border:1px solid var(--amber);border-radius:20px;padding:1px 7px">CONTEXTO PAÍS / SECTOR</span>'
+    +'<span style="flex:1"></span><a href="'+nwsGLink(cfg.q)+'" target="_blank" rel="noopener" style="font-size:.68rem;color:var(--blue)">Google News ↗</a></div>';
+  if(!d){return h+'<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Buscando noticias de '+cfg.label+'…</div></div>';}
+  var avg=g.rows.reduce(function(a,r){return a+Math.abs(r.chg);},0)/g.rows.length;
+  var rank={hi:0,md:1,lo:2};
+  var items=d.news.map(function(n){var o=Object.assign({},n);o.lvl=nwsClasif(n,avg,umbral);return o;}).filter(function(n){return n.lvl!=='lo';})
+    .sort(function(a,b){return rank[a.lvl]-rank[b.lvl]||b.datetime-a.datetime;});
+  if(!items.length)h+='<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Finnhub no trae noticias relevantes de '+cfg.label+' en la ventana. Probá con Google News ↗</div>';
+  var key='sec:'+g.sec,lim=nwsExpand[key]?items.length:5;
+  items.slice(0,lim).forEach(function(n){h+=nwsItemHTML(n);});
+  if(items.length>5)h+='<button class="btn btn-sm" style="margin-top:6px" onclick="nwsToggle(\''+key+'\')">'+(nwsExpand[key]?'Ver menos':'+'+(items.length-5)+' más')+'</button>';
+  return h+'</div>';
+}
 function nwsSetFiltro(f,btn){nwsFiltro=f;document.querySelectorAll('#nws-filtros .nws-chip').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');nwsRender();}
 function nwsToggle(t){nwsExpand[t]=!nwsExpand[t];nwsRender();}
 function nwsItemHTML(n){
@@ -5805,6 +5863,10 @@ function nwsRender(){
     var row={p:p,chg:chg,items:items,big:abs>=umbral};
     (row.big?movs:rest).push(row);
   });
+  // Agrupar movimientos fuertes por sector y dirección
+  var grupos=[],gk={};
+  movs.forEach(function(r){var k=r.p.sector+(r.chg>=0?'+':'-');(gk[k]=gk[k]||{sec:r.p.sector,up:r.chg>=0,rows:[]}).rows.push(r);});
+  Object.keys(gk).forEach(function(k){var g=gk[k];if(g.rows.length>=NWS_GRUPO_MIN&&NWS_PAIS[g.sec]){grupos.push(g);g.rows.forEach(function(r){r.grupo=g;});}});
   if(kp)kp.innerHTML=[['Noticias',tot],['Alto impacto',nHi],['Tickers con novedades',conNov+' de '+cart.length],['Movimiento ≥ '+umbral+'%',movs.length]]
     .map(function(k,i){return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.55rem .75rem"><div style="font-size:.62rem;color:var(--text3);font-family:var(--mono)">'+k[0]+'</div><div style="font-size:1.1rem;font-weight:600;color:'+(i===1&&k[1]?'var(--red)':i===3&&k[1]?'var(--amber)':'var(--text)')+'">'+k[1]+'</div></div>';}).join('');
   function card(r,forceAll){
@@ -5818,13 +5880,14 @@ function nwsRender(){
       +'<span style="font-size:.68rem;color:var(--text3)">'+r.p.w.toFixed(1).replace('.',',')+'% de la cartera</span>'+chgTxt
       +(r.big?'<span style="font-size:.6rem;font-family:var(--mono);color:var(--amber);border:1px solid var(--amber);border-radius:20px;padding:1px 7px">MOVIMIENTO FUERTE</span>':'')
       +'<span style="flex:1"></span><span style="font-size:.65rem;color:var(--text3)">'+r.items.length+' noticias</span></div>';
-    if(r.big&&!r.items.length)h+='<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Sin noticias propias: probablemente movimiento de sector o de mercado.</div>';
+    if(r.big&&!r.items.length)h+='<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Sin noticias propias'+(r.grupo?': ver contexto de '+NWS_PAIS[r.grupo.sec].label+' arriba':': probablemente movimiento de sector o de mercado')+' · <a href="'+nwsGLink(r.p.ticker+' acciones')+'" target="_blank" rel="noopener" style="color:var(--blue)">buscar en Google News ↗</a></div>';
     shown.slice(0,lim).forEach(function(n){h+=nwsItemHTML(n);});
     if(shown.length>5)h+='<button class="btn btn-sm" style="margin-top:6px" onclick="nwsToggle(\''+nwsEsc(r.p.ticker)+'\')">'+(nwsExpand[r.p.ticker]?'Ver menos':'+'+(shown.length-5)+' más')+'</button>';
     return h+'</div>';
   }
   var html='';
   if(movs.length){html+='<div style="font-size:.7rem;font-family:var(--mono);color:var(--amber);margin:.2rem 0 .45rem">¿POR QUÉ SE MOVIERON HOY? (variación ≥ '+umbral+'%)</div>';
+    grupos.forEach(function(g){html+=nwsGrupoHTML(g,umbral);});
     movs.sort(function(a,b){return Math.abs(b.chg)-Math.abs(a.chg);}).forEach(function(r){html+=card(r,true);});
     html+='<div style="font-size:.7rem;font-family:var(--mono);color:var(--text3);margin:.9rem 0 .45rem">RESTO DE LA CARTERA · por peso</div>';}
   var restH=rest.map(function(r){return card(r,false);}).join('');
