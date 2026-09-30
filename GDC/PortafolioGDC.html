@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v42 | 2026-09-29 | Feat: card "Flujo cobrado" en la solapa Dividendos — KPIs (en lo que va del año vs mismo período del año anterior, promedio mensual, flujo anual de los últimos 12 meses, total del año anterior), gráfico mensual apilado dividendos/renta de bonos-ON con línea del año anterior y selector de año, y tabla mes × año con totales. Toma TRK.divs confirmados en USD con la misma conversión del historial; renta = tipo RENTA o ticker de sector bonos/on. (trkRenderFlujo / trkFlujoData / trkDivUSD / trkDivEsRenta, hook en trkRender)
 v41 | 2026-09-24 | Feat (única vez, solo GDC): card "Histórico Veta → PPC" en la solapa Dividendos para importar el .xls viejo "Movimientos Dividendos y Rentas Cobradas". Toma DIV y RTA en efectivo (renta + amortización − gastos; excluye pagos en especie, CANJ y RESC), y resta del PPC solo si el activo sigue en cartera y lo tenías a la fecha del cobro según movimientos (sin Cristian), en proporción a las nominales de esa fecha que seguís teniendo (mínimo de tenencia desde el cobro / tenencia del broker). ARS se convierte con CCL (MEP para bonos/ON) de la fecha o hasta 7 días antes. Si el cobro ya estaba en TRK.divs sin aplicar (±7 días) se actualiza en vez de duplicar. Preview por activo y por cobro, confirmación, y botón Revertir. getPositions() ahora usa d.montoPPC si existe. (hvParse/hvAnalyze/hvRender/hvApply/hvRevert, getPositions)
 v40 | 2026-09-18 | Fix + hardening (Garo reportó que el MEP del 09/09/2026 es 1531, no lo que iba a promediar el backfill de v39): ese día tenía 4 movimientos de bonos con CCL/MEP guardado muy distinto entre sí (TX31 con 1487 vs AO29 con ~1525-1531 — un tipeo mal cargado en TX31), y backfillTCDesdeMovimientos() los promediaba a ciegas, lo que hubiera dejado la tabla con un valor mal (~1518). Se agrega detección de dispersión: si un día tiene min/max con más de 15 (ARS) de diferencia, esa fecha NO se completa sola — queda listada aparte en el alert ("revisalas a mano en $ Tipo de Cambio") en vez de inventar un promedio con un dato sucio adentro. Se carga manualmente MEP_TABLE['09/09/2026']=1531 (el valor correcto que confirmó Garo) para dejar esa fecha resuelta ya mismo. (backfillTCDesdeMovimientos / BACKFILL_DISPERSION_MAX / MEP_TABLE)
 v39 | 2026-09-18 | Fix (bug real, reportado por Garo: ~30 fechas jul-sep/2026 con ⚠ CCL/MEP en Movimientos, todas cargadas desde el módulo rápido de Comprar/Vender): vbuyConfirmar() y vsellConfirmar() calculaban cclVal (vía getTC) y lo guardaban en el movimiento, pero nunca lo persistían en CCL_TABLE/MEP_TABLE — solo addMov() (el formulario largo, que Garo casi no usa) lo hacía, y encima con el bug de usar CCL_HOY/MEP_HOY ("hoy") en vez del valor real de la fecha del movimiento, así que una carga con fecha pasada podía pisar mal la tabla. Se agrega tcStampearFecha(fecha,esBonoON,valor) — usa el valor REAL del movimiento (cclVal), nunca pisa una fecha ya cargada — y se la llama desde addMov/vbuyConfirmar/vsellConfirmar. También se agrega backfillTCDesdeMovimientos() + botón "🔧 Completar tabla CCL/MEP" en Movimientos, que recorre TODO el historial y completa los huecos ya existentes con el m.ccl de cada movimiento (promedio si un mismo día tiene varios valores) — soluciona de una vez las ~30 fechas ya afectadas, sin tocar nada que ya esté cargado. (tcStampearFecha / backfillTCDesdeMovimientos / addMov / vbuyConfirmar / vsellConfirmar)
@@ -218,6 +219,16 @@ tr:hover td{background:var(--surface2)}
 .trk-metric-val{font-size:1rem;font-weight:600;font-family:var(--mono);color:var(--text)}
 .trk-metric-sub{font-size:.6rem;font-family:var(--mono);color:var(--text3);margin-top:2px}
 .trk-blurred{filter:blur(5px);user-select:none;pointer-events:none;transition:filter .2s}
+.trk-metrics.trk-flujo-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:760px){.trk-metrics.trk-flujo-kpis{grid-template-columns:1fr 1fr}}
+.trk-flujo-yr{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-family:var(--mono);font-size:.68rem;padding:3px 10px;border-radius:var(--rsm);cursor:pointer}
+.trk-flujo-yr.on{background:var(--accent);border-color:var(--accent);color:#06121f;font-weight:700}
+#trk-flujo-table th,#trk-flujo-table td{text-align:right;font-family:var(--mono)}
+#trk-flujo-table th:first-child,#trk-flujo-table td:first-child{text-align:left;font-family:var(--sans)}
+#trk-flujo-table td.sel,#trk-flujo-table th.sel{background:rgba(0,230,118,.06)}
+#trk-flujo-table tr.tot td{border-top:2px solid var(--border2);font-weight:700;color:var(--accent)}
+#trk-flujo-table tr.sub td{color:var(--text2);font-size:.64rem}
+#trk-flujo-table tr.cur td:first-child{color:var(--amber);font-weight:700}
 .trk-eye-btn{background:none;border:1px solid var(--border2);border-radius:var(--rsm);cursor:pointer;padding:3px 8px;display:inline-flex;align-items:center;gap:5px;color:var(--text2);font-size:.65rem;font-family:var(--sans);height:28px}
 .trk-eye-btn:hover{background:var(--surface2);color:var(--text)}
 .trk-ccl-result{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.85rem 1rem;margin-top:.75rem;display:none}
@@ -424,7 +435,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat (única vez, solo GDC): card &quot;Histórico Veta → PPC&quot; en la solapa Dividendos para importar el .xls viejo &quot;Movimientos Dividendos y Rentas Cobradas&quot;. Toma DIV y RTA en efectivo (renta + amortización − gastos; excluye pagos en especie, CANJ y RESC), y resta del PPC solo si el activo sigue en cartera y lo tenías a la fecha del cobro según movimientos (sin Cristian), en proporción a las nominales de esa fecha que seguís teniendo (mínimo de tenencia desde el cobro / tenencia del broker). ARS se convierte con CCL (MEP para bonos/ON) de la fecha o hasta 7 días antes. Si el cobro ya estaba en TRK.divs sin aplicar (±7 días) se actualiza en vez de duplicar. Preview por activo y por cobro, confirmación, y botón Revertir. getPositions() ahora usa d.montoPPC si existe. (hvParse/hvAnalyze/hvRender/hvApply/hvRevert, getPositions)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v41 · 24/09/2026</div>
+<div id="claude-version-badge" title="Feat: card &quot;Flujo cobrado&quot; en la solapa Dividendos — KPIs (en lo que va del año vs mismo período del año anterior, promedio mensual, flujo anual de los últimos 12 meses, total del año anterior), gráfico mensual apilado dividendos/renta de bonos-ON con línea del año anterior y selector de año, y tabla mes × año con totales. Toma TRK.divs confirmados en USD con la misma conversión del historial; renta = tipo RENTA o ticker de sector bonos/on. (trkRenderFlujo / trkFlujoData / trkDivUSD / trkDivEsRenta, hook en trkRender)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v42 · 29/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -1099,6 +1110,22 @@ tr:hover td{background:var(--surface2)}
           <div class="trk-metric"><div class="trk-metric-label">Total (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-usd">—</div><div class="trk-metric-sub trk-sensitive" id="trk-m-ars-sub"></div></div>
           <div class="trk-metric"><div class="trk-metric-label">Este mes (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-mes">—</div></div>
           <div class="trk-metric"><div class="trk-metric-label">Registros</div><div class="trk-metric-val" id="trk-m-count">38</div></div>
+        </div>
+
+        <!-- Flujo cobrado por mes / año (v42) -->
+        <div class="card" id="trk-flujo-card" style="display:none">
+          <div class="card-header">
+            <span class="card-title">Flujo cobrado — dividendos + renta de bonos/ON</span>
+            <span id="trk-flujo-badge" class="smsg"></span>
+            <button class="card-toggle" onclick="cardToggle(this)">▾</button>
+          </div>
+          <div class="card-body">
+            <div class="trk-metrics trk-flujo-kpis" id="trk-flujo-kpis"></div>
+            <div id="trk-flujo-years" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:2px 0 8px"></div>
+            <div class="trk-sensitive" style="position:relative;height:230px"><canvas id="trk-flujo-chart"></canvas></div>
+            <div class="tw" style="margin-top:12px"><table id="trk-flujo-table"></table></div>
+            <div style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-top:6px;line-height:1.5">Suma todo lo confirmado en el historial de abajo (pendientes no cuentan). Montos en USD con el mismo tipo de cambio que el historial. Renta = cupón + amortización cobrados de bonos y ON.</div>
+          </div>
         </div>
 
         <!-- Form -->
@@ -8013,8 +8040,117 @@ function trkRender(){
   if(TRK.ccl&&totalUSD>0)document.getElementById('trk-m-ars-sub').textContent='≈ $'+Math.round(totalUSD*TRK.ccl).toLocaleString('es-AR')+' ARS';
   else document.getElementById('trk-m-ars-sub').textContent='';
   document.getElementById('trk-total-badge').textContent=confirmedDivs.length?'Total: USD '+trkFmt2(totalUSD):'';
+  try{trkRenderFlujo();}catch(e){console.warn('trkRenderFlujo',e);}
   trkRenderPending();
   if(TRK.hidden)document.querySelectorAll('.trk-sensitive').forEach(function(el){el.classList.add('trk-blurred');});
+}
+
+// ══ Flujo cobrado por mes / año (v42) ══════════════════════════════════════
+// Agrupa TRK.divs confirmados (dividendos + renta/amortización de bonos y ON) por
+// año y mes, en USD con la misma conversión que el historial (CCL de la fecha ±7
+// días → cclUsado → montoUSD). Usa el monto completo cobrado (no montoPPC).
+var TRK_FLUJO={anio:null,chart:null};
+var TRK_MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function trkDivUSD(d){
+  if(d.moneda==='USD') return d.monto||0;
+  var fp=d.fecha?d.fecha.split('-'):[];
+  var cclH=null;
+  if(fp.length===3){
+    cclH=CCL_TABLE[fp[2]+'/'+fp[1]+'/'+fp[0]]||null;
+    if(!cclH){var dt=new Date(d.fecha+'T12:00:00');for(var di=1;di<=7&&!cclH;di++){for(var sg=-1;sg<=1&&!cclH;sg+=2){var d2=new Date(dt);d2.setDate(d2.getDate()+sg*di);var k=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();cclH=CCL_TABLE[k]||null;}}}
+  }
+  var ccl=cclH||d.cclUsado;
+  return ccl?(d.monto||0)/ccl:(d.montoUSD||0);
+}
+function trkDivEsRenta(d){
+  if(d.tipo==='RENTA') return true;
+  var sec=null;try{sec=getSector(d.ticker);}catch(e){}
+  return sec==='bonos'||sec==='on';
+}
+function trkFlujoData(){
+  var by={};
+  (TRK.divs||[]).forEach(function(d){
+    if(!d||d.estado==='pendiente'||!d.fecha) return;
+    var p=d.fecha.split('-'); if(p.length!==3) return;
+    var y=parseInt(p[0],10), m=parseInt(p[1],10)-1;
+    if(!(y>1990)||m<0||m>11) return;
+    var usd=trkDivUSD(d); if(!isFinite(usd)||!usd) return;
+    if(!by[y]) by[y]={div:[0,0,0,0,0,0,0,0,0,0,0,0],renta:[0,0,0,0,0,0,0,0,0,0,0,0],n:0};
+    by[y][trkDivEsRenta(d)?'renta':'div'][m]+=usd;
+    by[y].n++;
+  });
+  return by;
+}
+function trkFlujoSelAnio(y){TRK_FLUJO.anio=y;trkRenderFlujo();if(TRK.hidden)document.querySelectorAll('#trk-flujo-card .trk-sensitive').forEach(function(el){el.classList.add('trk-blurred');});}
+function trkRenderFlujo(){
+  var card=document.getElementById('trk-flujo-card'); if(!card) return;
+  var by=trkFlujoData();
+  var years=Object.keys(by).map(Number).sort(function(a,b){return a-b;});
+  if(!years.length){card.style.display='none';return;}
+  card.style.display='';
+  var now=new Date(), yNow=now.getFullYear(), mNow=now.getMonth();
+  if(TRK_FLUJO.anio==null||!by[TRK_FLUJO.anio]) TRK_FLUJO.anio=by[yNow]?yNow:years[years.length-1];
+  var ySel=TRK_FLUJO.anio;
+  function sum(a){return a.reduce(function(s,v){return s+v;},0);}
+  function mesT(y,m){return by[y]?by[y].div[m]+by[y].renta[m]:0;}
+  function tot(y){return by[y]?sum(by[y].div)+sum(by[y].renta):0;}
+  function f2(n){return 'USD '+trkFmt2(n||0);}
+  function f0(n){return Math.round(n||0).toLocaleString('es-AR');}
+
+  // ── KPIs ──
+  var ytd=tot(yNow), mesesT=mNow+1, prom=ytd/mesesT;
+  var prevYtd=0; for(var j=0;j<=mNow;j++) prevYtd+=mesT(yNow-1,j);
+  var ult12=0; for(var i=0;i<12;i++){var dt=new Date(yNow,mNow-i,1);ult12+=mesT(dt.getFullYear(),dt.getMonth());}
+  var prev=tot(yNow-1);
+  var varTxt=prevYtd>0?(((ytd/prevYtd)-1)*100):null;
+  var ars12=(TRK.ccl&&ult12>0)?' · ≈ $'+Math.round(ult12*TRK.ccl).toLocaleString('es-AR'):'';
+  var kpi=function(lbl,val,sub){return '<div class="trk-metric"><div class="trk-metric-label">'+lbl+'</div><div class="trk-metric-val trk-sensitive">'+val+'</div><div class="trk-metric-sub trk-sensitive">'+(sub||'')+'</div></div>';};
+  document.getElementById('trk-flujo-kpis').innerHTML=
+    kpi('En lo que va de '+yNow,f2(ytd),varTxt!=null?('<span style="color:'+(varTxt>=0?'var(--green)':'var(--red)')+'">'+(varTxt>=0?'+':'')+varTxt.toFixed(1)+'%</span> vs mismo período '+(yNow-1)):'')
+   +kpi('Promedio mensual '+yNow,f2(prom),'sobre '+mesesT+' mes'+(mesesT>1?'es':''))
+   +kpi('Flujo anual (últ. 12 meses)',f2(ult12),'≈ '+f2(ult12/12)+'/mes'+ars12)
+   +kpi('Total '+(yNow-1),f2(prev),by[yNow-1]?('div '+f0(sum(by[yNow-1].div))+' · renta '+f0(sum(by[yNow-1].renta))):'sin registros');
+  document.getElementById('trk-flujo-badge').textContent=years.length>1?(years[0]+'–'+years[years.length-1]):String(years[0]);
+
+  // ── Selector de año ──
+  document.getElementById('trk-flujo-years').innerHTML='<span style="font-size:.6rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-right:2px">Gráfico</span>'
+    +years.slice().reverse().map(function(y){return '<button class="trk-flujo-yr'+(y===ySel?' on':'')+'" onclick="trkFlujoSelAnio('+y+')">'+y+'</button>';}).join('');
+
+  // ── Gráfico mensual del año elegido (apilado dividendos / renta + línea año anterior) ──
+  var canvas=document.getElementById('trk-flujo-chart');
+  if(canvas&&typeof Chart!=='undefined'){
+    try{var ex=Chart.getChart(canvas);if(ex)ex.destroy();}catch(e){}
+    var ds=[
+      {type:'bar',label:'Dividendos',data:by[ySel].div.map(function(v){return +v.toFixed(2);}),backgroundColor:'#448aff',stack:'s',borderRadius:3,maxBarThickness:34},
+      {type:'bar',label:'Renta bonos/ON',data:by[ySel].renta.map(function(v){return +v.toFixed(2);}),backgroundColor:'#00e676',stack:'s',borderRadius:3,maxBarThickness:34}
+    ];
+    if(by[ySel-1]) ds.push({type:'line',label:'Total '+(ySel-1),data:TRK_MESES.map(function(_,m){return +mesT(ySel-1,m).toFixed(2);}),borderColor:'#ffd600',backgroundColor:'#ffd600',borderDash:[4,4],borderWidth:1.5,pointRadius:2,tension:.25});
+    TRK_FLUJO.chart=new Chart(canvas.getContext('2d'),{
+      data:{labels:TRK_MESES,datasets:ds},
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{position:'bottom',labels:{color:'#7a9cc5',boxWidth:10,font:{size:10}}},
+          tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': USD '+trkFmt2(c.parsed.y);},
+            footer:function(items){var t=0;items.forEach(function(it){if(it.dataset.type==='bar')t+=it.parsed.y;});return 'Total '+ySel+': USD '+trkFmt2(t);}}}},
+        scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#7a9cc5',font:{size:10}}},
+          y:{stacked:true,beginAtZero:true,grid:{color:'rgba(38,64,112,.45)'},ticks:{color:'#7a9cc5',font:{size:10},callback:function(v){return 'U$S '+Math.round(v).toLocaleString('es-AR');}}}}}
+    });
+  }
+
+  // ── Tabla mes × año ──
+  var ys=years.slice().reverse();
+  var h='<thead><tr><th>Mes</th>'+ys.map(function(y){return '<th class="'+(y===ySel?'sel':'')+'">'+y+'</th>';}).join('')+'</tr></thead><tbody>';
+  TRK_MESES.forEach(function(lbl,m){
+    h+='<tr class="'+(m===mNow?'cur':'')+'"><td>'+lbl+'</td>'+ys.map(function(y){
+      var fut=(y===yNow&&m>mNow), v=mesT(y,m);
+      return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'" style="'+(fut?'color:var(--text3)':'')+'">'+(fut?'':(v>0?f0(v):'—'))+'</td>';
+    }).join('')+'</tr>';
+  });
+  h+='<tr class="tot"><td>Total USD</td>'+ys.map(function(y){return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(tot(y))+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Dividendos</td>'+ys.map(function(y){return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(sum(by[y].div))+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Renta bonos/ON</td>'+ys.map(function(y){return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(sum(by[y].renta))+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Promedio mensual</td>'+ys.map(function(y){var n=(y===yNow)?mesesT:12;return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(tot(y)/n)+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Cobros</td>'+ys.map(function(y){return '<td class="'+(y===ySel?'sel':'')+'">'+by[y].n+'</td>';}).join('')+'</tr>';
+  document.getElementById('trk-flujo-table').innerHTML=h+'</tbody>';
 }
 
 function trkAddDiv(){
