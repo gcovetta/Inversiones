@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v44 | 2026-09-30 | Feat: nueva solapa "Noticias" — noticias de las últimas 48 h / 7 días de los CEDEAR/NYSE en cartera (Finnhub company-news), ordenadas por peso, clasificadas Alto/Medio/Bajo por palabras clave, filtro por impacto, y sección "¿Por qué se movieron hoy?" para los tickers con variación ≥ umbral (default 3%, variación del subyacente en USA). Badge en el menú con la cantidad de movimientos fuertes tras cada actualización de cotizaciones. (nwsLoad/nwsRender/nwsAfterQuotes, hook en fetchAllQuotes y showPage)
 v43 | 2026-09-29 | Feat: al pasar el mouse por un mes del gráfico "Flujo cobrado", el tooltip lista los tickers que más pagaron ese mes (top 8, de mayor a menor, con USD, % del mes, ◆ renta / ● dividendo, ×N si cobró varias veces) y el resto agrupado. (trkFlujoData guarda by[y].tk[m], tooltip footer en trkRenderFlujo)
 v42 | 2026-09-29 | Feat: card "Flujo cobrado" en la solapa Dividendos — KPIs (en lo que va del año vs mismo período del año anterior, promedio mensual, flujo anual de los últimos 12 meses, total del año anterior), gráfico mensual apilado dividendos/renta de bonos-ON con línea del año anterior y selector de año, y tabla mes × año con totales. Toma TRK.divs confirmados en USD con la misma conversión del historial; renta = tipo RENTA o ticker de sector bonos/on. (trkRenderFlujo / trkFlujoData / trkDivUSD / trkDivEsRenta, hook en trkRender)
 v41 | 2026-09-24 | Feat (única vez, solo GDC): card "Histórico Veta → PPC" en la solapa Dividendos para importar el .xls viejo "Movimientos Dividendos y Rentas Cobradas". Toma DIV y RTA en efectivo (renta + amortización − gastos; excluye pagos en especie, CANJ y RESC), y resta del PPC solo si el activo sigue en cartera y lo tenías a la fecha del cobro según movimientos (sin Cristian), en proporción a las nominales de esa fecha que seguís teniendo (mínimo de tenencia desde el cobro / tenencia del broker). ARS se convierte con CCL (MEP para bonos/ON) de la fecha o hasta 7 días antes. Si el cobro ya estaba en TRK.divs sin aplicar (±7 días) se actualiza en vez de duplicar. Preview por activo y por cobro, confirmación, y botón Revertir. getPositions() ahora usa d.montoPPC si existe. (hvParse/hvAnalyze/hvRender/hvApply/hvRevert, getPositions)
@@ -143,6 +144,7 @@ header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;a
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;overflow:hidden}
 .card-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .card-title{font-weight:600;font-size:.83rem}
+.nws-chip.on{border-color:var(--accent);color:var(--accent)}
 .card-body{padding:1rem}
 .tw{overflow-x:auto;width:100%;max-width:100%;box-sizing:border-box;scrollbar-width:none}
 .tw::-webkit-scrollbar{display:none}
@@ -436,7 +438,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: al pasar el mouse por un mes del gráfico &quot;Flujo cobrado&quot;, el tooltip lista los tickers que más pagaron ese mes (top 8, de mayor a menor, con USD, % del mes, ◆ renta / ● dividendo, ×N si cobró varias veces) y el resto agrupado. (trkFlujoData guarda by[y].tk[m], tooltip footer en trkRenderFlujo)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v43 · 29/09/2026</div>
+<div id="claude-version-badge" title="Feat: nueva solapa &quot;Noticias&quot; — noticias de las últimas 48 h / 7 días de los CEDEAR/NYSE en cartera (Finnhub company-news), ordenadas por peso, clasificadas Alto/Medio/Bajo por palabras clave, filtro por impacto, y sección &quot;¿Por qué se movieron hoy?&quot; para los tickers con variación ≥ umbral (default 3%, variación del subyacente en USA). Badge en el menú con la cantidad de movimientos fuertes tras cada actualización de cotizaciones. (nwsLoad/nwsRender/nwsAfterQuotes, hook en fetchAllQuotes y showPage)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v44 · 30/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -575,6 +577,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;ratios&#39;,this)"><span>⚙</span>Ratios</button>
     <button class="nav-item" onclick="showPage(&#39;tracker&#39;,this)"><span>◎</span>Dividendos</button>
     <button class="nav-item" onclick="showPage(&#39;vigilancia&#39;,this)"><span>👁</span>Vigilancia</button>
+    <button class="nav-item" onclick="showPage(&#39;noticias&#39;,this)"><span>📰</span>Noticias<b id="nws-navbadge" style="display:none;margin-left:auto;font-size:.6rem;font-family:var(--mono);background:var(--amber);color:#1a1400;border-radius:20px;padding:0 6px"></b></button>
     <div class="nav-sec">Laboratorio</div>
     <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
     <div class="nav-sec">Ventas (Lab)</div>
@@ -1905,7 +1908,32 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
-    <div class="page" id="page-vigilancia">
+    <div class="page" id="page-noticias">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📰 Noticias de la cartera</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.72rem;color:var(--text2)">
+            <label>Ventana <select id="nws-dias" onchange="nwsLoad(true)" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);padding:2px 6px;font-size:.72rem"><option value="2" selected>48 h</option><option value="7">7 días</option></select></label>
+            <label title="Variación diaria a partir de la cual un ticker se considera 'movimiento fuerte'">Umbral <input id="nws-umbral" type="number" value="3" step="0.5" min="0.5" style="width:58px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);padding:2px 6px;font-size:.72rem" onchange="nwsRender();nwsAfterQuotes()">%</label>
+            <button class="btn btn-sm" onclick="nwsLoad(true)">⟳ Actualizar</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:.85rem 1rem">
+          <div id="nws-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:.8rem"></div>
+          <div id="nws-filtros" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:.7rem">
+            <button class="btn btn-sm nws-chip on" onclick="nwsSetFiltro('hi',this)">Solo alto impacto</button>
+            <button class="btn btn-sm nws-chip" onclick="nwsSetFiltro('md',this)">Alto + medio</button>
+            <button class="btn btn-sm nws-chip" onclick="nwsSetFiltro('all',this)">Todas</button>
+            <span id="nws-status" style="font-size:.7rem;color:var(--text3);font-family:var(--mono);margin-left:auto"></span>
+          </div>
+          <div id="nws-list"></div>
+          <div style="font-size:.65rem;color:var(--text3);margin-top:.8rem">Cubre CEDEARs y NYSE vía Finnhub. Acciones argentinas, bonos, ON y FCI no están incluidas. La clasificación de impacto es por palabras clave del titular.</div>
+        </div>
+      </div>
+    </div>
+
+    
+<div class="page" id="page-vigilancia">
       <div class="card">
         <div class="card-header">
           <span class="card-title">👁 Vigilancia</span>
@@ -3030,6 +3058,7 @@ function showPage(id,btn){
   if(id==='dividendos') divPopulateSelect();
   if(id==='movimientos') resetMFechaHoy();
   if(id==='arbitraje') arbRender();
+  if(id==='noticias') nwsLoad(false);
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
@@ -5668,6 +5697,158 @@ function exportPortfolioXLS(){
 }
 
 // ─── Comparación de portafolios ───
+// ─── Noticias de la cartera (v44) ─────────────────────────────────────────────
+// Fuente: Finnhub /company-news + /quote (variación del subyacente en USA).
+// Solo sectores con cobertura en Finnhub (CEDEAR/NYSE). Argentina, bonos, ON y FCI quedan afuera.
+var NWS_SECTORS={nyse:1,europa:1,china:1,cripto:1,brasil:1};
+var NWS_TTL=3*3600*1000, NWS_LS='gdc_nws_v1';
+var nwsFiltro='hi', nwsExpand={}, nwsBusy=false;
+var nwsCache=(function(){try{return JSON.parse(localStorage.getItem(NWS_LS)||'null')||{};}catch(e){return {};}})();
+var NWS_JUNK=/(stocks? to (buy|watch)|top \d+|best stocks|\d+ (stocks|reasons)|should you (buy|sell)|is it (time|too late)|motley fool|zacks rank|millionaire|here'?s why|what to know|vs\.? .* (stock|which)|prediction:)/i;
+var NWS_HI=/(earnings|quarterly results|q[1-4] results|beats?|miss(es|ed)?|guidance|outlook|forecast|downgrad|upgrad|acqui|merger|buyout|takeover|to buy .* for \$|lawsuit|sued|probe|investigat|\bsec\b|\bdoj\b|\bftc\b|antitrust|\bfda\b|recall|bankrupt|ceo (steps|resign|out|exit)|names? .* ceo|layoffs?|job cuts|dividend (cut|suspen|hike|increase|raise)|buyback|repurchase|stock split|tariff|export (ban|curb|restriction)|halt|plunge|soar|tumble|surge|crash)/i;
+var NWS_MD=/(analyst|price target|rating|partner|deal|contract|launch|unveil|dividend|regulat|sanction|stake|insider|stake|expan|invest|approv|chip|ai\b)/i;
+function nwsEsc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function nwsAgo(ts){var m=Math.max(0,Math.round((Date.now()-ts*1000)/60000));if(m<60)return 'hace '+m+' min';var h=Math.round(m/60);if(h<24)return 'hace '+h+' h';return 'hace '+Math.round(h/24)+' d';}
+function nwsYmd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function nwsUmbral(){var v=parseFloat((document.getElementById('nws-umbral')||{}).value);return v>0?v:3;}
+function nwsDias(){var v=parseInt((document.getElementById('nws-dias')||{}).value,10);return v>0?v:2;}
+// Valor USD de una posición (misma lógica que vigRender)
+function nwsValUSD(p){
+  var q=quotes[p.ticker];if(!q||q.price==null||!p.qty)return 0;
+  var sector=getSector(p.ticker),isBonoON=(sector==='bonos'||sector==='on'),isFci=(sector==='fci');
+  if(sector==='argentina'||isBonoON||isFci){var tc=(isBonoON||isFci)?(MEP_HOY||CCL_HOY):CCL_HOY;if(!(tc>0))return 0;var ars=isBonoON?q.price*p.qty/100:q.price*p.qty;return ars/tc;}
+  var pu=q.fromByma?q.price/(CCL_HOY||1):q.price/getRatio(p.ticker);return pu*p.qty;
+}
+function nwsCartera(){
+  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
+  var tot=0;pos.forEach(function(p){p._v=nwsValUSD(p);tot+=p._v;});
+  return pos.filter(function(p){return NWS_SECTORS[getSector(p.ticker)];})
+    .map(function(p){return {ticker:p.ticker,sym:getFinnhubTicker(p.ticker),w:tot>0?p._v/tot*100:0,localChg:quotes[p.ticker]?quotes[p.ticker].changePct:null};})
+    .sort(function(a,b){return b.w-a.w;});
+}
+function nwsClasif(n,chgAbs,umbral){
+  var h=n.headline||'';
+  if(NWS_JUNK.test(h))return 'lo';
+  var lvl=NWS_HI.test(h)?'hi':(NWS_MD.test(h)?'md':'lo');
+  // Si el ticker se movió fuerte, lo reciente (24 h) sube un nivel: probablemente explica el movimiento
+  if(chgAbs>=umbral&&(Date.now()/1000-n.datetime)<86400){if(lvl==='md')lvl='hi';else if(lvl==='lo')lvl='md';}
+  return lvl;
+}
+async function nwsFetchJSON(url){
+  for(var k=0;k<2;k++){
+    var r=await fetchWithTimeout(url,{},10000);
+    if(r.status===429){await new Promise(function(ok){setTimeout(ok,2500);});continue;}
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }
+  throw new Error('Límite de Finnhub');
+}
+async function nwsPool(items,limit,worker){
+  var idx=0;
+  async function run(){while(idx<items.length){var it=items[idx++];try{await worker(it);}catch(e){}}}
+  var ws=[];for(var k=0;k<Math.min(limit,items.length);k++)ws.push(run());
+  await Promise.all(ws);
+}
+async function nwsLoad(force){
+  var cart=nwsCartera();
+  var st=document.getElementById('nws-status');
+  var dias=nwsDias();
+  var fresh=nwsCache.ts&&(Date.now()-nwsCache.ts<NWS_TTL)&&nwsCache.dias===dias;
+  if(!force&&fresh){nwsRender();return;}
+  if(nwsBusy)return;nwsBusy=true;
+  var to=new Date(),from=new Date(Date.now()-dias*86400000);
+  var data={},done=0,errs=0;
+  if(st)st.textContent='Buscando noticias… 0/'+cart.length;
+  await nwsPool(cart,3,async function(p){
+    var ent={news:[],q:null};
+    try{
+      var arr=await nwsFetchJSON(FBASE+'/company-news?symbol='+encodeURIComponent(p.sym)+'&from='+nwsYmd(from)+'&to='+nwsYmd(to)+'&token='+FKEY);
+      var seen={};
+      ent.news=(Array.isArray(arr)?arr:[]).filter(function(n){
+        if(!n||!n.headline||!n.datetime)return false;
+        if(n.datetime*1000<from.getTime())return false;
+        var k=n.headline.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);if(seen[k])return false;seen[k]=1;return true;
+      }).slice(0,40).map(function(n){return {headline:n.headline,source:n.source,url:n.url,datetime:n.datetime,summary:(n.summary||'').slice(0,280)};});
+    }catch(e){errs++;}
+    try{var q=await nwsFetchJSON(FBASE+'/quote?symbol='+encodeURIComponent(p.sym)+'&token='+FKEY);if(q&&q.c)ent.q={c:q.c,chg:q.pc?(q.c-q.pc)/q.pc*100:0};}catch(e){}
+    data[p.ticker]=ent;done++;
+    if(st)st.textContent='Buscando noticias… '+done+'/'+cart.length;
+  });
+  nwsCache={ts:Date.now(),dias:dias,data:data};
+  try{localStorage.setItem(NWS_LS,JSON.stringify(nwsCache));}catch(e){}
+  nwsBusy=false;
+  if(st)st.textContent=errs?(errs+' tickers sin respuesta de Finnhub'):'';
+  nwsRender();nwsAfterQuotes();
+}
+function nwsSetFiltro(f,btn){nwsFiltro=f;document.querySelectorAll('#nws-filtros .nws-chip').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');nwsRender();}
+function nwsToggle(t){nwsExpand[t]=!nwsExpand[t];nwsRender();}
+function nwsItemHTML(n){
+  var col={hi:'var(--red)',md:'var(--amber)',lo:'var(--text3)'}[n.lvl],lab={hi:'Alto',md:'Medio',lo:'Bajo'}[n.lvl];
+  return '<div style="display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border)">'
+    +'<span style="font-size:.6rem;font-family:var(--mono);color:'+col+';border:1px solid '+col+';border-radius:20px;padding:1px 7px;height:fit-content;white-space:nowrap">'+lab+'</span>'
+    +'<div style="flex:1;min-width:0"><a href="'+nwsEsc(n.url)+'" target="_blank" rel="noopener" title="'+nwsEsc(n.summary)+'" style="color:var(--text);text-decoration:none;font-size:.8rem;line-height:1.4">'+nwsEsc(n.headline)+'</a>'
+    +'<div style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">'+nwsEsc(n.source)+' · '+nwsAgo(n.datetime)+'</div></div></div>';
+}
+function nwsRender(){
+  var list=document.getElementById('nws-list');if(!list)return;
+  var kp=document.getElementById('nws-kpis');
+  if(!nwsCache.data){list.innerHTML='<div style="color:var(--text3);font-size:.8rem">Tocá ⟳ Actualizar para traer las noticias.</div>';return;}
+  var umbral=nwsUmbral(),rank={hi:0,md:1,lo:2},maxR=nwsFiltro==='hi'?0:nwsFiltro==='md'?1:2;
+  var cart=nwsCartera(),tot=0,nHi=0,conNov=0,movs=[],rest=[];
+  cart.forEach(function(p){
+    var e=nwsCache.data[p.ticker];if(!e)return;
+    var chg=e.q?e.q.chg:p.localChg;var abs=Math.abs(chg||0);
+    var items=e.news.map(function(n){var o=Object.assign({},n);o.lvl=nwsClasif(n,abs,umbral);return o;})
+      .sort(function(a,b){return rank[a.lvl]-rank[b.lvl]||b.datetime-a.datetime;});
+    tot+=items.length;if(items.length)conNov++;
+    items.forEach(function(n){if(n.lvl==='hi')nHi++;});
+    var row={p:p,chg:chg,items:items,big:abs>=umbral};
+    (row.big?movs:rest).push(row);
+  });
+  if(kp)kp.innerHTML=[['Noticias',tot],['Alto impacto',nHi],['Tickers con novedades',conNov+' de '+cart.length],['Movimiento ≥ '+umbral+'%',movs.length]]
+    .map(function(k,i){return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.55rem .75rem"><div style="font-size:.62rem;color:var(--text3);font-family:var(--mono)">'+k[0]+'</div><div style="font-size:1.1rem;font-weight:600;color:'+(i===1&&k[1]?'var(--red)':i===3&&k[1]?'var(--amber)':'var(--text)')+'">'+k[1]+'</div></div>';}).join('');
+  function card(r,forceAll){
+    var shown=r.items.filter(function(n){return forceAll||rank[n.lvl]<=maxR;});
+    if(!shown.length&&!r.big)return '';
+    var lim=nwsExpand[r.p.ticker]?shown.length:5;
+    var chgTxt=r.chg==null?'':'<span style="font-size:.72rem;font-family:var(--mono);color:'+(r.chg>=0?'var(--accent)':'var(--red)')+'">'+(r.chg>=0?'+':'')+r.chg.toFixed(2).replace('.',',')+'% hoy</span>';
+    var h='<div style="border:1px solid '+(r.big?'var(--amber)':'var(--border)')+';border-radius:var(--radius);background:var(--surface);padding:.65rem .9rem;margin-bottom:.6rem">'
+      +'<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px"><span style="font-weight:600;font-size:.92rem">'+nwsEsc(r.p.ticker)+'</span>'
+      +(r.p.sym!==r.p.ticker?'<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">'+nwsEsc(r.p.sym)+'</span>':'')
+      +'<span style="font-size:.68rem;color:var(--text3)">'+r.p.w.toFixed(1).replace('.',',')+'% de la cartera</span>'+chgTxt
+      +(r.big?'<span style="font-size:.6rem;font-family:var(--mono);color:var(--amber);border:1px solid var(--amber);border-radius:20px;padding:1px 7px">MOVIMIENTO FUERTE</span>':'')
+      +'<span style="flex:1"></span><span style="font-size:.65rem;color:var(--text3)">'+r.items.length+' noticias</span></div>';
+    if(r.big&&!r.items.length)h+='<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Sin noticias propias: probablemente movimiento de sector o de mercado.</div>';
+    shown.slice(0,lim).forEach(function(n){h+=nwsItemHTML(n);});
+    if(shown.length>5)h+='<button class="btn btn-sm" style="margin-top:6px" onclick="nwsToggle(\''+nwsEsc(r.p.ticker)+'\')">'+(nwsExpand[r.p.ticker]?'Ver menos':'+'+(shown.length-5)+' más')+'</button>';
+    return h+'</div>';
+  }
+  var html='';
+  if(movs.length){html+='<div style="font-size:.7rem;font-family:var(--mono);color:var(--amber);margin:.2rem 0 .45rem">¿POR QUÉ SE MOVIERON HOY? (variación ≥ '+umbral+'%)</div>';
+    movs.sort(function(a,b){return Math.abs(b.chg)-Math.abs(a.chg);}).forEach(function(r){html+=card(r,true);});
+    html+='<div style="font-size:.7rem;font-family:var(--mono);color:var(--text3);margin:.9rem 0 .45rem">RESTO DE LA CARTERA · por peso</div>';}
+  var restH=rest.map(function(r){return card(r,false);}).join('');
+  html+=restH||'<div style="color:var(--text3);font-size:.8rem">Sin noticias para este filtro.</div>';
+  var ts=new Date(nwsCache.ts);
+  html+='<div style="font-size:.65rem;color:var(--text3);margin-top:.6rem">Actualizado '+ts.toLocaleString('es-AR')+' · la variación es la del subyacente en USA (Finnhub). Pasá el mouse por un titular para ver el resumen.</div>';
+  list.innerHTML=html;
+}
+// Se llama al final de fetchAllQuotes: marca en el menú cuántas posiciones se movieron ≥ umbral
+function nwsAfterQuotes(){
+  try{
+    var umbral=nwsUmbral(),n=0;
+    nwsCartera().forEach(function(p){
+      var e=nwsCache.data&&nwsCache.data[p.ticker];
+      var fresh=nwsCache.ts&&(Date.now()-nwsCache.ts<NWS_TTL);
+      var chg=(fresh&&e&&e.q)?e.q.chg:p.localChg;
+      if(chg!=null&&Math.abs(chg)>=umbral)n++;
+    });
+    var b=document.getElementById('nws-navbadge');
+    if(b){b.textContent=n?String(n):'';b.style.display=n?'':'none';b.title=n?(n+' posiciones se movieron ≥ '+umbral+'% hoy'):'';}
+    var pg=document.getElementById('page-noticias');if(pg&&pg.classList.contains('active')&&nwsCache.data)nwsRender();
+  }catch(e){}
+}
+
 // ─── Vigilancia ──────────────────────────────────────────────────────────────
 var VIG_KEY='ptNYSE_vigilancia';
 var vigItems=[];
@@ -7027,6 +7208,8 @@ async function fetchAllQuotes(){
   if(typeof fetchAllRSI==='function') fetchAllRSI();
   // TIR de Bonos: idem, oportunista
   if(typeof fetchAllTIR==='function') fetchAllTIR();
+  // Noticias: badge de movimientos fuertes (v44)
+  if(typeof nwsAfterQuotes==='function') nwsAfterQuotes();
 }
 
 // ─── RSI (14, método Wilder) ───────────────────────────────────────────────
