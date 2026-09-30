@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v46 | 2026-09-30 | Feat: Noticias — bloque fijo "Panorama por país" arriba de todo: por cada país con exposición (EE.UU., Brasil, Europa, China, Cripto, Argentina), ordenado por peso, las 3 noticias macro más relevantes (inflación, Fed/tasas, empleo, PBI, bancos centrales, elecciones, fiscal) + variación del ETF de referencia (SPY/EWZ/VGK/FXI/IBIT/ARGT) + link a Google News. Registro local de 72 h de noticias generales para no perder el dato de la mañana. (nwsLoadPanorama, nwsPanoramaHTML, nwsLogMerge, NWS_MACRO)
 v45 | 2026-09-30 | Feat: Noticias — contexto país/sector: cuando ≥2 posiciones del mismo sector (Brasil, China, Europa, Cripto, EE.UU.) se mueven fuerte en la misma dirección, aparece una card con noticias del país (ETF proxy EWZ/FXI/VGK/IBIT/SPY + noticias generales de Finnhub filtradas por palabras clave) y link a Google News. Fix: clasificación de impacto con límites de palabra ("Beaten-down" ya no cuenta como "beat") y más filtros de notas de ruido. BBAS3 busca noticias como BDORY. (nwsLoadSector, nwsGrupoHTML, NWS_PAIS, NWS_SYM)
 v44 | 2026-09-30 | Feat: nueva solapa "Noticias" — noticias de las últimas 48 h / 7 días de los CEDEAR/NYSE en cartera (Finnhub company-news), ordenadas por peso, clasificadas Alto/Medio/Bajo por palabras clave, filtro por impacto, y sección "¿Por qué se movieron hoy?" para los tickers con variación ≥ umbral (default 3%, variación del subyacente en USA). Badge en el menú con la cantidad de movimientos fuertes tras cada actualización de cotizaciones. (nwsLoad/nwsRender/nwsAfterQuotes, hook en fetchAllQuotes y showPage)
 v43 | 2026-09-29 | Feat: al pasar el mouse por un mes del gráfico "Flujo cobrado", el tooltip lista los tickers que más pagaron ese mes (top 8, de mayor a menor, con USD, % del mes, ◆ renta / ● dividendo, ×N si cobró varias veces) y el resto agrupado. (trkFlujoData guarda by[y].tk[m], tooltip footer en trkRenderFlujo)
@@ -439,7 +440,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: Noticias — contexto país/sector: cuando ≥2 posiciones del mismo sector (Brasil, China, Europa, Cripto, EE.UU.) se mueven fuerte en la misma dirección, aparece una card con noticias del país (ETF proxy EWZ/FXI/VGK/IBIT/SPY + noticias generales de Finnhub filtradas por palabras clave) y link a Google News. Fix: clasificación de impacto con límites de palabra (&quot;Beaten-down&quot; ya no cuenta como &quot;beat&quot;) y más filtros de notas de ruido. BBAS3 busca noticias como BDORY. (nwsLoadSector, nwsGrupoHTML, NWS_PAIS, NWS_SYM)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v45 · 30/09/2026</div>
+<div id="claude-version-badge" title="Feat: Noticias — bloque fijo &quot;Panorama por país&quot; arriba de todo: por cada país con exposición (EE.UU., Brasil, Europa, China, Cripto, Argentina), ordenado por peso, las 3 noticias macro más relevantes (inflación, Fed/tasas, empleo, PBI, bancos centrales, elecciones, fiscal) + variación del ETF de referencia (SPY/EWZ/VGK/FXI/IBIT/ARGT) + link a Google News. Registro local de 72 h de noticias generales para no perder el dato de la mañana. (nwsLoadPanorama, nwsPanoramaHTML, nwsLogMerge, NWS_MACRO)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v46 · 30/09/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -5717,6 +5718,7 @@ var NWS_PAIS={
   china:{label:'China',flag:'🇨🇳',proxy:'FXI',cat:'general',q:'China bolsa acciones',kw:/(china|chinese|beijing|\bpboc\b|yuan|hang seng|xi jinping|shanghai|shenzhen)/i},
   europa:{label:'Europa',flag:'🇪🇺',proxy:'VGK',cat:'general',q:'bolsas europeas',kw:/(europe|european|\becb\b|lagarde|euro ?zone|stoxx|\bdax\b|\bftse\b|germany|france|britain|\buk\b)/i},
   cripto:{label:'Cripto',flag:'🪙',proxy:'IBIT',cat:'crypto',q:'bitcoin ethereum',kw:null},
+  argentina:{label:'Argentina',flag:'🇦🇷',proxy:'ARGT',cat:'general',q:'Argentina economía Merval',kw:/(argentin|\bmilei\b|\bcaputo\b|\bbcra\b|merval|buenos aires|\bypf\b|galicia|\bperonis)/i},
   nyse:{label:'EE.UU.',flag:'🇺🇸',proxy:'SPY',cat:'general',q:'Wall Street acciones',kw:/(\bfed\b|federal reserve|powell|inflation|\bcpi\b|\bpce\b|jobs report|payrolls|treasur|\byields?\b|s&p 500|nasdaq|wall street|dow jones|recession|tariff|shutdown)/i}
 };
 var nwsSecBusy={};
@@ -5735,6 +5737,7 @@ async function nwsLoadSector(sec){
     nwsCache.gen=nwsCache.gen||{};
     if(!nwsCache.gen[cfg.cat])nwsCache.gen[cfg.cat]=await nwsFetchJSON(FBASE+'/news?category='+cfg.cat+'&token='+FKEY);
     add(nwsCache.gen[cfg.cat],'gen');
+    add(nwsLog.filter(function(n){return cfg.cat==='crypto'?n.cat==='crypto':n.cat!=='crypto';}),'gen');
   }catch(e){}
   try{var q=await nwsFetchJSON(FBASE+'/quote?symbol='+cfg.proxy+'&token='+FKEY);if(q&&q.c)out.q={c:q.c,chg:q.pc?(q.c-q.pc)/q.pc*100:0};}catch(e){}
   out.news.sort(function(a,b){return b.datetime-a.datetime;});out.news=out.news.slice(0,30);
@@ -5791,6 +5794,7 @@ async function nwsLoad(force){
   var fresh=nwsCache.ts&&(Date.now()-nwsCache.ts<NWS_TTL)&&nwsCache.dias===dias;
   if(!force&&fresh){nwsRender();return;}
   if(nwsBusy)return;nwsBusy=true;
+  try{await nwsLoadPanorama(force);}catch(e){}
   var to=new Date(),from=new Date(Date.now()-dias*86400000);
   var data={},done=0,errs=0;
   if(st)st.textContent='Buscando noticias… 0/'+cart.length;
@@ -5809,8 +5813,8 @@ async function nwsLoad(force){
     data[p.ticker]=ent;done++;
     if(st)st.textContent='Buscando noticias… '+done+'/'+cart.length;
   });
-  nwsCache={ts:Date.now(),dias:dias,data:data};
-  try{localStorage.setItem(NWS_LS,JSON.stringify(nwsCache));}catch(e){}
+  nwsCache={ts:Date.now(),dias:dias,data:data,gen:(nwsCache&&nwsCache.gen)||{}};
+  try{var _c=Object.assign({},nwsCache);delete _c.gen;localStorage.setItem(NWS_LS,JSON.stringify(_c));}catch(e){}
   nwsBusy=false;
   if(st)st.textContent=errs?(errs+' tickers sin respuesta de Finnhub'):'';
   nwsRender();nwsAfterQuotes();
@@ -5838,10 +5842,101 @@ function nwsGrupoHTML(g,umbral){
   if(items.length>5)h+='<button class="btn btn-sm" style="margin-top:6px" onclick="nwsToggle(\''+key+'\')">'+(nwsExpand[key]?'Ver menos':'+'+(items.length-5)+' más')+'</button>';
   return h+'</div>';
 }
+
+// ─── Panorama por país (v46) ───────────────────────────────────────────────
+// Siempre visible: noticias macro de cada país donde hay exposición, ordenado por peso.
+// Fuente: Finnhub /news (general + crypto) filtrado por palabras clave del país. Como /news trae solo
+// las últimas ~100 notas, se guarda un registro local de 72 h para no perder el dato de la mañana.
+var NWS_MACRO=/(inflation|\bcpi\b|\bpce\b|\bppi\b|consumer prices|\bfed\b|federal reserve|\bfomc\b|powell|rate (cut|hike)s?|interest rates?|jobs report|payrolls|jobless|unemployment|\bgdp\b|recession|central bank|\becb\b|lagarde|\bselic\b|\bbcra\b|\bpboc\b|elections?|fiscal|budget|deficit|tariffs?|treasury yields?|\bimf\b|\bdefault\b|stimulus|shutdown|retail sales|consumer (spending|confidence)|\bpmi\b)/i;
+// Datos "de primera línea" (pesan más) y sorpresa vs. lo esperado
+var NWS_TOP=/(inflation|\bcpi\b|\bpce\b|consumer prices|jobs report|payrolls|unemployment rate|\bgdp\b|rate (cut|hike|decision)s?|holds? rates|\bfomc\b|\bselic\b|interest rates?)/i;
+var NWS_SURPRISE=/(than expected|expectations|forecasts?|surprise|unexpected|cooler|hotter|estimates)/i;
+// Marcadores propios de EE.UU.: una nota de otro país (BCE, Brasil…) solo cuenta para EE.UU. si también los menciona
+var NWS_US_OWN=/(\bus\b|\bu\.s\.|american|\bfed\b|federal reserve|powell|wall street|treasur|\bs&p\b|nasdaq|dow jones|white house|washington|trump)/i;
+function nwsPanScore(n){var m=NWS_MACRO.test(n.headline),t=NWS_TOP.test(n.headline);return (t?3:m?2:NWS_HI.test(n.headline)?1:0)+((m||t)&&NWS_SURPRISE.test(n.headline)?1:0);}
+var NWS_PAN_LS='gdc_nws_pan_v1',NWS_LOG_LS='gdc_nws_log_v1',NWS_PAN_TTL=30*60*1000;
+var nwsPan=(function(){try{return JSON.parse(localStorage.getItem(NWS_PAN_LS)||'null');}catch(e){return null;}})();
+var nwsLog=(function(){try{return JSON.parse(localStorage.getItem(NWS_LOG_LS)||'[]')||[];}catch(e){return [];}})();
+var nwsPanBusy=false;
+function nwsExposicion(){
+  var tot=0,by={};
+  getPositions().filter(function(p){return p.qty>0.000001;}).forEach(function(p){
+    var v=nwsValUSD(p);if(!v)return;tot+=v;
+    var sc=getSector(p.ticker),k=(sc==='argentina'||sc==='bonos'||sc==='on'||sc==='fci')?'argentina':sc;
+    by[k]=(by[k]||0)+v;
+  });
+  return Object.keys(by).filter(function(k){return NWS_PAIS[k];}).map(function(k){return {sec:k,w:tot>0?by[k]/tot*100:0};}).sort(function(a,b){return b.w-a.w;});
+}
+function nwsLogMerge(arr,cat){
+  var lim=Date.now()/1000-72*3600,seen={};
+  nwsLog.forEach(function(n){seen[n.k]=1;});
+  (Array.isArray(arr)?arr:[]).forEach(function(n){
+    if(!n||!n.headline||!n.datetime||n.datetime<lim)return;
+    var k=n.headline.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);if(seen[k])return;seen[k]=1;
+    nwsLog.push({k:k,cat:cat,headline:n.headline,source:n.source,url:n.url,datetime:n.datetime,summary:(n.summary||'').slice(0,280)});
+  });
+  nwsLog=nwsLog.filter(function(n){return n.datetime>=lim;}).sort(function(a,b){return b.datetime-a.datetime;}).slice(0,500);
+  try{localStorage.setItem(NWS_LOG_LS,JSON.stringify(nwsLog));}catch(e){}
+}
+async function nwsLoadPanorama(force){
+  if(nwsPanBusy)return;
+  if(!force&&nwsPan&&Date.now()-nwsPan.ts<NWS_PAN_TTL)return;
+  nwsPanBusy=true;
+  try{
+    var exp=nwsExposicion();
+    nwsCache.gen=nwsCache.gen||{};
+    try{var g=await nwsFetchJSON(FBASE+'/news?category=general&token='+FKEY);nwsCache.gen.general=g;nwsLogMerge(g,'general');}catch(e){}
+    if(exp.some(function(e){return e.sec==='cripto';})){try{var c=await nwsFetchJSON(FBASE+'/news?category=crypto&token='+FKEY);nwsCache.gen.crypto=c;nwsLogMerge(c,'crypto');}catch(e){}}
+    var q={};
+    await nwsPool(exp,3,async function(e){try{var d=await nwsFetchJSON(FBASE+'/quote?symbol='+NWS_PAIS[e.sec].proxy+'&token='+FKEY);if(d&&d.c)q[e.sec]={c:d.c,chg:d.pc?(d.c-d.pc)/d.pc*100:0};}catch(x){}});
+    nwsPan={ts:Date.now(),q:q};
+    try{localStorage.setItem(NWS_PAN_LS,JSON.stringify(nwsPan));}catch(e){}
+  }finally{nwsPanBusy=false;}
+}
+function nwsPaisNews(sec,fromTs){
+  var cfg=NWS_PAIS[sec];
+  return nwsLog.filter(function(n){
+    if(n.datetime<fromTs)return false;
+    if(cfg.cat==='crypto')return n.cat==='crypto';
+    var txt=n.headline+' '+(n.summary||'');
+    if(n.cat==='crypto'||!cfg.kw||!cfg.kw.test(txt))return false;
+    if(sec==='nyse'){for(var k in NWS_PAIS){var o=NWS_PAIS[k];if(k!=='nyse'&&o.kw&&o.kw.test(txt)&&!NWS_US_OWN.test(txt))return false;}}
+    return true;
+  });
+}
+function nwsPanoramaHTML(){
+  var stale=!nwsPan||(Date.now()-nwsPan.ts>NWS_PAN_TTL);
+  if(stale&&!nwsPanBusy)setTimeout(function(){nwsLoadPanorama(false).then(nwsRender);},0);
+  var h='<div style="border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);padding:.65rem .9rem;margin-bottom:.9rem">'
+    +'<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:.35rem"><span style="font-weight:600;font-size:.92rem">🌎 Panorama por país</span>'
+    +'<span style="font-size:.65rem;color:var(--text3)">noticias macro de los países donde tenés exposición · ordenado por peso</span><span style="flex:1"></span>'
+    +(nwsPanBusy||!nwsPan?'<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">actualizando…</span>':'')+'</div>';
+  if(!nwsPan&&!nwsLog.length)return h+'<div style="font-size:.75rem;color:var(--text3)">Cargando panorama…</div></div>';
+  var fromTs=Date.now()/1000-nwsDias()*86400,rank={hi:0,md:1,lo:2};
+  nwsExposicion().forEach(function(e,idx){
+    var cfg=NWS_PAIS[e.sec],q=nwsPan&&nwsPan.q&&nwsPan.q[e.sec];
+    var items=nwsPaisNews(e.sec,fromTs).filter(function(n){return !NWS_JUNK.test(n.headline);}).map(function(n){
+      var o=Object.assign({},n);o.macro=NWS_MACRO.test(n.headline)||NWS_TOP.test(n.headline);o.score=nwsPanScore(n);
+      o.lvl=(o.macro||NWS_HI.test(n.headline))?'hi':'md';
+      if(o.macro)o.tag='Macro';return o;
+    }).sort(function(a,b){return (b.score-a.score)||(b.datetime-a.datetime);});
+    var key='pan:'+e.sec,lim=nwsExpand[key]?Math.min(items.length,10):3;
+    h+='<div style="padding:.45rem 0;'+(idx?'border-top:1px solid var(--border2)':'')+'">'
+      +'<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span style="font-weight:600;font-size:.84rem">'+cfg.flag+' '+cfg.label+'</span>'
+      +'<span style="font-size:.68rem;color:var(--text3)">'+e.w.toFixed(1).replace('.',',')+'% de la cartera</span>'
+      +(q?'<span style="font-size:.72rem;font-family:var(--mono);color:'+(q.chg>=0?'var(--accent)':'var(--red)')+'">'+cfg.proxy+' '+(q.chg>=0?'+':'')+q.chg.toFixed(2).replace('.',',')+'%</span>':'')
+      +'<span style="flex:1"></span><a href="'+nwsGLink(cfg.q)+'" target="_blank" rel="noopener" style="font-size:.66rem;color:var(--blue)">Google News ↗</a></div>';
+    if(!items.length)h+='<div style="font-size:.72rem;color:var(--text3);padding:4px 0 0">Sin noticias macro en Finnhub para esta ventana.</div>';
+    items.slice(0,lim).forEach(function(n){h+=nwsItemHTML(n);});
+    if(items.length>3)h+='<button class="btn btn-sm" style="margin-top:4px" onclick="nwsToggle(\''+key+'\')">'+(nwsExpand[key]?'Ver menos':'+'+(Math.min(items.length,10)-3)+' más')+'</button>';
+    h+='</div>';
+  });
+  return h+'</div>';
+}
 function nwsSetFiltro(f,btn){nwsFiltro=f;document.querySelectorAll('#nws-filtros .nws-chip').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');nwsRender();}
 function nwsToggle(t){nwsExpand[t]=!nwsExpand[t];nwsRender();}
 function nwsItemHTML(n){
-  var col={hi:'var(--red)',md:'var(--amber)',lo:'var(--text3)'}[n.lvl],lab={hi:'Alto',md:'Medio',lo:'Bajo'}[n.lvl];
+  var col=n.tag?'var(--blue)':{hi:'var(--red)',md:'var(--amber)',lo:'var(--text3)'}[n.lvl],lab=n.tag||{hi:'Alto',md:'Medio',lo:'Bajo'}[n.lvl];
   return '<div style="display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border)">'
     +'<span style="font-size:.6rem;font-family:var(--mono);color:'+col+';border:1px solid '+col+';border-radius:20px;padding:1px 7px;height:fit-content;white-space:nowrap">'+lab+'</span>'
     +'<div style="flex:1;min-width:0"><a href="'+nwsEsc(n.url)+'" target="_blank" rel="noopener" title="'+nwsEsc(n.summary)+'" style="color:var(--text);text-decoration:none;font-size:.8rem;line-height:1.4">'+nwsEsc(n.headline)+'</a>'
@@ -5885,7 +5980,7 @@ function nwsRender(){
     if(shown.length>5)h+='<button class="btn btn-sm" style="margin-top:6px" onclick="nwsToggle(\''+nwsEsc(r.p.ticker)+'\')">'+(nwsExpand[r.p.ticker]?'Ver menos':'+'+(shown.length-5)+' más')+'</button>';
     return h+'</div>';
   }
-  var html='';
+  var html=nwsPanoramaHTML();
   if(movs.length){html+='<div style="font-size:.7rem;font-family:var(--mono);color:var(--amber);margin:.2rem 0 .45rem">¿POR QUÉ SE MOVIERON HOY? (variación ≥ '+umbral+'%)</div>';
     grupos.forEach(function(g){html+=nwsGrupoHTML(g,umbral);});
     movs.sort(function(a,b){return Math.abs(b.chg)-Math.abs(a.chg);}).forEach(function(r){html+=card(r,true);});
