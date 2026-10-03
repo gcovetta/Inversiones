@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v42 | 2026-10-03 | Fix: % Anual (y su comparación vs SPY) tomaba la comisión de cada compra/venta como si estuviera en USD, cuando se guarda en pesos — en portafolios con comisiones cargadas daba valores absurdos (-99%). Ahora la comisión se pasa a USD con el mismo tipo de cambio del movimiento. (paBuildFlows)
 v41 | 2026-10-03 | Chore (unificación, etapa 2): Juli deja de tener su propia copia del código y usa comun/portafolio.js (el mismo de GDC) con su configuración (window.PORTFOLIO_CONFIG: Supabase de Juli, sin login, sin Sync, sin RSI, comparación con Bull). Cambios de lógica acordados: dividendos CCL en USD recalculados con el CCL histórico de cada fecha (como GDC); el dashboard muestra el total de dividendos (antes "—"); posiciones con cantidad negativa se ocultan con un aviso arriba de las tablas; Supabase guarda las filas con ids 1,2,3 (como GDC). Gana todo lo de GDC que faltaba (FCI, mejoras de Movimientos/Targets, etc.).
 v40 | 2026-10-03 | Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) "Plan de rebalanceo" dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)
 v39 | 2026-10-03 | Fix: se restaura la línea de apertura del comentario del changelog ("&lt;!-- ═══ CLAUDE CHANGELOG"), que se había perdido — sin ella todo el historial de cambios se mostraba como texto arriba de la página.
@@ -425,7 +426,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Chore (unificación, etapa 2): Juli deja de tener su propia copia del código y usa comun/portafolio.js (el mismo de GDC) con su configuración (window.PORTFOLIO_CONFIG: Supabase de Juli, sin login, sin Sync, sin RSI, comparación con Bull). Cambios de lógica acordados: dividendos CCL en USD recalculados con el CCL histórico de cada fecha (como GDC); el dashboard muestra el total de dividendos (antes &quot;—&quot;); posiciones con cantidad negativa se ocultan con un aviso arriba de las tablas; Supabase guarda las filas con ids 1,2,3 (como GDC). Gana todo lo de GDC que faltaba (FCI, mejoras de Movimientos/Targets, etc.)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v41 · 03/10/2026</div>
+<div id="claude-version-badge" title="Fix: % Anual (y su comparación vs SPY) tomaba la comisión de cada compra/venta como si estuviera en USD, cuando se guarda en pesos — en portafolios con comisiones cargadas daba valores absurdos (-99%). Ahora la comisión se pasa a USD con el mismo tipo de cambio del movimiento. (paBuildFlows)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v42 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -1566,7 +1567,7 @@ window.PORTFOLIO_CONFIG={
   sync:false, rsi:false, broker:'bull', brokerNombre:'Bull', wlKey:'wl_juli_v1'
 };
 </script>
-<script src="../comun/portafolio.js?v=62"></script>
+<script src="../comun/portafolio.js?v=63"></script>
 
 
 

@@ -5200,7 +5200,7 @@ function paBuildFlows(){
     var tc=esBono?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
     var directo=isBonoUSDDirecto(t);
     var unitUSD=directo?(m.precioARS||0):(tc>0&&(m.precioARS||0)>0?(m.precioARS||0)/tc:(m.precioUSD||0));
-    var com=m.comision||0;
+    var com=directo?(m.comision||0):((m.comision||0)/(tc>0?tc:1)); // la comisión se guarda en ARS (en USD solo para bonos comprados en dólares)
     if(m.tipo==='compra'){
       if(!res[t]||(qty[t]||0)<=0.000001){res[t]={flows:[],start:x.d,compras:0};qty[t]=0;}
       res[t].flows.push({d:x.d,v:-(unitUSD*(m.qty||0)+com),lbl:'Compra '+(+(m.qty||0)).toLocaleString('es-AR')});

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v42 | 2026-10-03 | Fix: % Anual (y su comparación vs SPY) tomaba la comisión de cada compra/venta como si estuviera en USD, cuando se guarda en pesos — en portafolios con comisiones cargadas daba valores absurdos (-99%). Ahora la comisión se pasa a USD con el mismo tipo de cambio del movimiento. (paBuildFlows)
 v41 | 2026-10-03 | Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) "Plan de rebalanceo" dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)
 v40 | 2026-10-03 | Fix: se restaura la línea de apertura del comentario del changelog ("&lt;!-- ═══ CLAUDE CHANGELOG"), que se había perdido — sin ella todo el historial de cambios se mostraba como texto arriba de la página.
 v39 | 2026-10-03 | Perf/Chore: getPositions() se calcula una sola vez por render de Portafolio (antes 4-5 veces: cada card la pedía por su cuenta) con caché que solo vive durante el render; se eliminan funciones muertas de gráficos ya quitados (renderDivsCard, renderMiniPie quedan como stubs vacíos). % Anual respeta la cartera activa si el portafolio maneja varias. (getPositions / renderPortfolio wrappers, paBuildFlows)
@@ -425,7 +426,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) &quot;Plan de rebalanceo&quot; dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v41 · 03/10/2026</div>
+<div id="claude-version-badge" title="Fix: % Anual (y su comparación vs SPY) tomaba la comisión de cada compra/venta como si estuviera en USD, cuando se guarda en pesos — en portafolios con comisiones cargadas daba valores absurdos (-99%). Ahora la comisión se pasa a USD con el mismo tipo de cambio del movimiento. (paBuildFlows)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v42 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -5502,7 +5503,7 @@ function paBuildFlows(){
     var tc=esBono?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
     var directo=isBonoUSDDirecto(t);
     var unitUSD=directo?(m.precioARS||0):(tc>0&&(m.precioARS||0)>0?(m.precioARS||0)/tc:(m.precioUSD||0));
-    var com=m.comision||0;
+    var com=directo?(m.comision||0):((m.comision||0)/(tc>0?tc:1)); // la comisión se guarda en ARS (en USD solo para bonos comprados en dólares)
     if(m.tipo==='compra'){
       if(!res[t]||(qty[t]||0)<=0.000001){res[t]={flows:[],start:x.d,compras:0};qty[t]=0;}
       res[t].flows.push({d:x.d,v:-(unitUSD*(m.qty||0)+com),lbl:'Compra '+(+(m.qty||0)).toLocaleString('es-AR')});

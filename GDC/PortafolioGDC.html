@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v63 | 2026-10-03 | Fix: % Anual (y su comparación vs SPY) tomaba la comisión de cada compra/venta como si estuviera en USD, cuando se guarda en pesos — en portafolios con comisiones cargadas daba valores absurdos (-99%). Ahora la comisión se pasa a USD con el mismo tipo de cambio del movimiento. (paBuildFlows)
 v62 | 2026-10-03 | Chore: se elimina la función "Cristian" (checkbox al cargar movimientos y panel "Activos de Cristian", que no se usaban); movimientos viejos marcados Cristian, si existieran, siguen fuera del portafolio. comun/portafolio.js pasa a ser configurable por portafolio (window.PORTFOLIO_CONFIG) para que Juli lo use también. Nuevo: aviso arriba de las tablas si alguna posición queda con cantidad negativa.
 v61 | 2026-10-03 | Chore (unificación, etapa 1): el script principal de la app (~540 KB) se mueve tal cual a comun/portafolio.js y el HTML lo carga con <script src="../comun/portafolio.js?v=61">. Sin cambios de funcionamiento. Desde ahora la lógica se edita en comun/portafolio.js; el ?v= se sube en cada cambio para que el navegador no use una copia vieja.
 v60 | 2026-10-03 | Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) "Plan de rebalanceo" dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)
@@ -461,7 +462,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Chore: se elimina la función &quot;Cristian&quot; (checkbox al cargar movimientos y panel &quot;Activos de Cristian&quot;, que no se usaban); movimientos viejos marcados Cristian, si existieran, siguen fuera del portafolio. comun/portafolio.js pasa a ser configurable por portafolio (window.PORTFOLIO_CONFIG) para que Juli lo use también. Nuevo: aviso arriba de las tablas si alguna posición queda con cantidad negativa." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v62 · 03/10/2026</div>
+<div id="claude-version-badge" title="Fix: % Anual (y su comparación vs SPY) tomaba la comisión de cada compra/venta como si estuviera en USD, cuando se guarda en pesos — en portafolios con comisiones cargadas daba valores absurdos (-99%). Ahora la comisión se pasa a USD con el mismo tipo de cambio del movimiento. (paBuildFlows)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v63 · 03/10/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2009,7 +2010,7 @@ tr:hover td{background:var(--surface2)}
 <script>
 window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', supabaseKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU'};
 </script>
-<script src="../comun/portafolio.js?v=62"></script>
+<script src="../comun/portafolio.js?v=63"></script>
 
 <script>
 /* ── RENDIMIENTO ANUAL ── */
