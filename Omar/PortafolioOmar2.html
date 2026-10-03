@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
+v41 | 2026-10-03 | Feat: columna opcional "% Anual" (checkbox "Mostrar % Anual", apagada por defecto) al lado de Δ%: rendimiento anualizado en USD (XIRR) de cada posición abierta con las fechas reales de compras y ventas parciales (CCL del día; MEP para Bonos/ON/FCI), los dividendos/rentas cobrados del ticker (movimientos tipo dividendo, Dividendos y Dividendos CCL confirmados) y el valor de mercado de hoy. Solo el ciclo actual (si la posición se cerró y se volvió a abrir, cuenta desde la recompra). Debajo, la antigüedad y cantidad de compras. Menos de 90 días: % sin anualizar en gris. Verde >10%, gris 0–10%, rojo <0. Click en el % abre el detalle de flujos. Fila TOTAL con la TIR del recuadro. (paBuildFlows / paXIRR / paShowDetalle / togglePAnualCol, hook en renderPortfolio)
 v40 | 2026-10-03 | Feat: (1) columna opcional "Rebalanceo" (checkbox "Mostrar Rebalanceo", apagada por defecto): para activos con % Tipo > 2% (amarillo/rojo) indica cuánto vender en $ y en unidades (u. o VN) para volver al 2% de su tipo; para renta variable por debajo del umbral de la card de inversiones chicas, cuánto comprar para llegar a ese umbral; tooltip con el cálculo. (2) fila TOTAL al pie de cada recuadro (tfoot, no se mueve al ordenar): Δ% ponderado (mercado vs costo), Inversión $ total a mercado, costo total, suma de % Tipo y peso del recuadro en su tipo ("x% de la RV/RF"). Los totales son de las filas visibles (respetan filtros). (renderPortfolio / toggleRebalCol / initRebalToggle)
 v39 | 2026-10-03 | Chore: se elimina del Resumen de Portafolio el gráfico de torta Renta fija / Renta variable / Liquidez (canvas m-pie-chart; renderMiniPie queda sin efecto) porque ya lo cubre la card "Distribución de la cartera". La card de distribución deja de ocupar todo el ancho (máx. 720px). (markup page-portafolio)
 v38 | 2026-10-03 | Feat: card "Distribución de la cartera" — los objetivos ahora salen de la solapa Recomendaciones (PERFIL_TARGETS[Agresivo|Moderado].composicion, rangos RV / RF / Liquidez); FCI se suma a Renta fija como en Recomendaciones. La tabla de detalle es colapsable y arranca colapsada. "Para llegar" se muestra en pesos: lo que falta (o sobra) para entrar en el rango, en USD × CCL para Renta variable y USD × MEP para Renta fija y Liquidez; si está dentro del rango, "en rango". (distRender)
@@ -196,6 +197,7 @@ tr:hover td{background:var(--surface2)}
 .panels-grid.hide-pventa .panel-table .col-pventa{display:none}
 .panels-grid.hide-ptipo .panel-table .col-ptipo{display:none}
 .panels-grid.hide-rebal .panel-table .col-rebal{display:none}
+.panels-grid.hide-panual .panel-table .col-panual{display:none}
 .panel-table tfoot td{background:var(--surface2);border-top:2px solid var(--border2);font-weight:700}
 #panels-grid .panel-table thead th.ps-sortable{cursor:pointer;user-select:none}
 #panels-grid .panel-table thead th.ps-sortable:hover{color:var(--text)}
@@ -424,7 +426,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: (1) columna opcional &quot;Rebalanceo&quot; (checkbox &quot;Mostrar Rebalanceo&quot;, apagada por defecto): para activos con % Tipo > 2% (amarillo/rojo) indica cuánto vender en $ y en unidades (u. o VN) para volver al 2% de su tipo; para renta variable por debajo del umbral de la card de inversiones chicas, cuánto comprar para llegar a ese umbral; tooltip con el cálculo. (2) fila TOTAL al pie de cada recuadro (tfoot, no se mueve al ordenar): Δ% ponderado (mercado vs costo), Inversión $ total a mercado, costo total, suma de % Tipo y peso del recuadro en su tipo (&quot;x% de la RV/RF&quot;). Los totales son de las filas visibles (respetan filtros). (renderPortfolio / toggleRebalCol / initRebalToggle)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v40 · 03/10/2026</div>
+<div id="claude-version-badge" title="Feat: columna opcional &quot;% Anual&quot; (checkbox &quot;Mostrar % Anual&quot;, apagada por defecto) al lado de Δ%: rendimiento anualizado en USD (XIRR) de cada posición abierta con las fechas reales de compras y ventas parciales (CCL del día; MEP para Bonos/ON/FCI), los dividendos/rentas cobrados del ticker (movimientos tipo dividendo, Dividendos y Dividendos CCL confirmados) y el valor de mercado de hoy. Solo el ciclo actual (si la posición se cerró y se volvió a abrir, cuenta desde la recompra). Debajo, la antigüedad y cantidad de compras. Menos de 90 días: % sin anualizar en gris. Verde >10%, gris 0–10%, rojo <0. Click en el % abre el detalle de flujos. Fila TOTAL con la TIR del recuadro. (paBuildFlows / paXIRR / paShowDetalle / togglePAnualCol, hook en renderPortfolio)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v41 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -673,43 +675,43 @@ tr:hover td{background:var(--surface2)}
           <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
         </div>
       </div>
-            <div class="panels-grid hide-qty hide-pventa hide-ptipo hide-rebal" id="panels-grid" style="align-items:start">
+            <div class="panels-grid hide-qty hide-pventa hide-ptipo hide-rebal hide-panual" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="display:none">
             <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
           </div>
           <div class="card" id="panel-brasil" style="display:none">
             <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
           </div>
           <div class="card" id="panel-europa" style="display:none">
             <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-bonos" style="display:none">
             <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
           </div>
           <div class="card" id="panel-on" style="display:none">
             <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
           </div>
           <div class="card" id="panel-china" style="display:none">
             <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-argentina" style="display:none">
             <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
           </div>
           <div class="card" id="panel-cripto" style="display:none">
             <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -818,6 +820,9 @@ tr:hover td{background:var(--surface2)}
           </label>
           <label class="qty-toggle" title="Mostrar/ocultar columna Rebalanceo (cuánto vender para volver al 2% o comprar para llegar al umbral de inversiones chicas)">
             <input type="checkbox" id="rebal-toggle" onchange="toggleRebalCol(this.checked)"> Mostrar Rebalanceo
+          </label>
+          <label class="qty-toggle" title="Mostrar/ocultar columna % Anual (rendimiento anualizado en USD de cada posición)">
+            <input type="checkbox" id="panual-toggle" onchange="togglePAnualCol(this.checked)"> Mostrar % Anual
           </label>
           <span id="ref-status" class="emsg"></span>
           <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
@@ -4026,6 +4031,7 @@ function renderPortfolio(){
   var _rvFilterOn=(_fRVRed&&_fRVRed.checked)||(_fRVYellow&&_fRVYellow.checked)||(_fRVWhite&&_fRVWhite.checked);
 
   var _panelTot={};
+  var _paFlows={};try{_paFlows=paBuildFlows();}catch(_e){console.warn('paBuildFlows',_e);}
   // Pasada 2: construir filas
   open.forEach(function(p){
     var q=quotes[p.ticker];var price=q?q.price:null;
@@ -4121,12 +4127,16 @@ function renderPortfolio(){
       }
       rebalCell='<td class="mono col-rebal"'+(_rbTip?' title="'+_rbTip.replace(/"/g,'&quot;')+'"':'')+'>'+_rbTxt+'</td>';
     }
+    // % Anual (XIRR USD)
+    var _paRes=null;try{var _paF=_paFlows[p.ticker];_paRes=_paF?paCalc(_paF.flows,p._valueUSD):null;if(_paRes){_paRes.titulo=p.ticker;PA_LAST[p.ticker]=_paRes;}}catch(_e){}
+    var panualCell='<td class="mono col-panual" style="line-height:1.15">'+paCellHTML(p.ticker,_paRes,_paFlows[p.ticker]?_paFlows[p.ticker].compras:null)+'</td>';
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
         p.ticker+finishFlag+flujoFlag+divHistFlag+_markNote+
       '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
+      panualCell+
       '<td class="mono">'+invARS+'</td>'+
       '<td class="mono">'+(mktARS?mktARS+_qHealth:'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td class="mono muted">'+ppcARS+'</td>'+
@@ -4142,9 +4152,10 @@ function renderPortfolio(){
     var _passRV=!_rvFilterOn||((_fRVRed&&_fRVRed.checked)&&invColor==='var(--red)')||((_fRVYellow&&_fRVYellow.checked)&&invColor==='#eab308')||((_fRVWhite&&_fRVWhite.checked)&&invColor==='var(--text)');
     if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor&&_passRV){ sectors[sector].push(row);
       // Acumular totales del recuadro (filas visibles)
-      var _tt=_panelTot[sector]||(_panelTot[sector]={inv:0,cost:0,costInv:0,pt:0,ptOk:false});
+      var _tt=_panelTot[sector]||(_panelTot[sector]={inv:0,cost:0,costInv:0,pt:0,ptOk:false,paFlows:[],paVal:0});
       _tt.inv+=inversionCedearARS||0;
       if(pnlPct!=null&&inversionCedearARS>0){_tt.costInv+=inversionCedearARS;_tt.cost+=inversionCedearARS/(1+pnlPct/100);}
+      if(_paFlows[p.ticker]&&p._valueUSD>0){_tt.paFlows=_tt.paFlows.concat(_paFlows[p.ticker].flows);_tt.paVal+=p._valueUSD;}
       if(typeof _ptPct!=='undefined'&&_ptPct!=null&&sector!=='fci'){_tt.pt+=_ptPct;_tt.ptOk=true;}
     }
   });
@@ -4163,6 +4174,7 @@ function renderPortfolio(){
         var _wTxt=(_t.ptOk&&def.key!=='fci')?'<div style="font-size:.6rem;color:var(--text2);font-weight:500">'+_t.pt.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'% de '+(_isRF?'la RF':'la RV')+'</div>':'';
         _tf.innerHTML='<tr><td>TOTAL'+_wTxt+'</td>'+
           '<td style="text-align:center;padding:.38rem .5rem">'+deltaUpCellFn(_dPct,null)+'</td>'+
+          (function(){var _r=null;try{if(_t.paFlows.length){_r=paCalc(_t.paFlows.slice().sort(function(a,b){return a.d-b.d;}),_t.paVal);if(_r){_r.titulo='Total '+def.id.toUpperCase();PA_LAST['__tot_'+def.key]=_r;}}}catch(_e){}return '<td class="mono col-panual" style="line-height:1.15">'+paCellHTML('__tot_'+def.key,_r,null,'recuadro')+'</td>';})()+
           '<td class="mono"><span class="port-sensitive">$'+Math.round(_t.inv).toLocaleString('es-AR')+'</span></td>'+
           '<td class="mono"><span style="color:var(--text3)">—</span></td>'+
           '<td class="mono muted"><span class="port-sensitive" title="Costo total de las posiciones con cotización">$'+Math.round(_t.cost).toLocaleString('es-AR')+'</span></td>'+
@@ -4784,7 +4796,7 @@ function panelSortApply(tbody){
   var ths=(table&&table.tHead&&table.tHead.rows[0])?table.tHead.rows[0].cells:[];
   for(var i=0;i<ths.length;i++){
     var th=ths[i];
-    if(tbody.id==='body-fci'&&i>3)continue;
+    if(tbody.id==='body-fci'&&i>4)continue;
     var a=th.querySelector('.ps-arrow');
     if(!a){a=document.createElement('span');a.className='ps-arrow';th.appendChild(a);th.classList.add('ps-sortable');if(!th.title)th.title='Click para ordenar';}
     a.textContent=(st&&st.col===i)?(st.dir>0?' ▲':' ▼'):'';
@@ -4806,7 +4818,7 @@ function panelSortClick(th){
   var table=th.closest('table');var tbody=table&&table.tBodies[0];
   if(!tbody||!tbody.id)return;
   var col=th.cellIndex;
-  if(tbody.id==='body-fci'&&col>3)return;
+  if(tbody.id==='body-fci'&&col>4)return;
   var firstDir=col===0?1:-1;
   var st=PANEL_SORT[tbody.id];
   if(!st||st.col!==col)PANEL_SORT[tbody.id]={col:col,dir:firstDir};
@@ -4888,6 +4900,115 @@ function distRender(data){
   if(meta)meta.innerHTML='Total USD <span class="port-sensitive">'+num(total)+'</span> · a valor de mercado';
 }
 
+// ─── % Anual por posición (XIRR en USD con compras, ventas, dividendos y valor de hoy) ───
+var PA_LAST={};
+function _paParseFecha(f){
+  if(!f)return null;var p;
+  if(f.indexOf('/')>0){p=f.split('/');if(p.length!==3)return null;var y=p[2].length===2?2000+parseInt(p[2],10):parseInt(p[2],10);return new Date(y,parseInt(p[1],10)-1,parseInt(p[0],10),12);}
+  if(f.indexOf('-')>0){p=f.split('-');if(p.length!==3)return null;return new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10),12);}
+  return null;
+}
+function _paCCLnear(dt){
+  if(!dt)return null;
+  for(var i=0;i<=7;i++){for(var sg=-1;sg<=1;sg+=2){var d2=new Date(dt);d2.setDate(d2.getDate()+sg*i);var k=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();if(CCL_TABLE[k])return CCL_TABLE[k];if(i===0)break;}}
+  return null;
+}
+// Flujos por ticker del ciclo de tenencia actual
+function paBuildFlows(){
+  var res={},qty={};
+  var ord=(movimientos||[]).filter(function(m){return m&&m.ticker&&(m.tipo==='compra'||m.tipo==='venta'||m.tipo==='dividendo')&&m.owner!=='cristian';})
+    .map(function(m){return {m:m,d:_paParseFecha(m.fecha)};}).filter(function(x){return x.d;})
+    .sort(function(a,b){return (a.d-b.d)||((a.m.id||0)-(b.m.id||0));});
+  ord.forEach(function(x){
+    var m=x.m,t=m.ticker;
+    var esBono=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
+    var tc=esBono?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
+    var directo=isBonoUSDDirecto(t);
+    var unitUSD=directo?(m.precioARS||0):(tc>0&&(m.precioARS||0)>0?(m.precioARS||0)/tc:(m.precioUSD||0));
+    var com=m.comision||0;
+    if(m.tipo==='compra'){
+      if(!res[t]||(qty[t]||0)<=0.000001){res[t]={flows:[],start:x.d,compras:0};qty[t]=0;}
+      res[t].flows.push({d:x.d,v:-(unitUSD*(m.qty||0)+com),lbl:'Compra '+(+(m.qty||0)).toLocaleString('es-AR')});
+      res[t].compras++;qty[t]+=(m.qty||0);
+    } else if(m.tipo==='venta'){
+      if(!res[t])return;
+      res[t].flows.push({d:x.d,v:unitUSD*(m.qty||0)-com,lbl:'Venta '+(+(m.qty||0)).toLocaleString('es-AR')});
+      qty[t]-=(m.qty||0);
+      if(qty[t]<=0.000001){delete res[t];qty[t]=0;}
+    } else if(m.tipo==='dividendo'){
+      if(res[t]&&x.d>=res[t].start&&(m.precioUSD||0)>0)res[t].flows.push({d:x.d,v:m.precioUSD,lbl:'Dividendo'});
+    }
+  });
+  // Dividendos registrados (sección Dividendos)
+  try{if(typeof dividendos!=='undefined')(dividendos||[]).forEach(function(dv){
+    var t=dv&&dv.ticker;if(!t||!res[t])return;var d=_paParseFecha(dv.fecha);if(!d||d<res[t].start)return;
+    var usd=dv.usd||0;if(!usd&&(dv.ars||0)>0){var tc=getCCL(dv.fecha)||dv.ccl||CCL_HOY;if(tc>0)usd=dv.ars/tc;}
+    if(usd>0)res[t].flows.push({d:d,v:usd,lbl:'Dividendo'});
+  });}catch(e){}
+  // Dividendos / rentas CCL (TRK.divs confirmados)
+  try{(TRK.divs||[]).forEach(function(dv){
+    if(!dv||dv.estado==='pendiente')return;var t=dv.ticker;if(!t||!res[t])return;
+    var d=_paParseFecha(dv.fecha);if(!d||d<res[t].start)return;
+    var usd;if(dv.moneda==='USD')usd=dv.montoUSD||dv.monto||0;else{var c=_paCCLnear(d)||dv.cclUsado;usd=c?(dv.monto||0)/c:(dv.montoUSD||0);}
+    if(usd>0)res[t].flows.push({d:d,v:usd,lbl:(dv.tipo==='RENTA'?'Renta':'Dividendo')});
+  });}catch(e){}
+  Object.keys(res).forEach(function(t){res[t].flows.sort(function(a,b){return a.d-b.d;});});
+  return res;
+}
+function paXIRR(flows){
+  if(!flows||flows.length<2)return null;
+  var t0=flows[0].d.getTime();
+  var ts=flows.map(function(f){return (f.d.getTime()-t0)/864e5/365;});
+  function npv(r){var s=0;for(var i=0;i<flows.length;i++)s+=flows[i].v/Math.pow(1+r,ts[i]);return s;}
+  var hasNeg=flows.some(function(f){return f.v<0;}),hasPos=flows.some(function(f){return f.v>0;});
+  if(!hasNeg||!hasPos)return null;
+  var lo=-0.9999,hi=10,flo=npv(lo),fhi=npv(hi);
+  if(!isFinite(flo)||!isFinite(fhi)||flo*fhi>0){hi=100;fhi=npv(hi);if(flo*fhi>0)return null;}
+  for(var k=0;k<200;k++){var mid=(lo+hi)/2,fm=npv(mid);if(Math.abs(fm)<1e-7||(hi-lo)<1e-9)return mid;if(flo*fm<0){hi=mid;fhi=fm;}else{lo=mid;flo=fm;}}
+  return (lo+hi)/2;
+}
+// Calcula % anual (o simple si < 90 días) para un conjunto de flujos + valor de hoy
+function paCalc(flows,valorHoy){
+  if(!flows||!flows.length||valorHoy==null||!(valorHoy>0))return null;
+  var hoy=new Date();hoy.setHours(12,0,0,0);
+  var all=flows.concat([{d:hoy,v:valorHoy,lbl:'Valor hoy',hoy:true}]).sort(function(a,b){return a.d-b.d;});
+  var first=all[0].d,days=Math.max(0,Math.round((hoy-first)/864e5));
+  var inv=0,ret=0;all.forEach(function(f){if(f.v<0)inv+=-f.v;else ret+=f.v;});
+  var simple=inv>0?(ret/inv-1)*100:null;
+  var anual=null;if(days>=90){var r=paXIRR(all);anual=r!=null&&isFinite(r)?r*100:null;}
+  return {flows:all,days:days,simple:simple,anual:anual,gan:ret-inv};
+}
+function _paDur(days){var a=Math.floor(days/365),m=Math.floor((days%365)/30.4);if(a>0)return a+'a'+(m>0?' '+m+'m':'');if(m>0)return m+'m';return days+' día'+(days!==1?'s':'');}
+function paCellHTML(ticker,r,compras,tag){
+  if(!r||(r.anual==null&&r.simple==null))return '<span style="color:var(--text3)">—</span>';
+  var f1=function(n){return (n>0?'+':'')+n.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';};
+  var txt,col;
+  if(r.anual!=null){txt=f1(r.anual);col=r.anual>10?'var(--accent)':r.anual<0?'var(--red)':'var(--text2)';}
+  else{txt=f1(r.simple)+' <span style="font-size:.6rem">s/anualizar</span>';col='var(--text3)';}
+  var sub=tag||(_paDur(r.days)+(compras!=null?' · '+compras+' compra'+(compras!==1?'s':''):''));
+  return '<span class="pa-cell" data-ticker="'+String(ticker).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();paShowDetalle(this.dataset.ticker,this)" style="cursor:pointer;color:'+col+';font-weight:700">'+txt+'</span>'+
+    '<div style="font-size:.6rem;color:var(--text3);font-weight:400">'+sub+'</div>';
+}
+function paShowDetalle(key,anchor){
+  var r=PA_LAST[key];var old=document.getElementById('pa-pop');if(old){var same=old.dataset.key===key;old.remove();if(same)return;}
+  if(!r)return;
+  var pop=document.createElement('div');pop.id='pa-pop';pop.dataset.key=key;
+  pop.style.cssText='position:fixed;z-index:9999;max-width:440px;width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:.7rem .85rem;font-family:var(--mono);font-size:.7rem;color:var(--text2);box-shadow:0 8px 24px rgba(0,0,0,.45)';
+  var usd=function(v){return (v>0?'+':v<0?'−':'')+Math.abs(Math.round(v)).toLocaleString('es-AR');};
+  var rows=r.flows.map(function(f){return '<tr><td style="padding:.2rem .4rem">'+f.d.toLocaleDateString('es-AR')+'</td><td style="padding:.2rem .4rem">'+f.lbl+'</td><td style="padding:.2rem .4rem;text-align:right;color:'+(f.v<0?'var(--red)':'var(--accent)')+'"><span class="port-sensitive">'+usd(f.v)+'</span></td></tr>';}).join('');
+  var res=r.anual!=null?'<b style="color:'+(r.anual>10?'var(--accent)':r.anual<0?'var(--red)':'var(--text)')+'">'+(r.anual>0?'+':'')+r.anual.toFixed(1).replace('.',',')+'% anual</b>':(r.simple!=null?'<b>'+(r.simple>0?'+':'')+r.simple.toFixed(1).replace('.',',')+'% (sin anualizar, menos de 90 días)</b>':'—');
+  pop.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="color:var(--text);font-size:.78rem">'+(r.titulo||key)+' · rendimiento en USD</b><span style="cursor:pointer;color:var(--text3)" onclick="document.getElementById(\'pa-pop\').remove()">✕</span></div>'+
+    '<div style="max-height:260px;overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">FECHA</th><th style="text-align:left;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">MOVIMIENTO</th><th style="text-align:right;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">USD</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)"><span>Ganancia USD <span class="port-sensitive">'+usd(r.gan)+'</span> · '+_paDur(r.days)+'</span>'+res+'</div>'+
+    '<div style="margin-top:6px;font-size:.6rem;color:var(--text3)">Compras/ventas a USD con el CCL de cada fecha (MEP para Bonos, ON y FCI); valor de hoy a mercado.</div>';
+  document.body.appendChild(pop);
+  var rc=anchor.getBoundingClientRect(),ph=pop.offsetHeight,pw=pop.offsetWidth;
+  var top=rc.bottom+6;if(top+ph>window.innerHeight-8)top=Math.max(8,rc.top-ph-6);
+  var left=Math.min(Math.max(8,rc.left),window.innerWidth-pw-8);
+  pop.style.top=top+'px';pop.style.left=left+'px';
+}
+document.addEventListener('click',function(e){var p=document.getElementById('pa-pop');if(p&&!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.pa-cell')))p.remove();});
+
 function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
@@ -4937,6 +5058,24 @@ function toggleRebalCol(show){
     var cb=document.getElementById('rebal-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
     if(grid){if(show==='1')grid.classList.remove('hide-rebal');else grid.classList.add('hide-rebal');}
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
+})();
+
+// ─── Toggle columna % Anual (oculta por defecto) ───
+function togglePAnualCol(show){
+  var grid=document.getElementById('panels-grid');
+  if(!grid)return;
+  if(show){grid.classList.remove('hide-panual');}else{grid.classList.add('hide-panual');}
+  try{localStorage.setItem('ptOmar_showPAnual',show?'1':'0');}catch(e){}
+}
+(function initPAnualToggle(){
+  var show='0';
+  try{var s=localStorage.getItem('ptOmar_showPAnual');if(s!==null)show=s;}catch(e){}
+  function apply(){
+    var cb=document.getElementById('panual-toggle');var grid=document.getElementById('panels-grid');
+    if(cb)cb.checked=(show==='1');
+    if(grid){if(show==='1')grid.classList.remove('hide-panual');else grid.classList.add('hide-panual');}
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();
