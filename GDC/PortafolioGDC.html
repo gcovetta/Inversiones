@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v65 | 2026-10-03 | Versión unificada: desde ahora los 5 portafolios comparten un único número de versión (el del código común comun/portafolio.js). El badge de abajo a la derecha lo toma del código que realmente cargó el navegador, así se puede contrastar que todos estén en la misma versión. (Este portafolio venía en v64; a partir de acá la numeración es común a los 5 y el detalle de cada cambio está en APP_CHANGELOG de comun/portafolio.js.)
 v64 | 2026-10-03 | Chore (unificación, etapa 2 completa): Ana, Hilda y Omar pasan a usar comun/portafolio.js. Cambios en el código común: soporte de carteras (Omar: getPositions por cartera activa, cartera en compras/ventas, filtro y badge en Movimientos, Próximos Cobros desde Principal, dividendos buscan la posición en cualquier cartera); tarjeta de dividendos pendientes opcional; DNC3O y MR37O mapeados como ON.
 v63 | 2026-10-03 | Fix: % Anual (y su comparación vs SPY) tomaba la comisión de cada compra/venta como si estuviera en USD, cuando se guarda en pesos — en portafolios con comisiones cargadas daba valores absurdos (-99%). Ahora la comisión se pasa a USD con el mismo tipo de cambio del movimiento. (paBuildFlows)
 v62 | 2026-10-03 | Chore: se elimina la función "Cristian" (checkbox al cargar movimientos y panel "Activos de Cristian", que no se usaban); movimientos viejos marcados Cristian, si existieran, siguen fuera del portafolio. comun/portafolio.js pasa a ser configurable por portafolio (window.PORTFOLIO_CONFIG) para que Juli lo use también. Nuevo: aviso arriba de las tablas si alguna posición queda con cantidad negativa.
@@ -463,7 +464,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Chore (unificación, etapa 2 completa): Ana, Hilda y Omar pasan a usar comun/portafolio.js. Cambios en el código común: soporte de carteras (Omar: getPositions por cartera activa, cartera en compras/ventas, filtro y badge en Movimientos, Próximos Cobros desde Principal, dividendos buscan la posición en cualquier cartera); tarjeta de dividendos pendientes opcional; DNC3O y MR37O mapeados como ON." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v64 · 03/10/2026</div>
+<div id="claude-version-badge" title="Versión unificada: desde ahora los 5 portafolios comparten un único número de versión (el del código común comun/portafolio.js). El badge de abajo a la derecha lo toma del código que realmente cargó el navegador, así se puede contrastar que todos estén en la misma versión." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v65 · 03/10/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -2011,7 +2012,7 @@ tr:hover td{background:var(--surface2)}
 <script>
 window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', supabaseKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU'};
 </script>
-<script src="../comun/portafolio.js?v=64"></script>
+<script src="../comun/portafolio.js?v=65"></script>
 
 <script>
 /* ── RENDIMIENTO ANUAL ── */

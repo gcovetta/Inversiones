@@ -6,6 +6,18 @@
 // changelog de cada HTML; el ?v= de la etiqueta <script> evita que el navegador use una copia vieja.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── Versión de la app (única para los 5 portafolios) ───────────────────────
+// En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
+// de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
+var APP_VERSION=65, APP_VERSION_FECHA='03/10/2026';
+var APP_CHANGELOG=[
+  'v65 | 2026-10-03 | Versión unificada: desde ahora los 5 portafolios comparten un único número de versión (el del código común comun/portafolio.js). El badge de abajo a la derecha lo toma del código que realmente cargó el navegador, así se puede contrastar que todos estén en la misma versión.'
+];
+(function(){
+  function setBadge(){var b=document.getElementById('claude-version-badge');if(!b)return;b.textContent='v'+APP_VERSION+' · '+APP_VERSION_FECHA;b.title=APP_CHANGELOG[0].split(' | ').slice(2).join(' | ');}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setBadge);else setBadge();
+})();
+
 // ─── Configuración por portafolio ──────────────────────────────────────────
 // Cada HTML define window.PORTFOLIO_CONFIG antes de cargar este archivo. Los valores de abajo
 // son los de GDC (referencia); cada portafolio pisa los que le corresponden.
