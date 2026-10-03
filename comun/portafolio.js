@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=66, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=67, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v67 | 2026-10-03 | Fix (Omar): la alerta de P. Venta y la card "Distribución de la cartera" habían quedado adentro de la barra fija "Posiciones abiertas" (al pie de la pantalla); ahora están arriba de las tablas, como en los otros portafolios.',
   'v66 | 2026-10-03 | Feat: cada portafolio guarda un resumen (posiciones, valores, distribución, liquidez y cobros de 30 días) en su Supabase para la nueva vista familiar (Familia/), como mucho cada 3 minutos. Con carteras (Omar) se guarda una por cartera. (famQueueSnapshot / famSaveSnapshot)',
   'v65 | 2026-10-03 | Versión unificada: desde ahora los 5 portafolios comparten un único número de versión (el del código común comun/portafolio.js). El badge de abajo a la derecha lo toma del código que realmente cargó el navegador, así se puede contrastar que todos estén en la misma versión.'
 ];
