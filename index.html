@@ -9,7 +9,7 @@
 <style>
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px}
 *{box-sizing:border-box;margin:0;padding:0}
-html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+html{font-size:17px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}
 header{padding:1rem 2rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
@@ -17,11 +17,11 @@ header{padding:1rem 2rem;background:var(--surface);border-bottom:1px solid var(-
 .subtitle{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-left:auto}
 #user-box{align-items:center;gap:8px;font-family:var(--mono);font-size:.65rem;color:var(--text2)}
 #user-box button,.gbtn{font-family:var(--mono);font-size:.68rem;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:4px 10px;cursor:pointer}
-main{flex:1;display:flex;flex-direction:column;align-items:center;padding:2.5rem 1.5rem}
+main{flex:1;display:flex;flex-direction:column;align-items:center;padding:2rem 2rem}
 @media(max-width:600px){header{padding:.8rem 1rem}main{padding:1.5rem 1rem}}
-.section-label{font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.85rem;margin-top:1.8rem;text-align:left;width:100%;max-width:920px;padding-left:2px}
+.section-label{font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.85rem;margin-top:1.8rem;text-align:left;width:100%;max-width:none;padding-left:2px}
 .section-label:first-of-type{margin-top:0}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.85rem;width:100%;max-width:920px;margin-bottom:.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;width:100%;max-width:none;margin-bottom:.5rem}
 a.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem 1.4rem;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:.5rem;transition:border-color .15s,background .15s,box-shadow .15s}
 a.card:hover{border-color:var(--accent);background:var(--surface2);box-shadow:0 0 0 1px rgba(0,230,118,0.12),0 4px 20px rgba(0,0,0,0.4)}
 .card-top{display:flex;align-items:center;gap:.75rem}
@@ -41,7 +41,7 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
 /* ── Carteras administradas ── */
 
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
-#portal{width:100%;max-width:920px}
+#portal{width:100%;max-width:none}
 .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 #portal h1{font-size:1.05rem;margin:0}
 .sub{font-family:var(--mono);font-size:.68rem;color:var(--text2)}
@@ -85,6 +85,12 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 .note{font-size:.7rem;color:var(--text3);font-family:var(--mono);margin-top:14px;line-height:1.6}
 
 
+
+#portal .kv{font-size:1.6rem}#portal .kl{font-size:.64rem}#portal .ks{font-size:.72rem}
+#portal table{font-size:.82rem}#portal th{font-size:.62rem}
+#portal .ch{font-size:.92rem}#portal .bar{height:24px}#portal .bar.sm{height:18px}#portal .seg{font-size:.66rem}
+#portal .legend{font-size:.68rem}#portal .pp{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+@media(max-width:600px){main{padding:1.2rem 1rem}}
 </style>
 </head>
 <body>
@@ -121,7 +127,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v1</footer>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v2</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false}];
 var ALLOWED='gcovetta@gmail.com';
