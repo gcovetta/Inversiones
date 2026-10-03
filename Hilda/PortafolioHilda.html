@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
+v31 | 2026-10-03 | Feat: las tablas de Portafolio (USA, Brasil, Bonos, ON, etc.) se ordenan al hacer click en el título de la columna — 1er click mayor→menor (Ticker: A→Z), 2do invierte, 3ro vuelve al orden original; flecha ▲/▼ en el título; Δ%/ΔUP ordena por Δ%; los vacíos (—) van al final; el orden elegido se mantiene al refrescar cotizaciones. FCI ordena solo por Fondo/Δ%/Inversión/Mercado. (panelSortApply / panelSortClick, hook en renderPortfolio)
 v30 | 2026-10-03 | Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)
 v29 | 2026-10-03 | Feat: nueva columna "% Tipo" en las tablas de Portafolio (checkbox "Mostrar % Tipo", apagado por defecto y recordado como P. Venta): % que representa cada activo a valor de mercado sobre el total de su tipo — renta variable (USA+Argentina+Brasil+Europa+China+Cripto) o renta fija (Bonos+ON); FCI sin columna. Además, los colores amarillo/rojo (2%/3%) de la columna Inversión ahora se calculan sobre el total RV a valor de mercado en vez del costo invertido (sidebar: "Total RV a mercado"). (renderPortfolio / togglePTipoCol / initPTipoToggle)
 v28 | 2026-09-20 | Fix (mismo bug real que se encontró y arregló en GDC v39/v40, reportado por Garo 2026-09-18): vbuyConfirmar()/vsellConfirmar() (módulo rápido Comprar/Vender) calculaban el CCL/MEP de cada movimiento y lo guardaban en el movimiento (m.ccl), pero nunca lo persistían en CCL_TABLE/MEP_TABLE -- solo addMov() (el formulario largo) lo hacía -- así que la tabla histórica quedaba con huecos para casi todas las fechas cargadas desde ahí. Se agrega tcStampearFecha(fecha,esBonoON,valor) -- usa el valor real de cada movimiento, nunca pisa una fecha ya cargada -- llamada desde addMov/vbuyConfirmar/vsellConfirmar. Se agrega backfillTCDesdeMovimientos() + botón "🔧 Completar tabla CCL/MEP" en Movimientos, que completa de una vez los huecos ya existentes con el m.ccl de cada movimiento (promedio si el mismo día tiene valores parecidos; si un día tiene valores MUY dispares -- más de 15 de diferencia entre min y max, típico de un tipeo mal cargado -- esa fecha no se completa sola, queda listada para revisar a mano en vez de arriesgar un promedio con un dato sucio adentro). (tcStampearFecha / backfillTCDesdeMovimientos / addMov / vbuyConfirmar / vsellConfirmar)
@@ -185,6 +186,9 @@ tr:hover td{background:var(--surface2)}
 .panels-grid.hide-qty .panel-table td:last-child{display:none}
 .panels-grid.hide-pventa .panel-table .col-pventa{display:none}
 .panels-grid.hide-ptipo .panel-table .col-ptipo{display:none}
+#panels-grid .panel-table thead th.ps-sortable{cursor:pointer;user-select:none}
+#panels-grid .panel-table thead th.ps-sortable:hover{color:var(--text)}
+#panels-grid .panel-table .ps-arrow{color:var(--accent);font-size:.6rem}
 .qty-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-family:var(--mono);font-size:.65rem;color:var(--text2);user-select:none}
 .qty-toggle input{accent-color:var(--accent);cursor:pointer;width:12px;height:12px;margin:0}
 .qty-toggle:hover{color:var(--text)}
@@ -409,7 +413,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v30 · 03/10/2026</div>
+<div id="claude-version-badge" title="Feat: las tablas de Portafolio (USA, Brasil, Bonos, ON, etc.) se ordenan al hacer click en el título de la columna — 1er click mayor→menor (Ticker: A→Z), 2do invierte, 3ro vuelve al orden original; flecha ▲/▼ en el título; Δ%/ΔUP ordena por Δ%; los vacíos (—) van al final; el orden elegido se mantiene al refrescar cotizaciones. FCI ordena solo por Fondo/Δ%/Inversión/Mercado. (panelSortApply / panelSortClick, hook en renderPortfolio)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v31 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -4370,7 +4374,7 @@ function renderPortfolio(){
     var rows=sectors[def.key];var panel=document.getElementById('panel-'+def.id);var body=document.getElementById('body-'+def.id);var meta=document.getElementById('panel-'+def.id+'-meta');
     if(!panel||!body){return;}
     if(!rows||!rows.length){panel.style.display='none';return;}
-    panel.style.display='';body.innerHTML=rows.join('');
+    panel.style.display='';body.innerHTML=rows.join('');panelSortApply(body);
     var val=sectorVal[def.key];
     var _tc=(def.key==='bonos'||def.key==='on')?MEP_HOY:CCL_HOY;
     var valARS=val>0&&_tc>0?Math.round(val*_tc):null;
@@ -5209,6 +5213,65 @@ function toggleQtyCol(show){
 })();
 
 // ─── Toggle columna P. Venta (oculta por defecto) ───
+// ─── Orden de las tablas del Portafolio al hacer click en el título de la columna ───
+var PANEL_SORT={}; // tbodyId -> {col, dir}  (dir 1 = asc, -1 = desc)
+function _psNum(txt){
+  if(txt==null)return null;
+  txt=String(txt).replace(/−/g,'-');
+  var m=txt.match(/-?\d[\d.,]*/);if(!m)return null;
+  var s=m[0].replace(/[.,]$/,'');
+  if(s.indexOf(',')!==-1)s=s.replace(/\./g,'').replace(',','.');
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
+  var n=parseFloat(s);return isNaN(n)?null:n;
+}
+function _psKey(td,col){
+  if(!td)return null;
+  if(col===0){var b=td.querySelector('[data-ticker]');var t=(b?b.getAttribute('data-ticker'):td.textContent)||'';t=t.trim().toUpperCase();return t||null;}
+  if(col===1){var sp=td.querySelector('span>span');return _psNum(sp?sp.textContent:td.textContent);}
+  return _psNum(td.textContent);
+}
+function panelSortApply(tbody){
+  if(!tbody||!tbody.id)return;
+  var table=tbody.parentNode;
+  var st=PANEL_SORT[tbody.id];
+  var ths=(table&&table.tHead&&table.tHead.rows[0])?table.tHead.rows[0].cells:[];
+  for(var i=0;i<ths.length;i++){
+    var th=ths[i];
+    if(tbody.id==='body-fci'&&i>3)continue;
+    var a=th.querySelector('.ps-arrow');
+    if(!a){a=document.createElement('span');a.className='ps-arrow';th.appendChild(a);th.classList.add('ps-sortable');if(!th.title)th.title='Click para ordenar';}
+    a.textContent=(st&&st.col===i)?(st.dir>0?' ▲':' ▼'):'';
+  }
+  var rows=Array.prototype.slice.call(tbody.rows);
+  rows.forEach(function(r,i){if(r.dataset.psIdx==null)r.dataset.psIdx=i;});
+  rows.sort(function(a,b){
+    var ia=+a.dataset.psIdx,ib=+b.dataset.psIdx;
+    if(!st)return ia-ib;
+    var ka=_psKey(a.cells[st.col],st.col),kb=_psKey(b.cells[st.col],st.col);
+    if(ka==null&&kb==null)return ia-ib;
+    if(ka==null)return 1;if(kb==null)return -1;
+    var c=(typeof ka==='string'||typeof kb==='string')?String(ka).localeCompare(String(kb)):(ka-kb);
+    return (c*st.dir)||(ia-ib);
+  });
+  rows.forEach(function(r){tbody.appendChild(r);});
+}
+function panelSortClick(th){
+  var table=th.closest('table');var tbody=table&&table.tBodies[0];
+  if(!tbody||!tbody.id)return;
+  var col=th.cellIndex;
+  if(tbody.id==='body-fci'&&col>3)return;
+  var firstDir=col===0?1:-1;
+  var st=PANEL_SORT[tbody.id];
+  if(!st||st.col!==col)PANEL_SORT[tbody.id]={col:col,dir:firstDir};
+  else if(st.dir===firstDir)st.dir=-firstDir;
+  else delete PANEL_SORT[tbody.id];
+  panelSortApply(tbody);
+}
+document.addEventListener('click',function(e){
+  var th=e.target&&e.target.closest?e.target.closest('#panels-grid .panel-table thead th'):null;
+  if(th)panelSortClick(th);
+});
+
 function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
