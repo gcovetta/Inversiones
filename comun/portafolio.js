@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=69, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=70, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v70 | 2026-10-03 | Chore: el botón Sync queda solo en GDC (el principal, que empuja ratios, targets, rubros y CCL/MEP a los demás); se quita del HTML de Ana, Hilda, Juli y Omar (ya estaba oculto y desactivado).',
   'v69 | 2026-10-03 | Seguridad: Ana, Hilda, Juli y Omar piden iniciar sesión con Google (solo gcovetta@gmail.com), igual que GDC. Las lecturas y escrituras a Supabase usan el token de la sesión.',
   'v68 | 2026-10-03 | Prep seguridad: Ana, Hilda, Juli y Omar ya traen la pantalla de login con Google (todavía desactivada, se activa por configuración cuando esté configurado Supabase); el Sync de GDC y el resumen del index usan la sesión de cada proyecto si existe, para seguir funcionando cuando se activen las reglas de acceso (RLS).',
   'v67 | 2026-10-03 | Fix (Omar): la alerta de P. Venta y la card "Distribución de la cartera" habían quedado adentro de la barra fija "Posiciones abiertas" (al pie de la pantalla); ahora están arriba de las tablas, como en los otros portafolios.',
