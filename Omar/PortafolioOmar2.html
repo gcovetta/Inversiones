@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
+v42 | 2026-10-03 | Perf/Chore: getPositions() se calcula una sola vez por render de Portafolio (antes 4-5 veces: cada card la pedía por su cuenta) con caché que solo vive durante el render; se eliminan funciones muertas de gráficos ya quitados (renderDivsCard, renderMiniPie quedan como stubs vacíos). % Anual respeta la cartera activa si el portafolio maneja varias. (getPositions / renderPortfolio wrappers, paBuildFlows)
 v41 | 2026-10-03 | Feat: columna opcional "% Anual" (checkbox "Mostrar % Anual", apagada por defecto) al lado de Δ%: rendimiento anualizado en USD (XIRR) de cada posición abierta con las fechas reales de compras y ventas parciales (CCL del día; MEP para Bonos/ON/FCI), los dividendos/rentas cobrados del ticker (movimientos tipo dividendo, Dividendos y Dividendos CCL confirmados) y el valor de mercado de hoy. Solo el ciclo actual (si la posición se cerró y se volvió a abrir, cuenta desde la recompra). Debajo, la antigüedad y cantidad de compras. Menos de 90 días: % sin anualizar en gris. Verde >10%, gris 0–10%, rojo <0. Click en el % abre el detalle de flujos. Fila TOTAL con la TIR del recuadro. (paBuildFlows / paXIRR / paShowDetalle / togglePAnualCol, hook en renderPortfolio)
 v40 | 2026-10-03 | Feat: (1) columna opcional "Rebalanceo" (checkbox "Mostrar Rebalanceo", apagada por defecto): para activos con % Tipo > 2% (amarillo/rojo) indica cuánto vender en $ y en unidades (u. o VN) para volver al 2% de su tipo; para renta variable por debajo del umbral de la card de inversiones chicas, cuánto comprar para llegar a ese umbral; tooltip con el cálculo. (2) fila TOTAL al pie de cada recuadro (tfoot, no se mueve al ordenar): Δ% ponderado (mercado vs costo), Inversión $ total a mercado, costo total, suma de % Tipo y peso del recuadro en su tipo ("x% de la RV/RF"). Los totales son de las filas visibles (respetan filtros). (renderPortfolio / toggleRebalCol / initRebalToggle)
 v39 | 2026-10-03 | Chore: se elimina del Resumen de Portafolio el gráfico de torta Renta fija / Renta variable / Liquidez (canvas m-pie-chart; renderMiniPie queda sin efecto) porque ya lo cubre la card "Distribución de la cartera". La card de distribución deja de ocupar todo el ancho (máx. 720px). (markup page-portafolio)
@@ -426,7 +427,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: columna opcional &quot;% Anual&quot; (checkbox &quot;Mostrar % Anual&quot;, apagada por defecto) al lado de Δ%: rendimiento anualizado en USD (XIRR) de cada posición abierta con las fechas reales de compras y ventas parciales (CCL del día; MEP para Bonos/ON/FCI), los dividendos/rentas cobrados del ticker (movimientos tipo dividendo, Dividendos y Dividendos CCL confirmados) y el valor de mercado de hoy. Solo el ciclo actual (si la posición se cerró y se volvió a abrir, cuenta desde la recompra). Debajo, la antigüedad y cantidad de compras. Menos de 90 días: % sin anualizar en gris. Verde >10%, gris 0–10%, rojo <0. Click en el % abre el detalle de flujos. Fila TOTAL con la TIR del recuadro. (paBuildFlows / paXIRR / paShowDetalle / togglePAnualCol, hook en renderPortfolio)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v41 · 03/10/2026</div>
+<div id="claude-version-badge" title="Perf/Chore: getPositions() se calcula una sola vez por render de Portafolio (antes 4-5 veces: cada card la pedía por su cuenta) con caché que solo vive durante el render; se eliminan funciones muertas de gráficos ya quitados (renderDivsCard, renderMiniPie quedan como stubs vacíos). % Anual respeta la cartera activa si el portafolio maneja varias. (getPositions / renderPortfolio wrappers, paBuildFlows)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v42 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -3440,6 +3441,27 @@ function getPositions(){
   return Object.values(pos);
 }
 
+// ─── Perf: getPositions() se calcula UNA vez por render de Portafolio ───
+// renderPortfolio() y las cards que dispara (inversiones chicas, perfil, próximos cobros, etc.)
+// pedían las posiciones por separado → el historial completo se recorría 4-5 veces por render
+// (y durante la actualización de precios hay un render por frame). Mientras dura un render se
+// reutiliza el resultado (clave: owner + cartera activa + cantidad de movimientos); fuera de un
+// render, getPositions() se comporta exactamente igual que antes (sin caché).
+var _GP_ON=0,_GP_CACHE={};
+var _getPositionsRaw=getPositions;
+getPositions=function(owner){
+  if(!_GP_ON)return _getPositionsRaw.apply(this,arguments);
+  var k=(owner||'')+'|'+(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:'')+'|'+((typeof movimientos!=='undefined'&&movimientos)?movimientos.length:0);
+  if(!_GP_CACHE[k])_GP_CACHE[k]=_getPositionsRaw.apply(this,arguments);
+  return _GP_CACHE[k];
+};
+var _renderPortfolioRaw=renderPortfolio;
+renderPortfolio=function(){
+  _GP_ON++;
+  try{return _renderPortfolioRaw.apply(this,arguments);}
+  finally{_GP_ON--;if(!_GP_ON)_GP_CACHE={};}
+};
+
 function vbuyResetFecha(){
   var el=document.getElementById('vbuy-fecha');
   if(el) el.value=new Date().toISOString().split('T')[0];
@@ -4916,7 +4938,7 @@ function _paCCLnear(dt){
 // Flujos por ticker del ciclo de tenencia actual
 function paBuildFlows(){
   var res={},qty={};
-  var ord=(movimientos||[]).filter(function(m){return m&&m.ticker&&(m.tipo==='compra'||m.tipo==='venta'||m.tipo==='dividendo')&&m.owner!=='cristian';})
+  var ord=(movimientos||[]).filter(function(m){return m&&m.ticker&&(m.tipo==='compra'||m.tipo==='venta'||m.tipo==='dividendo')&&m.owner!=='cristian'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);})
     .map(function(m){return {m:m,d:_paParseFecha(m.fecha)};}).filter(function(x){return x.d;})
     .sort(function(a,b){return (a.d-b.d)||((a.m.id||0)-(b.m.id||0));});
   ord.forEach(function(x){
@@ -5128,99 +5150,7 @@ function vmRender(){
   body.innerHTML=html;
 }
 
-function renderDivsCard(){
-  var divsEl=document.getElementById('divs-content');
-  if(!divsEl)return;
-
-  // Fuente 1: movimientos tipo dividendo
-  var movDivs=movimientos.filter(function(m){return m.tipo==='dividendo';}).map(function(m){
-    return {fecha:m.fecha, ticker:m.ticker, usd:m.precioUSD||0, notas:m.notas||''};
-  });
-
-  // Fuente 3: TRK.divs — ya cargado desde Supabase en init
-  var trkRaw=[];
-  trkRaw=TRK.divs||[];
-  try{if(!trkRaw.length){var s=localStorage.getItem(TRK.DKEY);if(s)trkRaw=JSON.parse(s);}}catch(e){}
-  var trkDivs=trkRaw.map(function(d){
-    var usd=0;
-    if(d.moneda==='USD'){
-      usd=d.montoUSD||d.monto||0;
-    } else {
-      var fechaKey='';
-      if(d.fecha){var fp=d.fecha.split('-');if(fp.length===3)fechaKey=fp[2]+'/'+fp[1]+'/'+fp[0];}
-      var cclDia=CCL_TABLE[fechaKey]||CCL_HOY;
-      usd=cclDia>0?(d.monto||0)/cclDia:0;
-    }
-    var fd=d.fecha||'';
-    if(fd.indexOf('-')>0){var fp=fd.split('-');fd=fp[2]+'/'+fp[1]+'/'+fp[0];}
-    return {fecha:fd, ticker:d.ticker||'', usd:usd, notas:(d.tipo||'')};
-  });
-
-  var all=[].concat(movDivs,trkDivs);
-
-  if(!all.length){
-    divsEl.className='empty-state';
-    divsEl.textContent='Sin dividendos registrados';
-    return;
-  }
-
-  var totUSD=all.reduce(function(a,d){return a+(d.usd||0);},0);
-
-  // Agrupar por mes YYYY-MM
-  var byMonth={};
-  all.forEach(function(d){
-    if(!d.fecha)return;
-    var yr,mo,fp;
-    fp=d.fecha.split('/');
-    if(fp.length===3){yr=fp[2].length===2?'20'+fp[2]:fp[2];mo=fp[1].padStart(2,'0');}
-    else{fp=d.fecha.split('-');yr=fp[0];mo=(fp[1]||'01').padStart(2,'0');}
-    var key=yr+'-'+mo;
-    byMonth[key]=(byMonth[key]||0)+(d.usd||0);
-  });
-
-  var months=Object.keys(byMonth).sort();
-  var maxVal=months.reduce(function(a,k){return Math.max(a,byMonth[k]);},0);
-  var MNAMES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-
-  // SVG barras
-  var BW=28,BG=6,CH=72,LH=18,PL=38,PR=8;
-  var SW=PL+(BW+BG)*months.length+PR;
-  var SH=CH+LH+10;
-
-  var bars=months.map(function(k,i){
-    var val=byMonth[k];
-    var bh=maxVal>0?Math.max(3,Math.round(val/maxVal*CH)):3;
-    var x=PL+i*(BW+BG);
-    var y=CH-bh;
-    var parts=k.split('-');
-    var lbl=MNAMES[parseInt(parts[1],10)-1]+"'"+parts[0].slice(2);
-    var vlbl=val>=1?'$'+Math.round(val):'<$1';
-    return '<g>'+
-      '<rect x="'+x+'" y="'+y+'" width="'+BW+'" height="'+bh+'" rx="3" fill="var(--accent)" opacity="0.85"/>'+
-      (bh>=12?'<text x="'+(x+BW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--accent)">'+vlbl+'</text>':'')+
-      '<text x="'+(x+BW/2)+'" y="'+(CH+LH)+'" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="var(--text3)">'+lbl+'</text>'+
-    '</g>';
-  }).join('');
-
-  var guides=[0.25,0.5,1].map(function(pct){
-    var y=CH-Math.round(pct*CH);
-    return '<line x1="'+PL+'" y1="'+y+'" x2="'+(SW-PR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/>'+
-           '<text x="'+(PL-4)+'" y="'+(y+3)+'" text-anchor="end" font-family="DM Mono,monospace" font-size="6.5" fill="var(--text3)">'+Math.round(pct*maxVal)+'</text>';
-  }).join('');
-
-  var svg='<svg viewBox="0 0 '+SW+' '+SH+'" xmlns="http://www.w3.org/2000/svg" style="width:'+SW+'px;height:auto;display:block;overflow:visible">'+guides+bars+'</svg>';
-
-  divsEl.className='';
-  divsEl.innerHTML=
-    '<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;padding:.9rem 1rem">'+
-      '<div style="min-width:120px">'+
-        '<div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Total cobrado</div>'+
-        '<div style="font-size:1.5rem;font-weight:700;font-family:var(--mono);color:var(--accent);letter-spacing:-.02em">USD '+totUSD.toFixed(2)+'</div>'+
-        '<div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);margin-top:3px">'+all.length+' cobros · '+months.length+' mes'+(months.length!==1?'es':'')+'</div>'+
-      '</div>'+
-      '<div style="flex-shrink:0">'+svg+'</div>'+
-    '</div>';
-}
+function renderDivsCard(){} // card "Dividendos cobrados" eliminada de la portada (2026-10-03)
 
 
 // fetchWithTimeout: fetch con AbortController, timeout en ms
@@ -7074,60 +7004,7 @@ function renderRVPie(sectorVal){
 }
 
 var MINI_PIE_INST=null;
-function renderMiniPie(fija,variable,liquidez){
-  if(typeof Chart==='undefined') return;
-  var canvas=document.getElementById('m-pie-chart');
-  if(!canvas) return;
-  if(MINI_PIE_INST){try{MINI_PIE_INST.destroy();}catch(e){} MINI_PIE_INST=null;}
-  var total=fija+variable+liquidez;
-  if(total<=0) return;
-  var fmt=function(v){return '$'+Math.round(v).toLocaleString('es-AR')+' ('+((v/total)*100).toFixed(1)+'%)';};
-  // Plugin para mostrar % dentro de cada sector
-  var pieLabelPlugin={
-    id:'pieLabels',
-    afterDatasetDraw:function(chart){
-      var ctx2=chart.ctx;
-      chart.data.datasets.forEach(function(_ds,di){
-        var meta=chart.getDatasetMeta(di);
-        meta.data.forEach(function(arc,i){
-          var val=chart.data.datasets[di].data[i];
-          var pct=total>0?(val/total*100):0;
-          if(pct<4) return; // no dibujar si muy chico
-          var angle=(arc.startAngle+arc.endAngle)/2;
-          var r=(arc.innerRadius+arc.outerRadius)/2;
-          var x=arc.x+Math.cos(angle)*r;
-          var y=arc.y+Math.sin(angle)*r;
-          ctx2.save();
-          ctx2.textAlign='center';ctx2.textBaseline='middle';
-          ctx2.font='700 13px DM Mono, monospace';
-          ctx2.fillStyle='#fff';
-          ctx2.fillText(pct.toFixed(0)+'%',x,y);
-          ctx2.restore();
-        });
-      });
-    }
-  };
-  MINI_PIE_INST=new Chart(canvas.getContext('2d'),{
-    type:'doughnut',
-    data:{
-      labels:['RF','RV','u$s'],
-      datasets:[{
-        data:[Math.round(fija),Math.round(variable),Math.round(liquidez)],
-        backgroundColor:['rgba(120,53,15,.85)','rgba(232,121,249,.85)','rgba(74,222,128,.85)'],
-        borderColor:['#92400e','#e879f9','#4ade80'],
-        borderWidth:1.5,hoverOffset:4
-      }]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,cutout:'48%',
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:function(ctx){return ' '+fmt(ctx.parsed);}}}
-      }
-    },
-    plugins:[pieLabelPlugin]
-  });
-}
+function renderMiniPie(){} // torta RF/RV/Liquidez eliminada del Resumen (2026-10-03), reemplazada por "Distribución de la cartera"
 
 // ─── DashBoard ───────────────────────────────────────────────
 var RUBRO_MAP={
