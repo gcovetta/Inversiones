@@ -467,7 +467,7 @@ function getRatio(ticker){return RATIOS_TABLE[BYMA_TO_NYSE[ticker]||ticker]||1;}
 var SECTOR_MAP = {
   'A3':'argentina','AGRO':'argentina','BHIP':'argentina','BIOX':'argentina','BOLT':'argentina','CADO':'argentina','CAPX':'argentina','CARC':'argentina','CECO2':'argentina','CELU':'argentina','COME':'argentina','CTIO':'argentina','DGCE':'argentina','EDN':'argentina','FERR':'argentina','FIPL':'argentina','GLOB':'argentina','HARG':'argentina','LONG':'argentina','METR':'argentina','MIRG':'argentina','MOLI':'argentina','OEST':'argentina','PATA':'argentina','TXAR':'argentina','ALUA':'argentina','TGSU2':'argentina',
   'BC37D':'bonos','CUAP':'bonos','DICP':'bonos','ERF25':'bonos','GD29':'bonos','GD38':'bonos','GD41':'bonos','PARP':'bonos','PBY26':'bonos','SA24D':'bonos','TVPA':'bonos','TX31':'bonos','TZXM7':'bonos','TZXS7':'bonos','TZXS8':'bonos','TZX28':'bonos',
-  'CLSIO':'on','LECAO':'on','LECHO':'on','MR36O':'on','MRCAO':'on','MRCPO':'on','MRCZO':'on','SNEAO':'on','TZV26':'on','TZV27':'on',
+  'CLSIO':'on','DNC3O':'on','MR37O':'on','LECAO':'on','LECHO':'on','MR36O':'on','MRCAO':'on','MRCPO':'on','MRCZO':'on','SNEAO':'on','TZV26':'on','TZV27':'on',
   'ADBE':'nyse','AMZN':'nyse','AVGO':'nyse','CRM':'nyse','DOCU':'nyse','FSLR':'nyse','HOG':'nyse','LAC':'nyse','META':'nyse','MSFT':'nyse','NFLX':'nyse','NKE':'nyse','NVDA':'nyse','TEAM':'nyse','UBER':'nyse','UNH':'nyse','UPST':'nyse','CCL':'nyse','LVS':'nyse','MCD':'nyse','ARCO':'nyse',
   'DEO':'europa','SPOT':'europa','STLA':'europa',
   'JD':'china',
@@ -827,7 +827,7 @@ function calcularTIRReal(ticker){
 // portafolio — es una capa informativa aparte.
 function calcularCalendarioCobros(){
   var hoy=_flujosHoyStr();
-  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
+  var pos=(typeof getPositionsPrincipal==='function'?getPositionsPrincipal():getPositions()).filter(function(p){return p.qty>0.000001;});
   var items=[],sinFlujo=[];
   pos.forEach(function(p){
     var tabla=FLUJOS_BONOS[p.ticker];
@@ -1197,6 +1197,7 @@ function addMov(){
     var monto=parseFloat(document.getElementById('m-monto').value);
     if(!monto||monto<=0){flash(sel,'Ingresa un monto',true);return;}
     movimientos.push({id:Date.now(),fecha:document.getElementById('m-fecha').value.split('-').reverse().join('/'),tipo:tipo,mercado:'—',ticker:'APORTE',qty:0,precioARS:monto,ccl:null,precioUSD:monto,comision:0,notas:''});
+    (function(){var _cs=document.getElementById('m-cartera');if(_cs)movimientos[movimientos.length-1].cartera=_cs.value||'principal';})();
     saveAndRender();flash(sel,'Aporte registrado',false);return;
   }
   var ticker=document.getElementById('m-ticker').value.trim().toUpperCase();
@@ -1221,6 +1222,7 @@ function addMov(){
   var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
   movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'promedio':undefined)});
+  (function(){var _cs=document.getElementById('m-cartera');if(_cs)movimientos[movimientos.length-1].cartera=_cs.value||'principal';})();
   saveAndRender();
   // Guardar TC del día en tablas si no existe aún — usa cclVal (el valor real usado en ESTE
   // movimiento, ya sea de la tabla o del día en curso), no CCL_HOY/MEP_HOY a secas: si `fecha`
@@ -1978,7 +1980,7 @@ function vbuyConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'compra', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Cargado desde módulo rápido (Portafolio)',
-    finish:finishEl&&finishEl.checked||false, owner:undefined
+    finish:finishEl&&finishEl.checked||false, cartera:(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:undefined)
   });
   saveAndRender();
   tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'||mkt==='FCI'),cclVal);
@@ -2125,7 +2127,7 @@ function vsellConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'venta', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Vendido desde módulo rápido (Portafolio)',
-    finish:false, owner:undefined, loteMethod:'promedio'
+    finish:false, loteMethod:'promedio', cartera:(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:undefined)
   });
   saveAndRender();
   tcStampearFecha(fecha,(esBonoON||sector==='fci'),cclVal);
@@ -3109,6 +3111,8 @@ function renderMovimientos(){
   var filterVal=currentFilterVal;
 
   var lista=movimientos.slice().sort(function(a,b){var fa=(a.fecha||'').split('/'),fb=(b.fecha||'').split('/');var da=fa.length===3?fa[2]+fa[1]+fa[0]:'0',db=fb.length===3?fb[2]+fb[1]+fb[0]:'0';return db.localeCompare(da);});
+  var filterCartera=(document.getElementById('mov-filter-cartera')||{value:''}).value;
+  if(filterCartera) lista=lista.filter(function(m){return (m.cartera||'principal')===filterCartera;});
   if(filterVal) lista=lista.filter(function(m){return (m.ticker||'').toUpperCase().indexOf(filterVal)>=0;});
   if(filterTipo) lista=lista.filter(function(m){return (m.tipo||'').toLowerCase()===filterTipo;});
   if(filterMkt) lista=lista.filter(function(m){
@@ -3132,7 +3136,7 @@ function renderMovimientos(){
     return !getMEP(m.fecha);
   });
 
-  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterNoCCL||filterNoMEP;
+  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterCartera||filterNoCCL||filterNoMEP;
   document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
   // Mostrar/ocultar botón "Borrar ticker" solo cuando hay filtro exacto de ticker
   var btnPurgar=document.getElementById('btn-purgar-ticker');
@@ -3177,7 +3181,7 @@ function renderMovimientos(){
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
       '<td><span class="mkt">'+mLabel+'</span></td>'+
-      '<td style="font-weight:600">'+m.ticker+'</td>'+
+      '<td style="font-weight:600">'+m.ticker+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':(m.cartera==='vetajeep')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2b2410;color:#e0c674;border:1px solid #5c4a1f">VETAJEEP</span>':'')+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
       '<td class="mono">'+(m.precioARS?'$'+(_mEsBonoON?m.precioARS*100:m.precioARS).toLocaleString('es-AR'):'')+'</td>'+
       '<td class="mono muted">'+_mCCLstr+'</td>'+
@@ -3248,7 +3252,8 @@ function getPositions(){
 
   // Procesar en orden CRONOLÓGICO (no orden de carga) para que el consumo de lotes
   // por venta respete qué compras existían efectivamente a esa fecha.
-  var ordenados = movimientos.slice().sort(function(a,b){
+  // Portafolios con varias carteras (Omar): sólo los movimientos de la cartera activa
+  var ordenados = movimientos.filter(function(m){return m&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);}).sort(function(a,b){
     var fa=(a&&a.fecha||'').split('/'), fb=(b&&b.fecha||'').split('/');
     var da = fa.length===3? fa[2]+fa[1].padStart(2,'0')+fa[0].padStart(2,'0') : '0';
     var db = fb.length===3? fb[2]+fb[1].padStart(2,'0')+fb[0].padStart(2,'0') : '0';
@@ -7293,7 +7298,8 @@ function trkAddDiv(){
   // si ya no está (se vendió todo), suma como ganancia realizada de la venta.
   // Requiere confirmación manual mostrando el efecto exacto antes de aplicarlo.
   var pncApplied=false,pncTarget=null;
-  var posActual=getPositions().find(function(p){return p.ticker===ticker;});
+  var _match=(typeof trkFindPosicionEnCualquierCartera==='function')?trkFindPosicionEnCualquierCartera(ticker):null;
+  var posActual=_match?_match.pos:getPositions().find(function(p){return p.ticker===ticker;});
   if(posActual){
     if(posActual.qty>0.000001){
       var ppcActual=posActual.costUSDpuro/posActual.qty;
@@ -7731,7 +7737,8 @@ function _trkImpMontoUSD(row){
 function _trkImpPPCPreview(row){
   var conv=_trkImpMontoUSD(row);
   if(!conv.ok) return {ok:false};
-  var posActual=getPositions().find(function(p){return p.ticker===row.ticker;});
+  var _match=(typeof trkFindPosicionEnCualquierCartera==='function')?trkFindPosicionEnCualquierCartera(row.ticker):null;
+  var posActual=_match?_match.pos:getPositions().find(function(p){return p.ticker===row.ticker;});
   if(!posActual) return {ok:true,montoUSD:conv.montoUSD,cclUsado:conv.cclUsado,target:null};
   if(posActual.qty>0.000001){
     var ppcActual=posActual.costUSDpuro/posActual.qty;
@@ -7831,6 +7838,7 @@ function trkRenderPending(){
   var card=document.getElementById('trk-pending-card');
   var tbody=document.getElementById('trk-pending-tbody');
   var badge=document.getElementById('trk-pending-badge');
+  if(!card||!tbody)return; // portafolios sin la tarjeta de dividendos pendientes
   var pend=TRK.divs.filter(function(d){return d.estado==='pendiente';});
 
   if(!pend.length){ card.style.display='none'; return; }
