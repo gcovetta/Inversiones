@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=67, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=69, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v69 | 2026-10-03 | Seguridad: Ana, Hilda, Juli y Omar piden iniciar sesión con Google (solo gcovetta@gmail.com), igual que GDC. Las lecturas y escrituras a Supabase usan el token de la sesión.',
+  'v68 | 2026-10-03 | Prep seguridad: Ana, Hilda, Juli y Omar ya traen la pantalla de login con Google (todavía desactivada, se activa por configuración cuando esté configurado Supabase); el Sync de GDC y el resumen del index usan la sesión de cada proyecto si existe, para seguir funcionando cuando se activen las reglas de acceso (RLS).',
   'v67 | 2026-10-03 | Fix (Omar): la alerta de P. Venta y la card "Distribución de la cartera" habían quedado adentro de la barra fija "Posiciones abiertas" (al pie de la pantalla); ahora están arriba de las tablas, como en los otros portafolios.',
   'v66 | 2026-10-03 | Feat: cada portafolio guarda un resumen (posiciones, valores, distribución, liquidez y cobros de 30 días) en su Supabase para la nueva vista familiar (Familia/), como mucho cada 3 minutos. Con carteras (Omar) se guarda una por cartera. (famQueueSnapshot / famSaveSnapshot)',
   'v65 | 2026-10-03 | Versión unificada: desde ahora los 5 portafolios comparten un único número de versión (el del código común comun/portafolio.js). El badge de abajo a la derecha lo toma del código que realmente cargó el navegador, así se puede contrastar que todos estén en la misma versión.'
@@ -82,11 +84,23 @@ var SYNC_OTHERS = [
 if(!CFG.sync)SYNC_OTHERS=[];
 document.addEventListener('DOMContentLoaded',function(){if(!CFG.sync){var b=document.getElementById('sync-btn');if(b)b.style.display='none';}});
 
+// Token de sesión de otro proyecto Supabase (si ya iniciaste sesión en ese portafolio en este
+// navegador — las sesiones de los 5 proyectos conviven en el mismo origen). Sin sesión → anon key.
+var _sbOtherClients={};
+async function sbTokenFor(url,key){
+  try{
+    if(!window.supabase||!window.supabase.createClient)return null;
+    var c=_sbOtherClients[url]||(_sbOtherClients[url]=window.supabase.createClient(url,key));
+    var r=await c.auth.getSession();var s=r&&r.data&&r.data.session;
+    return (s&&s.user&&s.user.email===ALLOWED_EMAIL)?s.access_token:null;
+  }catch(e){return null;}
+}
 async function _sbSetOther(baseUrl, apiKey, configKey, value) {
   try {
+    var _tok = await sbTokenFor(baseUrl, apiKey);
     var headers = {
       'apikey': apiKey,
-      'Authorization': 'Bearer ' + apiKey,
+      'Authorization': 'Bearer ' + (_tok || apiKey),
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal'
     };
