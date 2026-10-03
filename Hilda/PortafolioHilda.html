@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
-<!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v30 | 2026-10-03 | Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)
+v29 | 2026-10-03 | Feat: nueva columna "% Tipo" en las tablas de Portafolio (checkbox "Mostrar % Tipo", apagado por defecto y recordado como P. Venta): % que representa cada activo a valor de mercado sobre el total de su tipo — renta variable (USA+Argentina+Brasil+Europa+China+Cripto) o renta fija (Bonos+ON); FCI sin columna. Además, los colores amarillo/rojo (2%/3%) de la columna Inversión ahora se calculan sobre el total RV a valor de mercado en vez del costo invertido (sidebar: "Total RV a mercado"). (renderPortfolio / togglePTipoCol / initPTipoToggle)
+v28 | 2026-09-20 | Fix (mismo bug real que se encontró y arregló en GDC v39/v40, reportado por Garo 2026-09-18): vbuyConfirmar()/vsellConfirmar() (módulo rápido Comprar/Vender) calculaban el CCL/MEP de cada movimiento y lo guardaban en el movimiento (m.ccl), pero nunca lo persistían en CCL_TABLE/MEP_TABLE -- solo addMov() (el formulario largo) lo hacía -- así que la tabla histórica quedaba con huecos para casi todas las fechas cargadas desde ahí. Se agrega tcStampearFecha(fecha,esBonoON,valor) -- usa el valor real de cada movimiento, nunca pisa una fecha ya cargada -- llamada desde addMov/vbuyConfirmar/vsellConfirmar. Se agrega backfillTCDesdeMovimientos() + botón "🔧 Completar tabla CCL/MEP" en Movimientos, que completa de una vez los huecos ya existentes con el m.ccl de cada movimiento (promedio si el mismo día tiene valores parecidos; si un día tiene valores MUY dispares -- más de 15 de diferencia entre min y max, típico de un tipeo mal cargado -- esa fecha no se completa sola, queda listada para revisar a mano en vez de arriesgar un promedio con un dato sucio adentro). (tcStampearFecha / backfillTCDesdeMovimientos / addMov / vbuyConfirmar / vsellConfirmar)
 v27 | 2026-09-16 | Feat: se agrega SA24D (Bono Pcia. Salta USD 8,5%, vto. 01/12/2027) a FLUJOS_BONOS — moneda USD (el flujo viene expresado "dólares cable"/CCL, que es un pago en USD vía CCL, no pesos — SA24D está en BONOS_USD_DIRECTO_EXCEPCIONES para el cálculo de PPC/costo, pero eso es independiente de en qué moneda se paga el cupón). Van 18 bonos/ON con flujo cargado. Probado en Node antes de subir. (FLUJOS_BONOS)
 v26 | 2026-09-16 | Feat: se agregan 7 bonos/ON nuevos a FLUJOS_BONOS — ERF25 (Entre Ríos USD 8,75%), PBA27 (Bs.As. Tamar+7%, ARS), PBA28 (Bs.As. CER+9%, ARS), DEC2O (Edesa USD 8%, pago único), D30S6 (Letra Tesoro cero cupón vinc. USD, ARS, pago único), D31M7 (Letra dólar linked, ARS, pago único), DNC3O (ON Edenor USD 9,75%, pago único). ERF25 es como MRCAO: ya venía amortizando antes de este tramo (VR arranca en 27, no 100), así que el total de amortización no da 100 — cargado tal cual lo muestra Bull. Van 17 bonos/ON con flujo cargado en total (detalle y fuente de cada uno en claude/flujos_bonos.md del Project). Probado en Node con posiciones de prueba en los 7 tickers antes de subir. (FLUJOS_BONOS)
 v25 | 2026-09-16 | Feat: se porta desde GDC el paquete completo de "Próximos Cobros" + indicador de salud de cotizaciones (implementado y probado ahí primero, v24-v34): FLUJOS_BONOS con 10 bonos/ON cargados (BB37D, BC37D, AO27, AO28, AO29, DICP, TX31, PARP, SNEAO, MRCAO — detalle y fuente en claude/flujos_bonos.md del Project), calcularCalendarioCobros() (escala el flujo por qty/100, filtra fechas futuras), solapa nueva "📅 Flujos" (Herramientas) con calendario completo + cards de Próximo cobro/30 días/90 días, las mismas cards al pie de Portafolio, y un badge "F" junto al ticker cuando hay cobro dentro de 30 días (tooltip con fecha+monto). Se agrega también el indicador de salud de cotizaciones: puntito junto al precio de mercado (verde=data912, azul=Yahoo, naranja=Finnhub, rojo parpadeante=no se pudo refrescar en el último "Actualizar precios") vía _stampQuote()/_quoteRunId en cada fetch de cotización. Y el badge "D": en acciones/CEDEARs (no en bonos, que ya tienen F), estima si el próximo dividendo cae dentro de 30 días a partir del historial en TRK.divs (este portafolio no tiene el array "dividendos" manual — se eliminó en v15 — así que la estimación mira solo TRK.divs confirmados). Los tooltips de F/D/puntito usan CSS puro (.qhelp/.qhelp-tip), no el atributo title nativo (a Garo no le abría en Brave). Ninguno de estos cambios toca cálculos de valuación, PPC ni precios existentes — es una capa informativa aparte, ya verificada en producción en GDC antes de portarla acá. (FLUJOS_BONOS / calcularCalendarioCobros / calcularDivHistUpcoming30 / _stampQuote / quoteHealthDot / renderPortfolio / renderFlujosPage)
@@ -182,6 +184,7 @@ tr:hover td{background:var(--surface2)}
 .panels-grid.hide-qty .panel-table th:last-child,
 .panels-grid.hide-qty .panel-table td:last-child{display:none}
 .panels-grid.hide-pventa .panel-table .col-pventa{display:none}
+.panels-grid.hide-ptipo .panel-table .col-ptipo{display:none}
 .qty-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-family:var(--mono);font-size:.65rem;color:var(--text2);user-select:none}
 .qty-toggle input{accent-color:var(--accent);cursor:pointer;width:12px;height:12px;margin:0}
 .qty-toggle:hover{color:var(--text)}
@@ -406,7 +409,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: SA24D agregado a FLUJOS_BONOS (18 bonos/ON en Próximos Cobros)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v27 · 16/09/2026</div>
+<div id="claude-version-badge" title="Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v30 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -508,7 +511,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;movimientos&#39;,this)"><span>↕</span>Movimientos</button>
     <div class="nav-sec">R. Variable</div>
     <div style="padding:.2rem .85rem .1rem">
-      <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-bottom:2px">Total RV invertido (USD):</div>
+      <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-bottom:2px">Total RV a mercado (USD):</div>
       <div style="font-size:.72rem;font-family:var(--mono);color:var(--text);font-weight:600" id="rv-total-usd">—</div>
       <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-top:4px;margin-bottom:1px">Sugerido en $ARS:</div>
       <div style="display:flex;gap:8px;margin-bottom:4px">
@@ -681,43 +684,43 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
         <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
-            <div class="panels-grid hide-qty hide-pventa" id="panels-grid" style="align-items:start">
+            <div class="panels-grid hide-qty hide-pventa hide-ptipo" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="display:none">
             <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
           </div>
           <div class="card" id="panel-brasil" style="display:none">
             <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
           </div>
           <div class="card" id="panel-europa" style="display:none">
             <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-bonos" style="display:none">
             <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
           </div>
           <div class="card" id="panel-on" style="display:none">
             <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
           </div>
           <div class="card" id="panel-china" style="display:none">
             <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-argentina" style="display:none">
             <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
           </div>
           <div class="card" id="panel-cripto" style="display:none">
             <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -821,6 +824,9 @@ tr:hover td{background:var(--surface2)}
           </label>
           <label class="qty-toggle" title="Mostrar/ocultar columna P. Venta">
             <input type="checkbox" id="pventa-toggle" onchange="togglePVentaCol(this.checked)"> Mostrar P. Venta
+          </label>
+          <label class="qty-toggle" title="Mostrar/ocultar columna % Tipo (peso del activo sobre su renta variable o renta fija, a valor de mercado)">
+            <input type="checkbox" id="ptipo-toggle" onchange="togglePTipoCol(this.checked)"> Mostrar % Tipo
           </label>
           <span id="ref-status" class="emsg"></span>
           <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
@@ -974,6 +980,8 @@ tr:hover td{background:var(--surface2)}
               <input type="checkbox" id="mov-filter-nomep" onchange="renderMovimientos()" style="accent-color:var(--amber);width:12px;height:12px;cursor:pointer;margin:0">
               ⚠ Sin MEP en tabla
             </label>
+            <button class="btn btn-sm" onclick="backfillTCDesdeMovimientosUI()" title="Completa CCL_TABLE/MEP_TABLE con el valor ya guardado en cada movimiento (o el promedio, si hubo varios ese día) para las fechas que todavía no estén en la tabla — no pisa nada ya cargado." style="color:var(--accent);border-color:#1a3d2e">🔧 Completar tabla CCL/MEP</button>
+
             <button class="btn btn-sm" onclick="(function(){document.getElementById(&#39;mov-filter&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-tipo&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-mkt&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-fecha&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-notas&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-noccl&#39;).checked=false;document.getElementById(&#39;mov-filter-nomep&#39;).checked=false;renderMovimientos();})()" title="Limpiar filtros" style="color:var(--text3)">✕</button>
             <button class="btn" onclick="exportCSV()">↓ CSV</button>
             <button class="btn btn-d" onclick="clearAll()" title="Borrar todos los movimientos">🗑 Borrar todo</button>
@@ -2244,6 +2252,67 @@ function _flujosDiasHasta(fechaISO){
 function _flujosFechaDDMM(fechaISO){
   var p=fechaISO.split('-');return p[2]+'/'+p[1]+'/'+p[0];
 }
+// ── CCL/MEP: autocompletar tabla histórica desde cada movimiento cargado ──
+// Igual que en GDC (v39/v40, 2026-09-18): el módulo rápido de Comprar/Vender calculaba el
+// CCL/MEP de cada movimiento (cclVal) y lo guardaba en el movimiento, pero nunca lo
+// persistía en CCL_TABLE/MEP_TABLE -- solo el formulario largo (addMov) lo hacía,
+// así que la tabla histórica se quedaba con huecos para casi todas las fechas cargadas desde
+// el módulo rápido (que es el que más se usa). Se agrega tcStampearFecha(fecha,esBonoON,valor)
+// -- usa el valor REAL de cada movimiento, nunca pisa una fecha ya cargada -- llamada desde
+// addMov/vbuyConfirmar/vsellConfirmar. También se agrega backfillTCDesdeMovimientos(), que
+// recorre TODO el historial y completa los huecos ya existentes con el m.ccl de cada
+// movimiento (promedio si un mismo día tiene varios valores parecidos; si un día tiene
+// valores MUY dispares entre sí -- más de BACKFILL_DISPERSION_MAX de diferencia, típico de un
+// tipeo mal cargado en algún movimiento -- esa fecha NO se completa sola, se reporta aparte
+// para revisar a mano).
+function tcStampearFecha(fecha,esBonoON,valor){
+  if(!fecha||!(valor>0)) return;
+  var _fk=fmtKey(fecha);
+  var tabla=esBonoON?MEP_TABLE:CCL_TABLE;
+  if(tabla[_fk]) return;
+  tabla[_fk]=valor;
+  tcSavePersist();
+}
+var BACKFILL_DISPERSION_MAX = 15; // diferencia absoluta máxima entre min y max de un mismo día
+function backfillTCDesdeMovimientos(){
+  var grupos={ccl:{},mep:{}};
+  movimientos.forEach(function(m){
+    if((m.tipo!=='compra'&&m.tipo!=='venta')||!(m.ccl>0)) return;
+    var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+    var g=esBonoON?grupos.mep:grupos.ccl;
+    var fk=fmtKey(m.fecha);
+    if(!g[fk]) g[fk]={suma:0,n:0,min:m.ccl,max:m.ccl};
+    g[fk].suma+=m.ccl;g[fk].n++;
+    if(m.ccl<g[fk].min)g[fk].min=m.ccl;
+    if(m.ccl>g[fk].max)g[fk].max=m.ccl;
+  });
+  var completados=0,revisar=[];
+  [['ccl',CCL_TABLE,'CCL'],['mep',MEP_TABLE,'MEP']].forEach(function(par){
+    var grupo=grupos[par[0]],tabla=par[1],label=par[2];
+    Object.keys(grupo).forEach(function(fk){
+      if(tabla[fk]) return;
+      var g=grupo[fk];
+      if((g.max-g.min)>BACKFILL_DISPERSION_MAX){
+        revisar.push(fk+' ('+label+': min '+g.min+' / max '+g.max+')');
+        return;
+      }
+      tabla[fk]=Math.round((g.suma/g.n)*10)/10;completados++;
+    });
+  });
+  if(completados>0) tcSavePersist();
+  return {completados:completados,revisar:revisar};
+}
+function backfillTCDesdeMovimientosUI(){
+  var r=backfillTCDesdeMovimientos();
+  renderMovimientos();
+  var msg=r.completados>0
+    ? ('Se completaron '+r.completados+' fecha'+(r.completados!==1?'s':'')+' en la tabla histórica de CCL/MEP, usando lo que ya estaba guardado en tus movimientos.')
+    : 'No había nada para completar automáticamente: o ya estaba todo en la tabla, o ningún movimiento pendiente tiene un CCL/MEP guardado para usar de base.';
+  if(r.revisar.length){
+    msg+='\n\n⚠️ '+r.revisar.length+' fecha'+(r.revisar.length!==1?'s':'')+' con valores muy distintos entre sí ese mismo día (probable error de tipeo en alguno) — no se completaron solas, revisalas a mano en la solapa "$ Tipo de Cambio":\n'+r.revisar.join('\n');
+  }
+  alert(msg);
+}
 // Recorre las posiciones abiertas de bonos/ON, busca el flujo cargado de cada
 // ticker y lo escala por qty/100. No toca ningún cálculo de valuación del
 // portafolio — es una capa informativa aparte.
@@ -2637,8 +2706,9 @@ function addMov(){
   var finishEl=document.getElementById('m-finish');
   movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'promedio':undefined)});
   saveAndRender();
-  // Guardar TC del día en tablas si no existe aún
-  if(cclVal>0||MEP_HOY>0){var _fk=fmtKey(fecha);var _tcu=false;if(CCL_HOY>0&&!CCL_TABLE[_fk]){CCL_TABLE[_fk]=CCL_HOY;_tcu=true;}if(MEP_HOY>0&&!MEP_TABLE[_fk]){MEP_TABLE[_fk]=MEP_HOY;_tcu=true;}if(_tcu){try{localStorage.setItem('ptHilda_ccl_override',JSON.stringify(CCL_TABLE));localStorage.setItem('ptHilda_mep_override',JSON.stringify(MEP_TABLE));}catch(e){}sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}}
+  // Guardar TC del día en tablas si no existe aún -- usa cclVal (el valor real usado en
+  // ESTE movimiento), no CCL_HOY/MEP_HOY a secas (ver tcStampearFecha).
+  tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'),cclVal);
   ['m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   resetMFechaHoy(); 
   if(finishEl)finishEl.checked=false;
@@ -3821,6 +3891,7 @@ function vbuyConfirmar(){
     finish:finishEl&&finishEl.checked||false
   });
   saveAndRender();
+  tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'),cclVal);
   flash(statusEl,'Compra registrada ✓',false);
   vbuyClear();
 }
@@ -3963,6 +4034,7 @@ function vsellConfirmar(){
     finish:false, loteMethod:'promedio'
   });
   saveAndRender();
+  tcStampearFecha(fecha,esBonoON,cclVal);
   flash(statusEl,'Venta registrada ✓',false);
   vsellClear();
   vsellPopulateSelect();
@@ -4132,10 +4204,13 @@ function renderPortfolio(){
 
   // ── Auto-cálculo RV (NYSE + Argentina + Brasil + Europa + China + Cripto) ──
   var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
-  var totalRVusd=rvSectors.reduce(function(s,sec){return s+(sectorCost[sec]||0);},0);
+  // Total RV y RF a valor de mercado (ARS) — base de los colores 2%/3% y de la columna % Tipo
+  var rvMktARS=rvSectors.reduce(function(s,sec){return s+(sectorTotalMktARS[sec]||0);},0);
+  var rfMktARS=(sectorTotalMktARS.bonos||0)+(sectorTotalMktARS.on||0);
   var cclHoyRV=CCL_HOY>0?CCL_HOY:1;
-  var rv2pctARS=Math.round(totalRVusd*cclHoyRV*0.02);
-  var rv3pctARS=Math.round(totalRVusd*cclHoyRV*0.03);
+  var totalRVusd=rvMktARS/cclHoyRV;
+  var rv2pctARS=Math.round(rvMktARS*0.02);
+  var rv3pctARS=Math.round(rvMktARS*0.03);
   var elRVtotal=document.getElementById('rv-total-usd');
   var elRV2=document.getElementById('rv-auto-naranja');
   var elRV3=document.getElementById('rv-auto-rojo');
@@ -4263,6 +4338,13 @@ function renderPortfolio(){
     var _markIcon=_mark?(_mark.type==='sell'?'🔴':_mark.type==='buy'?'🟢':'⭐'):'🏷';
     var _markBtnCls='mark-btn'+(_mark?' active':'');
     var _markNote=_mark&&_mark.note?'<span class="mark-note-tag" title="'+_mark.note.replace(/"/g,'&quot;')+'">'+_mark.note.replace(/</g,'&lt;')+'</span>':'';
+    // % Tipo: peso a valor de mercado sobre el total de renta variable o renta fija (FCI sin columna)
+    var ptipoCell='';
+    if(sector!=='fci'){
+      var _ptDen=(sector==='bonos'||sector==='on')?rfMktARS:(rvSectors.indexOf(sector)!==-1?rvMktARS:0);
+      var _ptPct=_ptDen>0&&inversionCedearARS!=null?inversionCedearARS/_ptDen*100:null;
+      ptipoCell='<td class="mono col-ptipo">'+(_ptPct!=null?_ptPct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'<span style="color:var(--text3)">—</span>')+'</td>';
+    }
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
@@ -4273,6 +4355,7 @@ function renderPortfolio(){
       '<td class="mono">'+(mktARS?mktARS+_qHealth:'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td class="mono muted">'+ppcARS+'</td>'+
       '<td class="mono col-pventa">'+targetCell+'</td>'+
+      ptipoCell+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
@@ -4746,14 +4829,20 @@ function renderSmallInv(){
   var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
   var rvSet={};rvSectors.forEach(function(s){rvSet[s]=true;});
 
-  // Costo total RV (misma lógica que renderPortfolio) para fijar el 100% de la cartera RV
-  var totalRVusd=0;
+  // Total RV a valor de mercado en ARS (misma base que renderPortfolio: colores 2%/3% y % Tipo)
+  // Sin cotización → se usa costARS, igual que la columna Inversión $
+  var totalRVars=0;
   open.forEach(function(p){
     var sector=getSector(p.ticker);
-    if(rvSet[sector]) totalRVusd+=p.costUSDpuro;
+    if(!rvSet[sector])return;
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    if(price==null){totalRVars+=(p.costARS||0);return;}
+    var ratio=getRatio(p.ticker);
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var fromByma=q&&q.fromByma;
+    var mkt=(sector==='argentina'||_isBRL||fromByma)?price:(price/ratio)*CCL_HOY;
+    totalRVars+=mkt*p.qty;
   });
-  var cclHoyRV=CCL_HOY>0?CCL_HOY:1;
-  var totalRVars=totalRVusd*cclHoyRV;
   var thresholdARS=totalRVars*(SI_THRESHOLD/100);
 
   var items=[];
@@ -5133,6 +5222,24 @@ function togglePVentaCol(show){
     var cb=document.getElementById('pventa-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
     if(grid&&show!=='1')grid.classList.add('hide-pventa');
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
+})();
+
+// ─── Toggle columna % Tipo (oculta por defecto) ───
+function togglePTipoCol(show){
+  var grid=document.getElementById('panels-grid');
+  if(!grid)return;
+  if(show){grid.classList.remove('hide-ptipo');}else{grid.classList.add('hide-ptipo');}
+  try{localStorage.setItem('ptHilda_showPTipo',show?'1':'0');}catch(e){}
+}
+(function initPTipoToggle(){
+  var show='0';
+  try{var s=localStorage.getItem('ptHilda_showPTipo');if(s!==null)show=s;}catch(e){}
+  function apply(){
+    var cb=document.getElementById('ptipo-toggle');var grid=document.getElementById('panels-grid');
+    if(cb)cb.checked=(show==='1');
+    if(grid){if(show==='1')grid.classList.remove('hide-ptipo');else grid.classList.add('hide-ptipo');}
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();

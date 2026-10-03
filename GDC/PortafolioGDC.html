@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v50 | 2026-10-03 | Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)
+v49 | 2026-10-03 | Feat: nueva columna "% Tipo" en las tablas de Portafolio (checkbox "Mostrar % Tipo", apagado por defecto y recordado como P. Venta): % que representa cada activo a valor de mercado sobre el total de su tipo — renta variable (USA+Argentina+Brasil+Europa+China+Cripto) o renta fija (Bonos+ON); FCI sin columna. Además, los colores amarillo/rojo (2%/3%) de la columna Inversión ahora se calculan sobre el total RV a valor de mercado en vez del costo invertido (sidebar: "Total RV a mercado"). (renderPortfolio / togglePTipoCol / initPTipoToggle)
+v48 | 2026-10-03 | Chore: se elimina de la portada (solapa Portafolio) la card "Dividendos cobrados" con el gráfico de barras mensual. El total de dividendos del dashboard (m-divs) y las solapas de Dividendos no cambian; renderDivsCard queda sin efecto (sale temprano si no existe #divs-content). (markup page-portafolio)
 v47 | 2026-09-30 | Feat: Noticias — titulares traducidos al español (Google Translate en lotes, fallback MyMemory), con caché local para traducir cada titular una sola vez; el original en inglés queda en el tooltip. Checkbox "Español" en la cabecera para apagarlo. (nwsTr, nwsTrFlush, nwsTrToggle)
 v46 | 2026-09-30 | Feat: Noticias — bloque fijo "Panorama por país" arriba de todo: por cada país con exposición (EE.UU., Brasil, Europa, China, Cripto, Argentina), ordenado por peso, las 3 noticias macro más relevantes (inflación, Fed/tasas, empleo, PBI, bancos centrales, elecciones, fiscal) + variación del ETF de referencia (SPY/EWZ/VGK/FXI/IBIT/ARGT) + link a Google News. Registro local de 72 h de noticias generales para no perder el dato de la mañana. (nwsLoadPanorama, nwsPanoramaHTML, nwsLogMerge, NWS_MACRO)
 v45 | 2026-09-30 | Feat: Noticias — contexto país/sector: cuando ≥2 posiciones del mismo sector (Brasil, China, Europa, Cripto, EE.UU.) se mueven fuerte en la misma dirección, aparece una card con noticias del país (ETF proxy EWZ/FXI/VGK/IBIT/SPY + noticias generales de Finnhub filtradas por palabras clave) y link a Google News. Fix: clasificación de impacto con límites de palabra ("Beaten-down" ya no cuenta como "beat") y más filtros de notas de ruido. BBAS3 busca noticias como BDORY. (nwsLoadSector, nwsGrupoHTML, NWS_PAIS, NWS_SYM)
@@ -205,6 +208,7 @@ tr:hover td{background:var(--surface2)}
 .panels-grid.hide-qty .panel-table td:last-child{display:none}
 /* Toggle para ocultar columna P. Venta en paneles (oculta por defecto) */
 .panels-grid.hide-pventa .panel-table .col-pventa{display:none}
+.panels-grid.hide-ptipo .panel-table .col-ptipo{display:none}
 /* Toggle para ocultar columna RSI en paneles (oculta por defecto) */
 .panels-grid.hide-rsi .panel-table .col-rsi{display:none}
 .qty-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-family:var(--mono);font-size:.65rem;color:var(--text2);user-select:none}
@@ -441,7 +445,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: Noticias — titulares traducidos al español (Google Translate en lotes, fallback MyMemory), con caché local para traducir cada titular una sola vez; el original en inglés queda en el tooltip. Checkbox &quot;Español&quot; en la cabecera para apagarlo. (nwsTr, nwsTrFlush, nwsTrToggle)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v47 · 30/09/2026</div>
+<div id="claude-version-badge" title="Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v50 · 03/10/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -558,7 +562,7 @@ tr:hover td{background:var(--surface2)}
     <button class="nav-item" onclick="showPage(&#39;movimientos&#39;,this)"><span>↕</span>Movimientos</button>
     <div class="nav-sec">R. Variable</div>
     <div style="padding:.2rem .85rem .1rem">
-      <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-bottom:2px">Total RV invertido (USD):</div>
+      <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-bottom:2px">Total RV a mercado (USD):</div>
       <div style="font-size:.72rem;font-family:var(--mono);color:var(--text);font-weight:600" id="rv-total-usd">—</div>
       <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-top:4px;margin-bottom:1px">Sugerido en $ARS:</div>
       <div style="display:flex;gap:8px;margin-bottom:4px">
@@ -735,29 +739,29 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
       <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
-            <div class="panels-grid hide-qty hide-pventa hide-rsi" id="panels-grid" style="align-items:start">
+            <div class="panels-grid hide-qty hide-pventa hide-ptipo hide-rsi" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="">
             <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
           </div>
           <div class="card" id="panel-brasil" style="">
             <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
           </div>
           <div class="card" id="panel-europa" style="">
             <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-bonos" style="">
             <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">TIR</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">TIR</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
           </div>
           <div class="card" id="panel-on" style="">
             <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">TIR</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">TIR</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
           </div>
           <div class="card" id="panel-fci" style="display: none;">
             <div class="card-header"><span class="card-title">📈 FCI</span><span id="panel-fci-meta" class="tag"></span></div>
@@ -765,17 +769,17 @@ tr:hover td{background:var(--surface2)}
           </div>
           <div class="card" id="panel-china" style="display: none;">
             <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-argentina" style="">
             <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
           </div>
           <div class="card" id="panel-cripto" style="">
             <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -787,7 +791,7 @@ tr:hover td{background:var(--surface2)}
           <span id="panel-cristian-meta" class="tag"></span>
         </div>
         <div class="tw panel-table"><table>
-          <thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead>
+          <thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead>
           <tbody id="body-cristian"></tbody>
         </table></div>
       </div>
@@ -880,10 +884,6 @@ tr:hover td{background:var(--surface2)}
       </div>
       <div style="width:100%"></div>
       <div class="card" style="overflow:visible;display:inline-block;width:fit-content;max-width:100%">
-        <div class="card-header"><span class="card-title">Dividendos cobrados</span></div>
-        <div id="divs-content" class=""></div>
-      </div>
-      <div class="card" style="overflow:visible;display:inline-block;width:fit-content;max-width:100%">
         <div class="card-header"><span class="card-title">📅 Próximos Cobros</span><span style="font-size:.65rem;color:var(--text3);margin-left:8px">bonos/ON — ver solapa Flujos para el detalle</span></div>
         <div id="flujo-mini-content" style="padding:.6rem 1rem;font-family:var(--mono);font-size:.78rem;display:flex;gap:22px;flex-wrap:wrap"></div>
       </div>
@@ -896,6 +896,9 @@ tr:hover td{background:var(--surface2)}
           </label>
           <label class="qty-toggle" title="Mostrar/ocultar columna P. Venta">
             <input type="checkbox" id="pventa-toggle" onchange="togglePVentaCol(this.checked)"> Mostrar P. Venta
+          </label>
+          <label class="qty-toggle" title="Mostrar/ocultar columna % Tipo (peso del activo sobre su renta variable o renta fija, a valor de mercado)">
+            <input type="checkbox" id="ptipo-toggle" onchange="togglePTipoCol(this.checked)"> Mostrar % Tipo
           </label>
           <label class="qty-toggle" title="Mostrar/ocultar columna RSI">
             <input type="checkbox" id="rsi-toggle" onchange="toggleRSICol(this.checked)"> Mostrar RSI
@@ -5388,10 +5391,13 @@ function renderPortfolio(){
 
   // ── Auto-cálculo RV (NYSE + Argentina + Brasil + Europa + China + Cripto) ──
   var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
-  var totalRVusd=rvSectors.reduce(function(s,sec){return s+(sectorCost[sec]||0);},0);
+  // Total RV y RF a valor de mercado (ARS) — base de los colores 2%/3% y de la columna % Tipo
+  var rvMktARS=rvSectors.reduce(function(s,sec){return s+(sectorTotalMktARS[sec]||0);},0);
+  var rfMktARS=(sectorTotalMktARS.bonos||0)+(sectorTotalMktARS.on||0);
   var cclHoyRV=CCL_HOY>0?CCL_HOY:1;
-  var rv2pctARS=Math.round(totalRVusd*cclHoyRV*0.02);
-  var rv3pctARS=Math.round(totalRVusd*cclHoyRV*0.03);
+  var totalRVusd=rvMktARS/cclHoyRV;
+  var rv2pctARS=Math.round(rvMktARS*0.02);
+  var rv3pctARS=Math.round(rvMktARS*0.03);
   var elRVtotal=document.getElementById('rv-total-usd');
   var elRV2=document.getElementById('rv-auto-naranja');
   var elRV3=document.getElementById('rv-auto-rojo');
@@ -5545,6 +5551,13 @@ function renderPortfolio(){
         :'<span style="color:var(--text3)">—</span>';
     }
 
+    // % Tipo: peso a valor de mercado sobre el total de renta variable o renta fija (FCI sin columna)
+    var ptipoCell='';
+    if(sector!=='fci'){
+      var _ptDen=(sector==='bonos'||sector==='on')?rfMktARS:(rvSectors.indexOf(sector)!==-1?rvMktARS:0);
+      var _ptPct=_ptDen>0&&inversionCedearARS!=null?inversionCedearARS/_ptDen*100:null;
+      ptipoCell='<td class="mono col-ptipo">'+(_ptPct!=null?_ptPct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'<span style="color:var(--text3)">—</span>')+'</td>';
+    }
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
@@ -5555,6 +5568,7 @@ function renderPortfolio(){
       '<td class="mono">'+(mktARS?mktARS+_qHealth:'<span style="color:var(--text3)">—</span>')+'</td>'+
       '<td class="mono muted">'+ppcARS+'</td>'+
       '<td class="mono col-pventa">'+targetCell+'</td>'+
+      ptipoCell+
       '<td class="mono col-rsi">'+rsiCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
@@ -6505,14 +6519,20 @@ function renderSmallInv(){
   var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
   var rvSet={};rvSectors.forEach(function(s){rvSet[s]=true;});
 
-  // Costo total RV (misma lógica que renderPortfolio) para fijar el 100% de la cartera RV
-  var totalRVusd=0;
+  // Total RV a valor de mercado en ARS (misma base que renderPortfolio: colores 2%/3% y % Tipo)
+  // Sin cotización → se usa costARS, igual que la columna Inversión $
+  var totalRVars=0;
   open.forEach(function(p){
     var sector=getSector(p.ticker);
-    if(rvSet[sector]) totalRVusd+=p.costUSDpuro;
+    if(!rvSet[sector])return;
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    if(price==null){totalRVars+=(p.costARS||0);return;}
+    var ratio=getRatio(p.ticker);
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var fromByma=q&&q.fromByma;
+    var mkt=(sector==='argentina'||_isBRL||fromByma)?price:(price/ratio)*CCL_HOY;
+    totalRVars+=mkt*p.qty;
   });
-  var cclHoyRV=CCL_HOY>0?CCL_HOY:1;
-  var totalRVars=totalRVusd*cclHoyRV;
   var thresholdARS=totalRVars*(SI_THRESHOLD/100);
 
   var items=[];
@@ -6891,6 +6911,24 @@ function togglePVentaCol(show){
     var cb=document.getElementById('pventa-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
     if(grid&&show!=='1')grid.classList.add('hide-pventa');
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
+})();
+
+// ─── Toggle columna % Tipo (oculta por defecto) ───
+function togglePTipoCol(show){
+  var grid=document.getElementById('panels-grid');
+  if(!grid)return;
+  if(show){grid.classList.remove('hide-ptipo');}else{grid.classList.add('hide-ptipo');}
+  try{localStorage.setItem('ptNYSE_showPTipo',show?'1':'0');}catch(e){}
+}
+(function initPTipoToggle(){
+  var show='0';
+  try{var s=localStorage.getItem('ptNYSE_showPTipo');if(s!==null)show=s;}catch(e){}
+  function apply(){
+    var cb=document.getElementById('ptipo-toggle');var grid=document.getElementById('panels-grid');
+    if(cb)cb.checked=(show==='1');
+    if(grid){if(show==='1')grid.classList.remove('hide-ptipo');else grid.classList.add('hide-ptipo');}
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();
