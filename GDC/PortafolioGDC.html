@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v62 | 2026-10-03 | Chore: se elimina la función "Cristian" (checkbox al cargar movimientos y panel "Activos de Cristian", que no se usaban); movimientos viejos marcados Cristian, si existieran, siguen fuera del portafolio. comun/portafolio.js pasa a ser configurable por portafolio (window.PORTFOLIO_CONFIG) para que Juli lo use también. Nuevo: aviso arriba de las tablas si alguna posición queda con cantidad negativa.
 v61 | 2026-10-03 | Chore (unificación, etapa 1): el script principal de la app (~540 KB) se mueve tal cual a comun/portafolio.js y el HTML lo carga con <script src="../comun/portafolio.js?v=61">. Sin cambios de funcionamiento. Desde ahora la lógica se edita en comun/portafolio.js; el ?v= se sube en cada cambio para que el navegador no use una copia vieja.
 v60 | 2026-10-03 | Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) "Plan de rebalanceo" dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)
 v59 | 2026-10-03 | Chore: librería de Supabase (login) fijada a la versión 2.117.2 en vez de "@2" (que se actualiza sola y podía romper el login sin cambios propios). Perf/Chore: getPositions() se calcula una sola vez por render de Portafolio (antes 4-5 veces: cada card la pedía por su cuenta) con caché que solo vive durante el render; se eliminan funciones muertas de gráficos ya quitados (renderDivsCard, renderMiniPie quedan como stubs vacíos). % Anual respeta la cartera activa si el portafolio maneja varias. (getPositions / renderPortfolio wrappers, paBuildFlows)
@@ -460,7 +461,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Chore (unificación, etapa 1): el script principal de la app (~540 KB) se mueve tal cual a comun/portafolio.js y el HTML lo carga con &lt;script src=&quot;../comun/portafolio.js?v=61&quot;>. Sin cambios de funcionamiento. Desde ahora la lógica se edita en comun/portafolio.js; el ?v= se sube en cada cambio para que el navegador no use una copia vieja." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v61 · 03/10/2026</div>
+<div id="claude-version-badge" title="Chore: se elimina la función &quot;Cristian&quot; (checkbox al cargar movimientos y panel &quot;Activos de Cristian&quot;, que no se usaban); movimientos viejos marcados Cristian, si existieran, siguen fuera del portafolio. comun/portafolio.js pasa a ser configurable por portafolio (window.PORTFOLIO_CONFIG) para que Juli lo use también. Nuevo: aviso arriba de las tablas si alguna posición queda con cantidad negativa." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v62 · 03/10/2026</div>
 
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
@@ -807,16 +808,6 @@ tr:hover td{background:var(--surface2)}
       </div>
 </div>
       
-      <div class="card" id="panel-cristian" style="display:none;margin-top:1rem">
-        <div class="card-header">
-          <span class="card-title">👤 Activos de Cristian</span>
-          <span id="panel-cristian-meta" class="tag"></span>
-        </div>
-        <div class="tw panel-table"><table>
-          <thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th class="col-rsi">RSI</th><th>Cant.</th></tr></thead>
-          <tbody id="body-cristian"></tbody>
-        </table></div>
-      </div>
       <div class="card" id="vbuy-card" style="display:inline-block;width:auto;max-width:100%;margin-right:10px;vertical-align:top">
         <div class="card-header">
           <span class="card-title">🛒 Comprar</span>
@@ -978,10 +969,6 @@ tr:hover td{background:var(--surface2)}
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none">
               <input type="checkbox" id="m-finish" style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0">
               🏁 A finish
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none">
-              <input type="checkbox" id="m-cristian" style="accent-color:#a78bfa;width:13px;height:13px;cursor:pointer;margin:0">
-              👤 Cristian
             </label>
           </div>
           <div class="gap-row" style="margin-top:8px">
@@ -2019,7 +2006,10 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
-<script src="../comun/portafolio.js?v=61"></script>
+<script>
+window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', supabaseKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU'};
+</script>
+<script src="../comun/portafolio.js?v=62"></script>
 
 <script>
 /* ── RENDIMIENTO ANUAL ── */
