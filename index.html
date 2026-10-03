@@ -97,7 +97,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v4</span>
+  <span class="subtitle">Carteras administradas · v5</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -127,8 +127,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v4 · 03/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v4</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v5 · 03/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v5</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false}];
 var ALLOWED='gcovetta@gmail.com';
@@ -184,7 +184,13 @@ function render(){
   var app=document.getElementById('portal');
   var on=CFG.filter(function(c){return !OFF[c.id]&&DATA[c.id]&&DATA[c.id].o;});
   var chips=CFG.map(function(c){var d=DATA[c.id]||{};var cls='chip'+(OFF[c.id]?' off':'')+(d.err?' err':'');return '<span class="'+cls+'" title="'+(d.err?esc(d.err):'Click para incluir/excluir')+'" onclick="toggleP(\''+c.id+'\')">'+esc(c.nombre)+(d.err?' ⚠':' ✓')+'</span>';}).join('');
-  if(!on.length){app.innerHTML='<div class="top"><h1>📈 Carteras administradas</h1><div class="chips">'+chips+'</div></div><div class="sub">No hay resúmenes para mostrar. Cada portafolio guarda su resumen al abrirlo con cotizaciones cargadas.</div>';return;}
+  var _bkLast=0;try{_bkLast=parseInt(localStorage.getItem('idx_bk_last')||'0');}catch(e){}
+  var _bkDias=_bkLast?Math.floor((Date.now()-_bkLast)/86400000):null;
+  var _bkBar='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-4px 0 12px;font-family:var(--mono);font-size:.72rem;'+((_bkDias===null||_bkDias>7)?'color:var(--amber)':'color:var(--text2)')+'">'+
+    '<button class="btn" onclick="bkAll()" id="bk-all-btn">💾 Descargar backup de todos</button>'+
+    (_bkDias===null?'⚠ Nunca bajaste un backup completo a tu compu.':(_bkDias>7?'⚠ Último backup completo hace '+_bkDias+' días.':'Último backup completo: '+(_bkDias===0?'hoy':'hace '+_bkDias+' día'+(_bkDias>1?'s':''))+'.'))+
+    ' <span class="mut">(cada portafolio además guarda solo una copia diaria en su Supabase, botón 💾)</span></div>';
+  if(!on.length){app.innerHTML='<div class="top"><h1>📈 Carteras administradas</h1><div class="chips">'+chips+'</div></div>'+_bkBar+'<div class="sub">No hay resúmenes para mostrar. Cada portafolio guarda su resumen al abrirlo con cotizaciones cargadas.</div>';return;}
   var F={val:0,cost:0,sect:{},liq:0,liqUSD:0,dolzUSD:0,pesos:0,total:0,rv:0,rf:0,pos:{},cob:{}};
   var ccl=0;
   on.forEach(function(c){var o=DATA[c.id].o;ccl=ccl||o.ccl;
@@ -197,6 +203,7 @@ function render(){
   var cobs=Object.values(F.cob).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:0;});
   var cU=cobs.reduce(function(a,x){return a+x.usd;},0),cA=cobs.reduce(function(a,x){return a+x.ars;},0);
   var h='<div class="top"><h1>📈 Carteras administradas</h1><span class="sub">datos al último ingreso a cada portafolio · USD a valor de mercado</span><div class="chips">'+chips+'</div></div>';
+  h+=_bkBar;
   h+='<div class="kpis">'+
     '<div class="k"><div class="kl">Total administrado (USD)</div><div class="kv">'+n0(F.total)+'</div><div class="ks">'+(ccl?'≈ $'+n0(F.total*ccl)+' al CCL':'')+'</div></div>'+
     '<div class="k"><div class="kl">Ganancia no realizada</div><div class="kv '+(gan>=0?'grn':'red')+'">'+(gan>=0?'+':'−')+n0(Math.abs(gan))+'</div><div class="ks">'+(F.cost>0?pct(gan/F.cost*100)+' sobre lo invertido':'')+'</div></div>'+
@@ -226,6 +233,26 @@ function render(){
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
 }
+async function bkAll(){
+  var btn=document.getElementById('bk-all-btn');if(btn){btn.disabled=true;btn.textContent='Descargando…';}
+  var out={v:1,ts:Date.now(),fecha:new Date().toISOString(),portafolios:{}},err=[];
+  for(var i=0;i<CFG.length;i++){var c=CFG[i],tok=(window.TOKS||[])[i];
+    if(!tok){err.push(c.nombre+' (sin sesión)');continue;}
+    var hd={apikey:c.key,Authorization:'Bearer '+tok};
+    try{
+      var g=async function(path){var r=await fetch(c.url+'/rest/v1/'+path,{headers:hd});if(!r.ok)throw new Error(path+' '+r.status);return r.json();};
+      var mv=await g('movimientos?select=data&order=id.asc'),td=await g('trk_divs?select=data&order=id.asc'),cf=await g('config?select=key,value&key=not.like.backup_*');
+      var cfg={};cf.forEach(function(x){if(x.key!=='resumen_familia')cfg[x.key]=x.value;});
+      out.portafolios[c.id]={nombre:c.nombre,movimientos:mv.map(function(x){return x.data;}),trk_divs:td.map(function(x){return x.data;}),config:cfg};
+    }catch(e){err.push(c.nombre+' ('+e.message+')');}
+  }
+  var n=Object.keys(out.portafolios).length;
+  if(n){var d=new Date(),f=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    var blob=new Blob([JSON.stringify(out)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup_carteras_'+f+'.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+    if(!err.length){try{localStorage.setItem('idx_bk_last',String(Date.now()));}catch(e){}}}
+  if(err.length)alert('Backup '+(n?'parcial':'fallido')+'. Sin datos de: '+err.join(', ')+'\nEntrá una vez a esos portafolios para iniciar sesión y volvé a intentar.');
+  render();
+}
 function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
 function toggleT(t){OPEN[t]=!OPEN[t];render();}
 var SB=null;
@@ -241,7 +268,7 @@ async function boot(){
   }
   gate.style.display='none';main.style.display='flex';ub.style.display='flex';
   document.getElementById('user-email').textContent=se.user.email;
-  var toks=await Promise.all(CFG.map(async function(c,i){if(i===0)return se.access_token;try{var cl=window.supabase.createClient(c.url,c.key);var r=await cl.auth.getSession();var s2=r&&r.data&&r.data.session;return (s2&&s2.user&&s2.user.email===ALLOWED)?s2.access_token:null;}catch(e){return null;}}));
+  var toks=window.TOKS=await Promise.all(CFG.map(async function(c,i){if(i===0)return se.access_token;try{var cl=window.supabase.createClient(c.url,c.key);var r=await cl.auth.getSession();var s2=r&&r.data&&r.data.session;return (s2&&s2.user&&s2.user.email===ALLOWED)?s2.access_token:null;}catch(e){return null;}}));
   var res=await Promise.all(CFG.map(function(c,i){return loadOne(c,toks[i]);}));
   CFG.forEach(function(c,i){var r=res[i];DATA[c.id]=r.doc?{o:agg(r.doc)}:{err:r.err};});
   render();

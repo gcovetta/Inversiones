@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=70, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=71, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v71 | 2026-10-03 | Feat: backup diario automático — al abrir cada portafolio (una vez por día) se guarda en su Supabase una copia completa de movimientos, dividendos y configuración (config backup_AAAA-MM-DD); se conservan los últimos 14 días. Botón "Backups" en el encabezado: lista las copias y permite descargarlas o restaurarlas (antes de restaurar guarda una copia del estado actual). (bkDaily / bkOpen / bkRestore)',
   'v70 | 2026-10-03 | Chore: el botón Sync queda solo en GDC (el principal, que empuja ratios, targets, rubros y CCL/MEP a los demás); se quita del HTML de Ana, Hilda, Juli y Omar (ya estaba oculto y desactivado).',
   'v69 | 2026-10-03 | Seguridad: Ana, Hilda, Juli y Omar piden iniciar sesión con Google (solo gcovetta@gmail.com), igual que GDC. Las lecturas y escrituras a Supabase usan el token de la sesión.',
   'v68 | 2026-10-03 | Prep seguridad: Ana, Hilda, Juli y Omar ya traen la pantalla de login con Google (todavía desactivada, se activa por configuración cuando esté configurado Supabase); el Sync de GDC y el resumen del index usan la sesión de cada proyecto si existe, para seguir funcionando cuando se activen las reglas de acceso (RLS).',
@@ -5709,6 +5710,94 @@ async function famSaveSnapshot(d){
   }catch(e){console.warn('famSaveSnapshot',e);}
 }
 
+// ─── Backups (plan Free de Supabase no tiene backups descargables) ─────────────
+// Copia completa diaria en config 'backup_AAAA-MM-DD' (+ 'backup_AAAA-MM-DD_HHMM_prerestore' antes de
+// restaurar). Se conservan los últimos BK_KEEP backups diarios.
+var BK_KEEP=14,_bkRunning=false;
+function _bkHoy(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+async function _bkList(){
+  try{var r=await fetch(SUPABASE_URL+'/rest/v1/config?select=key,updated_at&key=like.backup_*',{headers:sbHeaders()});if(!r.ok)return null;var d=await r.json();
+    return d.map(function(x){return x.key;}).sort().reverse();}catch(e){return null;}
+}
+async function _bkSnapshot(){
+  var r=await fetch(SUPABASE_URL+'/rest/v1/config?select=key,value&key=not.like.backup_*',{headers:sbHeaders()});
+  if(!r.ok)throw new Error('config '+r.status);
+  var rows=await r.json(),cfg={};
+  rows.forEach(function(x){if(x.key!=='resumen_familia')cfg[x.key]=x.value;});
+  var mv=await sbLoadArray('movimientos'),td=await sbLoadArray('trk_divs');
+  if(mv===null||td===null)throw new Error('sin conexión');
+  return {v:1,portafolio:CFG.id,ts:Date.now(),appVersion:APP_VERSION,movimientos:mv,trk_divs:td,config:cfg};
+}
+async function _bkDel(key){try{await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.'+encodeURIComponent(key),{method:'DELETE',headers:sbHeaders()});}catch(e){}}
+async function bkDaily(){
+  if(_bkRunning)return;_bkRunning=true;
+  try{
+    if(!movimientos||!movimientos.length)return;
+    var key='backup_'+_bkHoy();
+    try{if(localStorage.getItem(PFX+'bk_last')===key)return;}catch(e){}
+    var list=await _bkList();if(list===null)return;
+    if(list.indexOf(key)<0){
+      var snap=await _bkSnapshot();
+      if(!snap.movimientos.length)return;
+      var ok=await sbSetConfig(key,snap);if(!ok)return;
+      list.unshift(key);
+    }
+    try{localStorage.setItem(PFX+'bk_last',key);}catch(e){}
+    var diarios=list.filter(function(k){return /^backup_\d{4}-\d{2}-\d{2}$/.test(k);}).sort().reverse();
+    var pre=list.filter(function(k){return /_prerestore$/.test(k);}).sort().reverse();
+    for(var i=BK_KEEP;i<diarios.length;i++)await _bkDel(diarios[i]);
+    for(var k2=5;k2<pre.length;k2++)await _bkDel(pre[k2]);
+  }catch(e){console.warn('[backup]',e);}
+  finally{_bkRunning=false;}
+}
+async function _bkGet(key){var v=await sbGetConfig(key);return (v&&typeof v==='object')?v:null;}
+function _bkDownload(obj,name){
+  var blob=new Blob([JSON.stringify(obj)],{type:'application/json'});var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+}
+async function bkOpen(){
+  var ov=document.getElementById('bk-overlay');
+  if(!ov){ov=document.createElement('div');ov.id='bk-overlay';ov.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;padding:8vh 16px';
+    ov.onclick=function(e){if(e.target===ov)ov.remove();};document.body.appendChild(ov);}
+  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;width:100%;max-width:620px;max-height:80vh;overflow:auto;font-family:var(--mono);font-size:.75rem"><div style="padding:.7rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><b style="font-family:var(--sans);font-size:.9rem">💾 Backups — '+CFG.nombre+'</b><span style="margin-left:auto;cursor:pointer;color:var(--text3)" onclick="document.getElementById(\'bk-overlay\').remove()">✕</span></div><div id="bk-body" style="padding:.8rem 1rem;color:var(--text2)">Cargando…</div></div>';
+  var list=await _bkList();var body=document.getElementById('bk-body');
+  if(list===null){body.textContent='No se pudo leer la lista de backups (¿sesión iniciada?).';return;}
+  var html='<div style="margin-bottom:10px;line-height:1.5">Copia automática diaria al abrir el portafolio (se guardan '+BK_KEEP+' días). Restaurar reemplaza movimientos, dividendos y configuración por los de esa fecha; antes se guarda una copia del estado actual.</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-sm" onclick="bkNow()">Hacer backup ahora</button><button class="btn btn-sm" onclick="bkDownloadNow()">Descargar estado actual</button></div>';
+  if(!list.length)html+='<div>Todavía no hay backups.</div>';
+  else html+='<table style="width:100%;border-collapse:collapse">'+list.map(function(k){
+      var lbl=k.replace('backup_','').replace('_prerestore',' (antes de restaurar)').replace(/_(\d{2})(\d{2})/,' $1:$2');
+      return '<tr style="border-top:1px solid var(--border)"><td style="padding:.4rem .2rem;color:var(--text)">'+lbl+'</td><td style="text-align:right;padding:.4rem .2rem;white-space:nowrap"><button class="btn btn-sm" onclick="bkDownload(\''+k+'\')">Descargar</button> <button class="btn btn-sm" style="border-color:var(--red);color:var(--red)" onclick="bkRestore(\''+k+'\')">Restaurar</button></td></tr>';}).join('')+'</table>';
+  body.innerHTML=html;
+}
+async function bkNow(){try{localStorage.removeItem(PFX+'bk_last');}catch(e){}var key='backup_'+_bkHoy();await _bkDel(key);await bkDaily();bkOpen();}
+async function bkDownload(key){var b=await _bkGet(key);if(!b){alert('No se pudo leer ese backup.');return;}_bkDownload(b,CFG.id+'_'+key+'.json');}
+async function bkDownloadNow(){try{var s=await _bkSnapshot();_bkDownload(s,CFG.id+'_backup_'+_bkHoy()+'.json');}catch(e){alert('No se pudo generar: '+e.message);}}
+async function bkRestore(key){
+  var b=await _bkGet(key);
+  if(!b||!Array.isArray(b.movimientos)){alert('No se pudo leer ese backup.');return;}
+  if(!confirm('Restaurar '+CFG.nombre+' al backup '+key.replace('backup_','')+'?\n\n'+b.movimientos.length+' movimientos y '+(b.trk_divs||[]).length+' dividendos reemplazan a los actuales ('+movimientos.length+' movimientos).\nAntes se guarda una copia del estado actual.'))return;
+  try{
+    var cur=await _bkSnapshot();var d=new Date();
+    var preKey='backup_'+_bkHoy()+'_'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'_prerestore';
+    if(!await sbSetConfig(preKey,cur)){alert('No se pudo guardar la copia previa. No se restauró nada.');return;}
+    var ok1=await sbSaveArrayRetry('movimientos',b.movimientos);
+    var ok2=await sbSaveArray('trk_divs',b.trk_divs||[]);
+    var keys=Object.keys(b.config||{});for(var i=0;i<keys.length;i++){await sbSetConfig(keys[i],b.config[keys[i]]);}
+    try{localStorage.removeItem(PFX+'pending_sync');localStorage.removeItem(PFX+'mov2');localStorage.removeItem(TRK.DKEY);}catch(e){}
+    alert((ok1&&ok2)?'Restaurado. La página se recarga.':'Restauración con errores — revisá los datos. La copia previa quedó como '+preKey);
+    location.reload();
+  }catch(e){alert('Error al restaurar: '+e.message);}
+}
+// Botón "Backups" en el encabezado
+document.addEventListener('DOMContentLoaded',function(){
+  if(document.getElementById('bk-btn'))return;
+  var ref=document.querySelector('[onclick="exportPortfolioXLS()"]')||document.getElementById('sync-btn')||document.querySelector('[onclick*="EnComparacion()"]');
+  if(!ref)return;
+  var b=document.createElement('button');b.id='bk-btn';b.className='btn-sidebar-toggle';b.title='Backups diarios: descargar o restaurar';b.textContent='💾';
+  b.style.cssText='width:auto;padding:0 8px;font-size:.72rem';b.onclick=bkOpen;ref.parentNode.insertBefore(b,ref.nextSibling);
+});
+
 function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
@@ -8304,6 +8393,7 @@ function trkCalcCCL(){
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();ventahistResetFecha();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     _gdcInitDone = true;
+    if(SB_STATUS&&SB_STATUS.ok!==false)setTimeout(function(){bkDaily();},6000);
     if(initFromSupabase._done) initFromSupabase._done();
 
     // Si no hay quotes en caché, lanzar fetch inmediato (no esperar 5 min)
