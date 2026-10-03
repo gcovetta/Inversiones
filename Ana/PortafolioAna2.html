@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
+v37 | 2026-10-03 | Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) "Plan de rebalanceo" dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)
 v36 | 2026-10-03 | Fix: se restaura la línea de apertura del comentario del changelog ("&lt;!-- ═══ CLAUDE CHANGELOG"), que se había perdido — sin ella todo el historial de cambios se mostraba como texto arriba de la página.
 v35 | 2026-10-03 | Perf/Chore: getPositions() se calcula una sola vez por render de Portafolio (antes 4-5 veces: cada card la pedía por su cuenta) con caché que solo vive durante el render; se eliminan funciones muertas de gráficos ya quitados (renderDivsCard, renderMiniPie quedan como stubs vacíos). % Anual respeta la cartera activa si el portafolio maneja varias. (getPositions / renderPortfolio wrappers, paBuildFlows)
 v34 | 2026-10-03 | Feat: columna opcional "% Anual" (checkbox "Mostrar % Anual", apagada por defecto) al lado de Δ%: rendimiento anualizado en USD (XIRR) de cada posición abierta con las fechas reales de compras y ventas parciales (CCL del día; MEP para Bonos/ON/FCI), los dividendos/rentas cobrados del ticker (movimientos tipo dividendo, Dividendos y Dividendos CCL confirmados) y el valor de mercado de hoy. Solo el ciclo actual (si la posición se cerró y se volvió a abrir, cuenta desde la recompra). Debajo, la antigüedad y cantidad de compras. Menos de 90 días: % sin anualizar en gris. Verde >10%, gris 0–10%, rojo <0. Click en el % abre el detalle de flujos. Fila TOTAL con la TIR del recuadro. (paBuildFlows / paXIRR / paShowDetalle / togglePAnualCol, hook en renderPortfolio)
@@ -43,11 +44,9 @@ v1 | 2026-08-31 | Fix: dividendo en ARS ya no exige el CCL "del día" (TRK.ccl) 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ANA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
 <style>
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px;--rsm:6px}
 *{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
@@ -422,7 +421,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Fix: se restaura la apertura del comentario del changelog (el historial se mostraba como texto arriba de la página)." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v36 · 03/10/2026</div>
+<div id="claude-version-badge" title="Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) &quot;Plan de rebalanceo&quot; dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v37 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -692,7 +691,8 @@ tr:hover td{background:var(--surface2)}
           <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
         </div>
       </div>
-        <div class="card" id="dist-card" style="display:none;margin-bottom:1rem;max-width:720px">
+        <div id="pventa-alert" style="display:none;margin-bottom:.7rem;padding:.45rem .8rem;border:1px solid var(--accent);border-radius:var(--rsm);background:rgba(0,230,118,.07);font-size:.74rem;color:var(--text);font-family:var(--mono);max-width:720px"></div>
+      <div class="card" id="dist-card" style="display:none;margin-bottom:1rem;max-width:720px">
         <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span class="card-title">📊 Distribución de la cartera</span>
           <label class="qty-toggle" title="Objetivos de perfil moderado"><input type="checkbox" id="dist-perfil-moderado" onchange="distSetPerfil('moderado')"> Moderado</label>
@@ -4101,7 +4101,7 @@ function renderPortfolio(){
   var _fRVWhite=document.getElementById('port-filter-rv-white');
   var _rvFilterOn=(_fRVRed&&_fRVRed.checked)||(_fRVYellow&&_fRVYellow.checked)||(_fRVWhite&&_fRVWhite.checked);
 
-  var _panelTot={};
+  var _panelTot={};var _pvAlerts=[];var _rbPlan=[];
   var _paFlows={};try{_paFlows=paBuildFlows();}catch(_e){console.warn('paBuildFlows',_e);}
   // Pasada 2: construir filas
   open.forEach(function(p){
@@ -4140,6 +4140,7 @@ function renderPortfolio(){
       _rawPrice
     ):null;
     var upside=targetUSD!=null&&priceUSD!=null&&priceUSD>0?(targetUSD-priceUSD)/priceUSD*100:null;
+    var _pvHit=upside!=null&&upside<=0;if(_pvHit)_pvAlerts.push(p.ticker);
 
     // Recuadro combinado Δ% / ΔUP (mismo badge, colores internos independientes)
     var deltaCell=deltaUpCellFn(pnlPct,upside);
@@ -4187,11 +4188,13 @@ function renderPortfolio(){
       var _ptLbl=_isBonoU?'la RF':'la RV';
       if(_ptPct!=null&&_ptPct>2&&_ptDen>0){
         var _objARS=_ptDen*0.02,_sellARS=inversionCedearARS-_objARS;
+        _rbPlan.push({tk:p.ticker,acc:'vender',ars:_sellARS,u:_unitARS?Math.round(_sellARS/_unitARS):null,uL:_uLbl,tipo:_isBonoU?'RF':'RV',pct:_ptPct});
         _rbTxt='<span style="color:'+_ptCol+'">vender <span class="port-sensitive">$'+Math.round(_sellARS).toLocaleString('es-AR')+'</span>'+_fmtU(_sellARS)+'</span>';
         _rbTip=p.ticker+' · '+_ptPct.toFixed(1)+'% de '+_ptLbl+' (total $'+Math.round(_ptDen).toLocaleString('es-AR')+')\nObjetivo 2% → $'+Math.round(_objARS).toLocaleString('es-AR')+'\nVender $'+Math.round(_sellARS).toLocaleString('es-AR')+(_unitARS?' ≈ '+Math.round(_sellARS/_unitARS).toLocaleString('es-AR')+_uLbl+' a $'+Math.round(_isBonoU?_unitARS*100:_unitARS).toLocaleString('es-AR')+(_isBonoU?' c/100 VN':''):'');
       } else if(!_isBonoU&&_ptPct!=null&&_ptDen>0&&typeof SI_THRESHOLD!=='undefined'&&SI_THRESHOLD>0&&_ptPct<SI_THRESHOLD){
         var _thrARS=_ptDen*SI_THRESHOLD/100,_buyARS=_thrARS-inversionCedearARS;
         if(_buyARS>0){
+          _rbPlan.push({tk:p.ticker,acc:'comprar',ars:_buyARS,u:_unitARS?Math.round(_buyARS/_unitARS):null,uL:_uLbl,tipo:'RV',pct:_ptPct});
           _rbTxt='<span style="color:var(--accent)">comprar <span class="port-sensitive">$'+Math.round(_buyARS).toLocaleString('es-AR')+'</span>'+_fmtU(_buyARS)+'</span>';
           _rbTip=p.ticker+' · '+_ptPct.toFixed(2)+'% de la RV, debajo del umbral de inversiones chicas ('+SI_THRESHOLD+'%)\nUmbral → $'+Math.round(_thrARS).toLocaleString('es-AR')+'\nComprar $'+Math.round(_buyARS).toLocaleString('es-AR')+(_unitARS?' ≈ '+Math.round(_buyARS/_unitARS).toLocaleString('es-AR')+_uLbl+' a $'+Math.round(_unitARS).toLocaleString('es-AR'):'');
         }
@@ -4204,7 +4207,7 @@ function renderPortfolio(){
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
-        p.ticker+finishFlag+flujoFlag+divHistFlag+_markNote+
+        p.ticker+(_pvHit?'<span class="qhelp" style="font-size:.68rem;margin-left:3px">🎯<span class="qhelp-tip">Alcanzó su P. Venta</span></span>':'')+finishFlag+flujoFlag+divHistFlag+_markNote+
       '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
       panualCell+
@@ -4267,7 +4270,8 @@ function renderPortfolio(){
   var liqTotalUSD=liqUSD+(CCL_HOY>0?liqARS/CCL_HOY:0);
   var valConLiq=totalVal+liqTotalUSD;
   // Distribución de la cartera (card arriba de las tablas)
-  try{distRender({rv:['nyse','argentina','brasil','europa','china','cripto'].reduce(function(s,k){return s+(sectorVal[k]||0);},0),rf:(sectorVal.bonos||0)+(sectorVal.on||0),fci:sectorVal.fci||0,hasFci:('fci' in sectorVal),liq:liqTotalUSD});}catch(_e){console.warn('distRender',_e);}
+  try{distRender({rv:['nyse','argentina','brasil','europa','china','cripto'].reduce(function(s,k){return s+(sectorVal[k]||0);},0),rf:(sectorVal.bonos||0)+(sectorVal.on||0),fci:sectorVal.fci||0,hasFci:('fci' in sectorVal),liq:liqTotalUSD,plan:_rbPlan});}catch(_e){console.warn('distRender',_e);}
+  try{pvAlertRender(_pvAlerts);}catch(_e){}
 
   document.getElementById('m-val').textContent='$'+Math.round(valConLiq).toLocaleString('es-AR');
   document.getElementById('m-count').textContent=open.length;
@@ -5091,7 +5095,8 @@ document.addEventListener('click',function(e){
 // ─── Distribución de la cartera (RV / RF / Liquidez) vs rango objetivo del perfil (solapa Recomendaciones) ───
 var DIST_LS_KEY='ptAna_distPerfil';
 var DIST_PERFIL=(function(){try{var s=localStorage.getItem(DIST_LS_KEY);if(s==='agresivo'||s==='moderado')return s;}catch(e){}return 'moderado';})();
-var DIST_LAST=null,DIST_SB_LOADED=false,DIST_OPEN=false;
+var DIST_LAST=null,DIST_SB_LOADED=false,DIST_OPEN=false,DIST_PLAN_OPEN=false;
+function distTogglePlan(){DIST_PLAN_OPEN=!DIST_PLAN_OPEN;distRender();}
 function distSetPerfil(p){
   if(p!=='agresivo'&&p!=='moderado')return;
   DIST_PERFIL=p;
@@ -5154,6 +5159,33 @@ function distRender(data){
       '<span style="font-family:var(--mono);font-size:.66rem;color:'+(nFuera?'#eab308':'var(--text2)')+'">'+(nFuera?nFuera+' tipo'+(nFuera>1?'s':'')+' fuera de rango':'Todo dentro del rango ✓')+'</span></div>'+
     (DIST_OPEN?'<div class="tw" style="margin-top:10px"><table><thead><tr><th style="text-align:left">Tipo</th><th>USD</th><th>Actual</th><th>Objetivo</th><th>Diferencia</th><th>Para llegar ($)</th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:6px">Pesos = USD × CCL ('+num(ccl)+') en renta variable · USD × MEP ('+num(mep)+') en renta fija y liquidez</div></div>':'');
+  // Plan de rebalanceo (órdenes de la columna Rebalanceo + lo que pide el perfil por tipo)
+  var plan=(d.plan||[]).slice();
+  if(plan.length){
+    var tv=0,tc=0;plan.forEach(function(o){if(o.acc==='vender')tv+=o.ars;else tc+=o.ars;});
+    var neto=tv-tc;
+    var html='<div style="margin-top:10px;display:flex;align-items:center;gap:10px"><button class="btn btn-sm" onclick="distTogglePlan()" style="font-size:.68rem">'+(DIST_PLAN_OPEN?'▾ Ocultar plan de rebalanceo':'▸ Plan de rebalanceo')+'</button>'+
+      '<span style="font-family:var(--mono);font-size:.66rem;color:var(--text2)">'+plan.length+(plan.length>1?' órdenes':' orden')+' · neto <span class="port-sensitive" style="color:'+(neto>=0?'var(--accent)':'#eab308')+'">'+(neto>=0?'+':'−')+'$'+num(Math.abs(neto))+'</span></span></div>';
+    if(DIST_PLAN_OPEN){
+      var grp=function(tipo,titulo){
+        var os=plan.filter(function(o){return o.tipo===tipo;}).sort(function(a,b){return (a.acc===b.acc?b.ars-a.ars:(a.acc==='vender'?-1:1));});
+        if(!os.length)return '';
+        return '<tr><td colspan="4" style="text-align:left;color:var(--text3);font-size:.6rem;letter-spacing:.06em;padding-top:.5rem">'+titulo+'</td></tr>'+os.map(function(o){
+          return '<tr><td style="text-align:left;font-weight:700">'+o.tk+'</td><td class="mono" style="color:'+(o.acc==='vender'?'#eab308':'var(--accent)')+'">'+o.acc+'</td>'+
+            '<td class="mono"><span class="port-sensitive">$'+num(o.ars)+'</span></td><td class="mono" style="color:var(--text3)">'+(o.u!=null&&o.u>0?num(o.u)+o.uL:'—')+'</td></tr>';
+        }).join('');
+      };
+      var perfilTxt=cats.map(function(x){var v=vals[x.k],pa=v/total*100;if(!x.r)return '';
+        if(pa<x.r[0])return x.s+': faltan $'+num((x.r[0]/100*total-v)*x.tc);
+        if(pa>x.r[1])return x.s+': sobran $'+num((v-x.r[1]/100*total)*x.tc);return '';}).filter(Boolean).join(' · ');
+      html+='<div class="tw" style="margin-top:8px"><table><thead><tr><th style="text-align:left">Ticker</th><th>Orden</th><th>Monto $</th><th>Unidades</th></tr></thead><tbody>'+
+        grp('RV','RENTA VARIABLE')+grp('RF','RENTA FIJA')+'</tbody></table>'+
+        '<div style="font-family:var(--mono);font-size:.66rem;color:var(--text2);margin-top:8px;line-height:1.6">Ventas <span class="port-sensitive">$'+num(tv)+'</span> · Compras <span class="port-sensitive">$'+num(tc)+'</span> · Neto <span class="port-sensitive" style="color:'+(neto>=0?'var(--accent)':'#eab308')+'">'+(neto>=0?'+':'−')+'$'+num(Math.abs(neto))+'</span>'+(neto>=0?' (queda en liquidez)':' (sale de liquidez)')+
+        (perfilTxt?'<br>Perfil '+pName+' → '+perfilTxt:'')+
+        '<br><span style="color:var(--text3)">Ventas: llevar al 2% de su tipo · Compras: llegar al umbral de inversiones chicas. Orientativo, no incluye comisiones.</span></div></div>';
+    }
+    body.insertAdjacentHTML('beforeend',html);
+  }
   if(meta)meta.innerHTML='Total USD <span class="port-sensitive">'+num(total)+'</span> · a valor de mercado';
 }
 
@@ -5233,7 +5265,9 @@ function paCalc(flows,valorHoy){
   var inv=0,ret=0;all.forEach(function(f){if(f.v<0)inv+=-f.v;else ret+=f.v;});
   var simple=inv>0?(ret/inv-1)*100:null;
   var anual=null;if(days>=90){var r=paXIRR(all);anual=r!=null&&isFinite(r)?r*100:null;}
-  return {flows:all,days:days,simple:simple,anual:anual,gan:ret-inv};
+  var _res={flows:all,days:days,simple:simple,anual:anual,gan:ret-inv};
+  try{_res.spy=paSpy(flows.slice().sort(function(a,b){return a.d-b.d;}),days);}catch(e){}
+  return _res;
 }
 function _paDur(days){var a=Math.floor(days/365),m=Math.floor((days%365)/30.4);if(a>0)return a+'a'+(m>0?' '+m+'m':'');if(m>0)return m+'m';return days+' día'+(days!==1?'s':'');}
 function paCellHTML(ticker,r,compras,tag){
@@ -5243,10 +5277,13 @@ function paCellHTML(ticker,r,compras,tag){
   if(r.anual!=null){txt=f1(r.anual);col=r.anual>10?'var(--accent)':r.anual<0?'var(--red)':'var(--text2)';}
   else{txt=f1(r.simple)+' <span style="font-size:.6rem">s/anualizar</span>';col='var(--text3)';}
   var sub=tag||(_paDur(r.days)+(compras!=null?' · '+compras+' compra'+(compras!==1?'s':''):''));
+  var _sd=paSpyDiff(r);
+  if(_sd!=null)sub+='<div style="font-size:.58rem;color:'+(_sd>=0?'var(--accent)':'var(--red)')+'">vs SPY '+(_sd>=0?'+':'')+_sd.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+' pp</div>';
   return '<span class="pa-cell" data-ticker="'+String(ticker).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();paShowDetalle(this.dataset.ticker,this)" style="cursor:pointer;color:'+col+';font-weight:700">'+txt+'</span>'+
     '<div style="font-size:.6rem;color:var(--text3);font-weight:400">'+sub+'</div>';
 }
 function paShowDetalle(key,anchor){
+  if(!SPY_HIST)fetchSPYHist();
   var r=PA_LAST[key];var old=document.getElementById('pa-pop');if(old){var same=old.dataset.key===key;old.remove();if(same)return;}
   if(!r)return;
   var pop=document.createElement('div');pop.id='pa-pop';pop.dataset.key=key;
@@ -5257,6 +5294,7 @@ function paShowDetalle(key,anchor){
   pop.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="color:var(--text);font-size:.78rem">'+(r.titulo||key)+' · rendimiento en USD</b><span style="cursor:pointer;color:var(--text3)" onclick="document.getElementById(\'pa-pop\').remove()">✕</span></div>'+
     '<div style="max-height:260px;overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">FECHA</th><th style="text-align:left;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">MOVIMIENTO</th><th style="text-align:right;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">USD</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
     '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)"><span>Ganancia USD <span class="port-sensitive">'+usd(r.gan)+'</span> · '+_paDur(r.days)+'</span>'+res+'</div>'+
+    (function(){var sd=paSpyDiff(r);if(!r.spy)return '<div style="margin-top:6px;font-size:.62rem;color:var(--text3)">Comparación con SPY: '+(SPY_KEYS?'sin datos de SPY para esas fechas':'cargando historial de SPY…')+'</div>';var sv=r.anual!=null?r.spy.anual:r.spy.simple;if(sv==null)return '';return '<div style="margin-top:6px;font-size:.66rem">Mismo dinero y fechas en SPY: <b>'+(sv>0?'+':'')+sv.toFixed(1).replace('.',',')+'%'+(r.anual!=null?' anual':'')+'</b>'+(sd!=null?' → <b style="color:'+(sd>=0?'var(--accent)':'var(--red)')+'">'+(sd>=0?'le ganaste por ':'perdiste por ')+Math.abs(sd).toFixed(1).replace('.',',')+' pp</b>':'')+'</div>';})()+
     '<div style="margin-top:6px;font-size:.6rem;color:var(--text3)">Compras/ventas a USD con el CCL de cada fecha (MEP para Bonos, ON y FCI); valor de hoy a mercado.</div>';
   document.body.appendChild(pop);
   var rc=anchor.getBoundingClientRect(),ph=pop.offsetHeight,pw=pop.offsetWidth;
@@ -5265,6 +5303,92 @@ function paShowDetalle(key,anchor){
   pop.style.top=top+'px';pop.style.left=left+'px';
 }
 document.addEventListener('click',function(e){var p=document.getElementById('pa-pop');if(p&&!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.pa-cell')))p.remove();});
+
+// ─── Carga diferida de librerías (mapa mundial) ───
+function loadScriptOnce(src){
+  window._lsoP=window._lsoP||{};
+  if(!window._lsoP[src])window._lsoP[src]=new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){delete window._lsoP[src];rej(new Error('No se pudo cargar '+src));};document.head.appendChild(s);});
+  return window._lsoP[src];
+}
+window._jvmReady=false;
+function loadVectorMap(){
+  if(window._jvmP)return window._jvmP;
+  window._jvmP=loadScriptOnce('https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js')
+    .then(function(){return loadScriptOnce('https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js');})
+    .then(function(){window._jvmReady=true;})
+    .catch(function(e){window._jvmP=null;console.warn(e);});
+  return window._jvmP;
+}
+window.addEventListener('load',function(){setTimeout(loadVectorMap,1500);});
+
+// ─── Alerta P. Venta alcanzado ───
+function pvAlertRender(list){
+  var el=document.getElementById('pventa-alert');if(!el)return;
+  if(!list||!list.length){el.style.display='none';el.innerHTML='';return;}
+  var fEl=document.getElementById('port-ticker-filter');var fOn=fEl&&fEl.value.trim();
+  el.style.display='';
+  el.innerHTML='🎯 <b>'+list.length+' activo'+(list.length>1?'s':'')+' alcanz'+(list.length>1?'aron':'ó')+' su P. Venta:</b> '+
+    list.map(function(t){return '<span onclick="pvAlertFiltrar(this.dataset.t)" data-t="'+t.replace(/"/g,'&quot;')+'" style="cursor:pointer;text-decoration:underline dotted;margin-right:8px">'+t+'</span>';}).join('')+
+    (fOn?'<span onclick="pvAlertFiltrar(\'\')" style="cursor:pointer;color:var(--text3);margin-left:6px">✕ quitar filtro</span>':'');
+}
+function pvAlertFiltrar(t){var fEl=document.getElementById('port-ticker-filter');if(!fEl)return;fEl.value=t;renderPortfolio();}
+
+// ─── SPY: historial diario (ajustado por dividendos) para comparar el % Anual ───
+var SPY_HIST=null,SPY_KEYS=null,_spyLoading=false;
+var SPY_LS_KEY='ptAna_spyHist';
+(function(){try{var c=JSON.parse(localStorage.getItem(SPY_LS_KEY)||'null');if(c&&c.data){SPY_HIST=c.data;SPY_KEYS=Object.keys(c.data).sort();window._spyDay=c.day;}}catch(e){}})();
+async function fetchSPYHist(force){
+  var hoy=new Date().toISOString().slice(0,10);
+  if(_spyLoading)return;if(!force&&SPY_HIST&&window._spyDay===hoy)return;
+  _spyLoading=true;
+  var url='https://query2.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=10y';
+  var tries=[
+    function(){return fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(url),{},12000).then(function(r){return r.ok?r.json():Promise.reject('!ok');}).then(function(j){return JSON.parse(j.contents||'{}');});},
+    function(){return fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),{},12000).then(function(r){return r.ok?r.json():Promise.reject('!ok');});},
+    function(){return fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),{},12000).then(function(r){return r.ok?r.json():Promise.reject('!ok');});}
+  ];
+  try{
+    for(var i=0;i<tries.length;i++){
+      try{
+        var j=await tries[i]();var res=j&&j.chart&&j.chart.result&&j.chart.result[0];if(!res||!res.timestamp)continue;
+        var adj=res.indicators&&res.indicators.adjclose&&res.indicators.adjclose[0]&&res.indicators.adjclose[0].adjclose;
+        var cl=adj||(res.indicators&&res.indicators.quote&&res.indicators.quote[0]&&res.indicators.quote[0].close);if(!cl)continue;
+        var data={};res.timestamp.forEach(function(t,k){if(cl[k]!=null)data[new Date(t*1000).toISOString().slice(0,10)]=Math.round(cl[k]*100)/100;});
+        if(Object.keys(data).length<200)continue;
+        SPY_HIST=data;SPY_KEYS=Object.keys(data).sort();window._spyDay=hoy;
+        try{localStorage.setItem(SPY_LS_KEY,JSON.stringify({day:hoy,data:data}));}catch(e){}
+        try{renderPortfolio();}catch(e){}
+        return;
+      }catch(e){}
+    }
+    console.warn('[SPY] no se pudo obtener el historial');
+  } finally {_spyLoading=false;}
+}
+function _spyAt(d){
+  if(!SPY_KEYS||!SPY_KEYS.length)return null;
+  var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  if(k<SPY_KEYS[0])return null;
+  var lo=0,hi=SPY_KEYS.length-1;while(lo<hi){var mid=(lo+hi+1)>>1;if(SPY_KEYS[mid]<=k)lo=mid;else hi=mid-1;}
+  return SPY_HIST[SPY_KEYS[lo]];
+}
+// Mismo dinero, mismas fechas, en SPY: devuelve {anual|simple}
+function paSpy(flowsSinHoy,days){
+  if(!SPY_KEYS||!flowsSinHoy||!flowsSinHoy.length)return null;
+  var sh=0,out=[];
+  for(var i=0;i<flowsSinHoy.length;i++){var f=flowsSinHoy[i],px=_spyAt(f.d);if(!px)return null;sh+=-f.v/px;out.push({d:f.d,v:f.v});}
+  var last=SPY_HIST[SPY_KEYS[SPY_KEYS.length-1]];var val=sh*last;
+  var hoy=new Date();hoy.setHours(12,0,0,0);out.push({d:hoy,v:val});
+  var inv=0,ret=0;out.forEach(function(f){if(f.v<0)inv+=-f.v;else ret+=f.v;});
+  var simple=inv>0?(ret/inv-1)*100:null,anual=null;
+  if(days>=90){var r=paXIRR(out);anual=r!=null&&isFinite(r)?r*100:null;}
+  return {anual:anual,simple:simple};
+}
+function paSpyDiff(r){
+  if(!r||!r.spy)return null;
+  if(r.anual!=null&&r.spy.anual!=null)return r.anual-r.spy.anual;
+  if(r.anual==null&&r.simple!=null&&r.spy.simple!=null)return r.simple-r.spy.simple;
+  return null;
+}
 
 function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');
@@ -5323,7 +5447,7 @@ function toggleRebalCol(show){
 function togglePAnualCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
-  if(show){grid.classList.remove('hide-panual');}else{grid.classList.add('hide-panual');}
+  if(show){grid.classList.remove('hide-panual');try{fetchSPYHist();}catch(e){}}else{grid.classList.add('hide-panual');}
   try{localStorage.setItem('ptAna_showPAnual',show?'1':'0');}catch(e){}
 }
 (function initPAnualToggle(){
@@ -5332,7 +5456,7 @@ function togglePAnualCol(show){
   function apply(){
     var cb=document.getElementById('panual-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
-    if(grid){if(show==='1')grid.classList.remove('hide-panual');else grid.classList.add('hide-panual');}
+    if(grid){if(show==='1'){grid.classList.remove('hide-panual');setTimeout(function(){try{fetchSPYHist();}catch(e){}},3000);}else grid.classList.add('hide-panual');}
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();
@@ -7912,7 +8036,8 @@ function renderWorldMap(posData) {
   var container = document.getElementById('db-worldmap');
   if (!container) return;
 
-  if (typeof jsVectorMap === 'undefined') {
+  if (typeof jsVectorMap === 'undefined' || !window._jvmReady) {
+    loadVectorMap();
     setTimeout(function(){ renderWorldMap(posData); }, 600);
     return;
   }

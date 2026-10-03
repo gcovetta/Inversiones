@@ -1,1562 +1,11 @@
-<!DOCTYPE html>
-<!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
-<!-- ═══ CLAUDE CHANGELOG (más reciente arriba) ═══
-v40 | 2026-10-03 | Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) "Plan de rebalanceo" dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)
-v39 | 2026-10-03 | Fix: se restaura la línea de apertura del comentario del changelog ("&lt;!-- ═══ CLAUDE CHANGELOG"), que se había perdido — sin ella todo el historial de cambios se mostraba como texto arriba de la página.
-v38 | 2026-10-03 | Perf/Chore: getPositions() se calcula una sola vez por render de Portafolio (antes 4-5 veces: cada card la pedía por su cuenta) con caché que solo vive durante el render; se eliminan funciones muertas de gráficos ya quitados (renderDivsCard, renderMiniPie quedan como stubs vacíos). % Anual respeta la cartera activa si el portafolio maneja varias. (getPositions / renderPortfolio wrappers, paBuildFlows)
-v37 | 2026-10-03 | Feat: columna opcional "% Anual" (checkbox "Mostrar % Anual", apagada por defecto) al lado de Δ%: rendimiento anualizado en USD (XIRR) de cada posición abierta con las fechas reales de compras y ventas parciales (CCL del día; MEP para Bonos/ON/FCI), los dividendos/rentas cobrados del ticker (movimientos tipo dividendo, Dividendos y Dividendos CCL confirmados) y el valor de mercado de hoy. Solo el ciclo actual (si la posición se cerró y se volvió a abrir, cuenta desde la recompra). Debajo, la antigüedad y cantidad de compras. Menos de 90 días: % sin anualizar en gris. Verde >10%, gris 0–10%, rojo <0. Click en el % abre el detalle de flujos. Fila TOTAL con la TIR del recuadro. (paBuildFlows / paXIRR / paShowDetalle / togglePAnualCol, hook en renderPortfolio)
-v36 | 2026-10-03 | Feat: (1) columna opcional "Rebalanceo" (checkbox "Mostrar Rebalanceo", apagada por defecto): para activos con % Tipo > 2% (amarillo/rojo) indica cuánto vender en $ y en unidades (u. o VN) para volver al 2% de su tipo; para renta variable por debajo del umbral de la card de inversiones chicas, cuánto comprar para llegar a ese umbral; tooltip con el cálculo. (2) fila TOTAL al pie de cada recuadro (tfoot, no se mueve al ordenar): Δ% ponderado (mercado vs costo), Inversión $ total a mercado, costo total, suma de % Tipo y peso del recuadro en su tipo ("x% de la RV/RF"). Los totales son de las filas visibles (respetan filtros). (renderPortfolio / toggleRebalCol / initRebalToggle)
-v35 | 2026-10-03 | Chore: se elimina del Resumen de Portafolio el gráfico de torta Renta fija / Renta variable / Liquidez (canvas m-pie-chart; renderMiniPie queda sin efecto) porque ya lo cubre la card "Distribución de la cartera". La card de distribución deja de ocupar todo el ancho (máx. 720px). (markup page-portafolio)
-v34 | 2026-10-03 | Feat: card "Distribución de la cartera" — los objetivos ahora salen de la solapa Recomendaciones (PERFIL_TARGETS[Agresivo|Moderado].composicion, rangos RV / RF / Liquidez); FCI se suma a Renta fija como en Recomendaciones. La tabla de detalle es colapsable y arranca colapsada. "Para llegar" se muestra en pesos: lo que falta (o sobra) para entrar en el rango, en USD × CCL para Renta variable y USD × MEP para Renta fija y Liquidez; si está dentro del rango, "en rango". (distRender)
-v33 | 2026-10-03 | Feat: card "Distribución de la cartera" arriba de las tablas de Portafolio — barra actual vs objetivo de Renta variable / Renta fija (Bonos+ON) / FCI / Liquidez (ARS+USD), todo a valor de mercado en USD, con tabla de diferencia en puntos y cuánto comprar o cuánto sobra para llegar al objetivo. Checkbox de perfil Moderado / Agresivo que cambia los objetivos (Agresivo: RV 75 / RF 15 / FCI 0 / Liq 10 — Moderado: RV 50 / RF 35 / FCI 5 / Liq 10; sin FCI en el portafolio, su % pasa a RF). Perfil por defecto: Moderado; se guarda en Supabase (config perfil_inversor) y en localStorage. (distRender / distSetPerfil, hook en renderPortfolio)
-v32 | 2026-10-03 | Fix: el portafolio escribía/leía dos claves de localStorage con el prefijo de GDC (ptNYSE_ratios y ptNYSE_siThreshold) — compartidas entre portafolios del mismo origen; pasan a ptJuli_*. Además, protección en la reconciliación de movimientos pendientes: un snapshot local que no comparte ningún movimiento con Supabase se descarta en vez de subirlo. (RATIOS_TABLE / siLoadPersist / initFromSupabase)
-v31 | 2026-10-03 | Feat: la columna "% Tipo" se colorea con la misma lógica que Inversión $ — más de 3% rojo, más de 2% amarillo, resto color normal (aplica tanto a renta variable como a renta fija). (renderPortfolio)
-v30 | 2026-10-03 | Feat: las tablas de Portafolio (USA, Brasil, Bonos, ON, etc.) se ordenan al hacer click en el título de la columna — 1er click mayor→menor (Ticker: A→Z), 2do invierte, 3ro vuelve al orden original; flecha ▲/▼ en el título; Δ%/ΔUP ordena por Δ%; los vacíos (—) van al final; el orden elegido se mantiene al refrescar cotizaciones. FCI ordena solo por Fondo/Δ%/Inversión/Mercado. (panelSortApply / panelSortClick, hook en renderPortfolio)
-v29 | 2026-10-03 | Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)
-v28 | 2026-10-03 | Feat: nueva columna "% Tipo" en las tablas de Portafolio (checkbox "Mostrar % Tipo", apagado por defecto y recordado como P. Venta): % que representa cada activo a valor de mercado sobre el total de su tipo — renta variable (USA+Argentina+Brasil+Europa+China+Cripto) o renta fija (Bonos+ON); FCI sin columna. Además, los colores amarillo/rojo (2%/3%) de la columna Inversión ahora se calculan sobre el total RV a valor de mercado en vez del costo invertido (sidebar: "Total RV a mercado"). (renderPortfolio / togglePTipoCol / initPTipoToggle)
-v27 | 2026-09-20 | Fix (mismo bug real que se encontró y arregló en GDC v39/v40, reportado por Garo 2026-09-18): vbuyConfirmar()/vsellConfirmar() (módulo rápido Comprar/Vender) calculaban el CCL/MEP de cada movimiento y lo guardaban en el movimiento (m.ccl), pero nunca lo persistían en CCL_TABLE/MEP_TABLE -- solo addMov() (el formulario largo) lo hacía -- así que la tabla histórica quedaba con huecos para casi todas las fechas cargadas desde ahí. Se agrega tcStampearFecha(fecha,esBonoON,valor) -- usa el valor real de cada movimiento, nunca pisa una fecha ya cargada -- llamada desde addMov/vbuyConfirmar/vsellConfirmar. Se agrega backfillTCDesdeMovimientos() + botón "🔧 Completar tabla CCL/MEP" en Movimientos, que completa de una vez los huecos ya existentes con el m.ccl de cada movimiento (promedio si el mismo día tiene valores parecidos; si un día tiene valores MUY dispares -- más de 15 de diferencia entre min y max, típico de un tipeo mal cargado -- esa fecha no se completa sola, queda listada para revisar a mano en vez de arriesgar un promedio con un dato sucio adentro). (tcStampearFecha / backfillTCDesdeMovimientos / addMov / vbuyConfirmar / vsellConfirmar)
-v26 | 2026-09-16 | Feat: se agrega SA24D (Bono Pcia. Salta USD 8,5%, vto. 01/12/2027) a FLUJOS_BONOS — moneda USD (el flujo viene expresado "dólares cable"/CCL, que es un pago en USD vía CCL, no pesos — SA24D está en BONOS_USD_DIRECTO_EXCEPCIONES para el cálculo de PPC/costo, pero eso es independiente de en qué moneda se paga el cupón). Van 18 bonos/ON con flujo cargado. Probado en Node antes de subir. (FLUJOS_BONOS)
-v25 | 2026-09-16 | Feat: se agregan 7 bonos/ON nuevos a FLUJOS_BONOS — ERF25 (Entre Ríos USD 8,75%), PBA27 (Bs.As. Tamar+7%, ARS), PBA28 (Bs.As. CER+9%, ARS), DEC2O (Edesa USD 8%, pago único), D30S6 (Letra Tesoro cero cupón vinc. USD, ARS, pago único), D31M7 (Letra dólar linked, ARS, pago único), DNC3O (ON Edenor USD 9,75%, pago único). ERF25 es como MRCAO: ya venía amortizando antes de este tramo (VR arranca en 27, no 100), así que el total de amortización no da 100 — cargado tal cual lo muestra Bull. Van 17 bonos/ON con flujo cargado en total (detalle y fuente de cada uno en claude/flujos_bonos.md del Project). Probado en Node con posiciones de prueba en los 7 tickers antes de subir. (FLUJOS_BONOS)
-v24 | 2026-09-16 | Feat: se porta desde GDC el paquete completo de "Próximos Cobros" + indicador de salud de cotizaciones (implementado y probado ahí primero, v24-v34): FLUJOS_BONOS con 10 bonos/ON cargados (BB37D, BC37D, AO27, AO28, AO29, DICP, TX31, PARP, SNEAO, MRCAO — detalle y fuente en claude/flujos_bonos.md del Project), calcularCalendarioCobros() (escala el flujo por qty/100, filtra fechas futuras), solapa nueva "📅 Flujos" (Herramientas) con calendario completo + cards de Próximo cobro/30 días/90 días, las mismas cards al pie de Portafolio, y un badge "F" junto al ticker cuando hay cobro dentro de 30 días (tooltip con fecha+monto). Se agrega también el indicador de salud de cotizaciones: puntito junto al precio de mercado (verde=data912, azul=Yahoo, naranja=Finnhub, rojo parpadeante=no se pudo refrescar en el último "Actualizar precios") vía _stampQuote()/_quoteRunId en cada fetch de cotización. Y el badge "D": en acciones/CEDEARs (no en bonos, que ya tienen F), estima si el próximo dividendo cae dentro de 30 días a partir del historial en TRK.divs (este portafolio no tiene el array "dividendos" manual — se eliminó en v15 — así que la estimación mira solo TRK.divs confirmados). Los tooltips de F/D/puntito usan CSS puro (.qhelp/.qhelp-tip), no el atributo title nativo (a Garo no le abría en Brave). Ninguno de estos cambios toca cálculos de valuación, PPC ni precios existentes — es una capa informativa aparte, ya verificada en producción en GDC antes de portarla acá. (FLUJOS_BONOS / calcularCalendarioCobros / calcularDivHistUpcoming30 / _stampQuote / quoteHealthDot / renderPortfolio / renderFlujosPage)
-v23 | 2026-09-13 | Fix (BBAS3/PETR3, definitivo): Garo confirmo que los compra en pesos como CEDEAR, no como tenencia directa en Brasil/BRL — se saca BBAS3/PETR3 de BRL_TICKERS (que ahora queda vacio, pero se deja el mecanismo por si algun dia carga una tenencia realmente directa en BRL). Ademas, aprovechando que data912/arg_cedears resulto tener cobertura enorme (probado en vivo: 1006 tickers, incluye AAPL/MSFT/TSLA/GOOGL/ABEV/BBD/ITUB/MELI/VALE/BBAS3/PETR3...), se lo agrega como fuente PRIMARIA en fetchBymaAll (antes solo se usaba en fetchArgAll para sector 'argentina') — Yahoo via proxy gratuito queda de fallback solo para lo que data912 no tenga, en vez de ser la unica fuente para todo NYSE/brasil/europa/china/cripto. Esto deberia mejorar la confiabilidad de cotizaciones mucho mas alla de BBAS3/PETR3 (cualquier CEDEAR que hoy dependa del proxy fragil de Yahoo). (BRL_TICKERS / fetchBymaAll / fetchArgCedearsAPI)
-v22 | 2026-09-13 | Fix (causa real de GLOB/BIOX/D31M7 sin cotización): probando en vivo, data912 SI tiene estos tickers — pero clasificados en endpoints que la app nunca consultaba. GLOB y BIOX son CEDEARs (acciones extranjeras listadas en BYMA), y data912 los separa de arg_stocks (solo acciones nativas argentinas) en un endpoint aparte, arg_cedears — por eso fetchArgEqAPI() nunca los encontraba y cada uno dependia de un unico intento fragil a Yahoo via proxy gratuito. D31M7 (ON) tampoco esta en arg_corp/arg_bonds — data912 lo clasifica en arg_notes, un cuarto endpoint no consultado. Se agregan fetchArgCedearsAPI() y fetchArgNotesAPI() como fuentes adicionales (antes de caer a Yahoo) en fetchArgAll/fetchONsAll. Tambien se mejora parseData912Response para derivar prevClose desde pct_change cuando el endpoint no trae prev_close (caso de arg_cedears/arg_notes) — antes esos tickers hubieran mostrado 0% de variacion diaria. PETR3/BBAS3 (BRL_TICKERS) quedan pendientes a proposito: data912/arg_cedears SI los tiene, pero con precio en pesos (como CEDEAR), no en reales (como posicion directa en B3/BRL) — mezclar esa fuente ahi cambiaria la moneda de origen del precio sin confirmar con Garo si en realidad los tiene como CEDEAR o como tenencia directa en Brasil. (parseData912Response / fetchArgCedearsAPI / fetchArgNotesAPI / fetchArgAll / fetchONsAll)
-v21 | 2026-09-11 | Fix (raíz real de BBAS3/PETR3/GLOB/D31M7 sin cotización): fetchBymaAll/fetchArgAll/fetchBonosAll/fetchONsAll lanzaban TODOS los tickers de la cartera (60-90+) en paralelo contra fetchYahooAR — probado en vivo hoy: api.allorigins.win (hoy el único proxy que funciona, ver v19) responde bien a 1 pedido (~2.5s) pero falla los 30 pedidos si se lo satura con 30 en simultáneo ('Failed to fetch' confirmado en los 30). BBAS3/PETR3 (BRL_TICKERS, sin fallback a Finnhub por diseño) y GLOB/D31M7 (sector sin cobertura en data912, 'argentina' tampoco tiene fallback a Finnhub) dependen de un único intento a Yahoo — si ese intento cae en medio de la ráfaga de 60-90 pedidos simultáneos del resto de la cartera, se quedan sin cotización esa actualización. El resto de los sectores (nyse/brasil-CEDEAR/europa/china/cripto) sufren el mismo choque contra allorigins pero lo disimulan porque tienen un segundo intento vía Finnhub (Fase 2, secuencial). Se agrega mapWithConcurrency() y se acota a 5 pedidos en vuelo por vez en las 4 funciones de fetch — no cambia qué se pide ni de dónde, solo cuántos van al mismo tiempo. (mapWithConcurrency / fetchBymaAll / fetchArgAll / fetchBonosAll / fetchONsAll)
-v20 | 2026-09-11 | Perf: la actualización de precios llamaba a renderPortfolio() (recalcula getPositions() sobre TODO el historial de movimientos + reconstruye la tabla entera) una vez por CADA ticker que llegaba — con 70-100+ posiciones resolviendo casi en paralelo, eso son 70-100+ renders completos en pocos segundos, bloqueando el hilo principal y sintiéndose lento/trabado. Se agrupan con requestAnimationFrame: como mucho 1 render real por frame de pantalla, sin perder la sensación de 'se van actualizando los precios en vivo'. También se corrige vsellPopulateSelect(), que llamaba a getPositions() de nuevo dentro de un .map() (una vez por cada posición abierta, en vez de una sola vez reusada). No cambia ningún cálculo ni dato — solo cuántas veces se recalcula/redibuja lo mismo. (updateProgress / vsellPopulateSelect)
-v19 | 2026-09-11 | Fix: fetchYahooAR() (usado como única fuente para BBAS3/PETR3 vía BRL_TICKERS, y como fallback para acciones argentinas/bonos/ONs sin cobertura en data912, ej. GLOB y D31M7) tenía corsproxy.io en su lista de proxies en paralelo — corsproxy.io ahora exige API key paga (confirmado en vivo: devuelve 401 'A valid API key is required'), así que ese proxy nunca va a traer datos. Se lo saca de la carrera de Promise.any en fetchYahooAR de los 5 portafolios (sigue en otros puntos del código — EWZ topbar, MERVAL/IMV, S&P/QQQ, EcoValores TIR — no tocados en este cambio). Esto no arregla por completo la falta de cotización de esos tickers: en las pruebas de hoy, allorigins.win también falló puntualmente contra Yahoo (aunque responde bien a otros destinos) y api.codetabs.com no fue alcanzable — puede ser un problema más amplio de Yahoo/los proxies gratuitos, no exclusivo de este portafolio (se repite en los 5). (fetchYahooAR)
-v18 | 2026-09-10 | Chore: SA24D confirmado como excepción a isBonoUSDDirecto() — termina en "D" pero es un bono en PESOS, no compra directa en dólares (mismo caso que BB37D/BC37D). Se agrega a BONOS_USD_DIRECTO_EXCEPCIONES en los 5 portafolios.
-v17 | 2026-09-10 | Feat: bonos comprados directo en USD (sufijo de ticker "C" = dólar cable, "D" = dólares directo, ej. AO29D) ahora valúan el costo/PPC directamente en dólares, sin pasar por MEP — antes getPositions() recalculaba el costo dividiendo el precio cargado por el MEP histórico y, al mostrarlo, lo volvía a multiplicar por el MEP del día, distorsionando el PPC de estos bonos con el ida y vuelta. Se agrega isBonoUSDDirecto() (con excepción explícita BB37D/BC37D, que terminan en "D" pero son bonos en pesos) y se aplica en getPositions (compra/venta), el módulo rápido Comprar/Vender del Portafolio, el modal de editar movimiento, y las columnas Inversión/PPC de la vista principal. Pendiente: DashBoard, Rend. Anual, Comparación, P. Venta (objetivo) y la importación de venta histórica todavía usan la conversión MEP vieja para estos tickers — no se tocaron en este cambio. (isBonoUSDDirecto / getPositions / vbuyConfirmar / vsellConfirmar / vsellPreview / movModalCalcUSD / movModalSave)
-v16 | 2026-09-10 | Fix: PETR3 (Petrobras ON, B3 directo) no traía cotización — faltaba en BRL_TICKERS (solo tenía 'BBAS3'), así que fetchYahooAR le pedía a Yahoo el sufijo de BYMA ('.BA') en vez de Bovespa ('.SA'), y el fallback a Finnhub no cubre B3 directo (mismo riesgo de colisión de símbolo que el bug de LOMA), así que la posición quedaba sin precio nuevo. Se agrega 'PETR3' a BRL_TICKERS en los 5 portafolios (reportado en Hilda). (BRL_TICKERS)
-v15 | 2026-09-10 | Chore: se elimina la solapa "Dividendos" original (registro manual simple sin impacto en PPC, con su formulario y su historial en Supabase/localStorage bajo la key 'dividendos') a pedido del usuario — queda una sola forma de cargar dividendos: la pestaña "Dividendos CCL" (tracker con PPC e importación de broker). Se quita el botón de nav, el markup de la página, las funciones addDividendo/deleteDividendo/clearDividendos/renderDividendos/divPopulateSelect/calcDivUSD, la variable global dividendos, su carga inicial desde Supabase y el manejo de borrados pendientes ('ptJuli_divs_del'). No se tocó nada de la pestaña "Dividendos CCL" (TRK.*). (showPage / renderPortfolio / initFromSupabase)
-v14 | 2026-09-10 | Fix: bug de filtración de datos entre portafolios — las claves de localStorage del tracker de dividendos (trk_divs_v1, trk_pin_v1, trk_session_v1, trk_ccl_v1) eran idénticas en los 5 portafolios (GDC/Omar/Juli/Hilda/Ana), y como los 5 se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta), un navegador que hubiera abierto más de uno terminaba compartiendo ese localStorage entre ellos — el fallback "si Supabase está vacío, uso lo que haya en localStorage" podía mostrar los dividendos de un portafolio en otro. Confirmado en vivo justo acá: al abrir esta pestaña (recién agregada en v13) en un navegador que antes había abierto GDC, aparecía el BB37D de GDC. La base de datos de Juli en Supabase nunca tuvo esos datos (se confirmó vacía, 0 filas) — el problema era solo el caché local compartido. Se le agrega el sufijo del portafolio a las 4 claves (_gdc/_omar/_juli/_hilda/_ana) y se borran las claves viejas sin sufijo al cargar, en los 5 archivos. (TRK.DKEY / TRK.PKEY / TRK.SKEY / TRK.CKEY)
-v13 | 2026-09-10 | Feat: nueva pestaña "Dividendos CCL" (tracker con impacto en PPC e importación desde broker) — antes el código del tracker (TRK, trkRender, etc.) existía en el JS/CSS pero no era alcanzable: no había ni HTML ni botón de navegación para la página. Se agrega el botón de nav y el markup completo de la pestaña (igual a GDC/Omar): CCL del día, métricas, carga manual de dividendo, y un importador de 3 archivos separados (Pesos / Dólares / Dólar Cable) para el extracto "Cuenta Corriente" de Bull Market — detecta "DIVIDENDOS" (accion/CEDEAR) y "RENTA Y AMORTIZ" (bono/ON), sin duplicar filas ya cargadas. Las filas nuevas quedan en "Pendientes de revisión" para confirmar una por una el impacto en el PPC (o el destino a ganancia de venta si ya no hay posición) antes de sumarlas al historial. Se reemplaza también el importador viejo (TRK_IMP / trkImpParse HTML, formato Veta — no correspondía al broker real usado, Bull Market) y se corrige el borrado de fila (usaba data-id + parseInt, que truncaba ids fraccionarios generados por la importación) por comparación exacta de id. La pestaña "Dividendos" original (registro simple, sin PPC) se deja intacta para no perder datos ya cargados ahí. (trkRender / trkDeleteDiv / trkImpParseBullMarket / trkQueuePendingRows / trkRenderPending / trkPendingConfirm / trkPendingDiscard)
-v12 | 2026-09-09 | Fix: fetchArgEqAPI() pegaba a https://data912.com/live/arg_eq, que devuelve 404 (confirmado en Network tab del navegador) — el endpoint correcto para acciones argentinas en data912 es /live/arg_stocks (arg_eq no existe en su OpenAPI spec; los endpoints reales son arg_stocks, arg_cedears, arg_bonds, arg_corp, arg_notes, usa_stocks, usa_adrs, entre otros). Mismo schema que arg_bonds/arg_corp (symbol/c), asi que parseData912Response no necesita cambios. (fetchArgEqAPI)
-v11 | 2026-09-09 | Fix: la cadena de proxies de fetchYahooAR tenia dos servicios muertos — thingproxy.freeboard.io y jsonp.afeld.me — que ya no resuelven DNS (ERR_NAME_NOT_RESOLVED, confirmado en consola del navegador), y el llamado directo a Yahoo v7/finance/quote ahora devuelve 401 (Yahoo exige auth). Eso dejaba en la practica un solo proxy vivo (allorigins /get) compitiendo con corsproxy.io, que se satura (429 Too Many Requests) cuando hay muchos tickers en paralelo (acciones argentinas sin cobertura en data912, bonos/ONs de fallback). Se sacan los dos proxies muertos y se agregan api.codetabs.com/v1/proxy y api.allorigins.win/raw como reemplazo, restaurando la redundancia real. (fetchYahooAR)
-v10 | 2026-09-09 | Fix: cotizaciones de acciones argentinas (sector 'argentina') no se actualizaban — dependian unicamente de Yahoo .BA a traves de la cadena de proxies publicos (allorigins/corsproxy/thingproxy/jsonp.afeld), sin ningun fallback (se habia sacado Finnhub por el bug de LOMA), asi que si esa cadena entera fallaba (frecuente, son proxies publicos inestables) la accion se quedaba con la ultima cotizacion cargada. Se agrega fetchArgEqAPI() (data912 arg_eq, mismo patron ya confiable de bonos/ONs) como fuente primaria; Yahoo .BA queda de fallback por ticker. (fetchArgAll / fetchAllQuotes / fetchArgEqAPI)
-v9 | 2026-09-03 | Fix: cotizaciones de Brasil no se actualizaban para tickers que cotizan directo en BRL en B3 (BRL_TICKERS, ej. BBAS3) — fetchYahooAR siempre agregaba el sufijo '.BA' (Buenos Aires/CEDEAR) sin importar el ticker, asi que para un ticker B3 directo pedia un simbolo que no existe en BYMA; el fallback a Finnhub tampoco tiene mapeo para B3 (ticker pelado, sin exchange), asi que esas posiciones nunca conseguian precio nuevo y quedaban con la ultima cotizacion cargada. Ahora fetchYahooAR acepta un sufijo opcional: en FASE 1 los tickers de BRL_TICKERS piden '.SA' (Bovespa) en vez de '.BA', y se excluyen del fallback a Finnhub (mismo riesgo de colision de simbolo con otro mercado que causo el bug de LOMA en v4). (fetchYahooAR / fetchBymaAll / fetchFinnhubFallback)
-v8 | 2026-09-02 | Fix: el % de upside contra el precio de venta objetivo (P. Venta / Objetivos / Notificaciones cerca del objetivo) daba resultados absurdamente altos para acciones argentinas con ADR en NYSE y ratio cargado (ej. BBAR: +308% en vez de +32,4% con precio objetivo de USD 20). Causa: targetUSD se carga en dolares por ADR/accion real, pero al convertir el precio de mercado (en ARS, sector argentina) a USD para comparar, el codigo dividia por CCL sin multiplicar por el ratio ADR/accion local — comparaba el precio de la accion local contra un target pensado en terminos de ADR. Se agrega '*ratio' en las 3 conversiones afectadas (deltaCell del portafolio, Notificaciones cerca del objetivo, y en GDC ademas la tabla de Objetivos). Tambien se agrego 'BBAR':3.0 a RATIOS_TABLE (faltaba, ratio ADR/accion local). No toca el precio de mercado mostrado en la tabla principal — ese nunca us el ratio para sector argentina y sigue igual. (renderPortfolio / renderNearTarget / renderTargetsTable)
-v7 | 2026-09-02 | Fix preventivo: agregado 'EWZ':2.0 a RATIOS_TABLE (faltaba en los 5 portafolios, ratio oficial 2:1 segun BYMA). No es la causa del ultimo reporte de precio incorrecto en EWZ (28500 vs 29300 real, ~2.7% de diferencia) — ese margen es demasiado chico para ser un bug de ratio/ticker (esos dan diferencias de 2x en adelante); EWZ ademas cotiza via Yahoo .BA directo (fromByma=true), que ignora RATIOS_TABLE por completo salvo que ese fetch falle y caiga al fallback de Finnhub. Se agrega igual como mantenimiento preventivo, mismo patron que ETHA. (RATIOS_TABLE)
-v6 | 2026-09-01 | Fix: perdida silenciosa de movimientos cuando el guardado en Supabase fallaba (red, pestana cerrada antes de terminar) y luego un reload traia la version vieja de la nube, pisando el movimiento que solo habia quedado guardado local (paso con una compra de MO en GDC). Ahora saveAndRender() guarda un snapshot 'pending_sync' en localStorage antes de intentar subirlo, e initFromSupabase() lo compara contra lo que trae Supabase: si detecta movimientos locales que la nube no tiene, reintenta guardarlos antes de aceptar los datos de la nube como fuente de verdad, y si el reintento tambien falla, conserva la copia local en vez de descartarla. (saveAndRender / initFromSupabase)
-v5 | 2026-08-31 | Fix: agregado 'ETHA':5.0 a RATIOS_TABLE (faltaba en los 5 portafolios). Es un CEDEAR nuevo en BYMA (ratio oficial 5:1 segun BYMA) que Yahoo .BA todavia no cotiza de forma confiable, asi que cae al fallback de Finnhub+ratio para sintetizar el precio ARS; sin el ratio, se usaba 1 en vez de 5 y el valor de mercado / ganancia % quedaba inflado (el +319% reportado en ETHA). (RATIOS_TABLE)
-v4 | 2026-08-31 | Fix: se saco 'argentina' del fallback a Finnhub en fetchAllQuotes — Finnhub es un proveedor de EEUU y para un ticker BYMA sin mapeo (getFinnhubTicker deja el ticker pelado) puede resolver a una accion/ADR de otro mercado con el mismo simbolo. Paso con LOMA (Loma Negra): al fallar Yahoo .BA, Finnhub devolvio el ADR de NYSE (~USD 10) en vez del precio real en ARS de BYMA (~3227), y se uso tal cual como si fuera ARS. Ahora si Yahoo .BA falla para un ticker argentina, se mantiene la ultima cotizacion cargada en vez de mostrar el precio de otro mercado. (fetchAllQuotes)
-v3 | 2026-08-31 | Fix: parser de Comparacion contra Bull (cmpParseBullText) no detectaba ninguna posicion — asumia que la fila de datos venia inmediatamente despues del ticker, pero Bull siempre intercala una linea de descripcion del activo en el medio, y ademas leia la columna equivocada como Cantidad (columna 2 en vez de la 1). Ahora salta la linea de descripcion y toma la Cantidad de la primera columna. (cmpParseBullText)
-v2 | 2026-08-31 | Feat: dividendos cargados en la solapa Dividendos ahora impactan el PPC — si el activo sigue en cartera, se pide confirmacion manual mostrando PPC actual vs nuevo (%) y se resta del costUSDpuro; si ya se vendio todo, se suma como ganancia realizada de la venta. Se aplica solo a dividendos nuevos (no retroactivo) y no a la importacion masiva por XLS. (trkAddDiv / getPositions)
-v1 | 2026-08-31 | Fix: dividendo en ARS ya no exige el CCL "del día" (TRK.ccl) — ahora primero busca el CCL de la fecha del dividendo en CCL_TABLE y sólo si no está usa TRK.ccl como respaldo. Mismo fix aplicado a la importación de dividendos desde XLS. (trkAddDiv / trkImpConfirm)
-═══════════════════════════════════════════════ -->
-<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+// ═══════════════════════════════════════════════════════════════════════════
+// portafolio.js — código común de los portafolios (Etapa 1 de la unificación, 2026-10-03)
+// Por ahora contiene el script principal de GDC tal cual estaba inline en PortafolioGDC.html.
+// Etapa 2: Ana, Hilda, Juli y Omar pasan a usar este mismo archivo con una configuración
+// por portafolio (window.PORTFOLIO_CONFIG). Los cambios de versión se siguen anotando en el
+// changelog de cada HTML; el ?v= de la etiqueta <script> evita que el navegador use una copia vieja.
+// ═══════════════════════════════════════════════════════════════════════════
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juli</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script async src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css">
-<style>
-:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px;--rsm:6px}
-*{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;overflow:hidden;display:flex;flex-direction:column;height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-.app{display:flex;flex-direction:column;flex:1;min-height:0}
-.arb-wrap{margin-bottom:6px}
-.arb-pair-header{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;background:linear-gradient(135deg,#0d2545,#091830);border-radius:var(--rsm) var(--rsm) 0 0;border:1px solid #1e4080}
-.arb-row{display:grid;grid-template-columns:32px 1fr 1fr 76px 24px 72px 56px 76px;gap:0;border-left:1px solid var(--border2);border-right:1px solid var(--border2);border-bottom:1px solid var(--border2)}
-.arb-row:last-child{border-radius:0 0 var(--rsm) var(--rsm)}
-.arb-cell{padding:3px 4px;font-size:.61rem;font-family:var(--mono);display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);text-align:center}
-.arb-cell:last-child{border-right:none}
-.arb-cell.left{justify-content:flex-start}
-.arb-label{font-size:.5rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.5);padding:3px 4px;display:flex;align-items:center;justify-content:center}
-.arb-plazo{background:rgba(0,0,0,.35);font-weight:700;font-size:.59rem;color:var(--text3);min-width:32px}
-.arb-ratio-green{background:#0d3320;color:#00e676;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
-.arb-ratio-amber{background:#2a3000;color:#ffd600;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
-.arb-ratio-red{background:#1a0d0d;color:#ff5252;font-weight:700;border-radius:3px;padding:1px 4px;font-size:.6rem;text-align:center}
-.arb-op{font-size:.78rem;font-weight:900;color:var(--text3)}
-.arb-op.buy{color:var(--green)}
-.arb-op.sell{color:var(--red)}
-.arb-input{background:transparent;border:none;border-bottom:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:.59rem;width:100%;text-align:center;outline:none;padding:1px 2px}
-.arb-input:focus{border-bottom-color:var(--accent);background:rgba(255,255,255,.04)}
-.arb-input-name{font-weight:700;font-size:.62rem;color:var(--text);text-align:center}
-.topbar{display:flex;align-items:center;gap:0;padding:0 1.2rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:.68rem;font-family:var(--mono);color:var(--text3);flex-wrap:wrap;flex-shrink:0;height:32px}
-.topbar-item{display:flex;align-items:center;gap:.3rem;padding:0 .85rem;border-right:1px solid var(--border);height:100%}
-.topbar-item:first-child{padding-left:0}
-.topbar-label{color:var(--text3);font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;font-family:var(--sans);font-weight:500}
-.topbar-val{color:var(--text);font-weight:700;font-size:.8rem;font-family:var(--mono);letter-spacing:-.01em}
-.topbar-sub{color:var(--text3);font-size:.65rem;font-family:var(--mono)}
-.topbar-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
-
-/* ── Marcas de activos ─────────────────────────────────────────── */
-.mark-btn{background:none;border:none;cursor:pointer;font-size:.72rem;padding:0 3px 0 0;opacity:.25;transition:opacity .15s;line-height:1;vertical-align:middle}
-.mark-btn:hover{opacity:1}
-.mark-btn.active{opacity:1}
-tr.marked-sell>td:first-child{border-left:3px solid var(--red);padding-left:5px}
-tr.marked-buy>td:first-child{border-left:3px solid var(--accent);padding-left:5px}
-tr.marked-watch>td:first-child{border-left:3px solid var(--amber);padding-left:5px}
-tr.marked-sell{background:rgba(248,113,113,.04)}
-tr.marked-buy{background:rgba(126,232,162,.04)}
-tr.marked-watch{background:rgba(251,191,36,.04)}
-.mark-note-tag{display:inline-block;font-size:.56rem;font-style:italic;color:var(--text3);margin-left:4px;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
-.mark-popover{position:fixed;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:.8rem;z-index:9500;min-width:210px;box-shadow:0 8px 28px rgba(0,0,0,.5)}
-.mark-pop-title{font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:.55rem;font-family:var(--sans)}
-.mark-type-btns{display:flex;gap:5px;margin-bottom:.5rem}
-.mark-type-btn{flex:1;padding:5px 2px;border-radius:var(--rsm);border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-size:.68rem;text-align:center;transition:all .12s;color:var(--text2);font-family:var(--sans)}
-.mark-type-btn:hover{background:var(--border);color:var(--text)}
-.mark-type-btn.sel-sell{border-color:var(--red);background:rgba(248,113,113,.15);color:var(--red)}
-.mark-type-btn.sel-buy{border-color:var(--accent);background:rgba(126,232,162,.15);color:var(--accent)}
-.mark-type-btn.sel-watch{border-color:var(--amber);background:rgba(251,191,36,.15);color:var(--amber)}
-.mark-note-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:5px 7px;outline:none;margin-bottom:.5rem;box-sizing:border-box}
-.mark-note-input:focus{border-color:var(--accent)}
-.mark-pop-actions{display:flex;gap:5px}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-/* Tooltip propio (no usa el atributo title nativo — a Garo el tooltip nativo no le abría en
-   Brave, solo le cambiaba el cursor a un signo de pregunta sin mostrar contenido). Se activa
-   con :hover en CSS puro, sin JS. */
-.qhelp{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
-.qhelp .qhelp-tip{visibility:hidden;opacity:0;position:absolute;bottom:135%;left:50%;transform:translateX(-50%);background:#0d1420;border:1px solid var(--border2,#264070);border-radius:6px;padding:5px 9px;font-size:.68rem;white-space:nowrap;color:var(--text2,#7a9cc5);z-index:200;transition:opacity .1s;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:var(--mono),monospace;pointer-events:none}
-.qhelp:hover .qhelp-tip,.qhelp:focus .qhelp-tip{visibility:visible;opacity:1}
-header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);flex-wrap:wrap;flex-shrink:0}
-.logo{font-weight:700;font-size:1rem;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;font-family:var(--sans)}
-.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
-.hright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.tag{font-family:var(--mono);font-size:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text3)}
-.lupd{font-family:var(--mono);font-size:.68rem;color:var(--text3)}
-.main{display:flex;flex-direction:row;flex:1;min-height:0;width:100%;overflow:hidden}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1rem 0;display:flex;flex-direction:column;gap:1px;overflow-y:auto;overflow-x:hidden;flex-shrink:0;width:0;transition:width .2s ease;z-index:10}
-.main.sidebar-open .sidebar{width:172px}
-.content{flex:1;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0;width:100%}
-.btn-sidebar-toggle{background:none;border:1px solid var(--border2);border-radius:var(--rsm);cursor:pointer;color:var(--text2);font-size:.9rem;width:28px;height:28px;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex-shrink:0}
-.btn-sidebar-toggle:hover{background:var(--surface2);color:var(--text)}
-.nav-item{padding:.42rem .85rem;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:background .12s,color .12s;font-family:var(--sans)}
-.nav-item:hover{background:var(--surface2);color:var(--text)}
-.nav-item.active{background:var(--surface2);color:var(--accent)}
-.nav-sec{font-size:.57rem;font-family:var(--mono);color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:.6rem .85rem .25rem}
-.page{display:none;padding:1.2rem;width:100%;box-sizing:border-box;max-width:100%}
-.page.active{display:block;width:100%;box-sizing:border-box;max-width:100%}
-.mgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:1.2rem;align-items:flex-start}
-.mgrid .metric{flex:0 1 auto;min-width:0;white-space:nowrap}
-.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem}
-.metric-label{font-size:.6rem;font-family:var(--sans);color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:500}
-.metric-value{font-size:1.35rem;font-weight:700;letter-spacing:-.03em;font-family:var(--sans)}
-.metric-sub{font-size:.62rem;font-family:var(--mono);color:var(--text3);margin-top:2px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;overflow:hidden}
-.card-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.card-title{font-weight:600;font-size:.83rem}
-.card-body{padding:1rem}
-.tw{overflow-x:auto;width:100%;max-width:100%;box-sizing:border-box;scrollbar-width:none}
-.tw::-webkit-scrollbar{display:none}
-#mov-card{display:flex;flex-direction:column}
-#mov-card .card-header{position:sticky;top:0;z-index:5;background:var(--surface);flex-shrink:0}
-#mov-wrap{overflow-x:auto;overflow-y:auto;width:100%;box-sizing:border-box;flex:1;max-height:calc(100vh - 320px)}
-#mov-wrap thead th{position:sticky;top:0;background:var(--surface);z-index:2}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{text-align:left;padding:.5rem .85rem;color:var(--text3);font-weight:400;font-family:var(--mono);font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:.55rem .85rem;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--surface2)}
-.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:8px;margin-bottom:8px}
-.fgrp{display:flex;flex-direction:column;gap:4px}
-.fgrp label{font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
-.fgrp input,.fgrp select{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:5px 8px;height:30px;outline:none;transition:border-color .12s;width:100%}
-.fgrp input:focus,.fgrp select:focus{border-color:var(--accent)}
-.fgrp select option{background:var(--surface2)}
-.fgrp input::placeholder{color:var(--text3)}
-.btn{padding:4px 11px;height:28px;font-size:.7rem;border:1px solid var(--border2);border-radius:var(--rsm);cursor:pointer;background:var(--surface2);color:var(--text2);font-family:var(--sans);font-weight:500;white-space:nowrap;transition:all .12s;display:inline-flex;align-items:center;gap:5px}
-.btn:hover{color:var(--text)}
-.btn-a{background:var(--accent);color:#072010;border-color:var(--accent);font-weight:600}
-.btn-a:hover{background:var(--accent2);border-color:var(--accent2);color:#072010}
-.btn-d{color:var(--red);border-color:#3a1818}
-.btn-d:hover{background:#221010}
-.btn-sm{height:22px;padding:0 7px;font-size:.65rem}
-.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:.6rem;font-family:var(--mono);font-weight:500}
-.badge-compra{background:#0a2218;color:var(--accent);border:1px solid #143a24}
-.badge-venta{background:#2a0e0e;color:var(--red);border:1px solid #451818}
-.badge-dividendo{background:#0d1a30;color:var(--blue);border:1px solid #162a50}
-.badge-aporte{background:#261a08;color:var(--amber);border:1px solid #3e2c10}
-.badge-usd{background:#0d1a30;color:var(--blue);border:1px solid #162a50}
-.badge-ars{background:#261a08;color:var(--amber);border:1px solid #3e2c10}
-.mkt{display:inline-block;padding:1px 5px;border-radius:4px;font-size:.58rem;font-family:var(--mono);background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
-.pos{color:var(--accent);font-weight:600}.neg{color:#ff6b6b;font-weight:600;text-shadow:0 0 12px rgba(255,82,82,0.3)}.muted{color:var(--text2)}.mono{font-family:var(--mono)}
-.gap-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.smsg{font-size:.7rem;font-family:var(--mono);color:var(--accent)}
-.emsg{font-size:.7rem;font-family:var(--mono);color:var(--red)}
-#warn-sin-tc{display:none;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.38);border-radius:6px;padding:5px 10px;font-size:.65rem;font-family:var(--mono);color:#ffd600;margin:4px 1rem 2px}
-.empty-state{text-align:center;padding:2.5rem;color:var(--text3);font-size:.75rem;font-family:var(--mono)}
-.spinner{display:inline-block;width:10px;height:10px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
-@keyframes spin{to{transform:rotate(360deg)}}
-.pbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.pfill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
-.ibox{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.65rem .9rem;font-size:.7rem;font-family:var(--mono);color:var(--text2)}
-.ibox b{color:var(--text)}
-::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-.panels-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;align-items:start}
-.panels-grid .card{margin-bottom:0}
-.panel-table table{width:auto;min-width:100%}
-.panel-table th{padding:.35rem .6rem;font-size:.64rem}
-.panel-table td{padding:.4rem .65rem;font-size:.8rem}
-/* Toggle para ocultar columna Cant. en paneles */
-.panels-grid.hide-qty .panel-table th:last-child,
-.panels-grid.hide-qty .panel-table td:last-child{display:none}
-.panels-grid.hide-pventa .panel-table .col-pventa{display:none}
-.panels-grid.hide-ptipo .panel-table .col-ptipo{display:none}
-.panels-grid.hide-rebal .panel-table .col-rebal{display:none}
-.panels-grid.hide-panual .panel-table .col-panual{display:none}
-.panel-table tfoot td{background:var(--surface2);border-top:2px solid var(--border2);font-weight:700}
-#panels-grid .panel-table thead th.ps-sortable{cursor:pointer;user-select:none}
-#panels-grid .panel-table thead th.ps-sortable:hover{color:var(--text)}
-#panels-grid .panel-table .ps-arrow{color:var(--accent);font-size:.6rem}
-.qty-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-family:var(--mono);font-size:.65rem;color:var(--text2);user-select:none}
-.qty-toggle input{accent-color:var(--accent);cursor:pointer;width:12px;height:12px;margin:0}
-.qty-toggle:hover{color:var(--text)}
-
-/* ── TRACKER DIVIDENDOS ── */
-.trk-section{margin-bottom:1rem}
-.trk-bar{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;margin-bottom:1rem;flex-wrap:wrap}
-.trk-bar-label{font-size:.65rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
-.trk-bar-val{font-size:.85rem;font-weight:600;font-family:var(--mono);color:var(--accent)}
-.trk-bar-src{font-size:.6rem;font-family:var(--mono);color:var(--text3)}
-.trk-edit{font-size:.65rem;font-family:var(--mono);color:var(--text3);cursor:pointer;text-decoration:underline;margin-left:auto}
-.trk-manual-row{display:none;align-items:center;gap:8px;margin-bottom:.75rem}
-.trk-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:1rem}
-.trk-metric{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.7rem .85rem}
-.trk-metric-label{font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
-.trk-metric-val{font-size:1rem;font-weight:600;font-family:var(--mono);color:var(--text)}
-.trk-metric-sub{font-size:.6rem;font-family:var(--mono);color:var(--text3);margin-top:2px}
-.trk-blurred{filter:blur(5px);user-select:none;pointer-events:none;transition:filter .2s}
-.trk-eye-btn{background:none;border:1px solid var(--border2);border-radius:var(--rsm);cursor:pointer;padding:3px 8px;display:inline-flex;align-items:center;gap:5px;color:var(--text2);font-size:.65rem;font-family:var(--sans);height:28px}
-.trk-eye-btn:hover{background:var(--surface2);color:var(--text)}
-.trk-ccl-result{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.85rem 1rem;margin-top:.75rem;display:none}
-.trk-ccl-result-label{font-size:.6rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.trk-ccl-result-val{font-size:1.4rem;font-weight:600;font-family:var(--mono);color:var(--accent)}
-.trk-ccl-result-sub{font-size:.65rem;font-family:var(--mono);color:var(--text2);margin-top:4px}
-
-.port-sensitive{transition:filter .25s}
-.port-blurred .port-sensitive{filter:blur(5px);user-select:none;pointer-events:none}
-/* PIN screen */
-.pin-overlay{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:100}
-.pin-title{font-size:1rem;font-weight:600;color:var(--text)}
-.pin-sub{font-size:.75rem;font-family:var(--mono);color:var(--text3);text-align:center;max-width:260px}
-.pin-dots{display:flex;gap:10px}
-.pin-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--border2);background:transparent;transition:background .15s}
-.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
-.pin-pad{display:grid;grid-template-columns:repeat(3,56px);gap:8px}
-.pin-key{width:56px;height:40px;border-radius:var(--rsm);border:1px solid var(--border2);background:var(--surface2);font-size:1.1rem;font-weight:600;color:var(--text);cursor:pointer;font-family:var(--mono);transition:background .1s}
-.pin-key:hover{background:var(--border)}
-.pin-key.del{font-size:.75rem;color:var(--text3)}
-.pin-error{font-size:.7rem;font-family:var(--mono);color:var(--red);min-height:16px}
-.pin-action{font-size:.65rem;font-family:var(--mono);color:var(--text3);cursor:pointer;text-decoration:underline}
-.pin-lock-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.75rem}
-
-/* page-tracker layout */
-#page-tracker{min-height:200px;overflow-y:auto;max-height:calc(100vh - 115px)}
-.card-toggle{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.82rem;padding:0 2px;line-height:1;flex-shrink:0;transition:transform .15s;margin-left:auto}
-.card-toggle:hover{color:var(--text)}
-.card-collapsed>.card-body,.card-collapsed>.tw,.card-collapsed>div:not(.card-header),.card-collapsed>.empty-state{display:none!important}
-
-/* Mobile filters bar — inline on desktop, full-width row on mobile */
-#mobile-filters{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-#mobile-filters::-webkit-scrollbar{display:none}
-@media(min-width:681px){
-  #mobile-filters{width:auto;flex:1;min-width:0;padding:0}
-  header{flex-wrap:nowrap}
-}
-@media(max-width:680px){
-  /* ── Layout base ── */
-  body{overflow:auto;height:auto}
-  .card{overflow:visible}
-  #mov-wrap{max-height:none;overflow-y:visible}
-  .app{height:auto;min-height:100vh}
-  .main{flex-direction:column;flex:1;min-height:0;overflow:visible;height:auto}
-  .content{flex:1;min-height:0;overflow-y:visible;overflow-x:visible}
-
-  /* ── Topbar: scroll horizontal compacto ── */
-  .topbar{height:auto;min-height:28px;padding:3px 8px;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-  .topbar::-webkit-scrollbar{display:none}
-  .topbar-item{padding:0 .55rem;border-right:1px solid var(--border);flex-shrink:0;height:22px}
-  .topbar-item:first-child{padding-left:0}
-  .topbar-val{font-size:.7rem}
-  .topbar-label{font-size:.5rem}
-  .topbar-sub{font-size:.56rem}
-  /* Ocultar Liquidez e Inv. Inicial del topbar en mobile */
-  .topbar>div:nth-last-child(-n+2){display:none}
-
-  /* ── Header: 2 filas en mobile ── */
-  header{padding:.45rem .65rem;gap:.4rem;flex-wrap:wrap;align-items:center}
-  #mobile-filters{width:100%;border-top:1px solid var(--border);padding-top:5px;margin-top:2px}
-
-  /* Fila 1: foto + nombre + botones derecha */
-  .logo{gap:5px;flex-wrap:nowrap;align-items:center;width:100%;justify-content:space-between}
-  .hright{flex-shrink:0;gap:5px}
-
-  /* Fila 2 de filtros: ticker + checkboxes en una barra scrollable */
-  #mobile-filters{display:flex;align-items:center;gap:5px;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:3px 0 2px;flex-wrap:nowrap}
-  #mobile-filters::-webkit-scrollbar{display:none}
-
-  /* Agrandar checkboxes para que sean tocables en mobile */
-  header input[type="checkbox"]{width:16px!important;height:16px!important}
-  header label span[style*="border-radius:2px"]{width:12px!important;height:12px!important}
-  header label{gap:4px!important;padding:3px 5px;background:var(--surface2);border-radius:5px;border:1px solid var(--border);flex-shrink:0}
-
-  /* Ticker filter más compacto */
-  #port-ticker-filter{width:80px!important;font-size:.68rem!important;margin-left:0!important}
-
-  /* Ocultar elementos secundarios del header */
-  #sb-status{display:none}
-  #sync-label{display:none}
-  .logo-dot{display:none}
-  #file-ver{display:none}
-
-  /* Foto de perfil más chica en mobile */
-  header img[alt="GDC"]{width:32px!important;height:32px!important;box-shadow:none!important}
-
-  /* Supabase status + hora más compactos */
-  #lupd{font-size:.58rem!important}
-
-  /* ── Sidebar: barra horizontal ── */
-  .sidebar{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0;border-right:none;border-bottom:1px solid var(--border);width:100%!important;scrollbar-width:none}
-  .sidebar::-webkit-scrollbar{display:none}
-  .nav-sec{display:none}
-  .nav-item{padding:.5rem .65rem;flex-direction:column;gap:2px;font-size:.57rem;flex-shrink:0;white-space:nowrap}
-
-  /* ── Métricas resumen ── */
-  .mgrid{gap:5px;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
-  .mgrid::-webkit-scrollbar{display:none}
-  .mgrid .metric{flex-shrink:0;min-width:105px;padding:.55rem .7rem}
-  .metric-value{font-size:1.05rem}
-  .metric-label{font-size:.55rem}
-
-  /* ── Cards y paneles ── */
-  .panels-grid{grid-template-columns:1fr}
-  .card{margin-bottom:.5rem;border-radius:8px}
-  .card-header{padding:.55rem .7rem;gap:5px;flex-wrap:wrap}
-  .card-title{font-size:.76rem}
-
-  /* ── Tablas: scroll horizontal fluido ── */
-  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
-  .panel-table table{font-size:.67rem;min-width:480px}
-  .panel-table th,.panel-table td{padding:.28rem .45rem;white-space:nowrap}
-  table th,table td{padding:.28rem .42rem;font-size:.67rem;white-space:nowrap}
-
-  /* ── Gráficos ── */
-  .trk-metrics{grid-template-columns:1fr 1fr}
-  canvas{max-width:100%!important}
-
-  /* ── PIN pad ── */
-  .pin-pad{grid-template-columns:repeat(3,50px)}
-  .pin-key{width:50px;height:38px}
-
-  /* ── Sections con padding reducido ── */
-  .content>div{padding:.5rem .55rem}
-  .nt-card{padding:9px 11px}
-  .nt-header{gap:7px}
-  .nt-slider{min-width:90px}
-
-  /* ── Arb grid ── */
-  .arb-pair-header,.arb-row{grid-template-columns:24px 1fr 1fr 58px 16px 56px 42px 58px}
-  .arb-cell{padding:2px 3px;font-size:.55rem}
-
-  /* ── Botones ── */
-  .btn{padding:3px 7px;font-size:.63rem;height:25px}
-  .btn-sidebar-toggle{width:25px;height:25px;font-size:.78rem}
-}
-/* Near-target filter */
-.nt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
-.nt-header{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap}
-.nt-title{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;color:var(--text)}
-.nt-label{font-size:.72rem;color:var(--text2);font-family:var(--mono)}
-.nt-slider{flex:1;min-width:140px;max-width:460px;height:4px;-webkit-appearance:none;appearance:none;background:var(--border2);border-radius:3px;outline:none;cursor:pointer}
-.nt-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--amber);cursor:pointer;border:2px solid var(--amber)}
-.nt-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--amber);cursor:pointer;border:2px solid var(--amber)}
-.nt-input{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.78rem;padding:4px 8px;width:56px;height:28px;text-align:center;outline:none}
-.nt-input:focus{border-color:var(--amber)}
-.nt-input::-webkit-outer-spin-button,.nt-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.nt-input[type=number]{-moz-appearance:textfield}
-.nt-pct{color:var(--amber);font-family:var(--mono);font-weight:700;font-size:.82rem}
-.nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,110px));gap:5px}
-.nt-ticker-card{background:var(--surface2);border:1px solid var(--amber);border-radius:var(--rsm);padding:7px 7px;min-height:40px;display:flex;align-items:center;gap:4px}
-.nt-tk-sym{font-weight:800;font-size:.68rem;color:var(--text);min-width:28px;letter-spacing:.01em}
-.nt-tk-body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
-.nt-tk-prices{display:flex;gap:7px;font-family:var(--mono);font-size:.62rem;white-space:nowrap}
-.nt-tk-price{color:var(--text2)}
-.nt-tk-target{color:var(--text)}
-.nt-tk-progress{display:flex;flex-direction:column;gap:2px;align-items:stretch}
-.nt-tk-pbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:100%}
-.nt-tk-pbar-fill{height:100%;background:var(--amber);border-radius:2px;transition:width .2s}
-.nt-tk-falta{font-family:var(--mono);font-size:.58rem;color:var(--amber);font-weight:700;white-space:nowrap;align-self:flex-end}
-.nt-empty{color:var(--text3);font-family:var(--mono);font-size:.75rem;text-align:center;padding:14px}
-/* Tickers en la mira */
-.wl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:0;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
-.wl-title{font-weight:700;font-size:.9rem;color:var(--text);display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:2px}
-.wl-add-row{display:flex;gap:5px;align-items:center}
-.wl-input{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:4px 7px;outline:none;height:27px}
-.wl-input:focus{border-color:var(--blue)}
-.wl-input-tk{width:72px;text-transform:uppercase}
-.wl-input-cm{flex:1;min-width:0}
-.wl-add-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--blue);font-family:var(--mono);font-size:.72rem;padding:4px 9px;cursor:pointer;height:27px;white-space:nowrap;transition:background .12s,border-color .12s}
-.wl-add-btn:hover{background:var(--border);border-color:var(--blue)}
-.wl-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:130px}
-.wl-item{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm)}
-.wl-item-sym{font-weight:800;font-size:.7rem;color:var(--blue);min-width:44px;font-family:var(--mono)}
-.wl-item-note{font-size:.68rem;color:var(--text2);font-family:var(--mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wl-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:.75rem;padding:0 2px;line-height:1;transition:color .12s;margin-left:auto;flex-shrink:0}
-.wl-del:hover{color:var(--red)}
-.wl-empty{color:var(--text3);font-family:var(--mono);font-size:.7rem;text-align:center;padding:12px 0}
-.jvm-tooltip{background:#172035!important;color:#e8f0ff!important;border:1px solid #264070!important;font-family:'JetBrains Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
-.jvm-zoom-btn{display:none!important}
-/* ── RENDIMIENTO ANUAL ── */
-.ra-period-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:inline-block}
-.ra-table{width:auto;border-collapse:collapse;font-size:.85rem}
-.ra-table th{text-align:center;padding:.38rem .55rem;font-size:.65rem;font-family:var(--mono);color:rgba(255,255,255,.9);background:#3a2200;border:1px solid #5c3800;white-space:nowrap;font-weight:600}
-.ra-table td{padding:.38rem .55rem;border:1px solid var(--border2);font-size:.85rem;font-family:var(--mono);color:var(--text);background:var(--surface2);white-space:nowrap}
-.ra-label{font-weight:700;color:var(--text)!important;background:var(--surface)!important;font-size:.82rem!important}
-.ra-date-th{background:#2a1700!important;color:var(--amber)!important;text-align:left!important}
-.ra-meses-th{background:var(--surface)!important;border:1px solid var(--border)!important}
-.ra-subhdr{background:#1e1400!important;color:var(--text3)!important;font-size:.55rem!important;letter-spacing:.04em;text-transform:uppercase}
-.ra-row-ganas td{background:rgba(251,146,60,.13)!important}
-.ra-row-pct td{background:rgba(251,146,60,.07)!important}
-.ra-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--mono);font-size:.85rem;width:75px;text-align:right;outline:none;padding:1px 2px;transition:border-color .12s}
-.ra-input:hover{border-bottom-color:var(--border2)}
-.ra-input:focus{border-bottom-color:var(--amber);background:rgba(255,255,255,.04)}
-.ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.86rem!important;width:115px}
-.ra-pos-val{color:var(--accent)!important}
-.ra-del-btn{height:18px;padding:0 5px;font-size:.58rem;line-height:1}
-.ra-curr{font-size:.68rem;color:var(--text3);margin-right:2px;vertical-align:middle;user-select:none}
-.ra-pct-auto{font-weight:700;text-align:right;padding-right:6px!important}
-.ra-val-big{font-size:1.05rem;font-weight:700;font-family:var(--mono)}
-.ra-sublabel{font-size:.56rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
-.ra-th-cell{background:#3a2200!important;color:rgba(255,255,255,.9)!important;border:1px solid #5c3800!important;font-size:.65rem!important;font-family:var(--mono)!important;font-weight:600!important;text-align:center!important;vertical-align:middle!important}
-.ra-no-border{border:none!important;background:transparent!important;vertical-align:middle;padding:.2rem .3rem!important}
-</style>
-</head>
-<body>
-<div id="claude-version-badge" title="Feat: (1) alerta de P. Venta — 🎯 en el ticker cuando el precio llegó a su P. Venta (ΔUP ≤ 0) y aviso arriba de las tablas con los tickers (click = filtrar). (2) &quot;Plan de rebalanceo&quot; dentro de la card Distribución (colapsado): lista de órdenes vender/comprar de la columna Rebalanceo, separadas en RV/RF, con total de ventas, compras y neto en pesos, más lo que pide el perfil por tipo. (3) % Anual vs SPY: con el historial diario de SPY (precio ajustado por dividendos, Yahoo vía proxies, caché diaria) calcula el % anual que habría dado el mismo dinero en SPY con las mismas fechas, y muestra la diferencia en puntos debajo del % y en el detalle. (4) Perf: librería de Excel con carga async y mapa mundial (jsvectormap) cargado después de abrir la página, ya no bloquean la carga inicial. (pvAlertRender / distRender plan / paSpy / fetchSPYHist / loadScriptOnce)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v40 · 03/10/2026</div>
-
-<div class="app">
-<div class="topbar">
-  <div class="topbar-item">
-    <span class="topbar-dot"></span>
-    <span class="topbar-label">CCL</span>
-    <span class="topbar-val" id="tb-ccl">$1.471</span>
-    <span class="topbar-sub" id="tb-ccl-chg" style="font-size:.6rem"></span>
-    <span class="topbar-sub" id="tb-ccl-src">venta</span>
-  </div>
-  <div class="topbar-item">
-    <span class="topbar-label">MEP</span>
-    <span class="topbar-val" id="tb-mep">$1.415</span>
-    <span class="topbar-sub" id="tb-mep-src">venta</span>
-  </div>
-  <div class="topbar-item" id="tb-blue-wrap" style="display:none">
-    <span class="topbar-label">Blue</span>
-    <span class="topbar-val" id="tb-blue">—</span>
-  </div>
-  <div class="topbar-item" id="tb-btc-wrap">
-    <span class="topbar-label">BTC</span>
-    <span class="topbar-val" id="tb-btc">$75,610</span>
-    <span class="topbar-sub" id="tb-btc-chg" style="font-size: 0.6rem; color: var(--red);">-0.30%</span>
-  </div>
-  <div class="topbar-item" id="tb-ewz-wrap">
-    <span class="topbar-label">EWZ</span>
-    <span class="topbar-val" id="tb-ewz">$41.34</span>
-    <span class="topbar-sub" id="tb-ewz-chg" style="font-size: 0.6rem; color: var(--accent);">+0.44%</span>
-  </div>
-  <div class="topbar-item" id="tb-imv-wrap">
-    <span class="topbar-label">IMV/CCL</span>
-    <span class="topbar-val" id="tb-imv">$1.988</span>
-    <span class="topbar-sub" id="tb-imv-chg" style="font-size: 0.6rem; color: var(--red);">-1.21%</span>
-  </div>
-  <div class="topbar-item" id="tb-spy-wrap">
-    <span class="topbar-label">S&amp;P</span>
-    <span class="topbar-val" id="tb-spy">$707.27</span>
-    <span class="topbar-sub" id="tb-spy-chg" style="font-size: 0.6rem; color: var(--red);">-0.40%</span>
-  </div>
-  <div class="topbar-item" id="tb-qqq-wrap">
-    <span class="topbar-label">QQQ</span>
-    <span class="topbar-val" id="tb-qqq">$644.33</span>
-    <span class="topbar-sub" id="tb-qqq-chg" style="font-size: 0.6rem; color: var(--red);">-0.70%</span>
-  </div>
-  <div class="topbar-item" style="gap:6px;border-left:1px solid var(--border);padding-left:1.2rem;margin-left:.4rem">
-    <span class="topbar-label">Liquidez</span>
-    <div style="display:flex;align-items:center;gap:3px">
-      <span class="topbar-sub">$</span>
-      <input id="liq-ars" type="text" inputmode="decimal" placeholder="0" title="Liquidez ARS" style="width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)liqConfirm()" onblur="liqConfirm()" oninput="fmtNumInput(this,0)">
-    </div>
-    <div style="display:flex;align-items:center;gap:3px">
-      <span class="topbar-sub">USD</span>
-      <input id="liq-usd" type="text" inputmode="decimal" placeholder="0" title="Liquidez USD" style="width:64px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)liqConfirm()" onblur="liqConfirm()" oninput="fmtNumInput(this,2)">
-    </div>
-  </div>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding-left:1.2rem;border-left:1px solid var(--border)">
-    <span class="topbar-label">Inv. Inicial</span>
-    <div style="display:flex;align-items:center;gap:3px">
-      <span class="topbar-sub">USD</span>
-      <input id="inv-sidebar-usd" type="text" inputmode="decimal" placeholder="0" title="Inversión inicial USD" style="width:80px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.68rem;padding:2px 5px;height:20px;text-align:right;outline:none" onkeydown="if(event.key===&#39;Enter&#39;)invConfirm()" onblur="invConfirm()" oninput="fmtNumInput(this,0)">
-    </div>
-  </div>
-</div>
-<header>
-  <div class="logo">
-    <div class="logo-dot"></div>
-    <button class="btn-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
-    <img src="Juli.png" style="width:52px;height:52px;border-radius:50%;border:2.5px solid var(--accent);object-fit:cover;object-position:center top;flex-shrink:0;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;box-shadow:0 0 0 4px rgba(0,230,118,0.18),0 2px 16px rgba(0,0,0,0.6)" alt="Juli">
-    <span style="font-weight:700;font-size:1rem;letter-spacing:-.02em">Portafolio Juli</span>
-  </div>
-  <div class="hright">
-    <div class="lupd" style="font-size: 0.65rem; color: var(--accent);" id="sb-status">🟢 Supabase conectado</div>
-    <div class="lupd" id="lupd"></div>
-    <button class="btn" id="sync-btn" onclick="syncPortfolios()" title="Sincronizar Ana y Omar con GDC" style="border-color:#4a5568;gap:5px;">
-      <span id="sync-icon" style="font-size:.85rem;line-height:1;">⟳</span><span id="sync-label">Sync</span>
-    </button>
-    <button class="btn-sidebar-toggle" onclick="exportPortfolioXLS()" title="Exportar portafolio a Excel" style="width:auto;padding:0 8px;font-size:.72rem;">XLS</button>
-    <button class="btn-sidebar-toggle" onclick="cargarJuliEnComparacion()" title="Cargar posiciones en Comparación" style="width:auto;padding:0 8px;font-size:.72rem;">⇔</button>
-    <div id="file-ver" title="Versión del archivo" style="font-size:.6rem;font-family:var(--mono);color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;cursor:default;white-space:nowrap"></div>
-    <script>!function(){var d=new Date(document.lastModified),p=function(n){return String(n).padStart(2,'0')};document.getElementById('file-ver').textContent='v '+d.getDate()+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}();</script>
-  </div>
-  <!-- Barra de filtros: segunda fila en mobile, inline en desktop -->
-  <div id="mobile-filters" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0">
-    <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;flex-shrink:0">
-    <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;flex-shrink:0">✕</button>
-    <label title="Solo Δ% verde (≥10%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-green" checked onchange="renderPortfolio()" style="accent-color:#00e676;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#00e676;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Solo Δ% amarillo (0-9%)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-yellow" checked onchange="renderPortfolio()" style="accent-color:#eab308;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Solo Δ% rojo (negativo)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
-    <span style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-left:4px;border-left:1px solid var(--border2);padding-left:6px;line-height:1;align-self:center;flex-shrink:0">RV</span>
-    <label title="Inv. $ sobre umbral rojo (>3% RV)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-rv-red" onchange="renderPortfolio()" style="accent-color:#ff5252;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#ff5252;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Inv. $ sobre umbral amarillo (>2% RV)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-rv-yellow" onchange="renderPortfolio()" style="accent-color:#eab308;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#eab308;display:inline-block;flex-shrink:0"></span></label>
-    <label title="Inv. $ bajo umbral (normal)" style="display:flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;flex-shrink:0"><input type="checkbox" id="port-filter-rv-white" onchange="renderPortfolio()" style="accent-color:#e8f0ff;width:14px;height:14px;cursor:pointer;margin:0"><span style="width:10px;height:10px;border-radius:2px;background:#e8f0ff;display:inline-block;flex-shrink:0"></span></label>
-  </div>
-</header>
-<div class="main" id="main">
-  <nav class="sidebar">
-    <div class="nav-sec">Vistas</div>
-    <button class="nav-item active" onclick="showPage(&#39;portafolio&#39;,this)"><span>◈</span>Portafolio</button>
-    <button class="nav-item" onclick="showPage(&#39;movimientos&#39;,this)"><span>↕</span>Movimientos</button>
-    <div class="nav-sec">R. Variable</div>
-    <div style="padding:.2rem .85rem .1rem">
-      <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-bottom:2px">Total RV a mercado (USD):</div>
-      <div style="font-size:.72rem;font-family:var(--mono);color:var(--text);font-weight:600" id="rv-total-usd">—</div>
-      <div style="font-size:.58rem;font-family:var(--mono);color:var(--text3);margin-top:4px;margin-bottom:1px">Sugerido en $ARS:</div>
-      <div style="display:flex;gap:8px;margin-bottom:4px">
-        <span style="font-size:.65rem;font-family:var(--mono);color:#eab308;font-weight:700">2% → <span id="rv-auto-naranja">—</span></span>
-        <span style="font-size:.65rem;font-family:var(--mono);color:var(--red);font-weight:700">3% → <span id="rv-auto-rojo">—</span></span>
-      </div>
-    </div>
-    <div class="nav-sec">Herramientas</div>
-    <button class="nav-item" onclick="showPage(&#39;arbitraje&#39;,this)"><span>⇄</span>Arbitraje</button>
-    <button class="nav-item" onclick="showPage(&#39;flujos&#39;,this)"><span>📅</span>Flujos</button>
-    <button class="nav-item" onclick="showPage(&#39;dashboard&#39;,this)"><span>📊</span>DashBoard</button>
-    <button class="nav-item" onclick="showPage(&#39;rendanual&#39;,this)"><span>📈</span>Rend. Anual</button>
-    <button class="nav-item" onclick="showPage(&#39;comparacion&#39;,this)"><span>⇔</span>Comparación</button>
-    <button class="nav-item" onclick="showPage(&#39;recomendaciones&#39;,this)"><span>💡</span>Recomendaciones</button>
-    <div class="nav-sec">Cambios</div>
-    <button class="nav-item" onclick="showPage(&#39;targets&#39;,this)"><span>◎</span>P. Venta</button>
-    <button class="nav-item" onclick="showPage(&#39;rubros&#39;,this)"><span>🏷</span>Rubros</button>
-    <button class="nav-item" onclick="showPage(&#39;tipocambio&#39;,this)"><span>$</span>Tipo de Cambio</button>
-    <button class="nav-item" onclick="showPage(&#39;ratios&#39;,this)"><span>⚙</span>Ratios</button>
-    <button class="nav-item" onclick="showPage(&#39;tracker&#39;,this)"><span>💵</span>Dividendos CCL</button>
-
-    <div class="nav-sec">Laboratorio</div>
-    <button class="nav-item" onclick="showPage(&#39;vetamovim&#39;,this)"><span>🧪</span>VetaMovim</button>
-    <div class="nav-sec">Ventas</div>
-    <button class="nav-item" onclick="showPage(&#39;ventaestad&#39;,this)"><span>📊</span>Estadísticas Venta</button>
-    <div class="nav-sec">Links</div>
-    <a class="nav-item" href="../GDC/PortafolioGDC.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
-    <a class="nav-item" href="../Ana/PortafolioAna2.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio GDC</a>
-  </nav>
-  <div class="content">
-
-    <!-- PORTAFOLIO -->
-    <div class="page active" id="page-portafolio">
-      <!-- PIN overlay portafolio -->
-      <div id="port-pin-overlay" style="display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.7); z-index: 8000; align-items: center; justify-content: center;">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:220px">
-          <div id="port-pin-title" style="font-size:.85rem;font-weight:600;color:var(--text)">🔒 Ingresá tu PIN</div>
-          <div class="pin-dots" id="port-pin-dots">
-            <div class="pin-dot" id="port-pd0"></div><div class="pin-dot" id="port-pd1"></div>
-            <div class="pin-dot" id="port-pd2"></div><div class="pin-dot" id="port-pd3"></div>
-          </div>
-          <div class="pin-pad">
-            <button class="pin-key" onclick="portPinKey(&#39;1&#39;)">1</button><button class="pin-key" onclick="portPinKey(&#39;2&#39;)">2</button><button class="pin-key" onclick="portPinKey(&#39;3&#39;)">3</button>
-            <button class="pin-key" onclick="portPinKey(&#39;4&#39;)">4</button><button class="pin-key" onclick="portPinKey(&#39;5&#39;)">5</button><button class="pin-key" onclick="portPinKey(&#39;6&#39;)">6</button>
-            <button class="pin-key" onclick="portPinKey(&#39;7&#39;)">7</button><button class="pin-key" onclick="portPinKey(&#39;8&#39;)">8</button><button class="pin-key" onclick="portPinKey(&#39;9&#39;)">9</button>
-            <button class="pin-key del" onclick="portPinKey(&#39;del&#39;)" style="grid-column:1">⌫</button><button class="pin-key" onclick="portPinKey(&#39;0&#39;)">0</button><button class="pin-key del" onclick="portPinKey(&#39;esc&#39;)" style="font-size:.65rem">ESC</button>
-          </div>
-          <div class="pin-error" id="port-pin-error"></div>
-          <div class="pin-action" onclick="portPinReset()">Cambiar PIN</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.5rem">
-        <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
-        <button id="port-summary-toggle-btn" onclick="portToggleSummary()" title="Colapsar/expandir resumen" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar resumen</button>
-        <button id="port-watchzone-toggle-btn" onclick="portToggleWatchzone()" title="Colapsar/expandir zona de seguimiento" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar mira</button>
-      </div>
-      <div id="port-content" class="">
-      <!-- Elemento oculto para mantener el cálculo de dividendos -->
-      <div style="display:none"><div id="m-divs">—</div></div>
-      <div id="port-summary-section" style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
-        <!-- Izquierda: 2 filas de métricas -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex-shrink:0">
-          <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">—</div></div>
-          <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="m-rend">—</div></div>
-          <div class="metric" style="position:relative;max-width:90px">
-            <div class="metric-label" style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-              <span>% USD</span>
-              <span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;font-size:.72rem;opacity:.55;line-height:1;user-select:none">⚙️</span>
-            </div>
-            <div class="metric-value" id="m-dolz">—</div>
-            <div id="dolz-popover" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:300;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:.8rem;min-width:230px;box-shadow:0 8px 28px rgba(0,0,0,.45)">
-              <div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Activos extra dolarizados</div>
-              <div style="font-size:.6rem;color:var(--text3);margin-bottom:.55rem;line-height:1.4">NYSE · Brasil · Europa · Cripto se suman automáticamente. Marcá posiciones adicionales:</div>
-              <div id="dolz-list" style="display:flex;flex-direction:column;gap:5px;max-height:210px;overflow-y:auto"></div>
-            </div>
-          </div>
-          <div class="metric"><div class="metric-label">Ganancia Neta USD</div><div class="metric-value port-sensitive" id="m-ganancia">—</div></div>
-          <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="m-count">—</div></div>
-        </div>
-        <!-- Gráficos de torta -->
-        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0">
-          <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
-            <div style="position:relative;height:190px"><canvas id="m-pie-sector" width="420" height="190"></canvas></div>
-          </div>
-          <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
-            <div style="position:relative;height:190px"><canvas id="m-pie-rv" width="420" height="190"></canvas></div>
-          </div>
-        </div>
-        <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;width:155px">
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--blue)">
-            <div class="metric-label">↑ posición</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-pos-ticker">—</span>
-              <span class="port-sensitive" style="font-family:var(--mono);font-size:.63rem;color:var(--text2)" id="stat-pos-val">—</span>
-            </div>
-          </div>
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--accent)">
-            <div class="metric-label">↑ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-best-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-best-val">—</span>
-            </div>
-          </div>
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--red)">
-            <div class="metric-label">↓ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-worst-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-worst-val">—</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Tickers cerca del objetivo + CCL implícito -->
-      <div id="port-watchzone-section" style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
-        <div class="nt-card" id="near-target-card" style="flex:2;margin-bottom:0;min-width:0">
-          <div class="nt-header">
-            <span class="nt-title">🎯 Tickers cerca del objetivo</span>
-            <span class="nt-label">Faltan menos de</span>
-            <input type="range" min="0.5" max="30" step="0.5" value="4" id="nt-slider" class="nt-slider" oninput="ntOnSlider(this.value)">
-            <input type="number" min="0" max="100" step="0.5" value="4" id="nt-input" class="nt-input" oninput="ntOnInput(this.value)">
-            <span class="nt-pct" id="nt-pct-label">2.5%</span>
-          </div>
-          <div class="nt-grid" id="nt-grid"></div>
-        </div>
-        <!-- Tickers en la mira -->
-        <div class="wl-card" id="watchlist-card">
-          <div class="wl-title">👁 Tickers en la mira</div>
-          <div class="wl-add-row">
-            <input class="wl-input wl-input-tk" id="wl-ticker" type="text" maxlength="10" placeholder="Ticker" oninput="this.value=this.value.toUpperCase()">
-            <input class="wl-input wl-input-cm" id="wl-comment" type="text" maxlength="80" placeholder="Comentario…" onkeydown="if(event.key==='Enter')wlAdd()">
-            <button class="wl-add-btn" onclick="wlAdd()">+ Agregar</button>
-          </div>
-          <div class="wl-list" id="wl-list"></div>
-        </div>
-        <!-- CCL implícito -->
-        <div class="card" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;padding:.6rem .9rem;gap:.45rem">
-          <div style="font-size:.68rem;font-weight:700;color:var(--text2);white-space:nowrap">💱 CCL Implícito</div>
-          <div style="display:flex;align-items:flex-end;gap:.6rem">
-            <div style="display:flex;flex-direction:column;gap:2px">
-              <label style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">Precio $</label>
-              <input type="text" id="ccli-ars" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:8ch;padding:3px 6px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:2px">
-              <label style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">Precio u$s</label>
-              <input type="text" id="ccli-usd" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:8ch;padding:3px 6px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
-            </div>
-            <div style="padding:.3rem .55rem;background:var(--surface2);border-radius:var(--rsm);text-align:center;white-space:nowrap">
-              <div style="font-size:.52rem;color:var(--text3);font-family:var(--mono);letter-spacing:.05em">CCL</div>
-              <div id="ccli-resultado" style="font-size:1rem;font-weight:800;font-family:var(--mono);color:var(--accent)">—</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Inversiones Pequeñas -->
-      <div id="port-smallinv-section" style="margin-bottom:1rem">
-        <div class="nt-card" id="small-inv-card" style="margin-bottom:0">
-          <div class="nt-header">
-            <span class="nt-title">🔎 Inversiones Pequeñas</span>
-            <span class="nt-label">Inversión ≤</span>
-            <input type="range" min="0" max="3" step="0.1" value="0.5" id="si-slider" class="nt-slider" oninput="siOnSlider(this.value)">
-            <input type="number" min="0" max="3" step="0.1" value="0.5" id="si-input" class="nt-input" oninput="siOnInput(this.value)">
-            <span class="nt-pct" id="si-pct-label">0.5%</span>
-            <span class="nt-label">del valor de la cartera en RV</span>
-          </div>
-          <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
-        </div>
-      </div>
-        <div id="pventa-alert" style="display:none;margin-bottom:.7rem;padding:.45rem .8rem;border:1px solid var(--accent);border-radius:var(--rsm);background:rgba(0,230,118,.07);font-size:.74rem;color:var(--text);font-family:var(--mono);max-width:720px"></div>
-      <div class="card" id="dist-card" style="display:none;margin-bottom:1rem;max-width:720px">
-        <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <span class="card-title">📊 Distribución de la cartera</span>
-          <label class="qty-toggle" title="Objetivos de perfil moderado"><input type="checkbox" id="dist-perfil-moderado" onchange="distSetPerfil('moderado')"> Moderado</label>
-          <label class="qty-toggle" title="Objetivos de perfil agresivo"><input type="checkbox" id="dist-perfil-agresivo" onchange="distSetPerfil('agresivo')"> Agresivo</label>
-          <span id="dist-meta" class="tag" style="margin-left:auto"></span>
-        </div>
-        <div id="dist-body" style="padding:.8rem 1rem 1rem"></div>
-      </div>
-      <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
-            <div class="panels-grid hide-qty hide-pventa hide-ptipo hide-rebal hide-panual" id="panels-grid" style="align-items:start">
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card" id="panel-nyse" style="display:none">
-            <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-brasil" style="display:none">
-            <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-europa" style="display:none">
-            <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card" id="panel-bonos" style="display:none">
-            <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-on" style="display:none">
-            <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-china" style="display:none">
-            <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card" id="panel-argentina" style="display:none">
-            <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-cripto" style="display:none">
-            <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
-          </div>
-        </div>
-      </div>
-</div>
-
-      <div class="card" id="vbuy-card" style="display:inline-block;width:auto;max-width:100%;margin-right:10px;vertical-align:top">
-        <div class="card-header">
-          <span class="card-title">🛒 Comprar</span>
-        </div>
-        <div class="card-body">
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <div class="fgrp" style="width:130px">
-              <label>Mercado</label>
-              <select id="vbuy-mkt" onchange="vbuyOnMktChange()" style="width:100%">
-                <option value="USA">NYSE / NASDAQ</option>
-                <option value="ETF">ETF (USA)</option>
-                <option value="ARGENTINA">Argentina</option>
-                <option value="BONOS">Bonos</option>
-                <option value="ON">ON</option>
-                <option value="BRASIL">Brasil</option>
-                <option value="EUROPA">Europa</option>
-                <option value="CHINA">China</option>
-                <option value="CRIPTO">Cripto</option>
-              </select>
-            </div>
-            <div class="fgrp" style="width:90px">
-              <label>Ticker</label>
-              <input type="text" id="vbuy-ticker" placeholder="AAPL" style="text-transform:uppercase;width:100%">
-            </div>
-            <div class="fgrp" style="width:118px">
-              <label>Fecha</label>
-              <input type="date" id="vbuy-fecha" style="width:100%">
-            </div>
-            <div class="fgrp" style="width:70px">
-              <label>Cantidad</label>
-              <input type="number" id="vbuy-qty" placeholder="0" min="0" step="any" style="width:100%">
-            </div>
-            <div class="fgrp" style="width:100px">
-              <label id="vbuy-lbl-precio">Precio ARS</label>
-              <input type="number" id="vbuy-precio-ars" placeholder="0" min="0" step="any" style="width:100%">
-            </div>
-          </div>
-          <div style="margin-top:8px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none">
-              <input type="checkbox" id="vbuy-finish" style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0">
-              🏁 A finish
-            </label>
-          </div>
-          <div class="gap-row" style="margin-top:8px;justify-content:flex-end;align-items:center">
-            <span id="vbuy-status" class="smsg"></span>
-            <button class="btn" onclick="vbuyClear()" style="border-color:#4a5568">Limpiar</button>
-            <button class="btn btn-a" onclick="vbuyConfirmar()">✔ Confirmar compra</button>
-          </div>
-        </div>
-      </div>
-      <div class="card" id="vsell-card" style="display:inline-block;width:auto;max-width:100%;vertical-align:top">
-        <div class="card-header">
-          <span class="card-title">💸 Vender</span>
-          <span style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-left:6px">mismos campos que el simulador de ventas</span>
-        </div>
-        <div class="card-body">
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <div class="fgrp" style="width:100px">
-              <label>Ticker</label>
-              <select id="vsell-ticker" onchange="vsellPreview()" style="text-transform:uppercase;width:100%"><option value="">— ticker —</option></select>
-            </div>
-            <div class="fgrp" style="width:70px">
-              <label>Cantidad</label>
-              <input type="number" id="vsell-qty" placeholder="0" min="0" step="any" oninput="vsellPreview()" style="width:100%">
-            </div>
-            <div class="fgrp" style="width:118px">
-              <label>Fecha</label>
-              <input type="date" id="vsell-fecha" oninput="vsellPreview()" style="width:100%">
-            </div>
-            <div class="fgrp" style="width:100px">
-              <label>Precio ARS</label>
-              <input type="number" id="vsell-precio-ars" placeholder="0" min="0" step="any" oninput="vsellPreview()" style="width:100%">
-            </div>
-            <div class="fgrp" style="width:80px">
-              <label>CCL</label>
-              <input type="number" id="vsell-ccl" placeholder="auto" min="0" step="any" oninput="vsellPreview()" style="width:100%">
-            </div>
-          </div>
-          <div id="vsell-preview" style="font-size:.68rem;font-family:var(--mono);margin-top:8px;padding:7px 9px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm)"><span style="color:var(--text3)">Elegí un ticker para ver el preview.</span></div>
-          <div class="gap-row" style="margin-top:8px;justify-content:flex-end;align-items:center">
-            <span id="vsell-status" class="smsg"></span>
-            <button class="btn" onclick="vsellClear()" style="border-color:#4a5568">Limpiar</button>
-            <button class="btn" id="vsell-btn-confirmar" onclick="vsellConfirmar()" disabled style="background:var(--red);border-color:var(--red);color:#fff;font-weight:600">✔ Confirmar venta</button>
-          </div>
-        </div>
-      </div>
-      <div class="card" style="overflow:visible;display:inline-block;width:fit-content;max-width:100%">
-        <div class="card-header"><span class="card-title">📅 Próximos Cobros</span><span style="font-size:.65rem;color:var(--text3);margin-left:8px">bonos/ON — ver solapa Flujos para el detalle</span></div>
-        <div id="flujo-mini-content" style="padding:.6rem 1rem;font-family:var(--mono);font-size:.78rem;display:flex;gap:22px;flex-wrap:wrap"></div>
-      </div>
-      <div id="pos-footer-bar" style="position:sticky;bottom:.6rem;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.35);padding:.5rem .9rem;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;overflow:hidden;margin:1.2rem auto 0 auto;width:fit-content;max-width:100%">
-        <span class="card-title">Posiciones abiertas</span>
-        <div class="gap-row">
-          <label class="qty-toggle" title="Mostrar/ocultar columna Cantidad">
-            <input type="checkbox" id="qty-toggle" onchange="toggleQtyCol(this.checked)"> Mostrar Cant.
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna P. Venta">
-            <input type="checkbox" id="pventa-toggle" onchange="togglePVentaCol(this.checked)"> Mostrar P. Venta
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna % Tipo (peso del activo sobre su renta variable o renta fija, a valor de mercado)">
-            <input type="checkbox" id="ptipo-toggle" onchange="togglePTipoCol(this.checked)"> Mostrar % Tipo
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna Rebalanceo (cuánto vender para volver al 2% o comprar para llegar al umbral de inversiones chicas)">
-            <input type="checkbox" id="rebal-toggle" onchange="toggleRebalCol(this.checked)"> Mostrar Rebalanceo
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna % Anual (rendimiento anualizado en USD de cada posición)">
-            <input type="checkbox" id="panual-toggle" onchange="togglePAnualCol(this.checked)"> Mostrar % Anual
-          </label>
-          <span id="ref-status" class="emsg"></span>
-          <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
-        </div>
-        <div id="pos-prog" style="position:absolute;bottom:0;left:0;right:0;line-height:0"><div class="pbar" style="border-radius:0;height:3px;background:var(--border)"><div class="pfill" id="pfill" style="width:0%"></div></div></div>
-      </div>
-      </div><!-- /port-content -->
-    </div>
-
-    <!-- MOVIMIENTOS -->
-    <div class="page" id="page-movimientos">
-      <div class="card">
-        <div class="card-header" style="cursor:pointer" onclick="movFormToggle()">
-          <span class="card-title">Registrar movimiento</span>
-          <span id="mov-form-arrow" style="margin-left:auto;font-size:.9rem;color:var(--text3)">▸</span>
-        </div>
-        <div id="mov-form-body" style="display:none">
-        <div class="card-body">
-          <div class="fg">
-            <div class="fgrp"><label>Tipo</label><select id="m-tipo" onchange="onTipo()"><option value="compra">Compra</option><option value="venta">Venta</option><option value="dividendo">Dividendo</option><option value="aporte">Aporte capital</option></select></div>
-            <div class="fgrp" id="g-mkt"><label>Mercado</label><select id="m-mkt"><option value="USA">NYSE / NASDAQ</option><option value="ETF">ETF (USA)</option><option value="ARGENTINA">Argentina</option><option value="BONOS">Bonos</option><option value="ON">ON</option><option value="BRASIL">Brasil</option><option value="EUROPA">Europa</option><option value="CHINA">China</option><option value="CRIPTO">Cripto</option></select></div>
-            <div class="fgrp" id="g-ticker"><label>Ticker</label><input id="m-ticker" type="text" placeholder="AAPL, IBIT..." style="text-transform:uppercase"></div>
-            <div class="fgrp"><label>Fecha</label><input id="m-fecha" type="date"></div>
-          </div>
-          <div id="row-normal">
-            <div class="fg">
-              <div class="fgrp"><label>Cantidad</label><input id="m-qty" type="number" min="0" step="any" placeholder="0"></div>
-              <div class="fgrp"><label id="lbl-precio">Precio ARS</label><input id="m-precio-ars" type="number" min="0" step="any" placeholder="0"></div>
-              <div class="fgrp"><label id="m-ccl-label">CCL del día</label><input id="m-ccl" type="number" min="0" step="any" placeholder="auto"></div>
-              <div class="fgrp"><label>Precio USD (calc.)</label><input id="m-precio-usd" type="text" placeholder="—" readonly="" style="color:var(--accent)"></div>
-              <div class="fgrp"><label>Comisión %</label><input id="m-comision" type="number" min="0" max="100" step="0.01" placeholder="0" title="Porcentaje de comisión sobre el valor de compra" oninput="calcUSD()"></div>
-            </div>
-            <div class="fg" id="row-calc-resumen" style="margin-top:6px;display:none">
-              <div class="fgrp"><label>Comisión $</label><input id="m-comision-abs" type="text" placeholder="—" readonly style="color:var(--amber)"></div>
-              <div class="fgrp"><label>Total invertido $</label><input id="m-total-ars" type="text" placeholder="—" readonly style="color:var(--accent)"></div>
-              <div class="fgrp"><label>Total invertido USD</label><input id="m-total-usd" type="text" placeholder="—" readonly style="color:var(--accent)"></div>
-            </div>
-          </div>
-          <div id="row-aporte" style="display:none">
-            <div class="fg"><div class="fgrp"><label>Monto USD</label><input id="m-monto" type="number" min="0" step="any" placeholder="0"></div></div>
-          </div>
-          <div class="fg" style="margin-top:4px">
-            <div class="fgrp" style="grid-column:1/-1"><label>Notas</label><input id="m-notas" type="text" placeholder=""></div>
-          </div>
-          <div class="gap-row" style="margin-top:8px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none">
-              <input type="checkbox" id="m-finish" style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0">
-              🏁 A finish
-            </label>
-          </div>
-          <div class="gap-row" style="margin-top:8px">
-            <button class="btn btn-a" onclick="addMov()">+ Agregar</button>
-            <span id="m-status" class="smsg"></span>
-          </div>
-          <div class="ibox" style="margin-top:12px"><b>Tip:</b> El CCL se auto-completa con la tabla embebida. Si la fecha no tiene CCL, ingresalo manualmente.</div>
-        </div>
-        </div>
-      </div>
-      
-
-      <!-- Importar movimientos en tabla -->
-      <div class="card" id="imp-mov-card">
-        <div class="card-header" style="cursor:pointer" onclick="impMovToggle()">
-          <div style="display:flex;align-items:center;gap:6px">
-            <span class="card-title">Importar movimientos</span>
-            <span id="imp-mov-arrow" style="font-size:.9rem;color:var(--text3)">▸</span>
-          </div>
-        </div>
-        <div id="imp-mov-body" style="display:none">
-          <div class="card-body">
-            <div class="ibox" style="margin-bottom:10px">
-              Copiá filas desde Excel/Sheets y pegá acá. Orden de columnas:<br>
-              <span style="font-family:var(--mono);font-size:.68rem;color:var(--accent)">Fecha &nbsp;·&nbsp; Tipo &nbsp;·&nbsp; Mercado &nbsp;·&nbsp; Ticker &nbsp;·&nbsp; Cantidad &nbsp;·&nbsp; Precio ARS &nbsp;·&nbsp; CCL (opc.) &nbsp;·&nbsp; Comisión % (opc.) &nbsp;·&nbsp; Notas (opc.)</span><br>
-              <span style="font-size:.63rem;color:var(--text3)">Fecha: DD/MM/AAAA &nbsp;·&nbsp; Tipo: compra / venta &nbsp;·&nbsp; Mercado: USA, ETF, ARGENTINA, BONOS, ON, BRASIL, CRIPTO &nbsp;·&nbsp; Precio BONOS/ON: por 100 nominales</span>
-            </div>
-            <textarea id="imp-mov-text" rows="5" placeholder="Pegá las filas acá (Tab entre columnas)..." style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:8px;resize:vertical;outline:none" oninput="impMovParse()"></textarea>
-            <div id="imp-mov-preview" style="display:none;margin-top:12px">
-              <div id="imp-mov-preview-label" style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:8px"></div>
-              <div class="tw" style="max-height:260px;overflow-y:auto">
-                <table>
-                  <thead><tr><th>Fecha</th><th>Tipo</th><th>Mercado</th><th>Ticker</th><th>Cant.</th><th>Precio ARS</th><th>CCL</th><th>Com.%</th><th>Notas</th><th>Estado</th></tr></thead>
-                  <tbody id="imp-mov-tbody"></tbody>
-                </table>
-              </div>
-              <div class="gap-row" style="margin-top:10px">
-                <button class="btn btn-a" id="imp-mov-confirm-btn" onclick="impMovConfirm()">✓ Importar</button>
-                <button class="btn" onclick="impMovCancel()">Cancelar</button>
-                <span id="imp-mov-status" class="smsg"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" id="mov-card">
-        <div class="card-header">
-          <div id="warn-sin-tc"></div>
-          <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="movHistorialToggle()">
-            <span class="card-title">Historial (<span id="mov-count">530</span> movimientos)</span>
-            <span id="mov-historial-arrow" style="font-size:.9rem;color:var(--text3)">▸</span>
-          </div>
-          <div class="gap-row" style="flex-wrap:wrap;gap:6px">
-            <input id="mov-filter" type="text" placeholder="Ticker..." style="text-transform:uppercase;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:90px;outline:none" oninput="renderMovimientos()" title="Filtrar por ticker">
-            <select id="mov-filter-tipo" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 6px;height:28px;outline:none" onchange="renderMovimientos()">
-              <option value="">Todos los tipos</option>
-              <option value="compra">Compra</option>
-              <option value="venta">Venta</option>
-              <option value="dividendo">Dividendo</option>
-              <option value="aporte">Aporte</option>
-            </select>
-            <select id="mov-filter-mkt" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 6px;height:28px;outline:none" onchange="renderMovimientos()">
-              <option value="">Todos los mercados</option>
-              <option value="NYSE">NYSE</option>
-              <option value="ETF">ETF</option>
-              <option value="ARGENTINA">Argentina</option>
-              <option value="BONOS">Bonos</option>
-              <option value="BRASIL">Brasil</option>
-              <option value="ON">ON</option>
-            </select>
-            <input id="mov-filter-fecha" type="text" placeholder="Fecha (ej: 2026)..." style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none" oninput="renderMovimientos()" title="Filtrar por fecha">
-            <input id="mov-filter-notas" type="text" placeholder="Notas..." style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none" oninput="renderMovimientos()" title="Filtrar por notas">
-            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--mono);font-size:.68rem;color:var(--red);height:28px;padding:0 4px" title="Mostrar sólo compras/ventas (no bonos/ON) cuyo CCL no está en la tabla histórica para esa fecha exacta (se usó un valor cargado a mano como fallback)">
-              <input type="checkbox" id="mov-filter-noccl" onchange="renderMovimientos()" style="accent-color:var(--red);width:12px;height:12px;cursor:pointer;margin:0">
-              ⚠ Sin CCL en tabla
-            </label>
-            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-family:var(--mono);font-size:.68rem;color:var(--amber);height:28px;padding:0 4px" title="Mostrar sólo compras/ventas de Bonos/ON cuyo MEP no está en la tabla histórica para esa fecha exacta (puede haber caído a CCL como aproximación, o directamente a un valor cargado a mano)">
-              <input type="checkbox" id="mov-filter-nomep" onchange="renderMovimientos()" style="accent-color:var(--amber);width:12px;height:12px;cursor:pointer;margin:0">
-              ⚠ Sin MEP en tabla
-            </label>
-            <button class="btn btn-sm" onclick="backfillTCDesdeMovimientosUI()" title="Completa CCL_TABLE/MEP_TABLE con el valor ya guardado en cada movimiento (o el promedio, si hubo varios ese día) para las fechas que todavía no estén en la tabla — no pisa nada ya cargado." style="color:var(--accent);border-color:#1a3d2e">🔧 Completar tabla CCL/MEP</button>
-
-            <button class="btn btn-sm" onclick="(function(){document.getElementById(&#39;mov-filter&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-tipo&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-mkt&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-fecha&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-notas&#39;).value=&#39;&#39;;document.getElementById(&#39;mov-filter-noccl&#39;).checked=false;document.getElementById(&#39;mov-filter-nomep&#39;).checked=false;renderMovimientos();})()" title="Limpiar filtros" style="color:var(--text3)">✕</button>
-            <button class="btn" onclick="exportCSV()">↓ CSV</button>
-            <button class="btn btn-d" onclick="clearAll()" title="Borrar todos los movimientos">🗑 Borrar todo</button>
-          </div>
-        </div>
-        <div id="mov-historial-body" style="display:none">
-        <div id="mov-empty" class="empty-state" style="display: none;">No hay movimientos</div>
-        <div id="mov-wrap" tabindex="-1" style="outline:none">
-          <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Mkt</th><th>Ticker</th><th>Cant.</th><th>ARS</th><th>CCL</th><th>USD unit.</th><th>Comis. %</th><th>Comis. $</th><th>Total $</th><th>Total USD</th><th>Notas</th><th style="min-width:80px"></th></tr></thead><tbody id="mov-body"></tbody></table>
-        </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- DIVIDENDOS CCL (tracker con PPC e import Bull Market) -->
-    <div class="page" id="page-tracker">
-
-      <!-- PIN overlay -->
-
-      <!-- App content -->
-      <div id="trk-app" style="display: block;">
-
-        <div class="pin-lock-bar">
-          <button class="trk-eye-btn" id="trk-eye-btn">
-            <svg id="trk-eye-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            <span id="trk-eye-label">Ocultar valores</span>
-          </button>
-
-        </div>
-
-        <!-- CCL bar -->
-        <div class="trk-bar">
-          <span class="trk-bar-label">CCL hoy</span>
-          <span class="trk-bar-val" id="trk-ccl-display">—</span>
-          <span class="trk-bar-src" id="trk-ccl-src"></span>
-          <span class="trk-edit" id="trk-ccl-toggle">Editar</span>
-        </div>
-        <div class="trk-manual-row" id="trk-manual-row">
-          <span style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">CCL manual:</span>
-          <input type="number" id="trk-ccl-inp" style="width:100px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:4px 8px;height:28px" placeholder="Ej: 1483">
-          <button class="btn btn-a btn-sm" id="trk-ccl-save-btn">Guardar</button>
-        </div>
-
-        <!-- Metrics -->
-        <div class="trk-metrics">
-          <div class="trk-metric"><div class="trk-metric-label">Total (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-usd">—</div><div class="trk-metric-sub trk-sensitive" id="trk-m-ars-sub"></div></div>
-          <div class="trk-metric"><div class="trk-metric-label">Este mes (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-mes">—</div></div>
-          <div class="trk-metric"><div class="trk-metric-label">Registros</div><div class="trk-metric-val" id="trk-m-count">0</div></div>
-        </div>
-
-        <!-- Form -->
-        <div class="card">
-          <div class="card-header"><span class="card-title">Cargar dividendo</span></div>
-          <div class="card-body">
-            <div class="fg">
-              <div class="fgrp"><label>Ticker / Empresa</label><input type="text" id="trk-ticker" placeholder="YPF, GGAL..." style="text-transform:uppercase"></div>
-              <div class="fgrp"><label>Fecha de cobro</label><input type="date" id="trk-fecha"></div>
-              <div class="fgrp"><label>Moneda</label><select id="trk-moneda"><option value="USD">USD (dólares)</option><option value="ARS">ARS (pesos)</option></select></div>
-              <div class="fgrp"><label>Monto recibido</label><input type="number" id="trk-monto" placeholder="0.00" min="0" step="0.01"></div>
-              <div class="fgrp"><label>Acciones (opc.)</label><input type="number" id="trk-acc" placeholder="—" min="0" step="1"></div>
-            </div>
-            <div class="gap-row" style="margin-top:8px">
-              <button class="btn btn-a" id="trk-add-btn">+ Agregar</button>
-              <span id="trk-add-status" class="smsg"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Importar desde broker (Bull Market) -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Importar desde broker (Bull Market)</span>
-            <span id="trk-imp-badge" class="smsg"></span>
-          </div>
-          <div class="card-body">
-            <div class="ibox" style="margin-bottom:10px">
-              Descargá el extracto de <b>Cuenta Corriente</b> de Bull Market — Pesos, Dólares y Dólar Cable, cada uno por separado — y subí cada archivo en su casillero. Se detectan dividendos de acciones/CEDEARs ("DIVIDENDOS") y cupones de bonos/ONs ("RENTA Y AMORTIZ"). Los registros ya existentes no se duplican. Las filas nuevas quedan en <b>"Pendientes de revisión"</b> (abajo) para que confirmes una por una el impacto en el PPC.
-            </div>
-            <div class="gap-row" style="flex-wrap:wrap;gap:10px">
-              <label style="cursor:pointer;display:inline-flex;align-items:center">
-                <input type="file" id="trk-imp-file-ars" accept=".xls,.xlsx" style="display:none">
-                <span class="btn btn-a">↑ $ (Pesos)</span>
-              </label>
-              <label style="cursor:pointer;display:inline-flex;align-items:center">
-                <input type="file" id="trk-imp-file-usd" accept=".xls,.xlsx" style="display:none">
-                <span class="btn btn-a">↑ Dólares</span>
-              </label>
-              <label style="cursor:pointer;display:inline-flex;align-items:center">
-                <input type="file" id="trk-imp-file-cable" accept=".xls,.xlsx" style="display:none">
-                <span class="btn btn-a">↑ Dólar Cable</span>
-              </label>
-              <span id="trk-imp-status" class="smsg"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pendientes de revisión (las 3 casilleros de carga convergen acá) -->
-        <div class="card" id="trk-pending-card" style="display:none">
-          <div class="card-header">
-            <span class="card-title">⏳ Pendientes de revisión</span>
-            <span id="trk-pending-badge" class="smsg"></span>
-          </div>
-          <div class="card-body" style="padding-top:0">
-            <div class="tw" style="max-height:340px;overflow-y:auto">
-              <table>
-                <thead><tr><th>Ticker</th><th>Fecha</th><th>Tipo</th><th>Mon.</th><th style="text-align:right">Monto</th><th>Impacto PPC</th><th style="text-align:center">Acción</th></tr></thead>
-                <tbody id="trk-pending-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Table -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Historial de dividendos CCL</span>
-            <span id="trk-total-badge" class="smsg"></span>
-          </div>
-          <div id="trk-empty" class="empty-state">No hay dividendos cargados.</div>
-          <div class="tw" id="trk-table-wrap" style="display:none">
-            <table>
-              <thead><tr><th>Ticker</th><th>Fecha</th><th>Mon.</th><th style="text-align:right">Monto orig.</th><th style="text-align:right">Equiv. USD</th><th style="text-align:right">CCL usado</th><th style="text-align:right">Acciones</th><th></th></tr></thead>
-              <tbody id="trk-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- CCL implícito -->
-        <div class="card">
-          <div class="card-header"><span class="card-title">Calculadora CCL implícito</span></div>
-          <div class="card-body">
-            <div class="ibox" style="margin-bottom:10px">Precio ARS ÷ Precio USD del mismo activo = CCL implícito. Útil para bonos, CEDEARs y acciones con doble cotización.</div>
-            <div class="fg">
-              <div class="fgrp"><label>Precio ARS</label><input type="number" id="trk-calc-ars" placeholder="Ej: 18500" min="0" step="0.01"></div>
-              <div class="fgrp"><label>Precio USD</label><input type="number" id="trk-calc-usd" placeholder="Ej: 14.80" min="0" step="0.01"></div>
-              <div class="fgrp"><label>Activo (opc.)</label><input type="text" id="trk-calc-activo" placeholder="GD30, YPF..."></div>
-            </div>
-            <div class="trk-ccl-result" id="trk-ccl-result" style="display:none">
-              <div class="trk-ccl-result-label" id="trk-ccl-result-label">CCL implícito</div>
-              <div class="trk-ccl-result-val" id="trk-ccl-result-val">—</div>
-              <div class="trk-ccl-result-sub" id="trk-ccl-result-sub"></div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /trk-app -->
-    </div><!-- /page-tracker -->
-
-    <!-- RATIOS -->
-    <div class="page" id="page-ratios">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Ratios CEDEAR</span></div>
-        <div class="card-body" style="padding-bottom:8px">
-          <div class="ibox" style="margin-bottom:12px"><b>Fórmula:</b> precio USD = (precio CEDEAR en $ × ratio) ÷ CCL del día.</div>
-          <div class="fg" style="margin-bottom:4px">
-            <div class="fgrp"><label>Ticker</label><input id="r-ticker" type="text" placeholder="AAPL" style="text-transform:uppercase"></div>
-            <div class="fgrp"><label>Ratio</label><input id="r-ratio" type="number" min="0.01" step="any" placeholder="1"></div>
-            <div style="align-self:flex-end"><button class="btn btn-a" onclick="saveRatio()">Guardar</button></div>
-          </div>
-          <span id="ratios-status" class="smsg" style="font-size:.68rem"></span>
-        </div>
-        <div style="padding:0 1rem .65rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
-          <input id="ratios-filter-ticker" type="text" placeholder="Ticker o Nombre..." oninput="renderRatios()" style="text-transform:uppercase;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:130px;outline:none"><input id="ratios-filter-pais" type="text" placeholder="País..." oninput="renderRatios()" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none"><input id="ratios-filter-rubro" type="text" placeholder="Rubro..." oninput="renderRatios()" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:100px;outline:none"><input id="ratios-filter-ratio" type="number" min="0" step="any" placeholder="Ratio..." oninput="renderRatios()" style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:80px;outline:none"><span id="ratios-filter-count" style="font-size:.65rem;font-family:var(--mono);color:var(--text3)"></span><button class="btn btn-sm" onclick="document.getElementById('ratios-filter-ticker').value='';document.getElementById('ratios-filter-ratio').value='';document.getElementById('ratios-filter-pais').value='';document.getElementById('ratios-filter-rubro').value='';renderRatios();" style="margin-left:auto">Limpiar</button><label class="btn btn-sm" style="cursor:pointer;border-color:var(--blue);color:var(--blue)" title="Importar lista oficial CNV (XLSX)">📥 XLSX<input type="file" accept=".xlsx" onchange="importRatiosXLSX(this)" style="display:none"></label></div>
-        <div class="tw" style="max-height:calc(100vh - 310px);overflow-y:auto">
-          <table><thead style="position:sticky;top:0;background:var(--surface);z-index:1"><tr><th>Ticker</th><th>Nombre</th><th>Ratio</th><th>Mercado</th><th>País</th><th>Rubro</th><th></th></tr></thead><tbody id="ratios-body"></tbody></table>
-        </div>
-      </div>
-    </div>
-
-    <!-- TARGETS -->
-    <div class="page" id="page-targets">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Precios de Venta Objetivo</span><span id="targets-status" class="smsg"></span></div>
-        <div class="card-body" style="padding-bottom:8px">
-          <div class="ibox" style="margin-bottom:10px">Ingresá el precio objetivo en <b>USD</b> o en <b>ARS (CEDEAR)</b> — se calculan automáticamente. Bonos y ONs usan <b>MEP</b>; el resto usa <b>CCL</b>.</div>
-          <div class="fg" style="margin-bottom:6px">
-            <div class="fgrp"><label>Ticker</label><input id="tgt-ticker" type="text" placeholder="AAPL, GD38..." style="text-transform:uppercase" oninput="tgtSyncOnTickerChange()"></div>
-            <div class="fgrp"><label>P. Venta USD</label><input id="tgt-usd" type="number" min="0" step="any" placeholder="0.00" oninput="tgtSyncFromUSD()"></div>
-            <div class="fgrp"><label>P. Venta ARS (CEDEAR)</label><input id="tgt-ars" type="number" min="0" step="any" placeholder="0.00" oninput="tgtSyncFromARS()"></div>
-            <div style="align-self:flex-end;display:flex;flex-direction:column;gap:4px"><button class="btn btn-a" onclick="addTarget()">+ Agregar</button><span id="tgt-tc-label" style="font-size:.6rem;font-family:var(--mono);color:var(--text3);text-align:center"></span></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px">
-            <input id="targets-filter" type="text" placeholder="Filtrar ticker..." oninput="renderTargets()" style="text-transform:uppercase;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:28px;width:140px;outline:none" title="Filtrar por ticker">
-            <span id="targets-filter-count" style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">81 tickers</span>
-            <button class="btn btn-sm" onclick="document.getElementById(&#39;targets-filter&#39;).value=&#39;&#39;;renderTargets();">✕ Limpiar</button>
-          </div>
-        </div>
-        <div class="tw" style="max-height:calc(100vh - 300px);overflow-y:auto">
-          <table><thead><tr><th>Ticker</th><th>Sector</th><th>P. Venta USD</th><th>P. Venta ARS (CEDEAR)</th><th>Δ% objetivo</th><th></th></tr></thead><tbody id="targets-body"></tbody></table>
-        </div>
-      </div>
-    </div>
-
-    <!-- TIPO DE CAMBIO -->
-    <!-- ══ ARBITRAJE ══ -->
-    <div class="page" id="page-arbitraje">
-      <div class="card">
-        <div class="card-header" style="gap:10px;flex-wrap:wrap">
-          <span class="card-title">⇄ Calculadora de Arbitraje</span>
-          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Editá tickers, precios, % objetivo y nominales — todo en tiempo real</span>
-          <button class="btn btn-sm" onclick="arbAddPair()" style="margin-left:auto">+ Par</button>
-        </div>
-        <div class="card-body" style="padding:.45rem">
-          <div class="ibox" style="margin-bottom:6px;font-size:.6rem;padding:.3rem .6rem">
-            <b>Ratio</b> = Precio A ÷ Precio B × 100 &nbsp;·&nbsp; El color indica si el ratio está <span style="color:#00e676">por encima</span>, en zona <span style="color:#ffd600">neutral</span> o <span style="color:#ff5252">por debajo</span> del % objetivo. Editá cualquier celda directamente.
-          </div>
-          <div id="arb-container"><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD29" onchange="arbUpdate(0,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(0,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AL30" onchange="arbUpdate(0,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(0,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.5%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(0,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(0)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="92310" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88600" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-0"><span class="arb-ratio-amber">104.19%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.025" placeholder="$1.00" oninput="arbUpdate(0,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD29" placeholder="ticker" oninput="arbUpdate(0,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(0,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="91390" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88660" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-1"><span class="arb-ratio-red">103.08%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.040" placeholder="$1.00" oninput="arbUpdate(0,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AL30" placeholder="ticker" oninput="arbUpdate(0,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.213" placeholder="—" oninput="arbUpdate(0,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(0)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD41" onchange="arbUpdate(1,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(1,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(1,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(1,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="107%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(1,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(1)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104540" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112720" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-0"><span class="arb-ratio-red">92.74%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.085" placeholder="$1.00" oninput="arbUpdate(1,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD41" placeholder="ticker" oninput="arbUpdate(1,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(1,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104350" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112900" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-1"><span class="arb-ratio-red">92.43%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.080" placeholder="$1.00" oninput="arbUpdate(1,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(1,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="934" placeholder="—" oninput="arbUpdate(1,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(1)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="TXAR" onchange="arbUpdate(2,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(2,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="ALUA" onchange="arbUpdate(2,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(2,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="130%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(2,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(2)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="873" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="668" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-0"><span class="arb-ratio-green">130.69%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.033" placeholder="$1.00" oninput="arbUpdate(2,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(2,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="284.40" placeholder="—" oninput="arbUpdate(2,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="878" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="674" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-1"><span class="arb-ratio-amber">130.27%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.270" placeholder="$1.00" oninput="arbUpdate(2,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="ALUAR" placeholder="ticker" oninput="arbUpdate(2,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(2,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(2)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD38" onchange="arbUpdate(3,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(3,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(3,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(3,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.3%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(3,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(3)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116620" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111790" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-0"><span class="arb-ratio-amber">104.32%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="" placeholder="$1.00" oninput="arbUpdate(3,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="ticker" oninput="arbUpdate(3,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(3,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116690" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111870" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-1"><span class="arb-ratio-amber">104.31%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.044" placeholder="$1.00" oninput="arbUpdate(3,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD38" placeholder="ticker" oninput="arbUpdate(3,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.000" placeholder="—" oninput="arbUpdate(3,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(3)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-flujos" style="padding:0">
-      <div id="flujos-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-
-        <div class="ibox" style="margin-bottom:1rem;font-size:.68rem">
-          Calendario de renta y amortización de los bonos/ON que tenés en cartera, calculado a partir del flujo cargado por ticker (por cada 100 nominales) escalado a tu cantidad real. No afecta ningún cálculo de valuación del portafolio — es solo informativo.
-        </div>
-
-        <div id="flujo-page-resumen" style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap"></div>
-
-        <div id="flujo-page-sinflujo" class="ibox" style="display:none;margin-bottom:1rem;font-size:.68rem;border-color:var(--amber);color:var(--amber)"></div>
-
-        <div class="card">
-          <div class="card-header"><span class="card-title">📅 Calendario de cobros</span></div>
-          <div class="card-body" style="padding:.6rem 1rem">
-            <div style="overflow-x:auto">
-              <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.76rem">
-                <thead>
-                  <tr style="border-bottom:2px solid var(--border2)">
-                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Fecha</th>
-                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Faltan</th>
-                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Ticker</th>
-                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Tipo</th>
-                    <th style="text-align:left;padding:6px 10px;color:var(--text3);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.04em">Monto</th>
-                  </tr>
-                </thead>
-                <tbody id="flujo-page-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="page" id="page-tipocambio">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
-
-        <!-- CCL -->
-        <div class="card">
-          <div class="card-header" style="flex-direction:column;align-items:stretch;gap:6px">
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-              <span class="card-title">CCL</span>
-              <div class="gap-row">
-                <input id="tc-ccl-fecha" type="text" placeholder="dd/mm/aaaa" style="width:110px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:28px">
-                <input id="tc-ccl-valor" type="number" step="0.01" placeholder="Valor" style="width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:28px">
-                <button class="btn btn-a btn-sm" onclick="tcSave(&#39;ccl&#39;)">+ Agregar</button>
-              </div>
-            </div>
-            <input id="tc-ccl-filter" type="text" placeholder="Filtrar por fecha o valor…" oninput="tcRender()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 8px;height:26px;outline:none">
-          </div>
-          <div class="tw" style="max-height:60vh;overflow-y:auto">
-            <table><thead><tr><th>Fecha</th><th style="text-align:right">CCL</th><th></th></tr></thead><tbody id="tc-ccl-body"></tbody></table>
-          </div>
-        </div>
-
-        <!-- MEP -->
-        <div class="card">
-          <div class="card-header" style="flex-direction:column;align-items:stretch;gap:6px">
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
-              <span class="card-title">MEP</span>
-              <div class="gap-row">
-                <input id="tc-mep-fecha" type="text" placeholder="dd/mm/aaaa" style="width:110px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:28px">
-                <input id="tc-mep-valor" type="number" step="0.01" placeholder="Valor" style="width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:28px">
-                <button class="btn btn-a btn-sm" onclick="tcSave(&#39;mep&#39;)">+ Agregar</button>
-              </div>
-            </div>
-            <input id="tc-mep-filter" type="text" placeholder="Filtrar por fecha o valor…" oninput="tcRender()" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 8px;height:26px;outline:none">
-          </div>
-          <div class="tw" style="max-height:60vh;overflow-y:auto">
-            <table><thead><tr><th>Fecha</th><th style="text-align:right">MEP</th><th></th></tr></thead><tbody id="tc-mep-body"></tbody></table>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- VETA MOVIM (WIP - no impacta portafolio) -->
-    <div class="page" id="page-dashboard" style="padding:0">
-      <div id="db-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-        <!-- Fila 1: Distribución por rubro -->
-        <div style="margin-bottom:1rem">
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Distribución por rubro <span id="db-rubros-hint" style="font-size: 0.65rem; color: var(--text3); font-weight: 400; display: none;">— hacé clic en un rubro para ver los tickers</span></div>
-            <div style="display:flex;gap:1.2rem;align-items:flex-start">
-              <div style="position:relative;height:300px;flex:0 0 340px"><canvas id="db-chart-rubros" width="340" height="300"></canvas></div>
-              <div id="db-rubros-detail" style="flex: 1 1 0%; min-width: 0px; display: block; padding-top: 4px;">
-                <div id="db-rubros-detail-title" style="font-size:.75rem;font-weight:700;color:var(--text);margin-bottom:8px;font-family:var(--mono)"></div>
-                <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.72rem">
-                  <thead>
-                    <tr style="border-bottom:1px solid var(--border2)">
-                      <th style="text-align:left;padding:3px 6px;color:var(--text3);font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Ticker</th>
-                      <th style="text-align:right;padding:3px 6px;color:var(--text3);font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Valor USD</th>
-                      <th style="text-align:right;padding:3px 6px;color:var(--text3);font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em">% del rubro</th>
-                    </tr>
-                  </thead>
-                  <tbody id="db-rubros-detail-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Fila 2: Rendimiento % + Top 10 Ganancias + Top 10 Pérdidas -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Rendimiento % promedio por segmento</div>
-            <div style="position:relative;height:260px"><canvas id="db-chart-segmentos"></canvas></div>
-          </div>
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 ganancias (USD)</div>
-            <div style="position:relative;height:260px"><canvas id="db-chart-gains"></canvas></div>
-          </div>
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 pérdidas (USD)</div>
-            <div style="position:relative;height:260px"><canvas id="db-chart-losses"></canvas></div>
-          </div>
-        </div>
-        <!-- Fila 3: Top 10 posiciones -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 posiciones por valor (USD)</div>
-            <div style="position:relative;height:260px"><canvas id="db-chart-top"></canvas></div>
-          </div>
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 posiciones por valor — sin Bonos y ONs (USD)</div>
-            <div style="position:relative;height:260px"><canvas id="db-chart-top-rv"></canvas></div>
-          </div>
-        </div>
-        <!-- Fila 4: Mapa + Rendimiento vs S&P -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Inversiones por región</div>
-            <div id="db-worldmap"></div>
-          </div>
-          <div class="card" style="padding:1rem">
-            <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Mi cartera vs S&P 500</div>
-            <div style="position:relative;height:310px"><canvas id="perf-chart"></canvas></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <div class="page" id="page-ventaestad" style="padding:0">
-      <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-
-        <div class="ibox" style="margin-bottom:.7rem;font-size:.72rem;padding:.55rem .7rem">
-          📊 Ganancia realizada de todas tus ventas (histórico con lote más barato + ventas nuevas con promedio ponderado),
-          agrupada por ticker, por tipo de instrumento y por Renta Fija / Renta Variable.
-        </div>
-
-        <div class="card" style="margin-bottom:.6rem">
-          <div class="card-header" style="padding:.5rem .8rem">
-            <span class="card-title" style="font-size:.82rem">💰 Resumen total</span>
-          </div>
-          <div class="card-body" id="vestad-resumen" style="padding:.5rem .7rem"></div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem;align-items:start">
-          <div class="card" style="margin-bottom:0">
-            <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Tipo de instrumento</span></div>
-            <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-tipo" style="overflow-x:auto"></div></div>
-          </div>
-          <div class="card" style="margin-bottom:0">
-            <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Renta Fija / Renta Variable</span></div>
-            <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-rfrv" style="overflow-x:auto"></div></div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Ticker</span></div>
-          <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-ticker" style="overflow-x:auto"></div></div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- RUBROS -->
-    <div class="page" id="page-rubros" style="padding:0">
-      <div id="rubros-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-
-        <!-- Card: Catálogo de rubros -->
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-header" style="gap:10px;flex-wrap:wrap;cursor:pointer" onclick="rubroToggleCatalog()">
-            <span class="card-title">📂 Catálogo de rubros</span>
-            <span style="font-size:.68rem;color:var(--text3)">Agregá o eliminá rubros disponibles en el selector</span>
-            <span id="rubro-catalog-arrow" style="margin-left:auto;font-size:.9rem;color:var(--text3)">▸</span>
-          </div>
-          <div id="rubro-catalog-body" style="display:none;padding:.8rem 1rem">
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="rubro-catalog-tags"></div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input id="rubro-new-name" type="text" placeholder="Nuevo rubro…" maxlength="40" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 10px;outline:none;flex:1;max-width:240px" onkeydown="if(event.key===&#39;Enter&#39;)rubroCatalogAdd()">
-              <button class="btn btn-sm" onclick="rubroCatalogAdd()" style="background:var(--accent);color:#000;font-weight:700">+ Agregar</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card: Tabla de tickers -->
-        <div class="card">
-          <div class="card-header" style="gap:10px;flex-wrap:wrap">
-            <span class="card-title">🏷 Rubros de activos</span>
-            <span class="smsg" style="font-size:.68rem;color:var(--text3)">Clasificá cada ticker para el gráfico <b>Distribución por rubro</b></span>
-            <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
-              <input id="rubro-filter" type="text" placeholder="Filtrar por ticker, segmento o rubro…" oninput="rubroFilterTable()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 8px;width:240px;outline:none">
-              <button class="btn btn-sm" onclick="rubroSaveAll()" style="background:var(--accent);color:#000;font-weight:700">💾 Guardar todo</button>
-            </div>
-          </div>
-          <div class="card-body" style="padding:.6rem 1rem">
-            <div class="ibox" style="margin-bottom:10px;font-size:.68rem">
-              Editá el rubro de cada ticker. Podés guardar fila por fila o todo junto. Los cambios se usan en el gráfico <i>Distribución por rubro</i> del Dashboard.
-            </div>
-            <div style="overflow-x:auto">
-              <table id="rubros-table" style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.72rem">
-                <thead>
-                  <tr style="border-bottom:2px solid var(--border2)">
-                    <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em;width:100px">Ticker</th>
-                    <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em;width:120px">Segmento</th>
-                    <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em">Rubro actual</th>
-                    <th style="text-align:left;padding:5px 8px;color:var(--text3);font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em">Cambiar a</th>
-                    <th style="text-align:center;padding:5px 8px;color:var(--text3);font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.04em;width:80px">Guardar</th>
-                  </tr>
-                </thead>
-                <tbody id="rubros-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="page" id="page-vetamovim">
-      <div class="card">
-        <div class="card-header" style="gap:10px;flex-wrap:wrap">
-          <span class="card-title">🧪 VetaMovim</span>
-          <span class="smsg" style="font-size:.68rem;color:var(--text3)">Tabla de prueba para importar movimientos — aislada del portafolio principal</span>
-          <div class="gap-row" style="margin-left:auto">
-            <button class="btn btn-sm" onclick="vmAddRow()">+ Fila</button>
-            <button class="btn btn-sm btn-d" onclick="vmClearAll()" title="Vaciar tabla">🗑</button>
-          </div>
-        </div>
-        <div class="card-body" style="padding:.6rem 1rem">
-          <div class="ibox" style="margin-bottom:10px;font-size:.68rem">
-            ⚠️ Esta pestaña está en <b>modo borrador</b>. Los datos cargados acá <u>no se suman</u> al portafolio ni a los cálculos. Cuando tengamos la estructura mapeada, la conectamos.
-          </div>
-        </div>
-        <div class="tw">
-          <table id="vm-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Fecha</th>
-                <th>Ticker</th>
-                <th>Tipo</th>
-                <th>Cant.</th>
-                <th>Precio</th>
-                <th>Moneda</th>
-                <th>Total</th>
-                <th>Notas</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="vm-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- RENDIMIENTO ANUAL -->
-    <div class="page" id="page-rendanual">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">📈 Rendimiento Anual — Juli</span>
-          <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-            <button class="btn btn-a btn-sm" onclick="raAddPeriodo()">+ Período</button>
-          </div>
-        </div>
-        <div class="card-body" id="ra-container" style="display:flex;flex-wrap:wrap;gap:1rem;padding:.85rem 1rem;align-items:flex-start">
-          <div class="empty-state" id="ra-empty" style="padding:2rem">No hay períodos cargados — usá "+ Período" para agregar uno</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="page" id="page-comparacion">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">⇔ Comparación de Portafolios</span>
-          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Cargá el portafolio y el archivo de posiciones del broker</span>
-        </div>
-        <div class="card-body" style="padding:.85rem 1rem">
-          <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
-            <div>
-              <div style="font-size:.63rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">Juli</div>
-              <label class="btn btn-sm" style="cursor:pointer;gap:5px">📂 <span id="cmp-port-name" style="font-family:var(--mono);font-size:.72rem">Sin archivo</span><input type="file" id="cmp-port-file" accept=".xlsx,.xls" style="display:none" onchange="cmpLoadPortfolio(this)"></label>
-            </div>
-            <div>
-              <div style="margin-bottom:4px"><img src="../Bull.png" style="height:18px;vertical-align:middle"></div>
-              <textarea id="cmp-bull-textarea" placeholder="Pegá las posiciones copiadas de Bull..." style="width:220px;height:72px;font-size:.62rem;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);padding:5px;resize:vertical" oninput="cmpBullTextChanged()"></textarea>
-              <div style="font-size:.6rem;font-family:var(--mono);margin-top:2px" id="cmp-bull-status"></div>
-            </div>
-            <button class="btn btn-a btn-sm" onclick="runComparacion()" style="margin-left:auto">Comparar</button>
-          </div>
-          <div id="cmp-result"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RECOMENDACIONES -->
-    <div class="page" id="page-recomendaciones">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">📐 Tu perfil actual</span>
-          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Puntaje de cercanía (0-100) contra cada perfil, según tu cartera de hoy</span>
-        </div>
-        <div class="card-body" style="padding:.85rem 1rem">
-          <div id="perfil-score-empty" class="empty-state" style="display:none">Cargá liquidez y posiciones para ver el puntaje</div>
-          <div id="perfil-score-summary"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">🎯 Perfil objetivo</span>
-          <span style="font-size:.68rem;color:var(--text3);margin-left:8px">Composición sugerida vs. tu cartera actual</span>
-          <select id="perfil-select" onchange="renderPerfilComparacion()" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;outline:none">
-            <option value="Agresivo">Agresivo</option>
-            <option value="Moderado">Moderado</option>
-            <option value="Conservador">Conservador</option>
-          </select>
-        </div>
-        <div class="card-body" style="padding:.85rem 1rem">
-          <div id="perfil-cmp-empty" class="empty-state" style="display:none">Cargá liquidez y posiciones para ver la comparación</div>
-          <div id="perfil-cmp-groups"></div>
-        </div>
-      </div>
-    </div>
-
-
-  </div>
-</div>
-
-
-<!-- Modal edicion movimientos - fuera de cualquier page para que position:fixed funcione -->
-<div id="mov-modal-overlay" onclick="if(event.target===this)movModalClose()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:1.4rem;width:min(540px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.6)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem">
-      <span style="font-weight:600;font-size:.95rem">Editar movimiento</span>
-      <button class="btn btn-sm" onclick="movModalClose()">✕ Cerrar</button>
-    </div>
-    <div class="fg" id="mov-edit-fields" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.6rem .85rem;font-size:.7rem;font-family:var(--mono);color:var(--text2);margin-top:8px" id="me-usd-hint"></div>
-    <div class="gap-row" style="margin-top:12px">
-      <button class="btn btn-a" onclick="movModalSave()">✓ Guardar cambios</button>
-      <button class="btn" onclick="movModalClose()">Cancelar</button>
-      <span id="mov-edit-status" class="smsg"></span>
-    </div>
-  </div>
-</div>
-
-
-<script>
 // ── Soporte coma como separador decimal ──────────────────────────────────
 (function(){
   function convertNumInputs(root){
@@ -1590,7 +39,12 @@ var GH_WORKFLOW = 'sync.yml';
 
 // ── Sync GDC → Ana + Omar via GitHub Actions ─────────────────────────────
 // ── Sync de datos GDC → Omar + Ana ──────────────────────────────────────
-var SYNC_OTHERS = [];
+var SYNC_OTHERS = [
+  { name: 'Omar',  url: 'https://opbbnvfmgdmdsmbhmgsc.supabase.co', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng' },
+  { name: 'Ana',   url: 'https://arxntlqhtrtskabzihlf.supabase.co',  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg' },
+  { name: 'Hilda', url: 'https://zqlpfvxgtxfnqztiudzc.supabase.co',  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4' },
+  { name: 'Juli',  url: 'https://ujgkiuqvehidcnbtwrqn.supabase.co',  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk' }
+];
 
 async function _sbSetOther(baseUrl, apiKey, configKey, value) {
   try {
@@ -1625,11 +79,13 @@ async function syncDataToOthers(statusCallback) {
   Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null) realTargets[t]=TARGET_TABLE[t]; });
 
   var tables = [
-    // RATIOS_TABLE no se pushea — ya viene hardcodeado en el HTML sincronizado
-    { key: 'targets',      value: Object.keys(realTargets).length ? realTargets : null },
-    { key: 'rubros',       value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
-    { key: 'ccl_override', value: cclOvr || CCL_TABLE },
-    { key: 'mep_override', value: mepOvr || null }
+    // Los otros 4 portafolios ya leen 'ratios' de su propia Supabase en el init (sbGetConfig('ratios')) —
+    // sólo faltaba que GDC se lo empuje.
+    { key: 'ratios',        value: Object.keys(RATIOS_TABLE).length ? RATIOS_TABLE : null },
+    { key: 'targets',       value: Object.keys(realTargets).length ? realTargets : null },
+    { key: 'rubros',        value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
+    { key: 'ccl_override',  value: cclOvr || CCL_TABLE },
+    { key: 'mep_override',  value: mepOvr || MEP_TABLE }
   ];
 
   var errors = [];
@@ -1646,18 +102,16 @@ async function syncDataToOthers(statusCallback) {
   return errors;
 }
 
+// El paso de "Sync HTML" (dispara un GitHub Action que reconstruye los 5 HTML) está
+// desactivado a propósito: GH_TOKEN es un placeholder sin reemplazar, así que ese paso
+// siempre tiraba error — y tapaba que el sync de datos (CCL/MEP/Ratios/Targets/Rubros)
+// SÍ funciona. Poné esto en true (y un token real en GH_TOKEN) para reactivarlo.
+var SYNC_HTML_ENABLED = false;
+
 async function syncPortfolios() {
   var btn   = document.getElementById('sync-btn');
   var icon  = document.getElementById('sync-icon');
   var label = document.getElementById('sync-label');
-
-  // Token hardcodeado en GH_TOKEN
-  var token = GH_TOKEN;
-  if (!token) {
-    token = prompt('GitHub Token para Sync:');
-    if (!token) return;
-  }
-  GH_TOKEN = token.trim();
 
   // Estado: cargando
   btn.disabled = true;
@@ -1667,11 +121,49 @@ async function syncPortfolios() {
   btn.style.borderColor = 'var(--amber)';
   btn.style.color = 'var(--amber)';
 
-  // 1. Sincronizar datos (Ratios, Targets, Rubros, CCL) a Omar y Ana
+  // 1. Sincronizar datos (Ratios, Targets, Rubros, CCL, MEP) a Omar, Ana, Hilda y Juli
   var dataErrors = await syncDataToOthers(function(msg){ label.textContent = msg; });
   if (dataErrors.length) {
     console.warn('syncDataToOthers errores:', dataErrors);
+    icon.style.animation = '';
+    icon.textContent = '⚠';
+    label.textContent = 'Parcial (' + dataErrors.length + ' error' + (dataErrors.length!==1?'es':'') + ')';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    console.error('Detalle de errores de sync:', dataErrors.join(', '));
+    setTimeout(function() {
+      icon.textContent = '⟳';
+      label.textContent = 'Sync';
+      btn.style.borderColor = '#4a5568';
+      btn.style.color = '';
+      btn.disabled = false;
+    }, 5000);
+    return;
   }
+
+  icon.style.animation = '';
+  icon.textContent = '✓';
+  label.textContent = 'Synced!';
+  btn.style.borderColor = 'var(--accent)';
+  btn.style.color = 'var(--accent)';
+  var _resetSync = function() {
+    icon.textContent = '⟳';
+    icon.style.animation = '';
+    label.textContent = 'Sync';
+    btn.style.borderColor = '#4a5568';
+    btn.style.color = '';
+    btn.disabled = false;
+  };
+
+  if (!SYNC_HTML_ENABLED) { setTimeout(_resetSync, 4000); return; }
+
+  // ── Sync HTML vía GitHub Actions (opcional, ver SYNC_HTML_ENABLED arriba) ──
+  var token = GH_TOKEN;
+  if (!token || token === 'GITHUB_TOKEN_AQUI') {
+    token = prompt('GitHub Token para Sync HTML:');
+    if (!token) { _resetSync(); return; }
+  }
+  GH_TOKEN = token.trim();
   label.textContent = 'Sync HTML...';
 
   var url = 'https://api.github.com/repos/' + GH_REPO +
@@ -1689,20 +181,7 @@ async function syncPortfolios() {
     });
 
     if (res.status === 204) {
-      // Éxito: GitHub acepta el trigger (no devuelve body)
-      icon.style.animation = '';
-      icon.textContent = '✓';
-      label.textContent = 'Synced!';
-      btn.style.borderColor = 'var(--accent)';
-      btn.style.color = 'var(--accent)';
-      setTimeout(function() {
-        icon.textContent = '⟳';
-        icon.style.animation = '';
-        label.textContent = 'Sync';
-        btn.style.borderColor = '#4a5568';
-        btn.style.color = '';
-        btn.disabled = false;
-      }, 4000);
+      setTimeout(_resetSync, 4000);
     } else {
       var body = await res.json().catch(function(){ return {}; });
       throw new Error('HTTP ' + res.status + ': ' + (body.message || 'Error desconocido'));
@@ -1710,26 +189,79 @@ async function syncPortfolios() {
   } catch(e) {
     icon.style.animation = '';
     icon.textContent = '✗';
-    label.textContent = 'Error';
+    label.textContent = 'Datos OK, HTML falló';
     btn.style.borderColor = 'var(--red)';
     btn.style.color = 'var(--red)';
-    console.error('Sync error:', e);
-    alert('Error al disparar sync:\n' + e.message);
-    setTimeout(function() {
-      icon.textContent = '⟳';
-      label.textContent = 'Sync';
-      btn.style.borderColor = '#4a5568';
-      btn.style.color = '';
-      btn.disabled = false;
-    }, 3000);
+    console.error('Sync HTML error:', e);
+    setTimeout(_resetSync, 5000);
   }
 }
 
 // ════════════════════════════════════════════════════════
 // SUPABASE CONFIG
 // ════════════════════════════════════════════════════════
-var SUPABASE_URL = 'https://ujgkiuqvehidcnbtwrqn.supabase.co';
-var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk';
+var SUPABASE_URL = 'https://wstnseufzyavgdovrehu.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU';
+
+// ════════════════════════════════════════════════════════
+// AUTH — login con Google, restringido a un email. La protección real
+// vive en las políticas RLS de Supabase (ver SQL aparte); esto es la
+// puerta de entrada + el token que hace que esas políticas te reconozcan.
+// ════════════════════════════════════════════════════════
+var ALLOWED_EMAIL = 'gcovetta@gmail.com';
+var sbAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window._sbAccessToken = null; // token del usuario logueado; sbHeaders() lo usa en vez de la anon key sola
+
+function authSignInGoogle(){
+  sbAuth.auth.signInWithOAuth({
+    provider:'google',
+    options:{redirectTo: window.location.origin + window.location.pathname}
+  });
+}
+
+function authSignOut(){
+  sbAuth.auth.signOut().then(function(){ window._sbAccessToken=null; location.reload(); });
+}
+
+function authUpdateUI(user){
+  var box=document.getElementById('auth-user-box');
+  var emailEl=document.getElementById('auth-user-email');
+  if(box) box.style.display='flex';
+  if(emailEl) emailEl.textContent=user.email;
+}
+
+// Se llama al boot y cada vez que cambia el estado de auth. Devuelve true/false
+// según si el usuario logueado es el permitido. Muestra/oculta el gate visual.
+async function authEnsureSession(){
+  var gate=document.getElementById('auth-gate');
+  var errEl=document.getElementById('auth-gate-error');
+  try{
+    var res=await sbAuth.auth.getSession();
+    var session=res&&res.data&&res.data.session;
+    if(session&&session.user&&session.user.email===ALLOWED_EMAIL){
+      window._sbAccessToken=session.access_token;
+      if(gate) gate.style.display='none';
+      authUpdateUI(session.user);
+      return true;
+    }
+    if(session){
+      // Logueado pero con una cuenta que no es la permitida → afuera
+      if(errEl){errEl.textContent='Esa cuenta de Google no tiene acceso a este portfolio.';errEl.style.display='block';}
+      await sbAuth.auth.signOut();
+      window._sbAccessToken=null;
+    }
+  }catch(e){}
+  if(gate) gate.style.display='flex';
+  var box=document.getElementById('auth-user-box');
+  if(box) box.style.display='none';
+  return false;
+}
+
+sbAuth.auth.onAuthStateChange(function(_event,_session){
+  authEnsureSession().then(function(ok){
+    if(ok && typeof window.initFromSupabase==='function') window.initFromSupabase();
+  });
+});
 
 // ── Helpers REST Supabase ─────────────────────────────────────────────────
 
@@ -1749,7 +281,11 @@ var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 })();
 
 function sbHeaders(){
-  return {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
+  // apikey siempre es la clave pública (anon); Authorization usa el token de la
+  // sesión logueada cuando existe, para que las políticas RLS te reconozcan.
+  // Sin sesión válida, cae a la anon key y RLS te bloquea (comportamiento correcto).
+  var token = window._sbAccessToken || SUPABASE_KEY;
+  return {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token};
 }
 
 // Upsert un registro en una tabla por PK "key" (tabla config)
@@ -1784,7 +320,8 @@ async function sbSaveArray(table, arr){
     var delRes=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gte.0',{method:'DELETE',headers:sbHeaders()});
     if(!delRes.ok) throw new Error('DEL '+delRes.status);
     if(!arr||!arr.length) return true;
-    var rows=arr.map(function(item){return{id:item.id,data:item,updated_at:new Date().toISOString()};});
+    // Usar IDs secuenciales enteros para evitar problemas con bigint en Supabase
+    var rows=arr.map(function(item,i){return{id:i+1,data:item,updated_at:new Date().toISOString()};});
     var insRes=await fetch(SUPABASE_URL+'/rest/v1/'+table,{
       method:'POST',
       headers:Object.assign({},sbHeaders(),{'Prefer':'return=minimal'}),
@@ -1840,15 +377,15 @@ var FKEY = 'd7ar4v9r01qtpbh9hs60d7ar4v9r01qtpbh9hs6g';
 var FBASE = 'https://finnhub.io/api/v1';
 
 
-var CCL_TABLE = {"19/04/2026": 1462.0, "20/04/2026": 1463.0, "21/04/2026": 1464.0, "22/04/2026": 1465.0, "23/04/2026": 1465.0, "24/04/2026": 1466.0, "25/04/2026": 1467.0, "26/04/2026": 1468.0, "27/04/2026": 1469.0, "28/04/2026": 1470.0, "29/04/2026": 1471.0, "30/04/2026": 1471.0, "01/05/2026": 1472.0, "02/05/2026": 1473.0, "03/05/2026": 1474.0, "04/05/2026": 1475.0, "05/05/2026": 1476.0, "06/05/2026": 1477.0, "07/05/2026": 1478.0, "08/05/2026": 1478.0, "09/05/2026": 1479.0, "10/05/2026": 1480.0, "11/05/2026": 1481.0, "12/05/2026": 1482.0, "13/05/2026": 1483.0, "14/05/2026": 1484.0, "15/05/2026": 1484.0, "16/05/2026": 1485.0, "17/05/2026": 1486.0, "18/05/2026": 1487.0, "27/12/2023": 973.0, "24/11/2025": 1518.0, "07/04/2026": 1483.0, "08/04/2026": 1475.0, "09/04/2026": 1475.0, "10/04/2026": 1473.0, "11/04/2026": 1473.0, "12/04/2026": 1473.0, "13/04/2026": 1467.0, "14/04/2026": 1467.0, "15/04/2026": 1466.0, "16/04/2026": 1460.0, "17/04/2026": 1453.0, "18/04/2026": 1453.0, "06/04/2026": 1483.0, "05/04/2026": 1495.0, "04/04/2026": 1495.0, "03/04/2026": 1495.0, "02/04/2026": 1495.0, "01/04/2026": 1486.0, "31/03/2026": 1473.0, "30/03/2026": 1483.0, "29/03/2026": 1476.0, "28/03/2026": 1476.0, "27/03/2026": 1476.0, "26/03/2026": 1448.0, "25/03/2026": 1449.0, "24/03/2026": 1463.0, "23/03/2026": 1465.0, "22/03/2026": 1473.0, "21/03/2026": 1473.0, "20/03/2026": 1473.0, "19/03/2026": 1469.0, "18/03/2026": 1469.0, "17/03/2026": 1469.0, "16/03/2026": 1469.0, "15/03/2026": 1467.0, "14/03/2026": 1467.0, "13/03/2026": 1467.0, "12/03/2026": 1460.0, "11/03/2026": 1453.0, "10/03/2026": 1464.0, "09/03/2026": 1474.0, "08/03/2026": 1482.0, "07/03/2026": 1482.0, "06/03/2026": 1482.0, "05/03/2026": 1462.0, "04/03/2026": 1464.0, "03/03/2026": 1484.0, "02/03/2026": 1456.0, "01/03/2026": 1455.0, "28/02/2026": 1455.0, "27/02/2026": 1455.0, "26/02/2026": 1478.0, "25/02/2026": 1464.0, "24/02/2026": 1444.0, "23/02/2026": 1436.0, "22/02/2026": 1442.0, "21/02/2026": 1442.0, "20/02/2026": 1442.0, "19/02/2026": 1451.0, "18/02/2026": 1449.0, "12/02/2026": 1486.0, "11/02/2026": 1478.0, "30/01/2026": 1502.0, "29/01/2026": 1505.0, "28/01/2026": 1513.0, "27/01/2026": 1511.0, "26/01/2026": 1516.0, "22/01/2026": 1508.0, "21/01/2026": 1516.0, "20/01/2026": 1523.0, "16/01/2026": 1519.0, "15/01/2026": 1523.0, "14/01/2026": 1522.0, "13/01/2026": 1528.0, "12/01/2026": 1534.0, "09/01/2026": 1527.0, "08/01/2026": 1526.0, "06/01/2026": 1536.0, "05/01/2026": 1536.0, "02/01/2026": 1550.0, "30/12/2025": 1522.0, "26/12/2025": 1520.0, "24/12/2025": 1528.0, "23/12/2025": 1529.0, "22/12/2025": 1548.0, "19/12/2025": 1545.0, "18/12/2025": 1550.0, "17/12/2025": 1564.0, "16/12/2025": 1549.0, "15/12/2025": 1523.0, "12/12/2025": 1515.0, "11/12/2025": 1508.0, "10/12/2025": 1496.0, "09/12/2025": 1514.0, "05/12/2025": 1516.0, "04/12/2025": 1510.0, "03/12/2025": 1518.0, "02/12/2025": 1528.0, "01/12/2025": 1516.0, "28/11/2025": 1518.0, "27/11/2025": 1524.0, "26/11/2025": 1534.0, "25/11/2025": 1523.0, "22/11/2025": 1510.0, "21/11/2025": 1510.0, "20/11/2025": 1513.0, "19/11/2025": 1466.0, "18/11/2025": 1485.0, "17/11/2025": 1480.0, "16/11/2025": 1502.0, "15/11/2025": 1502.0, "14/11/2025": 1502.0, "13/11/2025": 1475.0, "12/11/2025": 1477.0, "11/11/2025": 1480.0, "10/11/2025": 1481.0, "09/11/2025": 1473.0, "08/11/2025": 1473.0, "07/11/2025": 1473.0, "06/11/2025": 1506.0, "05/11/2025": 1500.0, "04/11/2025": 1522.0, "03/11/2025": 1518.0, "02/11/2025": 1502.0, "01/11/2025": 1502.0, "31/10/2025": 1502.0, "30/10/2025": 1494.0, "29/10/2025": 1474.0, "28/10/2025": 1474.0, "27/10/2025": 1458.0, "25/10/2025": 1568.0, "24/10/2025": 1568.0, "23/10/2025": 1551.0, "22/10/2025": 1608.0, "21/10/2025": 1608.0, "20/10/2025": 1570.0, "19/10/2025": 1540.0, "18/10/2025": 1540.0, "17/10/2025": 1540.0, "16/10/2025": 1484.0, "15/10/2025": 1455.0, "14/10/2025": 1469.0, "13/10/2025": 1440.0, "12/10/2025": 1497.0, "11/10/2025": 1497.0, "10/10/2025": 1497.0, "09/10/2025": 1451.0, "08/10/2025": 1545.0, "07/10/2025": 1558.0, "06/10/2025": 1516.0, "05/10/2025": 1523.0, "04/10/2025": 1523.0, "03/10/2025": 1523.0, "02/10/2025": 1554.0, "01/10/2025": 1571.0, "30/09/2025": 1538.0, "29/09/2025": 1489.0, "28/09/2025": 1468.0, "27/09/2025": 1468.0, "26/09/2025": 1468.0, "25/09/2025": 1399.0, "24/09/2025": 1394.0, "23/09/2025": 1418.0, "22/09/2025": 1438.0, "21/09/2025": 1557.0, "20/09/2025": 1557.0, "19/09/2025": 1557.0, "18/09/2025": 1552.0, "17/09/2025": 1494.0, "16/09/2025": 1475.0, "15/09/2025": 1495.0, "14/09/2025": 1478.0, "13/09/2025": 1478.0, "12/09/2025": 1478.0, "11/09/2025": 1447.0, "10/09/2025": 1435.0, "09/09/2025": 1438.0, "08/09/2025": 1446.0, "07/09/2025": 1388.0, "06/09/2025": 1388.0, "05/09/2025": 1388.0, "04/09/2025": 1379.0, "03/09/2025": 1373.0, "02/09/2025": 1370.0, "01/09/2025": 1351.0, "31/08/2025": 1354.0, "30/08/2025": 1354.0, "29/08/2025": 1354.0, "28/08/2025": 1346.0, "27/08/2025": 1355.0, "26/08/2025": 1358.0, "25/08/2025": 1362.0, "24/08/2025": 1335.0, "23/08/2025": 1335.0, "22/08/2025": 1335.0, "21/08/2025": 1321.0, "20/08/2025": 1308.0, "19/08/2025": 1302.0, "18/08/2025": 1303.0, "17/08/2025": 1319.0, "16/08/2025": 1319.0, "15/08/2025": 1319.0, "14/08/2025": 1306.0, "13/08/2025": 1319.0, "12/08/2025": 1320.0, "11/08/2025": 1324.0, "10/08/2025": 1331.0, "09/08/2025": 1331.0, "08/08/2025": 1331.0, "07/08/2025": 1327.0, "06/08/2025": 1334.0, "05/08/2025": 1346.0, "04/08/2025": 1356.0, "03/08/2025": 1365.0, "02/08/2025": 1365.0, "01/08/2025": 1365.0, "31/07/2025": 1359.0, "30/07/2025": 1316.0, "29/07/2025": 1293.0, "28/07/2025": 1299.0, "27/07/2025": 1289.0, "26/07/2025": 1289.0, "25/07/2025": 1289.0, "24/07/2025": 1276.0, "23/07/2025": 1266.0, "22/07/2025": 1263.0, "21/07/2025": 1286.0, "20/07/2025": 1295.0, "19/07/2025": 1295.0, "18/07/2025": 1295.0, "17/07/2025": 1283.0, "16/07/2025": 1277.0, "15/07/2025": 1279.0, "14/07/2025": 1295.0, "13/07/2025": 1273.0, "12/07/2025": 1273.0, "11/07/2025": 1273.0, "10/07/2025": 1270.0, "09/07/2025": 1272.0, "08/07/2025": 1260.0, "07/07/2025": 1277.0, "06/07/2025": 1237.0, "05/07/2025": 1237.0, "04/07/2025": 1237.0, "03/07/2025": 1234.0, "02/07/2025": 1237.0, "01/07/2025": 1235.0, "30/06/2025": 1210.0, "29/06/2025": 1202.0, "28/06/2025": 1202.0, "27/06/2025": 1202.0, "26/06/2025": 1201.0, "25/06/2025": 1203.0, "24/06/2025": 1188.0, "23/06/2025": 1189.0, "22/06/2025": 1182.0, "21/06/2025": 1182.0, "20/06/2025": 1182.0, "19/06/2025": 1172.0, "18/06/2025": 1175.0, "17/06/2025": 1183.0, "16/06/2025": 1182.0, "15/06/2025": 1192.0, "14/06/2025": 1192.0, "13/06/2025": 1192.0, "12/06/2025": 1191.0, "11/06/2025": 1196.0, "10/06/2025": 1195.0, "09/06/2025": 1200.0, "08/06/2025": 1199.0, "07/06/2025": 1199.0, "06/06/2025": 1199.0, "05/06/2025": 1195.0, "04/06/2025": 1202.0, "03/06/2025": 1200.0, "02/06/2025": 1194.0, "01/06/2025": 1203.0, "31/05/2025": 1203.0, "30/05/2025": 1203.0, "29/05/2025": 1196.0, "28/05/2025": 1177.0, "27/05/2025": 1175.0, "26/05/2025": 1169.0, "25/05/2025": 1165.0, "24/05/2025": 1165.0, "23/05/2025": 1165.0, "22/05/2025": 1161.0, "21/05/2025": 1166.0, "20/05/2025": 1170.0, "19/05/2025": 1163.0, "18/05/2025": 1175.0, "17/05/2025": 1175.0, "16/05/2025": 1175.0, "15/05/2025": 1165.0, "14/05/2025": 1153.0, "13/05/2025": 1161.0, "12/05/2025": 1161.0, "11/05/2025": 1155.0, "10/05/2025": 1155.0, "09/05/2025": 1155.0, "08/05/2025": 1160.0, "07/05/2025": 1167.0, "06/05/2025": 1212.0, "05/05/2025": 1217.0, "04/05/2025": 1219.0, "03/05/2025": 1219.0, "02/05/2025": 1219.0, "01/05/2025": 1214.0, "30/04/2025": 1194.0, "29/04/2025": 1187.0, "28/04/2025": 1193.0, "27/04/2025": 1198.0, "26/04/2025": 1198.0, "25/04/2025": 1198.0, "24/04/2025": 1200.0, "23/04/2025": 1181.0, "22/04/2025": 1159.0, "21/04/2025": 1132.0, "20/04/2025": 1169.0, "19/04/2025": 1169.0, "18/04/2025": 1169.0, "17/04/2025": 1169.0, "16/04/2025": 1183.0, "15/04/2025": 1248.0, "14/04/2025": 1258.0, "13/04/2025": 1339.0, "12/04/2025": 1339.0, "11/04/2025": 1339.0, "10/04/2025": 1364.0, "09/04/2025": 1343.0, "08/04/2025": 1374.0, "07/04/2025": 1361.0, "06/04/2025": 1338.0, "05/04/2025": 1338.0, "04/04/2025": 1338.0, "03/04/2025": 1322.0, "02/04/2025": 1301.0, "01/04/2025": 1310.0, "31/03/2025": 1316.0, "30/03/2025": 1305.0, "29/03/2025": 1305.0, "28/03/2025": 1305.0, "27/03/2025": 1297.0, "26/03/2025": 1296.0, "25/03/2025": 1297.0, "24/03/2025": 1264.0, "23/03/2025": 1292.0, "22/03/2025": 1292.0, "21/03/2025": 1292.0, "20/03/2025": 1289.0, "19/03/2025": 1293.0, "18/03/2025": 1301.0, "17/03/2025": 1258.0, "16/03/2025": 1241.0, "15/03/2025": 1241.0, "14/03/2025": 1241.0, "13/03/2025": 1235.0, "12/03/2025": 1230.0, "11/03/2025": 1229.0, "10/03/2025": 1228.0, "09/03/2025": 1220.0, "08/03/2025": 1220.0, "07/03/2025": 1220.0, "06/03/2025": 1235.0, "05/03/2025": 1234.0, "04/03/2025": 1250.0, "03/03/2025": 1232.0, "02/03/2025": 1215.0, "01/03/2025": 1215.0, "28/02/2025": 1215.0, "27/02/2025": 1231.0, "26/02/2025": 1211.0, "25/02/2025": 1216.0, "24/02/2025": 1223.0, "23/02/2025": 1217.0, "22/02/2025": 1217.0, "21/02/2025": 1217.0, "20/02/2025": 1211.0, "19/02/2025": 1214.0, "18/02/2025": 1213.0, "17/02/2025": 1184.0, "16/02/2025": 1201.0, "15/02/2025": 1201.0, "14/02/2025": 1201.0, "13/02/2025": 1197.0, "12/02/2025": 1196.0, "11/02/2025": 1197.0, "10/02/2025": 1191.0, "09/02/2025": 1205.0, "08/02/2025": 1205.0, "07/02/2025": 1205.0, "06/02/2025": 1192.0, "05/02/2025": 1205.0, "04/02/2025": 1193.0, "03/02/2025": 1194.0, "02/02/2025": 1191.0, "01/02/2025": 1191.0, "31/01/2025": 1191.0, "30/01/2025": 1186.0, "29/01/2025": 1179.0, "28/01/2025": 1177.0, "27/01/2025": 1166.0, "26/01/2025": 1173.0, "25/01/2025": 1173.0, "24/01/2025": 1173.0, "23/01/2025": 1192.0, "22/01/2025": 1198.0, "21/01/2025": 1181.0, "20/01/2025": 1201.0, "19/01/2025": 1188.0, "18/01/2025": 1188.0, "17/01/2025": 1188.0, "16/01/2025": 1196.0, "15/01/2025": 1189.0, "14/01/2025": 1191.0, "13/01/2025": 1190.0, "12/01/2025": 1195.0, "11/01/2025": 1195.0, "10/01/2025": 1195.0, "09/01/2025": 1208.0, "08/01/2025": 1193.0, "07/01/2025": 1191.0, "06/01/2025": 1190.0, "05/01/2025": 1180.0, "04/01/2025": 1180.0, "03/01/2025": 1180.0, "02/01/2025": 1174.0, "01/01/2025": 1197.0, "31/12/2024": 1197.0, "30/12/2024": 1189.0, "29/12/2024": 1186.0, "28/12/2024": 1186.0, "27/12/2024": 1186.0, "26/12/2024": 1190.0, "25/12/2024": 1173.0, "24/12/2024": 1173.0, "23/12/2024": 1171.0, "22/12/2024": 1172.0, "21/12/2024": 1172.0, "20/12/2024": 1172.0, "19/12/2024": 1157.0, "18/12/2024": 1188.0, "17/12/2024": 1150.0, "16/12/2024": 1115.0, "15/12/2024": 1090.0, "14/12/2024": 1090.0, "13/12/2024": 1090.0, "12/12/2024": 1073.0, "11/12/2024": 1066.0, "10/12/2024": 1077.0, "09/12/2024": 1071.0, "08/12/2024": 1070.0, "07/12/2024": 1070.0, "06/12/2024": 1070.0, "05/12/2024": 1088.0, "04/12/2024": 1102.0, "03/12/2024": 1106.0, "02/12/2024": 1101.0, "01/12/2024": 1111.0, "30/11/2024": 1111.0, "29/11/2024": 1111.0, "28/11/2024": 1112.0, "27/11/2024": 1107.0, "26/11/2024": 1109.0, "25/11/2024": 1113.0, "24/11/2024": 1113.0, "23/11/2024": 1113.0, "22/11/2024": 1113.0, "21/11/2024": 1113.0, "20/11/2024": 1111.0, "19/11/2024": 1113.0, "18/11/2024": 1090.0, "17/11/2024": 1129.0, "16/11/2024": 1129.0, "15/11/2024": 1129.0, "14/11/2024": 1155.0, "13/11/2024": 1157.0, "12/11/2024": 1164.0, "11/11/2024": 1160.0, "10/11/2024": 1157.0, "09/11/2024": 1157.0, "08/11/2024": 1157.0, "07/11/2024": 1167.0, "06/11/2024": 1165.0, "05/11/2024": 1181.0, "04/11/2024": 1185.0, "03/11/2024": 1177.0, "02/11/2024": 1177.0, "01/11/2024": 1177.0, "31/10/2024": 1158.0, "30/10/2024": 1159.0, "29/10/2024": 1155.0, "28/10/2024": 1158.0, "27/10/2024": 1165.0, "26/10/2024": 1165.0, "25/10/2024": 1165.0, "24/10/2024": 1181.0, "23/10/2024": 1188.0, "22/10/2024": 1194.0, "21/10/2024": 1195.0, "20/10/2024": 1197.0, "19/10/2024": 1197.0, "18/10/2024": 1197.0, "17/10/2024": 1194.0, "16/10/2024": 1190.0, "15/10/2024": 1179.0, "14/10/2024": 1181.0, "13/10/2024": 1175.0, "12/10/2024": 1175.0, "11/10/2024": 1175.0, "10/10/2024": 1179.0, "09/10/2024": 1195.0, "08/10/2024": 1213.0, "07/10/2024": 1222.0, "06/10/2024": 1226.0, "05/10/2024": 1226.0, "04/10/2024": 1226.0, "03/10/2024": 1230.0, "02/10/2024": 1239.0, "01/10/2024": 1246.0, "30/09/2024": 1239.0, "28/09/2024": 1229.0, "27/09/2024": 1229.0, "26/09/2024": 1228.0, "25/09/2024": 1228.0, "24/09/2024": 1224.0, "23/09/2024": 1227.0, "22/09/2024": 1224.0, "21/09/2024": 1224.0, "20/09/2024": 1224.0, "19/09/2024": 1219.0, "18/09/2024": 1235.0, "17/09/2024": 1242.0, "16/09/2024": 1244.0, "15/09/2024": 1252.0, "14/09/2024": 1252.0, "13/09/2024": 1252.0, "12/09/2024": 1256.0, "11/09/2024": 1252.0, "10/09/2024": 1251.0, "09/09/2024": 1244.0, "08/09/2024": 1263.0, "07/09/2024": 1263.0, "06/09/2024": 1263.0, "05/09/2024": 1274.0, "04/09/2024": 1295.0, "03/09/2024": 1309.0, "02/09/2024": 1311.0, "01/09/2024": 1296.0, "31/08/2024": 1296.0, "30/08/2024": 1296.0, "29/08/2024": 1288.0, "28/08/2024": 1295.0, "27/08/2024": 1297.0, "26/08/2024": 1291.0, "25/08/2024": 1290.0, "24/08/2024": 1290.0, "23/08/2024": 1290.0, "22/08/2024": 1291.0, "21/08/2024": 1292.0, "20/08/2024": 1295.0, "19/08/2024": 1287.0, "18/08/2024": 1288.0, "17/08/2024": 1288.0, "16/08/2024": 1288.0, "15/08/2024": 1270.0, "14/08/2024": 1269.0, "13/08/2024": 1267.0, "12/08/2024": 1284.0, "11/08/2024": 1287.0, "10/08/2024": 1287.0, "09/08/2024": 1287.0, "08/08/2024": 1295.0, "07/08/2024": 1319.0, "06/08/2024": 1332.0, "05/08/2024": 1337.0, "04/08/2024": 1324.0, "03/08/2024": 1324.0, "02/08/2024": 1324.0, "01/08/2024": 1299.0, "31/07/2024": 1282.0, "30/07/2024": 1258.0, "29/07/2024": 1289.0, "28/07/2024": 1312.0, "27/07/2024": 1312.0, "26/07/2024": 1312.0, "25/07/2024": 1322.0, "24/07/2024": 1333.0, "23/07/2024": 1331.0, "22/07/2024": 1330.0, "21/07/2024": 1326.0, "20/07/2024": 1326.0, "19/07/2024": 1326.0, "18/07/2024": 1322.0, "17/07/2024": 1303.0, "16/07/2024": 1283.0, "15/07/2024": 1306.0, "14/07/2024": 1427.0, "13/07/2024": 1427.0, "12/07/2024": 1427.0, "11/07/2024": 1411.0, "10/07/2024": 1388.0, "09/07/2024": 1376.0, "08/07/2024": 1383.0, "07/07/2024": 1389.0, "06/07/2024": 1398.0, "05/07/2024": 1398.0, "04/07/2024": 1398.0, "03/07/2024": 1382.0, "02/07/2024": 1435.0, "01/07/2024": 1413.0, "30/06/2024": 1359.0, "29/06/2024": 1359.0, "28/06/2024": 1359.0, "27/06/2024": 1355.0, "26/06/2024": 1353.0, "25/06/2024": 1322.0, "24/06/2024": 1310.0, "23/06/2024": 1295.0, "22/06/2024": 1295.0, "21/06/2024": 1295.0, "20/06/2024": 1295.0, "19/06/2024": 1295.0, "18/06/2024": 1269.0, "17/06/2024": 1272.0, "16/06/2024": 1272.0, "15/06/2024": 1272.0, "14/06/2024": 1272.0, "13/06/2024": 1278.0, "12/06/2024": 1309.0, "11/06/2024": 1311.0, "10/06/2024": 1308.0, "09/06/2024": 1307.0, "08/06/2024": 1307.0, "07/06/2024": 1307.0, "06/06/2024": 1301.0, "05/06/2024": 1307.0, "04/06/2024": 1313.0, "03/06/2024": 1291.0, "02/06/2024": 1247.0, "01/06/2024": 1247.0, "31/05/2024": 1247.0, "30/05/2024": 1213.0, "29/05/2024": 1214.0, "28/05/2024": 1239.0, "27/05/2024": 1266.0, "26/05/2024": 1235.0, "25/05/2024": 1235.0, "24/05/2024": 1235.0, "23/05/2024": 1256.0, "22/05/2024": 1253.0, "21/05/2024": 1194.0, "20/05/2024": 1137.0, "19/05/2024": 1104.0, "18/05/2024": 1104.0, "17/05/2024": 1104.0, "16/05/2024": 1100.0, "15/05/2024": 1094.0, "14/05/2024": 1086.0, "13/05/2024": 1076.0, "12/05/2024": 1079.0, "11/05/2024": 1079.0, "10/05/2024": 1079.0, "09/05/2024": 1083.0, "08/05/2024": 1078.0, "07/05/2024": 1096.0, "06/05/2024": 1111.0, "05/05/2024": 1121.0, "04/05/2024": 1121.0, "03/05/2024": 1121.0, "02/05/2024": 1122.0, "01/05/2024": 1104.0, "30/04/2024": 1095.0, "29/04/2024": 1093.0, "28/04/2024": 1086.0, "27/04/2024": 1086.0, "26/04/2024": 1086.0, "25/04/2024": 1082.0, "24/04/2024": 1058.0, "23/04/2024": 1055.0, "22/04/2024": 1060.0, "21/04/2024": 1068.0, "20/04/2024": 1068.0, "19/04/2024": 1068.0, "18/04/2024": 1070.0, "17/04/2024": 1065.0, "16/04/2024": 1076.0, "15/04/2024": 1074.0, "14/04/2024": 1052.0, "13/04/2024": 1052.0, "12/04/2024": 1052.0, "11/04/2024": 1050.0, "10/04/2024": 1047.0, "09/04/2024": 1043.0, "08/04/2024": 1039.0, "07/04/2024": 1050.0, "06/04/2024": 1050.0, "05/04/2024": 1050.0, "04/04/2024": 1057.0, "03/04/2024": 1074.0, "02/04/2024": 1113.0, "01/04/2024": 1095.0, "31/03/2024": 1098.0, "30/03/2024": 1098.0, "29/03/2024": 1098.0, "28/03/2024": 1098.0, "27/03/2024": 1085.0, "26/03/2024": 1101.0, "25/03/2024": 1083.0, "24/03/2024": 1096.0, "23/03/2024": 1096.0, "22/03/2024": 1096.0, "21/03/2024": 1101.0, "20/03/2024": 1098.0, "19/03/2024": 1084.0, "18/03/2024": 1080.0, "17/03/2024": 1074.0, "16/03/2024": 1074.0, "15/03/2024": 1074.0, "14/03/2024": 1059.0, "13/03/2024": 1054.0, "12/03/2024": 1073.0, "11/03/2024": 1025.0, "10/03/2024": 1053.0, "08/03/2024": 1053.0, "07/03/2024": 1030.0, "06/03/2024": 1022.0, "05/03/2024": 1043.0, "04/03/2024": 1070.0, "03/03/2024": 1085.0, "02/03/2024": 1085.0, "01/03/2024": 1085.0, "29/02/2024": 1066.0, "28/02/2024": 1071.0, "27/02/2024": 1090.0, "26/02/2024": 1097.0, "25/02/2024": 1121.0, "24/02/2024": 1121.0, "23/02/2024": 1121.0, "22/02/2024": 1105.0, "21/02/2024": 1108.0, "20/02/2024": 1127.0, "19/02/2024": 1134.0, "18/02/2024": 1118.0, "17/02/2024": 1118.0, "16/02/2024": 1118.0, "15/02/2024": 1161.0, "14/02/2024": 1178.0, "13/02/2024": 1252.0, "12/02/2024": 1240.0, "11/02/2024": 1235.0, "10/02/2024": 1235.0, "09/02/2024": 1235.0, "08/02/2024": 1255.0, "07/02/2024": 1263.0, "06/02/2024": 1253.0, "05/02/2024": 1294.0, "04/02/2024": 1298.0, "03/02/2024": 1298.0, "02/02/2024": 1298.0, "01/02/2024": 1286.0, "31/01/2024": 1267.0, "30/01/2024": 1273.0, "29/01/2024": 1260.0, "28/01/2024": 1235.0, "27/01/2024": 1235.0, "26/01/2024": 1264.0, "25/01/2024": 1323.0, "24/01/2024": 1294.0, "23/01/2024": 1290.0, "22/01/2024": 1314.0, "21/01/2024": 1304.0, "20/01/2024": 1304.0, "19/01/2024": 1304.0, "18/01/2024": 1282.0, "17/01/2024": 1272.0, "16/01/2024": 1212.0, "15/01/2024": 1171.0, "14/01/2024": 1148.0, "13/01/2024": 1148.0, "12/01/2024": 1148.0, "11/01/2024": 1164.0, "10/01/2024": 1190.0, "09/01/2024": 1206.0, "08/01/2024": 1201.0, "07/01/2024": 1144.0, "06/01/2024": 1144.0, "05/01/2024": 1144.0, "04/01/2024": 1099.0, "03/01/2024": 1052.0, "02/01/2024": 997.0, "01/01/2024": 973.0};
-var MEP_TABLE = {"19/04/2026": 1412.0, "20/04/2026": 1411.0, "21/04/2026": 1410.0, "22/04/2026": 1409.0, "23/04/2026": 1408.0, "24/04/2026": 1407.0, "25/04/2026": 1406.0, "26/04/2026": 1405.0, "27/04/2026": 1405.0, "28/04/2026": 1404.0, "29/04/2026": 1403.0, "30/04/2026": 1402.0, "01/05/2026": 1401.0, "02/05/2026": 1400.0, "03/05/2026": 1399.0, "04/05/2026": 1398.0, "05/05/2026": 1397.0, "06/05/2026": 1396.0, "07/05/2026": 1395.0, "08/05/2026": 1394.0, "09/05/2026": 1393.0, "10/05/2026": 1392.0, "11/05/2026": 1392.0, "12/05/2026": 1391.0, "13/05/2026": 1390.0, "14/05/2026": 1389.0, "15/05/2026": 1388.0, "16/05/2026": 1387.0, "17/05/2026": 1386.0, "18/05/2026": 1385.0, "24/11/2025": 1470.0, "07/04/2026": 1429.0, "08/04/2026": 1425.0, "09/04/2026": 1422.0, "10/04/2026": 1422.0, "11/04/2026": 1420.0, "12/04/2026": 1412.0, "13/04/2026": 1412.0, "14/04/2026": 1412.0, "15/04/2026": 1412.0, "16/04/2026": 1408.0, "17/04/2026": 1404.0, "18/04/2026": 1404.0, "06/04/2026": 1429.0, "05/04/2026": 1434.0, "04/04/2026": 1434.0, "03/04/2026": 1434.0, "02/04/2026": 1434.0, "01/04/2026": 1434.0, "31/03/2026": 1423.0, "30/03/2026": 1432.0, "29/03/2026": 1428.0, "28/03/2026": 1428.0, "27/03/2026": 1428.0, "26/03/2026": 1399.0, "25/03/2026": 1403.0, "24/03/2026": 1415.0, "23/03/2026": 1415.0, "22/03/2026": 1418.0, "21/03/2026": 1418.0, "20/03/2026": 1418.0, "19/03/2026": 1421.0, "18/03/2026": 1419.0, "17/03/2026": 1417.0, "16/03/2026": 1424.0, "15/03/2026": 1422.0, "14/03/2026": 1422.0, "13/03/2026": 1422.0, "12/03/2026": 1410.0, "11/03/2026": 1413.0, "10/03/2026": 1420.0, "09/03/2026": 1430.0, "08/03/2026": 1436.0, "07/03/2026": 1436.0, "06/03/2026": 1436.0, "05/03/2026": 1433.0, "04/03/2026": 1428.0, "03/03/2026": 1434.0, "02/03/2026": 1418.0, "01/03/2026": 1418.0, "28/02/2026": 1418.0, "27/02/2026": 1418.0, "26/02/2026": 1438.0, "25/02/2026": 1425.0, "24/02/2026": 1403.0, "23/02/2026": 1394.0, "22/02/2026": 1402.0, "21/02/2026": 1402.0, "20/02/2026": 1402.0, "19/02/2026": 1408.0, "18/02/2026": 1412.0, "12/02/2026": 1414.0, "11/02/2026": 1430.0, "30/01/2026": 1460.0, "29/01/2026": 1458.0, "28/01/2026": 1463.0, "27/01/2026": 1463.0, "26/01/2026": 1469.0, "22/01/2026": 1459.0, "21/01/2026": 1468.0, "16/01/2026": 1472.0, "15/01/2026": 1472.0, "13/01/2026": 1487.0, "08/01/2026": 1494.0, "06/01/2026": 1497.0, "30/12/2025": 1481.0, "24/12/2025": 1481.0, "22/12/2025": 1493.0, "19/12/2025": 1494.0, "18/12/2025": 1498.0, "17/12/2025": 1514.0, "16/12/2025": 1504.0, "15/12/2025": 1492.0, "03/12/2025": 1470.0, "26/11/2025": 1487.0, "20/11/2025": 1452.0, "19/11/2025": 1441.0, "17/11/2025": 1448.0, "04/11/2025": 1495.0, "31/10/2025": 1477.0, "02/09/2025": 1365.0, "01/09/2025": 1376.0, "29/08/2025": 1357.0, "28/08/2025": 1344.0, "27/08/2025": 1358.0, "13/08/2025": 1310.0, "08/08/2025": 1332.0, "06/08/2025": 1336.0, "18/07/2025": 1292.0, "17/07/2025": 1280.0, "16/07/2025": 1269.0, "15/07/2025": 1276.0, "14/07/2025": 1295.0, "10/07/2025": 1267.0, "09/07/2025": 1259.0, "08/07/2025": 1259.0, "07/07/2025": 1276.0, "04/07/2025": 1246.0, "30/06/2025": 1211.0, "27/06/2025": 1198.0, "26/06/2025": 1199.0, "25/06/2025": 1196.0, "24/06/2025": 1184.0, "18/06/2025": 1167.0, "22/05/2025": 1143.0, "21/05/2025": 1148.0, "19/05/2025": 1148.0, "12/05/2025": 1141.0, "05/05/2025": 1202.0, "30/04/2025": 1183.0, "22/04/2025": 1140.0, "01/04/2025": 1314.0, "20/03/2025": 1287.0, "19/03/2025": 1286.0, "14/03/2025": 1237.0, "13/03/2025": 1233.0, "12/03/2025": 1229.0, "10/03/2025": 1228.0, "07/03/2025": 1221.0, "06/03/2025": 1237.0, "05/03/2025": 1235.0, "10/02/2025": 1184.0, "28/01/2025": 1161.0, "16/01/2025": 1166.0, "02/01/2025": 1162.0, "25/11/2024": 1077.0, "20/11/2024": 1074.0, "14/11/2024": 1105.0, "11/11/2024": 1131.0, "06/11/2024": 1145.0, "28/10/2024": 1134.0, "25/10/2024": 1141.0, "09/10/2024": 1147.0, "08/10/2024": 1169.0, "09/09/2024": 1226.0, "30/08/2024": 1279.0, "29/08/2024": 1271.0, "20/08/2024": 1287.0, "15/08/2024": 1276.0, "06/08/2024": 1336.0, "24/07/2024": 1337.0, "10/07/2024": 1377.0, "30/05/2024": 1182.0, "16/05/2024": 1062.0, "08/05/2024": 1038.0, "11/04/2024": 994.0, "09/04/2024": 1000.0, "26/03/2024": 1027.0};
+var CCL_TABLE = {"19/04/2026": 1462.0, "20/04/2026": 1463.0, "21/04/2026": 1464.0, "22/04/2026": 1465.0, "23/04/2026": 1465.0, "24/04/2026": 1466.0, "25/04/2026": 1467.0, "26/04/2026": 1468.0, "27/04/2026": 1469.0, "28/04/2026": 1470.0, "29/04/2026": 1471.0, "30/04/2026": 1471.0, "01/05/2026": 1472.0, "02/05/2026": 1473.0, "03/05/2026": 1474.0, "04/05/2026": 1475.0, "05/05/2026": 1476.0, "06/05/2026": 1477.0, "07/05/2026": 1478.0, "08/05/2026": 1478.0, "09/05/2026": 1479.0, "10/05/2026": 1480.0, "11/05/2026": 1481.0, "12/05/2026": 1482.0, "13/05/2026": 1483.0, "14/05/2026": 1484.0, "15/05/2026": 1484.0, "16/05/2026": 1485.0, "17/05/2026": 1486.0, "18/05/2026": 1487.0, "27/12/2023": 973.0, "24/11/2025": 1518.0, "07/04/2026": 1483.0, "08/04/2026": 1475.0, "09/04/2026": 1475.0, "10/04/2026": 1473.0, "11/04/2026": 1473.0, "12/04/2026": 1473.0, "13/04/2026": 1467.0, "14/04/2026": 1467.0, "15/04/2026": 1466.0, "16/04/2026": 1460.0, "17/04/2026": 1453.0, "18/04/2026": 1453.0, "06/04/2026": 1483.0, "05/04/2026": 1495.0, "04/04/2026": 1495.0, "03/04/2026": 1495.0, "02/04/2026": 1495.0, "01/04/2026": 1486.0, "31/03/2026": 1473.0, "30/03/2026": 1483.0, "29/03/2026": 1476.0, "28/03/2026": 1476.0, "27/03/2026": 1476.0, "26/03/2026": 1448.0, "25/03/2026": 1449.0, "24/03/2026": 1463.0, "23/03/2026": 1465.0, "22/03/2026": 1473.0, "21/03/2026": 1473.0, "20/03/2026": 1473.0, "19/03/2026": 1469.0, "18/03/2026": 1469.0, "17/03/2026": 1469.0, "16/03/2026": 1469.0, "15/03/2026": 1467.0, "14/03/2026": 1467.0, "13/03/2026": 1467.0, "12/03/2026": 1460.0, "11/03/2026": 1453.0, "10/03/2026": 1464.0, "09/03/2026": 1474.0, "08/03/2026": 1482.0, "07/03/2026": 1482.0, "06/03/2026": 1482.0, "05/03/2026": 1462.0, "04/03/2026": 1464.0, "03/03/2026": 1484.0, "02/03/2026": 1456.0, "01/03/2026": 1455.0, "28/02/2026": 1455.0, "27/02/2026": 1455.0, "26/02/2026": 1478.0, "25/02/2026": 1464.0, "24/02/2026": 1444.0, "23/02/2026": 1436.0, "22/02/2026": 1442.0, "21/02/2026": 1442.0, "20/02/2026": 1442.0, "19/02/2026": 1451.0, "18/02/2026": 1449.0, "12/02/2026": 1486.0, "11/02/2026": 1478.0, "30/01/2026": 1502.0, "29/01/2026": 1505.0, "28/01/2026": 1513.0, "27/01/2026": 1511.0, "26/01/2026": 1516.0, "22/01/2026": 1508.0, "21/01/2026": 1516.0, "20/01/2026": 1523.0, "16/01/2026": 1519.0, "15/01/2026": 1523.0, "14/01/2026": 1522.0, "13/01/2026": 1528.0, "12/01/2026": 1534.0, "09/01/2026": 1527.0, "08/01/2026": 1526.0, "06/01/2026": 1536.0, "05/01/2026": 1536.0, "02/01/2026": 1550.0, "30/12/2025": 1522.0, "26/12/2025": 1520.0, "24/12/2025": 1528.0, "23/12/2025": 1529.0, "22/12/2025": 1548.0, "19/12/2025": 1545.0, "18/12/2025": 1550.0, "17/12/2025": 1564.0, "16/12/2025": 1549.0, "15/12/2025": 1523.0, "12/12/2025": 1515.0, "11/12/2025": 1508.0, "10/12/2025": 1496.0, "09/12/2025": 1514.0, "05/12/2025": 1516.0, "04/12/2025": 1510.0, "03/12/2025": 1518.0, "02/12/2025": 1528.0, "01/12/2025": 1516.0, "28/11/2025": 1518.0, "27/11/2025": 1524.0, "26/11/2025": 1534.0, "25/11/2025": 1523.0, "22/11/2025": 1510.0, "21/11/2025": 1510.0, "20/11/2025": 1513.0, "19/11/2025": 1466.0, "18/11/2025": 1485.0, "17/11/2025": 1480.0, "16/11/2025": 1502.0, "15/11/2025": 1502.0, "14/11/2025": 1502.0, "13/11/2025": 1475.0, "12/11/2025": 1477.0, "11/11/2025": 1480.0, "10/11/2025": 1481.0, "09/11/2025": 1473.0, "08/11/2025": 1473.0, "07/11/2025": 1473.0, "06/11/2025": 1506.0, "05/11/2025": 1500.0, "04/11/2025": 1522.0, "03/11/2025": 1518.0, "02/11/2025": 1502.0, "01/11/2025": 1502.0, "31/10/2025": 1502.0, "30/10/2025": 1494.0, "29/10/2025": 1474.0, "28/10/2025": 1474.0, "27/10/2025": 1458.0, "25/10/2025": 1568.0, "24/10/2025": 1568.0, "23/10/2025": 1551.0, "22/10/2025": 1608.0, "21/10/2025": 1608.0, "20/10/2025": 1570.0, "19/10/2025": 1540.0, "18/10/2025": 1540.0, "17/10/2025": 1540.0, "16/10/2025": 1484.0, "15/10/2025": 1455.0, "14/10/2025": 1469.0, "13/10/2025": 1440.0, "12/10/2025": 1497.0, "11/10/2025": 1497.0, "10/10/2025": 1497.0, "09/10/2025": 1451.0, "08/10/2025": 1545.0, "07/10/2025": 1558.0, "06/10/2025": 1516.0, "05/10/2025": 1523.0, "04/10/2025": 1523.0, "03/10/2025": 1523.0, "02/10/2025": 1554.0, "01/10/2025": 1571.0, "30/09/2025": 1538.0, "29/09/2025": 1489.0, "28/09/2025": 1468.0, "27/09/2025": 1468.0, "26/09/2025": 1468.0, "25/09/2025": 1399.0, "24/09/2025": 1394.0, "23/09/2025": 1418.0, "22/09/2025": 1438.0, "21/09/2025": 1557.0, "20/09/2025": 1557.0, "19/09/2025": 1557.0, "18/09/2025": 1552.0, "17/09/2025": 1494.0, "16/09/2025": 1475.0, "15/09/2025": 1495.0, "14/09/2025": 1478.0, "13/09/2025": 1478.0, "12/09/2025": 1478.0, "11/09/2025": 1447.0, "10/09/2025": 1435.0, "09/09/2025": 1438.0, "08/09/2025": 1446.0, "07/09/2025": 1388.0, "06/09/2025": 1388.0, "05/09/2025": 1388.0, "04/09/2025": 1379.0, "03/09/2025": 1373.0, "02/09/2025": 1370.0, "01/09/2025": 1351.0, "31/08/2025": 1354.0, "30/08/2025": 1354.0, "29/08/2025": 1354.0, "28/08/2025": 1346.0, "27/08/2025": 1355.0, "26/08/2025": 1358.0, "25/08/2025": 1362.0, "24/08/2025": 1335.0, "23/08/2025": 1335.0, "22/08/2025": 1335.0, "21/08/2025": 1321.0, "20/08/2025": 1308.0, "19/08/2025": 1302.0, "18/08/2025": 1303.0, "17/08/2025": 1319.0, "16/08/2025": 1319.0, "15/08/2025": 1319.0, "14/08/2025": 1306.0, "13/08/2025": 1319.0, "12/08/2025": 1320.0, "11/08/2025": 1324.0, "10/08/2025": 1331.0, "09/08/2025": 1331.0, "08/08/2025": 1331.0, "07/08/2025": 1327.0, "06/08/2025": 1334.0, "05/08/2025": 1346.0, "04/08/2025": 1356.0, "03/08/2025": 1365.0, "02/08/2025": 1365.0, "01/08/2025": 1365.0, "31/07/2025": 1359.0, "30/07/2025": 1316.0, "29/07/2025": 1293.0, "28/07/2025": 1299.0, "27/07/2025": 1289.0, "26/07/2025": 1289.0, "25/07/2025": 1289.0, "24/07/2025": 1276.0, "23/07/2025": 1266.0, "22/07/2025": 1263.0, "21/07/2025": 1286.0, "20/07/2025": 1295.0, "19/07/2025": 1295.0, "18/07/2025": 1295.0, "17/07/2025": 1283.0, "16/07/2025": 1277.0, "15/07/2025": 1279.0, "14/07/2025": 1295.0, "13/07/2025": 1273.0, "12/07/2025": 1273.0, "11/07/2025": 1273.0, "10/07/2025": 1270.0, "09/07/2025": 1272.0, "08/07/2025": 1260.0, "07/07/2025": 1277.0, "06/07/2025": 1237.0, "05/07/2025": 1237.0, "04/07/2025": 1237.0, "03/07/2025": 1234.0, "02/07/2025": 1237.0, "01/07/2025": 1235.0, "30/06/2025": 1210.0, "29/06/2025": 1202.0, "28/06/2025": 1202.0, "27/06/2025": 1202.0, "26/06/2025": 1201.0, "25/06/2025": 1203.0, "24/06/2025": 1188.0, "23/06/2025": 1189.0, "22/06/2025": 1182.0, "21/06/2025": 1182.0, "20/06/2025": 1182.0, "19/06/2025": 1172.0, "18/06/2025": 1175.0, "17/06/2025": 1183.0, "16/06/2025": 1182.0, "15/06/2025": 1192.0, "14/06/2025": 1192.0, "13/06/2025": 1192.0, "12/06/2025": 1191.0, "11/06/2025": 1196.0, "10/06/2025": 1195.0, "09/06/2025": 1200.0, "08/06/2025": 1199.0, "07/06/2025": 1199.0, "06/06/2025": 1199.0, "05/06/2025": 1195.0, "04/06/2025": 1202.0, "03/06/2025": 1200.0, "02/06/2025": 1194.0, "01/06/2025": 1203.0, "31/05/2025": 1203.0, "30/05/2025": 1203.0, "29/05/2025": 1196.0, "28/05/2025": 1177.0, "27/05/2025": 1175.0, "26/05/2025": 1169.0, "25/05/2025": 1165.0, "24/05/2025": 1165.0, "23/05/2025": 1165.0, "22/05/2025": 1161.0, "21/05/2025": 1166.0, "20/05/2025": 1170.0, "19/05/2025": 1163.0, "18/05/2025": 1175.0, "17/05/2025": 1175.0, "16/05/2025": 1175.0, "15/05/2025": 1165.0, "14/05/2025": 1153.0, "13/05/2025": 1161.0, "12/05/2025": 1161.0, "11/05/2025": 1155.0, "10/05/2025": 1155.0, "09/05/2025": 1155.0, "08/05/2025": 1160.0, "07/05/2025": 1167.0, "06/05/2025": 1212.0, "05/05/2025": 1217.0, "04/05/2025": 1219.0, "03/05/2025": 1219.0, "02/05/2025": 1219.0, "01/05/2025": 1214.0, "30/04/2025": 1194.0, "29/04/2025": 1187.0, "28/04/2025": 1193.0, "27/04/2025": 1198.0, "26/04/2025": 1198.0, "25/04/2025": 1198.0, "24/04/2025": 1200.0, "23/04/2025": 1181.0, "22/04/2025": 1159.0, "21/04/2025": 1132.0, "20/04/2025": 1169.0, "19/04/2025": 1169.0, "18/04/2025": 1169.0, "17/04/2025": 1169.0, "16/04/2025": 1183.0, "15/04/2025": 1248.0, "14/04/2025": 1258.0, "13/04/2025": 1339.0, "12/04/2025": 1339.0, "11/04/2025": 1339.0, "10/04/2025": 1364.0, "09/04/2025": 1343.0, "08/04/2025": 1374.0, "07/04/2025": 1361.0, "06/04/2025": 1338.0, "05/04/2025": 1338.0, "04/04/2025": 1338.0, "03/04/2025": 1322.0, "02/04/2025": 1301.0, "01/04/2025": 1310.0, "31/03/2025": 1316.0, "30/03/2025": 1305.0, "29/03/2025": 1305.0, "28/03/2025": 1305.0, "27/03/2025": 1297.0, "26/03/2025": 1296.0, "25/03/2025": 1297.0, "24/03/2025": 1264.0, "23/03/2025": 1292.0, "22/03/2025": 1292.0, "21/03/2025": 1292.0, "20/03/2025": 1289.0, "19/03/2025": 1293.0, "18/03/2025": 1301.0, "17/03/2025": 1258.0, "16/03/2025": 1241.0, "15/03/2025": 1241.0, "14/03/2025": 1241.0, "13/03/2025": 1235.0, "12/03/2025": 1230.0, "11/03/2025": 1229.0, "10/03/2025": 1228.0, "09/03/2025": 1220.0, "08/03/2025": 1220.0, "07/03/2025": 1220.0, "06/03/2025": 1235.0, "05/03/2025": 1234.0, "04/03/2025": 1250.0, "03/03/2025": 1232.0, "02/03/2025": 1215.0, "01/03/2025": 1215.0, "28/02/2025": 1215.0, "27/02/2025": 1231.0, "26/02/2025": 1211.0, "25/02/2025": 1216.0, "24/02/2025": 1223.0, "23/02/2025": 1217.0, "22/02/2025": 1217.0, "21/02/2025": 1217.0, "20/02/2025": 1211.0, "19/02/2025": 1214.0, "18/02/2025": 1213.0, "17/02/2025": 1184.0, "16/02/2025": 1201.0, "15/02/2025": 1201.0, "14/02/2025": 1201.0, "13/02/2025": 1197.0, "12/02/2025": 1196.0, "11/02/2025": 1197.0, "10/02/2025": 1191.0, "09/02/2025": 1205.0, "08/02/2025": 1205.0, "07/02/2025": 1205.0, "06/02/2025": 1192.0, "05/02/2025": 1205.0, "04/02/2025": 1193.0, "03/02/2025": 1194.0, "02/02/2025": 1191.0, "01/02/2025": 1191.0, "31/01/2025": 1191.0, "30/01/2025": 1186.0, "29/01/2025": 1179.0, "28/01/2025": 1177.0, "27/01/2025": 1166.0, "26/01/2025": 1173.0, "25/01/2025": 1173.0, "24/01/2025": 1173.0, "23/01/2025": 1192.0, "22/01/2025": 1198.0, "21/01/2025": 1181.0, "20/01/2025": 1201.0, "19/01/2025": 1188.0, "18/01/2025": 1188.0, "17/01/2025": 1188.0, "16/01/2025": 1196.0, "15/01/2025": 1189.0, "14/01/2025": 1191.0, "13/01/2025": 1190.0, "12/01/2025": 1195.0, "11/01/2025": 1195.0, "10/01/2025": 1195.0, "09/01/2025": 1208.0, "08/01/2025": 1193.0, "07/01/2025": 1191.0, "06/01/2025": 1190.0, "05/01/2025": 1180.0, "04/01/2025": 1180.0, "03/01/2025": 1180.0, "02/01/2025": 1174.0, "01/01/2025": 1197.0, "31/12/2024": 1197.0, "30/12/2024": 1189.0, "29/12/2024": 1186.0, "28/12/2024": 1186.0, "27/12/2024": 1186.0, "26/12/2024": 1190.0, "25/12/2024": 1173.0, "24/12/2024": 1173.0, "23/12/2024": 1171.0, "22/12/2024": 1172.0, "21/12/2024": 1172.0, "20/12/2024": 1172.0, "19/12/2024": 1157.0, "18/12/2024": 1188.0, "17/12/2024": 1150.0, "16/12/2024": 1115.0, "15/12/2024": 1090.0, "14/12/2024": 1090.0, "13/12/2024": 1090.0, "12/12/2024": 1073.0, "11/12/2024": 1066.0, "10/12/2024": 1077.0, "09/12/2024": 1071.0, "08/12/2024": 1070.0, "07/12/2024": 1070.0, "06/12/2024": 1070.0, "05/12/2024": 1088.0, "04/12/2024": 1102.0, "03/12/2024": 1106.0, "02/12/2024": 1101.0, "01/12/2024": 1111.0, "30/11/2024": 1111.0, "29/11/2024": 1111.0, "28/11/2024": 1112.0, "27/11/2024": 1107.0, "26/11/2024": 1109.0, "25/11/2024": 1113.0, "24/11/2024": 1113.0, "23/11/2024": 1113.0, "22/11/2024": 1113.0, "21/11/2024": 1113.0, "20/11/2024": 1111.0, "19/11/2024": 1113.0, "18/11/2024": 1090.0, "17/11/2024": 1129.0, "16/11/2024": 1129.0, "15/11/2024": 1129.0, "14/11/2024": 1155.0, "13/11/2024": 1157.0, "12/11/2024": 1164.0, "11/11/2024": 1160.0, "10/11/2024": 1157.0, "09/11/2024": 1157.0, "08/11/2024": 1157.0, "07/11/2024": 1167.0, "06/11/2024": 1165.0, "05/11/2024": 1181.0, "04/11/2024": 1185.0, "03/11/2024": 1177.0, "02/11/2024": 1177.0, "01/11/2024": 1177.0, "31/10/2024": 1158.0, "30/10/2024": 1159.0, "29/10/2024": 1155.0, "28/10/2024": 1158.0, "27/10/2024": 1165.0, "26/10/2024": 1165.0, "25/10/2024": 1165.0, "24/10/2024": 1181.0, "23/10/2024": 1188.0, "22/10/2024": 1194.0, "21/10/2024": 1195.0, "20/10/2024": 1197.0, "19/10/2024": 1197.0, "18/10/2024": 1197.0, "17/10/2024": 1194.0, "16/10/2024": 1190.0, "15/10/2024": 1179.0, "14/10/2024": 1181.0, "13/10/2024": 1175.0, "12/10/2024": 1175.0, "11/10/2024": 1175.0, "10/10/2024": 1179.0, "09/10/2024": 1195.0, "08/10/2024": 1213.0, "07/10/2024": 1222.0, "06/10/2024": 1226.0, "05/10/2024": 1226.0, "04/10/2024": 1226.0, "03/10/2024": 1230.0, "02/10/2024": 1239.0, "01/10/2024": 1246.0, "30/09/2024": 1239.0, "28/09/2024": 1229.0, "27/09/2024": 1229.0, "26/09/2024": 1228.0, "25/09/2024": 1228.0, "24/09/2024": 1224.0, "23/09/2024": 1227.0, "22/09/2024": 1224.0, "21/09/2024": 1224.0, "20/09/2024": 1224.0, "19/09/2024": 1219.0, "18/09/2024": 1235.0, "17/09/2024": 1242.0, "16/09/2024": 1244.0, "15/09/2024": 1252.0, "14/09/2024": 1252.0, "13/09/2024": 1252.0, "12/09/2024": 1256.0, "11/09/2024": 1252.0, "10/09/2024": 1251.0, "09/09/2024": 1244.0, "08/09/2024": 1263.0, "07/09/2024": 1263.0, "06/09/2024": 1263.0, "05/09/2024": 1274.0, "04/09/2024": 1295.0, "03/09/2024": 1309.0, "02/09/2024": 1311.0, "01/09/2024": 1296.0, "31/08/2024": 1296.0, "30/08/2024": 1296.0, "29/08/2024": 1288.0, "28/08/2024": 1295.0, "27/08/2024": 1297.0, "26/08/2024": 1291.0, "25/08/2024": 1290.0, "24/08/2024": 1290.0, "23/08/2024": 1290.0, "22/08/2024": 1291.0, "21/08/2024": 1292.0, "20/08/2024": 1295.0, "19/08/2024": 1287.0, "18/08/2024": 1288.0, "17/08/2024": 1288.0, "16/08/2024": 1288.0, "15/08/2024": 1270.0, "14/08/2024": 1269.0, "13/08/2024": 1267.0, "12/08/2024": 1284.0, "11/08/2024": 1287.0, "10/08/2024": 1287.0, "09/08/2024": 1287.0, "08/08/2024": 1295.0, "07/08/2024": 1319.0, "06/08/2024": 1332.0, "05/08/2024": 1337.0, "04/08/2024": 1324.0, "03/08/2024": 1324.0, "02/08/2024": 1324.0, "01/08/2024": 1299.0, "31/07/2024": 1282.0, "30/07/2024": 1258.0, "29/07/2024": 1289.0, "28/07/2024": 1312.0, "27/07/2024": 1312.0, "26/07/2024": 1312.0, "25/07/2024": 1322.0, "24/07/2024": 1333.0, "23/07/2024": 1331.0, "22/07/2024": 1330.0, "21/07/2024": 1326.0, "20/07/2024": 1326.0, "19/07/2024": 1326.0, "18/07/2024": 1322.0, "17/07/2024": 1303.0, "16/07/2024": 1283.0, "15/07/2024": 1306.0, "14/07/2024": 1427.0, "13/07/2024": 1427.0, "12/07/2024": 1427.0, "11/07/2024": 1411.0, "10/07/2024": 1388.0, "09/07/2024": 1376.0, "08/07/2024": 1383.0, "07/07/2024": 1389.0, "06/07/2024": 1398.0, "05/07/2024": 1398.0, "04/07/2024": 1398.0, "03/07/2024": 1382.0, "02/07/2024": 1435.0, "01/07/2024": 1413.0, "30/06/2024": 1359.0, "29/06/2024": 1359.0, "28/06/2024": 1359.0, "27/06/2024": 1355.0, "26/06/2024": 1353.0, "25/06/2024": 1322.0, "24/06/2024": 1310.0, "23/06/2024": 1295.0, "22/06/2024": 1295.0, "21/06/2024": 1295.0, "20/06/2024": 1295.0, "19/06/2024": 1295.0, "18/06/2024": 1269.0, "17/06/2024": 1272.0, "16/06/2024": 1272.0, "15/06/2024": 1272.0, "14/06/2024": 1272.0, "13/06/2024": 1278.0, "12/06/2024": 1309.0, "11/06/2024": 1311.0, "10/06/2024": 1308.0, "09/06/2024": 1307.0, "08/06/2024": 1307.0, "07/06/2024": 1307.0, "06/06/2024": 1301.0, "05/06/2024": 1307.0, "04/06/2024": 1313.0, "03/06/2024": 1291.0, "02/06/2024": 1247.0, "01/06/2024": 1247.0, "31/05/2024": 1247.0, "30/05/2024": 1213.0, "29/05/2024": 1214.0, "28/05/2024": 1239.0, "27/05/2024": 1266.0, "26/05/2024": 1235.0, "25/05/2024": 1235.0, "24/05/2024": 1235.0, "23/05/2024": 1256.0, "22/05/2024": 1253.0, "21/05/2024": 1194.0, "20/05/2024": 1137.0, "19/05/2024": 1104.0, "18/05/2024": 1104.0, "17/05/2024": 1104.0, "16/05/2024": 1100.0, "15/05/2024": 1094.0, "14/05/2024": 1086.0, "13/05/2024": 1076.0, "12/05/2024": 1079.0, "11/05/2024": 1079.0, "10/05/2024": 1079.0, "09/05/2024": 1083.0, "08/05/2024": 1078.0, "07/05/2024": 1096.0, "06/05/2024": 1111.0, "05/05/2024": 1121.0, "04/05/2024": 1121.0, "03/05/2024": 1121.0, "02/05/2024": 1122.0, "01/05/2024": 1104.0, "30/04/2024": 1095.0, "29/04/2024": 1093.0, "28/04/2024": 1086.0, "27/04/2024": 1086.0, "26/04/2024": 1086.0, "25/04/2024": 1082.0, "24/04/2024": 1058.0, "23/04/2024": 1055.0, "22/04/2024": 1060.0, "21/04/2024": 1068.0, "20/04/2024": 1068.0, "19/04/2024": 1068.0, "18/04/2024": 1070.0, "17/04/2024": 1065.0, "16/04/2024": 1076.0, "15/04/2024": 1074.0, "14/04/2024": 1052.0, "13/04/2024": 1052.0, "12/04/2024": 1052.0, "11/04/2024": 1050.0, "10/04/2024": 1047.0, "09/04/2024": 1043.0, "08/04/2024": 1039.0, "07/04/2024": 1050.0, "06/04/2024": 1050.0, "05/04/2024": 1050.0, "04/04/2024": 1057.0, "03/04/2024": 1074.0, "02/04/2024": 1113.0, "01/04/2024": 1095.0, "31/03/2024": 1098.0, "30/03/2024": 1098.0, "29/03/2024": 1098.0, "28/03/2024": 1098.0, "27/03/2024": 1085.0, "26/03/2024": 1101.0, "25/03/2024": 1083.0, "24/03/2024": 1096.0, "23/03/2024": 1096.0, "22/03/2024": 1096.0, "21/03/2024": 1101.0, "20/03/2024": 1098.0, "19/03/2024": 1084.0, "18/03/2024": 1080.0, "17/03/2024": 1074.0, "16/03/2024": 1074.0, "15/03/2024": 1074.0, "14/03/2024": 1059.0, "13/03/2024": 1054.0, "12/03/2024": 1073.0, "11/03/2024": 1025.0, "10/03/2024": 1053.0, "08/03/2024": 1053.0, "07/03/2024": 1030.0, "06/03/2024": 1022.0, "05/03/2024": 1043.0, "04/03/2024": 1070.0, "03/03/2024": 1085.0, "02/03/2024": 1085.0, "01/03/2024": 1085.0, "29/02/2024": 1066.0, "28/02/2024": 1071.0, "27/02/2024": 1090.0, "26/02/2024": 1097.0, "25/02/2024": 1121.0, "24/02/2024": 1121.0, "23/02/2024": 1121.0, "22/02/2024": 1105.0, "21/02/2024": 1108.0, "20/02/2024": 1127.0, "19/02/2024": 1134.0, "18/02/2024": 1118.0, "17/02/2024": 1118.0, "16/02/2024": 1118.0, "15/02/2024": 1161.0, "14/02/2024": 1178.0, "13/02/2024": 1252.0, "12/02/2024": 1240.0, "11/02/2024": 1235.0, "10/02/2024": 1235.0, "09/02/2024": 1235.0, "08/02/2024": 1255.0, "07/02/2024": 1263.0, "06/02/2024": 1253.0, "05/02/2024": 1294.0, "04/02/2024": 1298.0, "03/02/2024": 1298.0, "02/02/2024": 1298.0, "01/02/2024": 1286.0, "31/01/2024": 1267.0, "30/01/2024": 1273.0, "29/01/2024": 1260.0, "28/01/2024": 1235.0, "27/01/2024": 1235.0, "26/01/2024": 1264.0, "25/01/2024": 1323.0, "24/01/2024": 1294.0, "23/01/2024": 1290.0, "22/01/2024": 1314.0, "21/01/2024": 1304.0, "20/01/2024": 1304.0, "19/01/2024": 1304.0, "18/01/2024": 1282.0, "17/01/2024": 1272.0, "16/01/2024": 1212.0, "15/01/2024": 1171.0, "14/01/2024": 1148.0, "13/01/2024": 1148.0, "12/01/2024": 1148.0, "11/01/2024": 1164.0, "10/01/2024": 1190.0, "09/01/2024": 1206.0, "08/01/2024": 1201.0, "07/01/2024": 1144.0, "06/01/2024": 1144.0, "05/01/2024": 1144.0, "04/01/2024": 1099.0, "03/01/2024": 1052.0, "02/01/2024": 997.0, "01/01/2024": 973.0, "01/06/2026": 1490.0, "01/07/2026": 1567.0, "03/06/2026": 1514.0, "03/07/2026": 1596.0, "04/12/2023": 890.0, "05/06/2026": 1511.0, "05/12/2023": 909.0, "06/07/2026": 1572.0, "06/12/2023": 937.0, "07/12/2023": 991.0, "11/06/2026": 1493.0, "12/12/2023": 1032.0, "13/07/2026": 1568.0, "14/12/2023": 1016.0, "15/12/2023": 997.0, "18/12/2023": 946.0, "19/01/2026": 1512.0, "19/12/2023": 951.0, "20/07/2026": 1572.0, "20/12/2023": 945.0, "21/05/2026": 1478.0, "21/07/2026": 1565.0, "21/12/2023": 944.0, "22/05/2026": 1487.0, "22/06/2026": 1529.0, "22/07/2026": 1564.0, "22/12/2023": 941.0, "23/01/2026": 1507.0, "23/06/2026": 1553.0, "24/06/2026": 1580.0, "25/06/2026": 1546.0, "26/05/2026": 1488.0, "26/12/2023": 901.0, "27/05/2026": 1481.0, "27/11/2023": 858.0, "28/05/2026": 1485.0, "28/11/2023": 848.0, "28/12/2023": 945.0, "29/05/2026": 1487.0, "29/06/2026": 1554.0, "29/11/2023": 820.0, "29/12/2023": 973.0, "29/12/2025": 1508.0, "30/06/2026": 1557.0, "30/11/2023": 836.0};
+var MEP_TABLE = {"09/09/2026": 1531.0, "19/04/2026": 1412.0, "20/04/2026": 1411.0, "21/04/2026": 1410.0, "22/04/2026": 1409.0, "23/04/2026": 1408.0, "24/04/2026": 1407.0, "25/04/2026": 1406.0, "26/04/2026": 1405.0, "27/04/2026": 1405.0, "28/04/2026": 1404.0, "29/04/2026": 1403.0, "30/04/2026": 1402.0, "01/05/2026": 1401.0, "02/05/2026": 1400.0, "03/05/2026": 1399.0, "04/05/2026": 1398.0, "05/05/2026": 1397.0, "06/05/2026": 1396.0, "07/05/2026": 1395.0, "08/05/2026": 1394.0, "09/05/2026": 1393.0, "10/05/2026": 1392.0, "11/05/2026": 1392.0, "12/05/2026": 1391.0, "13/05/2026": 1390.0, "14/05/2026": 1389.0, "15/05/2026": 1388.0, "16/05/2026": 1387.0, "17/05/2026": 1386.0, "18/05/2026": 1385.0, "24/11/2025": 1470.0, "07/04/2026": 1429.0, "08/04/2026": 1425.0, "09/04/2026": 1422.0, "10/04/2026": 1422.0, "11/04/2026": 1420.0, "12/04/2026": 1412.0, "13/04/2026": 1412.0, "14/04/2026": 1412.0, "15/04/2026": 1412.0, "16/04/2026": 1408.0, "17/04/2026": 1404.0, "18/04/2026": 1404.0, "06/04/2026": 1429.0, "05/04/2026": 1434.0, "04/04/2026": 1434.0, "03/04/2026": 1434.0, "02/04/2026": 1434.0, "01/04/2026": 1434.0, "31/03/2026": 1423.0, "30/03/2026": 1432.0, "29/03/2026": 1428.0, "28/03/2026": 1428.0, "27/03/2026": 1428.0, "26/03/2026": 1399.0, "25/03/2026": 1403.0, "24/03/2026": 1415.0, "23/03/2026": 1415.0, "22/03/2026": 1418.0, "21/03/2026": 1418.0, "20/03/2026": 1418.0, "19/03/2026": 1421.0, "18/03/2026": 1419.0, "17/03/2026": 1417.0, "16/03/2026": 1424.0, "15/03/2026": 1422.0, "14/03/2026": 1422.0, "13/03/2026": 1422.0, "12/03/2026": 1410.0, "11/03/2026": 1413.0, "10/03/2026": 1420.0, "09/03/2026": 1430.0, "08/03/2026": 1436.0, "07/03/2026": 1436.0, "06/03/2026": 1436.0, "05/03/2026": 1433.0, "04/03/2026": 1428.0, "03/03/2026": 1434.0, "02/03/2026": 1418.0, "01/03/2026": 1418.0, "28/02/2026": 1418.0, "27/02/2026": 1418.0, "26/02/2026": 1438.0, "25/02/2026": 1425.0, "24/02/2026": 1403.0, "23/02/2026": 1394.0, "22/02/2026": 1402.0, "21/02/2026": 1402.0, "20/02/2026": 1402.0, "19/02/2026": 1408.0, "18/02/2026": 1412.0, "12/02/2026": 1414.0, "11/02/2026": 1430.0, "30/01/2026": 1460.0, "29/01/2026": 1458.0, "28/01/2026": 1463.0, "27/01/2026": 1463.0, "26/01/2026": 1469.0, "22/01/2026": 1459.0, "21/01/2026": 1468.0, "16/01/2026": 1472.0, "15/01/2026": 1472.0, "13/01/2026": 1487.0, "08/01/2026": 1494.0, "06/01/2026": 1497.0, "30/12/2025": 1481.0, "24/12/2025": 1481.0, "22/12/2025": 1493.0, "19/12/2025": 1494.0, "18/12/2025": 1498.0, "17/12/2025": 1514.0, "16/12/2025": 1504.0, "15/12/2025": 1492.0, "03/12/2025": 1470.0, "26/11/2025": 1487.0, "20/11/2025": 1452.0, "19/11/2025": 1441.0, "17/11/2025": 1448.0, "04/11/2025": 1495.0, "31/10/2025": 1477.0, "02/09/2025": 1365.0, "01/09/2025": 1376.0, "29/08/2025": 1357.0, "28/08/2025": 1344.0, "27/08/2025": 1358.0, "13/08/2025": 1310.0, "08/08/2025": 1332.0, "06/08/2025": 1336.0, "18/07/2025": 1292.0, "17/07/2025": 1280.0, "16/07/2025": 1269.0, "15/07/2025": 1276.0, "14/07/2025": 1295.0, "10/07/2025": 1267.0, "09/07/2025": 1259.0, "08/07/2025": 1259.0, "07/07/2025": 1276.0, "04/07/2025": 1246.0, "30/06/2025": 1211.0, "27/06/2025": 1198.0, "26/06/2025": 1199.0, "25/06/2025": 1196.0, "24/06/2025": 1184.0, "18/06/2025": 1167.0, "22/05/2025": 1143.0, "21/05/2025": 1148.0, "19/05/2025": 1148.0, "12/05/2025": 1141.0, "05/05/2025": 1202.0, "30/04/2025": 1183.0, "22/04/2025": 1140.0, "01/04/2025": 1314.0, "20/03/2025": 1287.0, "19/03/2025": 1286.0, "14/03/2025": 1237.0, "13/03/2025": 1233.0, "12/03/2025": 1229.0, "10/03/2025": 1228.0, "07/03/2025": 1221.0, "06/03/2025": 1237.0, "05/03/2025": 1235.0, "10/02/2025": 1184.0, "28/01/2025": 1161.0, "16/01/2025": 1166.0, "02/01/2025": 1162.0, "25/11/2024": 1077.0, "20/11/2024": 1074.0, "14/11/2024": 1105.0, "11/11/2024": 1131.0, "06/11/2024": 1145.0, "28/10/2024": 1134.0, "25/10/2024": 1141.0, "09/10/2024": 1147.0, "08/10/2024": 1169.0, "09/09/2024": 1226.0, "30/08/2024": 1279.0, "29/08/2024": 1271.0, "20/08/2024": 1287.0, "15/08/2024": 1276.0, "06/08/2024": 1336.0, "24/07/2024": 1337.0, "10/07/2024": 1377.0, "30/05/2024": 1182.0, "16/05/2024": 1062.0, "08/05/2024": 1038.0, "11/04/2024": 994.0, "09/04/2024": 1000.0, "26/03/2024": 1027.0, "01/02/2024": 1250.9, "01/03/2024": 1055.4, "01/06/2026": 1443.1, "01/07/2025": 1233.2, "01/07/2026": 1521.2, "01/08/2024": 1304.8, "01/08/2025": 1366.2, "01/10/2025": 1530.5, "01/11/2024": 1147.3, "01/12/2025": 1479, "02/01/2024": 991.77, "02/02/2024": 1244.3, "02/05/2024": 1069.1, "02/06/2025": 1185.3, "02/06/2026": 1450.7, "02/07/2025": 1238.6, "02/09/2024": 1289.4, "02/10/2024": 1210.8, "02/12/2025": 1481.3, "03/01/2024": 1032.2, "03/01/2025": 1167.1, "03/04/2024": 1001.5, "03/04/2025": 1315.2, "03/06/2026": 1462, "03/07/2024": 1402.5, "03/07/2025": 1238, "03/07/2026": 1532.4, "03/09/2024": 1292.3, "03/10/2024": 1192.5, "04/01/2024": 1047.6, "04/03/2024": 1033.9, "04/04/2024": 997.59, "04/06/2026": 1458.3, "04/07/2024": 1402.5, "04/08/2025": 1355.2, "04/09/2024": 1284.3, "04/09/2025": 1379.9, "04/10/2024": 1187.3, "04/12/2023": 913.0, "04/12/2025": 1473.4, "05/01/2024": 1116.1, "05/03/2024": 1012.8, "05/04/2024": 1004.9, "05/06/2024": 1281.4, "05/06/2025": 1193.6, "05/07/2024": 1397.2, "05/09/2024": 1253.6, "05/09/2025": 1388.6, "05/11/2024": 1150, "05/12/2023": 934.0, "06/01/2025": 1170, "06/02/2024": 1188.6, "06/02/2025": 1187.4, "06/03/2024": 989.32, "06/05/2024": 1064.5, "06/06/2024": 1280, "06/09/2024": 1246.6, "06/10/2025": 1507.9, "06/11/2025": 1481.7, "06/12/2023": 936.0, "07/01/2025": 1172.4, "07/02/2024": 1205.4, "07/02/2025": 1193.4, "07/03/2024": 996.58, "07/05/2024": 1052.2, "07/06/2024": 1283.9, "07/10/2024": 1185.4, "07/10/2025": 1541, "07/11/2024": 1136, "07/12/2023": 986.0, "08/01/2024": 1142.6, "08/02/2024": 1194.7, "08/03/2024": 1006.7, "08/04/2024": 982.9, "08/04/2025": 1373.4, "08/05/2025": 1147.1, "08/07/2024": 1390.4, "08/07/2026": 1531.3, "08/08/2024": 1307.7, "08/09/2025": 1436.5, "09/01/2024": 1160.5, "09/01/2025": 1167.6, "09/02/2024": 1172, "09/04/2025": 1363.8, "09/05/2024": 1048.4, "09/05/2025": 1147.5, "09/08/2024": 1303, "09/10/2025": 1458, "09/12/2024": 1048.5, "09/12/2025": 1472.7, "10/01/2024": 1147.6, "10/04/2025": 1359, "10/05/2024": 1039.8, "10/06/2024": 1272.8, "10/09/2024": 1233.6, "10/09/2025": 1427.7, "10/10/2024": 1131.2, "10/11/2023": 887.0, "10/11/2025": 1459.9, "10/12/2024": 1062.1, "10/12/2025": 1475, "11/01/2024": 1129.2, "11/02/2025": 1182.9, "11/03/2024": 985.03, "11/03/2025": 1229.7, "11/04/2025": 1326.8, "11/06/2026": 1454.2, "11/07/2024": 1399.3, "11/07/2025": 1269, "11/12/2024": 1056.2, "11/12/2025": 1480.8, "12/02/2025": 1186.1, "12/03/2024": 1030.3, "12/04/2024": 1000.6, "12/07/2024": 1417.7, "12/09/2024": 1239, "12/09/2025": 1476, "12/11/2024": 1127.2, "12/11/2025": 1454.7, "12/12/2023": 1011.0, "12/12/2024": 1059, "12/12/2025": 1480.2, "13/01/2025": 1162.5, "13/02/2025": 1187.4, "13/03/2024": 1016.9, "13/05/2024": 1036.3, "13/06/2024": 1244.3, "13/07/2026": 1523.3, "13/08/2024": 1270.4, "13/09/2024": 1225.9, "13/11/2024": 1119.6, "13/12/2023": 1037.0, "14/01/2025": 1162.7, "14/01/2026": 1482.7, "14/02/2024": 1122.6, "14/02/2025": 1185.2, "14/03/2024": 1012.6, "14/05/2024": 1045.4, "14/05/2025": 1139.7, "14/06/2024": 1245.5, "14/10/2024": 1140.1, "14/10/2025": 1474.1, "14/11/2025": 1456.1, "15/01/2024": 1129.6, "15/01/2025": 1162.6, "15/03/2024": 1031.3, "15/04/2024": 1000.6, "15/04/2025": 1255.3, "15/07/2024": 1305.3, "15/10/2024": 1140.2, "15/12/2023": 993.0, "16/01/2024": 1167.5, "16/02/2024": 1064.2, "16/04/2024": 1038.5, "16/04/2025": 1175.4, "16/07/2024": 1279.1, "16/09/2024": 1218.8, "16/10/2024": 1164.9, "17/01/2024": 1226.8, "17/02/2025": 1209.5, "17/03/2025": 1252.7, "17/04/2024": 1030.7, "17/09/2024": 1223.5, "17/10/2024": 1159.6, "17/10/2025": 1542.1, "17/12/2024": 1134.2, "18/01/2024": 1232.1, "18/02/2025": 1204.6, "18/03/2024": 1027.1, "18/04/2024": 1021.6, "18/07/2024": 1316.1, "18/08/2025": 1303.9, "18/11/2025": 1443.6, "18/12/2023": 963.0, "19/01/2024": 1258.8, "19/02/2025": 1198.8, "19/03/2024": 1030.9, "19/04/2024": 1026.3, "19/06/2024": 1276.4, "19/06/2026": 1478.2, "19/07/2024": 1330.4, "19/08/2025": 1299.9, "19/09/2024": 1198.3, "19/12/2023": 964.0, "19/12/2024": 1143.1, "20/02/2024": 1088.1, "20/02/2025": 1199.7, "20/03/2024": 1043.2, "20/05/2024": 1101.7, "20/07/2026": 1514.7, "20/08/2025": 1315, "20/09/2024": 1201.5, "21/01/2025": 1167.2, "21/02/2024": 1071.6, "21/02/2025": 1205.5, "21/04/2025": 1125.6, "21/05/2024": 1173.7, "21/05/2026": 1428.5, "21/07/2025": 1287, "21/07/2026": 1514.7, "21/08/2024": 1295.8, "21/08/2025": 1322.3, "21/10/2024": 1164.9, "21/11/2025": 1473.8, "21/12/2023": 971.0, "22/01/2024": 1241.8, "22/01/2025": 1168.7, "22/02/2024": 1053.9, "22/04/2024": 1017.5, "22/05/2026": 1434.3, "22/06/2026": 1485.8, "22/07/2024": 1335.6, "22/07/2026": 1521.9, "22/08/2024": 1287.8, "22/08/2025": 1331.2, "22/09/2025": 1431.6, "22/10/2024": 1163.7, "22/10/2025": 1598.3, "22/11/2024": 1081.7, "22/12/2023": 954.0, "23/01/2024": 1231.5, "23/01/2025": 1166.4, "23/02/2024": 1076.3, "23/04/2024": 1012.9, "23/04/2025": 1166.5, "23/05/2024": 1233.6, "23/05/2025": 1144.1, "23/06/2025": 1185.4, "23/07/2024": 1325.3, "23/07/2025": 1264.5, "23/08/2024": 1286.6, "23/09/2024": 1204.7, "23/09/2025": 1408.4, "23/10/2024": 1164.9, "23/12/2024": 1155.4, "23/12/2025": 1501.5, "24/02/2025": 1203.6, "24/04/2024": 1015.7, "24/04/2025": 1185.8, "24/07/2025": 1273.2, "24/09/2024": 1203.3, "24/09/2025": 1384, "24/10/2024": 1159.5, "24/10/2025": 1555.2, "25/01/2024": 1230.5, "25/02/2025": 1207.3, "25/03/2024": 1023.1, "25/03/2025": 1295.8, "25/04/2024": 1036.1, "25/04/2025": 1186.3, "25/06/2026": 1501.8, "25/07/2025": 1290.2, "25/08/2025": 1362, "25/09/2024": 1210.3, "25/09/2025": 1381.7, "25/11/2025": 1484.7, "26/01/2024": 1189, "26/02/2024": 1055.1, "26/04/2024": 1036.6, "26/05/2025": 1145.6, "26/05/2026": 1435.9, "26/06/2024": 1333.7, "26/08/2024": 1290.2, "26/09/2024": 1209.6, "26/11/2024": 1078.4, "26/12/2023": 939.0, "26/12/2024": 1175.4, "26/12/2025": 1501.5, "27/01/2025": 1161.2, "27/02/2024": 1047.4, "27/03/2024": 1020.5, "27/08/2024": 1292.6, "27/10/2025": 1449.3, "27/11/2024": 1075.6, "27/12/2023": 932.0, "27/12/2024": 1170.9, "28/02/2024": 1033.3, "28/03/2025": 1304.9, "28/05/2024": 1205, "28/05/2026": 1432.8, "28/08/2024": 1284.9, "28/11/2023": 867.0, "28/12/2023": 950.0, "29/01/2024": 1219.4, "29/01/2025": 1163.4, "29/02/2024": 1031, "29/04/2024": 1039, "29/04/2025": 1173.9, "29/05/2024": 1181.6, "29/05/2025": 1183.8, "29/05/2026": 1434.8, "29/06/2026": 1508.7, "29/07/2024": 1296.8, "29/09/2025": 1452.9, "29/10/2024": 1138.8, "29/11/2023": 838.0, "29/12/2023": 995.0, "30/01/2024": 1198.2, "30/01/2025": 1166.2, "30/04/2024": 1044.7, "30/06/2026": 1519, "30/07/2025": 1324, "30/09/2025": 1503.2, "30/10/2024": 1135.7, "30/10/2025": 1474.7, "30/11/2023": 858.0, "30/12/2024": 1169.5, "31/01/2024": 1177, "31/03/2025": 1319.6, "31/05/2024": 1215.5, "31/07/2024": 1307.7, "31/07/2025": 1363.8, "06/07/2026": 1531.3, "24/06/2026": 1485.8, "23/06/2026": 1485.8, "27/05/2026": 1431.1, "23/01/2026": 1471.9, "07/08/2025": 1332.0, "27/02/2025": 1215.1, "05/02/2025": 1197.5, "04/02/2025": 1186.2, "31/01/2025": 1168.2, "17/01/2025": 1163.8, "18/10/2024": 1161.9, "27/09/2024": 1209.3, "18/09/2024": 1209.4, "19/08/2024": 1292.5, "16/08/2024": 1281.6, "02/08/2024": 1337.1, "30/07/2024": 1265.2, "12/01/2024": 1097.3, "20/12/2023": 947.17, "27/11/2023": 893.78, "16/06/2026": 1456.0, "09/06/2026": 1460.6, "19/05/2026": 1432.3, "09/02/2026": 1440.6, "19/01/2026": 1471.3, "12/01/2026": 1491.0, "28/11/2025": 1482.9, "11/11/2025": 1457.3, "05/11/2025": 1481.0, "03/11/2025": 1501.7, "29/10/2025": 1472.0, "18/09/2025": 1572.7, "17/09/2025": 1497.3, "11/08/2025": 1328.5, "05/08/2025": 1347.3, "29/07/2025": 1293.4, "04/06/2025": 1193.4, "28/05/2025": 1166.7, "15/05/2025": 1144.9, "10/01/2025": 1166.7, "13/12/2024": 1075.6, "02/12/2024": 1069.1, "28/11/2024": 1076.4, "15/11/2024": 1099.3, "08/11/2024": 1130.1, "04/11/2024": 1148.6, "11/09/2024": 1237.8, "03/05/2024": 1076.9, "22/03/2024": 1042.5, "21/03/2024": 1039.4, "19/02/2024": 1112.5, "14/12/2023": 1010.5, "11/12/2023": 997.5, "01/12/2023": 907.67};
 
 function fmtKey(fecha){var p=fecha.split('/');return p[0].padStart(2,'0')+'/'+p[1].padStart(2,'0')+'/'+p[2];}
 function getCCL(fecha){return CCL_TABLE[fmtKey(fecha)]||null;}
 function getMEP(fecha){return MEP_TABLE[fmtKey(fecha)]||null;}
 // Helper: tipo de cambio apropiado según mercado. Bonos/ONs usan MEP (con fallback a CCL), resto usa CCL.
 function getTC(fecha, mercado){
-  var esBonoON=(mercado==='BONOS'||mercado==='ON');
+  var esBonoON=(mercado==='BONOS'||mercado==='ON'||mercado==='FCI');
   return esBonoON ? (getMEP(fecha)||getCCL(fecha)||MEP_HOY||CCL_HOY) : (getCCL(fecha)||CCL_HOY);
 }
 var _HOY_KEY=(function(){var d=new Date();return(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();})();
@@ -1892,7 +429,8 @@ function quoteHealthDot(q){
   var title=label+(age?' — '+(stale?'último precio conocido '+age:'actualizado '+age):'');
   return '<span class="qhelp" style="width:6px;height:6px;border-radius:50%;margin-left:5px;vertical-align:middle;background:'+colorVar+(stale?';animation:pulse 1.4s infinite':'')+'"><span class="qhelp-tip">'+title.replace(/</g,'&lt;')+'</span></span>';
 }
-
+var RSI_CACHE = {}; // ticker -> {value, ts}. RSI(14) diario, no aplica a bonos/ONs
+var TIR_CACHE = {}; // ticker -> {value, ts}. TIR% desde EcoValores, solo Bonos (cobertura parcial, no cubre ONs)
 
 var PRELOADED = [];
 
@@ -1911,8 +449,9 @@ var SECTOR_MAP = {
   'JD':'china',
   'IBIT':'cripto','COIN':'cripto','ETHA':'cripto',
   'ABEV':'brasil','EWZ':'brasil','GGB':'brasil','MELI':'brasil','NU':'brasil','PAGS':'brasil','SID':'brasil','STNE':'brasil','XP':'brasil',
+  'AGE3':'fci',
 };
-var _MKT_TO_SECTOR={BONOS:'bonos',ON:'on',ARGENTINA:'argentina',BRASIL:'brasil',ETF:'nyse',USA:'nyse'};
+var _MKT_TO_SECTOR={BONOS:'bonos',ON:'on',ARGENTINA:'argentina',BRASIL:'brasil',ETF:'nyse',USA:'nyse',FCI:'fci'};
 function getSector(ticker){
   if(SECTOR_MAP[ticker])return SECTOR_MAP[ticker];
   // Fallback: derivar del mercado del movimiento más reciente para este ticker
@@ -2199,66 +738,65 @@ function _flujosDiasHasta(fechaISO){
 function _flujosFechaDDMM(fechaISO){
   var p=fechaISO.split('-');return p[2]+'/'+p[1]+'/'+p[0];
 }
-// ── CCL/MEP: autocompletar tabla histórica desde cada movimiento cargado ──
-// Igual que en GDC (v39/v40, 2026-09-18): el módulo rápido de Comprar/Vender calculaba el
-// CCL/MEP de cada movimiento (cclVal) y lo guardaba en el movimiento, pero nunca lo
-// persistía en CCL_TABLE/MEP_TABLE -- solo el formulario largo (addMov) lo hacía,
-// así que la tabla histórica se quedaba con huecos para casi todas las fechas cargadas desde
-// el módulo rápido (que es el que más se usa). Se agrega tcStampearFecha(fecha,esBonoON,valor)
-// -- usa el valor REAL de cada movimiento, nunca pisa una fecha ya cargada -- llamada desde
-// addMov/vbuyConfirmar/vsellConfirmar. También se agrega backfillTCDesdeMovimientos(), que
-// recorre TODO el historial y completa los huecos ya existentes con el m.ccl de cada
-// movimiento (promedio si un mismo día tiene varios valores parecidos; si un día tiene
-// valores MUY dispares entre sí -- más de BACKFILL_DISPERSION_MAX de diferencia, típico de un
-// tipeo mal cargado en algún movimiento -- esa fecha NO se completa sola, se reporta aparte
-// para revisar a mano).
-function tcStampearFecha(fecha,esBonoON,valor){
-  if(!fecha||!(valor>0)) return;
-  var _fk=fmtKey(fecha);
-  var tabla=esBonoON?MEP_TABLE:CCL_TABLE;
-  if(tabla[_fk]) return;
-  tabla[_fk]=valor;
-  tcSavePersist();
-}
-var BACKFILL_DISPERSION_MAX = 15; // diferencia absoluta máxima entre min y max de un mismo día
-function backfillTCDesdeMovimientos(){
-  var grupos={ccl:{},mep:{}};
-  movimientos.forEach(function(m){
-    if((m.tipo!=='compra'&&m.tipo!=='venta')||!(m.ccl>0)) return;
-    var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
-    var g=esBonoON?grupos.mep:grupos.ccl;
-    var fk=fmtKey(m.fecha);
-    if(!g[fk]) g[fk]={suma:0,n:0,min:m.ccl,max:m.ccl};
-    g[fk].suma+=m.ccl;g[fk].n++;
-    if(m.ccl<g[fk].min)g[fk].min=m.ccl;
-    if(m.ccl>g[fk].max)g[fk].max=m.ccl;
-  });
-  var completados=0,revisar=[];
-  [['ccl',CCL_TABLE,'CCL'],['mep',MEP_TABLE,'MEP']].forEach(function(par){
-    var grupo=grupos[par[0]],tabla=par[1],label=par[2];
-    Object.keys(grupo).forEach(function(fk){
-      if(tabla[fk]) return;
-      var g=grupo[fk];
-      if((g.max-g.min)>BACKFILL_DISPERSION_MAX){
-        revisar.push(fk+' ('+label+': min '+g.min+' / max '+g.max+')');
-        return;
-      }
-      tabla[fk]=Math.round((g.suma/g.n)*10)/10;completados++;
-    });
-  });
-  if(completados>0) tcSavePersist();
-  return {completados:completados,revisar:revisar};
-}
-function backfillTCDesdeMovimientosUI(){
-  var r=backfillTCDesdeMovimientos();
-  renderMovimientos();
-  var msg=r.completados>0
-    ? ('Se completaron '+r.completados+' fecha'+(r.completados!==1?'s':'')+' en la tabla histórica de CCL/MEP, usando lo que ya estaba guardado en tus movimientos.')
-    : 'No había nada para completar automáticamente: o ya estaba todo en la tabla, o ningún movimiento pendiente tiene un CCL/MEP guardado para usar de base.';
-  if(r.revisar.length){
-    msg+='\n\n⚠️ '+r.revisar.length+' fecha'+(r.revisar.length!==1?'s':'')+' con valores muy distintos entre sí ese mismo día (probable error de tipeo en alguno) — no se completaron solas, revisalas a mano en la solapa "$ Tipo de Cambio":\n'+r.revisar.join('\n');
+// ── TIR real (YTM) con el flujo exacto de FLUJOS_BONOS ───────────────────
+// A diferencia de TIR_CACHE (EcoValores, solo Bonos, cobertura parcial), esto
+// calcula la TIR exacta de CUALQUIER ticker con flujo cargado en FLUJOS_BONOS
+// (bonos y ON) descontando su cronograma futuro real contra el precio de
+// mercado de hoy. XIRR actual/365, sin asumir reinversión de cupones.
+// Validado 2026-09-18 contra la planilla de Garo (fuente distinta, con
+// actualización online): BB37D 11,77% vs 11,77% (exacto), AO29 10,22% vs
+// 10,24% (a la par, la diferencia es sub-decimal por timing del precio).
+function _xirrNPV(precio,flujos,hoyUTC,r){
+  var total=-precio;
+  for(var i=0;i<flujos.length;i++){
+    var d=new Date(flujos[i].f+'T00:00:00Z');
+    var t=(d-hoyUTC)/86400000/365;
+    if(t<0) continue;
+    total+=flujos[i].m/Math.pow(1+r,t);
   }
-  alert(msg);
+  return total;
+}
+function _xirrCalc(precio,flujos){
+  if(!precio||precio<=0||!flujos||!flujos.length) return null;
+  var hoy=new Date();
+  var hoyUTC=new Date(Date.UTC(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()));
+  var lo=-0.9,hi=5.0;
+  var flo=_xirrNPV(precio,flujos,hoyUTC,lo),fhi=_xirrNPV(precio,flujos,hoyUTC,hi);
+  if(isNaN(flo)||isNaN(fhi)||flo*fhi>0) return null; // sin raíz en el rango esperado (dato raro)
+  for(var i=0;i<100;i++){
+    var mid=(lo+hi)/2;var fm=_xirrNPV(precio,flujos,hoyUTC,mid);
+    if(Math.abs(fm)<1e-9) return mid;
+    if(flo*fm<0){hi=mid;fhi=fm;} else {lo=mid;flo=fm;}
+  }
+  return (lo+hi)/2;
+}
+// Devuelve {tir, moneda} en % o null si falta cotización o el ticker no tiene
+// flujo cargado. Bonos/ON en USD: precio ARS de mercado ÷ MEP_HOY (mismo TC
+// que usa el resto del portafolio para estos sectores — ver isBonoUSDDirecto
+// y getTC). Bonos en ARS (CER, dólar-linked ya expresado en pesos, etc.): se
+// compara el precio ARS directo contra el flujo ARS, sin conversión — el
+// resultado queda en términos nominales de pesos, igual que la calculan la
+// mayoría de las planillas/calculadoras para bonos peso.
+function calcularTIRReal(ticker){
+  var tabla=FLUJOS_BONOS[ticker];
+  if(!tabla) return null;
+  var q=quotes[ticker];
+  if(!q||q.price==null) return null;
+  var ratio=getRatio(ticker)||1;
+  var precio;
+  if(tabla.moneda==='USD'){
+    var tc=MEP_HOY||CCL_HOY;
+    if(!tc) return null;
+    precio=q.price*ratio/tc;
+  } else {
+    precio=q.price*ratio;
+  }
+  if(!precio||precio<=0) return null;
+  var hoyISO=_flujosHoyStr();
+  var flujosFuturos=tabla.flujos.filter(function(x){return x.f>hoyISO;}).map(function(x){return {f:x.f,m:(x.r||0)+(x.a||0)};});
+  if(!flujosFuturos.length) return null;
+  var r=_xirrCalc(precio,flujosFuturos);
+  return r==null?null:{tir:r*100,moneda:tabla.moneda};
 }
 // Recorre las posiciones abiertas de bonos/ON, busca el flujo cargado de cada
 // ticker y lo escala por qty/100. No toca ningún cálculo de valuación del
@@ -2342,14 +880,13 @@ function _estimarProximoDividendo(fechasOrdenadas){
   return next;
 }
 function calcularDivHistUpcoming30(){
-  // Este portafolio no tiene el array "dividendos" (se eliminó la solapa manual vieja, v15) —
-  // el único historial disponible es TRK.divs (Dividendos CCL).
   var registros={};
   function agregar(ticker,fechaStr){
     var d=_parseFechaDDMMYYYY(fechaStr);
     if(!d||!ticker) return;
     (registros[ticker]=registros[ticker]||[]).push(d);
   }
+  dividendos.forEach(function(x){agregar(x.ticker,x.fecha);});
   if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
     TRK.divs.forEach(function(x){if(x.estado!=='pendiente')agregar(x.ticker,x.fecha);});
   }
@@ -2445,8 +982,8 @@ function renderFlujosPage(){
 }
 
 
-var TICKER_MAP = {'DISN':'DIS','GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
-function getFinnhubTicker(ticker){return TICKER_MAP[ticker]||ticker;}
+var TICKER_MAP = {'GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
+function getFinnhubTicker(ticker){if(BYMA_TO_NYSE[ticker])return BYMA_TO_NYSE[ticker];return TICKER_MAP[ticker]||ticker;}
 
 var TARGET_TABLE = {"CLSIO": null,"LECAO": null,"LECHO": null,"MR36O": null,"MRCAO": null,"MRCPO": null,"MRCZO": null,"SNEAO": null,"TZV26": null,"TZV27": null, "BC37D": null,"CUAP": null,"DICP": null,"ERF25": null,"GD29": null,"GD38": null,"GD41": null,"PARP": null,"PBY26": null,"SA24D": null,"TVPA": null,"TX31": null,"TZXM7": null,"TZXS7": null,"TZXS8": null, "ADBE": 573, "AMZN": 258.6, "AVGO": null, "CRM": null, "DEO": null, "DOCU": null, "FSLR": null, "HOG": null, "IBIT": null, "JD": null, "LAC": null, "META": null, "MSFT": null, "NFLX": null, "NKE": null, "NVDA": null, "SPOT": null, "STLA": null, "TEAM": null, "UBER": null, "UNH": null, "UPST": null, "GGB": null, "MELI": null, "NU": null, "PAGS": null, "SID": null, "XP": null};
 function getTarget(ticker){return TARGET_TABLE[ticker]||null;}
@@ -2512,17 +1049,17 @@ function tcDel(tipo,fecha){
 }
 function tcSavePersist(){
   try{
-    localStorage.setItem('ptJuli_ccl_override',JSON.stringify(CCL_TABLE));
-    localStorage.setItem('ptJuli_mep_override',JSON.stringify(MEP_TABLE));
+    localStorage.setItem('ptNYSE_ccl_override',JSON.stringify(CCL_TABLE));
+    localStorage.setItem('ptNYSE_mep_override',JSON.stringify(MEP_TABLE));
   }catch(e){}
   sbSetConfig('ccl_override', CCL_TABLE);
   sbSetConfig('mep_override', MEP_TABLE);
 }
 function tcLoadPersist(){
   try{
-    var sc=localStorage.getItem('ptJuli_ccl_override');
+    var sc=localStorage.getItem('ptNYSE_ccl_override');
     if(sc) Object.assign(CCL_TABLE,JSON.parse(sc));
-    var sm=localStorage.getItem('ptJuli_mep_override');
+    var sm=localStorage.getItem('ptNYSE_mep_override');
     if(sm) Object.assign(MEP_TABLE,JSON.parse(sm));
   }catch(e){}
 }
@@ -2539,14 +1076,18 @@ function showPage(id,btn){
   if(id==='tipocambio') tcRender();
   if(btn)btn.classList.add('active');
   if(id==='tracker') initTracker();
+  if(id==='dividendos') divPopulateSelect();
   if(id==='movimientos') resetMFechaHoy();
   if(id==='arbitraje') arbRender();
+  if(id==='noticias') nwsLoad(false);
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
   if(id==='rubros') renderRubros();
-  if(id==='recomendaciones') renderPerfilComparacion();
-  if(id==='ventaestad') renderVentaEstadisticas();
+  if(id==='vigilancia') vigRender();
+  if(id==='recomendaciones'){ renderPerfilComparacion(); }
+  if(id==='ventaestad'){ renderVentaEstadisticas(); }
+  if(id==='ventahist'){ renderVentaHistorica(); }
   // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
@@ -2597,7 +1138,7 @@ function updateTCLabel(){
   var lbl=document.getElementById('m-ccl-label');
   if(!lbl)return;
   var mkt=document.getElementById('m-mkt').value;
-  var esBonoON=(mkt==='BONOS'||mkt==='ON');
+  var esBonoON=(mkt==='BONOS'||mkt==='ON'||mkt==='FCI');
   lbl.textContent=esBonoON?'MEP del día':'CCL del día';
 }
 function calcUSD(){
@@ -2607,6 +1148,8 @@ function calcUSD(){
   var comPct=parseFloat(document.getElementById('m-comision').value)||0;
   var rt=getRatio(document.getElementById('m-ticker').value.trim().toUpperCase()||'');
   var arsCalc=isBonoONForm()?(ars/100):ars;
+  // FCI: cuotapartes se cargan como las muestra Adcap (x1000) → dividir para los totales
+  if(document.getElementById('m-mkt').value==='FCI')qty=qty/1000;
   document.getElementById('m-precio-usd').value=(ars&&ccl)?(arsCalc*rt/ccl).toFixed(4):'—';
   // Calcular comisión $ y totales
   var resumen=document.getElementById('row-calc-resumen');
@@ -2640,6 +1183,8 @@ function addMov(){
   var mkt=document.getElementById('m-mkt').value;
   // Bonos/ONs: el usuario ingresa precio por 100 nominales → dividir por 100 para almacenar por nominal
   var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
+  // FCI: Adcap muestra cuotapartes x1000 respecto del VCP de CAFCI/ArgentinaDatos → dividir por 1000
+  if(mkt==='FCI'&&!isNaN(qty))qty=qty/1000;
   var cclVal=parseFloat(document.getElementById('m-ccl').value)||getTC(fecha,mkt);
   var comisionPct=parseFloat(document.getElementById('m-comision').value)||0;
   if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
@@ -2651,14 +1196,17 @@ function addMov(){
   // Calcular comisión absoluta: (qty * precioARS * % / 100)
   var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
-  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'promedio':undefined)});
+  var _cristianEl=document.getElementById('m-cristian');
+  movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,owner:_cristianEl&&_cristianEl.checked?'cristian':undefined,loteMethod:(tipo==='venta'?'promedio':undefined)});
   saveAndRender();
-  // Guardar TC del día en tablas si no existe aún -- usa cclVal (el valor real usado en
-  // ESTE movimiento), no CCL_HOY/MEP_HOY a secas (ver tcStampearFecha).
-  tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'),cclVal);
+  // Guardar TC del día en tablas si no existe aún — usa cclVal (el valor real usado en ESTE
+  // movimiento, ya sea de la tabla o del día en curso), no CCL_HOY/MEP_HOY a secas: si `fecha`
+  // es una fecha pasada, CCL_HOY de "hoy" no es el valor correcto para esa fecha.
+  tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'||mkt==='FCI'),cclVal);
   ['m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
-  resetMFechaHoy(); 
+  resetMFechaHoy();
   if(finishEl)finishEl.checked=false;
+  var _cEl=document.getElementById('m-cristian');if(_cEl)_cEl.checked=false;
   flash(sel,'Movimiento registrado',false);
 }
 
@@ -2684,6 +1232,8 @@ function _parseArgNum(s){
   } else if(hasCom){
     s=s.replace(',','.');
   } else if(hasDot){
+    // Solo tiene punto: si todos los segmentos post-punto tienen exactamente 3 dígitos
+    // es separador de miles (ej: "15.478" → 15478, "1.234.567" → 1234567)
     var parts=s.split('.');
     if(parts.length>=2&&/^\d+$/.test(parts[0])&&parts.slice(1).every(function(p){return /^\d{3}$/.test(p);})){
       s=parts.join('');
@@ -2791,6 +1341,19 @@ function deleteMov(id){
   saveAndRender();
 }
 
+function purgarTicker(){
+  var filterEl=document.getElementById('mov-filter');
+  var ticker=(filterEl?filterEl.value:'').trim().toUpperCase();
+  if(!ticker){alert('Escribí un ticker en el filtro primero.');return;}
+  var afectados=movimientos.filter(function(m){return (m.ticker||'').toUpperCase()===ticker;});
+  if(!afectados.length){alert('No hay movimientos para '+ticker+'.');return;}
+  var resumen=afectados.reduce(function(acc,m){acc[m.tipo]=(acc[m.tipo]||0)+1;return acc;},{});
+  var detalle=Object.keys(resumen).map(function(t){return resumen[t]+' '+t+'(s)';}).join(', ');
+  if(!confirm('⚠️ Borrar TODOS los movimientos de '+ticker+'?\n\n'+detalle+' — '+afectados.length+' total\n\nEsta acción no se puede deshacer.'))return;
+  movimientos=movimientos.filter(function(m){return (m.ticker||'').toUpperCase()!==ticker;});
+  saveAndRender();
+}
+
 function toggleFinish(id){
   var m=movimientos.find(function(x){return x.id==id;});
   if(!m)return;
@@ -2815,7 +1378,7 @@ function saveInvInicial(v){
     }
     // v may come in already as raw number or as formatted string — normalize
     var raw = typeof v === 'string' ? (parseFloat(v.replace(/\./g,'').replace(/,/g,'.'))||0) : (parseFloat(v)||0);
-    localStorage.setItem('ptJuli_inv_inicial', raw);
+    localStorage.setItem('ptNYSE_inv_inicial', raw);
     sbSetConfig('inv_inicial', raw);
     // actualizar display en metric card
     var disp=document.getElementById('inv-inicial-usd-display');
@@ -2827,29 +1390,11 @@ function saveInvInicial(v){
 }
 function loadInvInicial(){
   try{
-    var v=localStorage.getItem('ptJuli_inv_inicial');
+    var v=localStorage.getItem('ptNYSE_inv_inicial');
     var disp=document.getElementById('inv-inicial-usd-display');
     if(v){ setFmtNum('inv-sidebar-usd', v, 0); }
     if(disp){disp.textContent=v?'$'+Math.round(parseFloat(v)).toLocaleString('es-AR'):'—';}
   }catch(e){}
-  try{
-    var t=localStorage.getItem('ptJuli_perf_target');
-    var inp=document.getElementById('perf-target-usd');
-    if(t&&inp){inp.value=t;perfCalcUpdate();}
-  }catch(e){}
-}
-function perfCalcUpdate(){
-  var inp = document.getElementById('perf-target-usd');
-  var el  = document.getElementById('perf-result-usd');
-  if(!inp||!el) return;
-  try{localStorage.setItem('ptJuli_perf_target', inp.value);}catch(e){}
-  if(typeof sbSetConfig==='function') sbSetConfig('perf_target', inp.value||null);
-  var target     = parseFloat(inp.value)||0;
-  var invInicial = getRawNum('inv-sidebar-usd');
-  if(!target||!invInicial){el.textContent='—';el.style.color='var(--text2)';return;}
-  var result = (target - invInicial) * 0.20;
-  el.textContent = (result>=0?'+':'')+Math.round(result).toLocaleString('es-AR')+' USD';
-  el.style.color = result>=0?'var(--accent)':'var(--red)';
 }
 // ── Thousand-separator formatting for text inputs ──────────────────────────
 function fmtNumInput(el, decimals){
@@ -2887,7 +1432,7 @@ function saveLiquidez(){
   try{
     var ars=getRawNum('liq-ars');
     var usd=getRawNum('liq-usd');
-    localStorage.setItem('ptJuli_liq',JSON.stringify({ars:ars,usd:usd}));
+    localStorage.setItem('ptNYSE_liq',JSON.stringify({ars:ars,usd:usd}));
     sbSetConfig('liquidez', {ars:ars,usd:usd});
   }catch(e){}
 }
@@ -2906,13 +1451,12 @@ function rvConfirm(){ renderPortfolio(); }
 function invConfirm(){
   var v=getRawNum('inv-sidebar-usd');
   saveInvInicial(v);
-  perfCalcUpdate();
   var btn=document.querySelector('[onclick="invConfirm()"]');
   if(btn){var orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--accent)';setTimeout(function(){btn.textContent=orig;},1000);}
 }
 function loadLiquidez(){
   try{
-    var l=localStorage.getItem('ptJuli_liq');
+    var l=localStorage.getItem('ptNYSE_liq');
     if(l){
       var d=JSON.parse(l);
       if(d.ars) setFmtNum('liq-ars', d.ars, 0);
@@ -2933,11 +1477,11 @@ async function loadMarks(){
       return;
     }
     // Migración: si hay datos en localStorage, migrarlos a Supabase y borrarlos
-    var s = localStorage.getItem('ptJuli_marks');
+    var s = localStorage.getItem('ptNYSE_marks');
     if(s){
       MARKS = JSON.parse(s);
       await sbSetConfig('marks', MARKS);
-      localStorage.removeItem('ptJuli_marks');
+      localStorage.removeItem('ptNYSE_marks');
       console.log('[marks] migrado de localStorage a Supabase');
     }
   }catch(e){ console.warn('[marks] loadMarks error', e); }
@@ -3185,7 +1729,7 @@ function portToggleBlur(){
 }
 
 loadMarks();
-function portCheckSession(){portUnblur();return; // PIN desactivadoportUnblur();return; // PIN desactivado
+function portCheckSession(){portUnblur();return; // PIN desactivado
   var stored=localStorage.getItem(PORT_PIN_KEY);
   // Actualizar título del overlay según si es primera vez o no
   var titleEl=document.getElementById('port-pin-title');
@@ -3198,7 +1742,7 @@ function portCheckSession(){portUnblur();return; // PIN desactivadoportUnblur();
 }
 // ─────────────────────────────────────────────────────────────────────────
 
-var _juliInitDone = false;
+var _gdcInitDone = false;
 // Si sbSaveArray falla (red, Supabase caído, etc.) el guardado quedaba SOLO local y en el próximo
 // reload initFromSupabase() pisa todo con la versión vieja de Supabase — el movimiento "desaparece".
 // Antes esto era silencioso (sbSaveArray traga el error y devuelve false). Ahora se avisa en #lupd.
@@ -3211,15 +1755,16 @@ function warnSaveFailed(){
   setTimeout(function(){ el.style.color=''; el.textContent=new Date().toLocaleTimeString('es-AR'); },10000);
 }
 function saveAndRender(){
-  try{localStorage.setItem('ptJuli_mov2',JSON.stringify(movimientos));localStorage.setItem('ptJuli_version','juli_v1');}catch(e){}
+  try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){}
   // Snapshot de "lo que debería estar en la nube" — si sbSaveArrayRetry falla (red caída,
   // pestaña cerrada antes de terminar), este snapshot sobrevive al reload e initFromSupabase()
   // lo usa para no pisar movimientos reales con una versión vieja de Supabase.
-  // (Incidente: compra de MO cargada y perdida silenciosamente — 2026-09-01, GDC — mismo riesgo acá.)
-  try{localStorage.setItem('ptJuli_pending_sync',JSON.stringify(movimientos));}catch(e){}
-  if(_juliInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok){ warnSaveFailed(); } else { try{localStorage.removeItem('ptJuli_pending_sync');}catch(e){} } }); }
+  // (Incidente: compra de MO cargada y perdida silenciosamente — 2026-09-01, GDC.)
+  try{localStorage.setItem('ptNYSE_pending_sync',JSON.stringify(movimientos));}catch(e){}
+  if(_gdcInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok){ warnSaveFailed(); } else { try{localStorage.removeItem('ptNYSE_pending_sync');}catch(e){} } }); }
   else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
-  renderMovimientos();renderPortfolio();vsellPopulateSelect();
+  renderMovimientos();renderPortfolio();renderDivsCard();vsellPopulateSelect();
+  (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
 }
 
@@ -3244,7 +1789,7 @@ function movModalOpen(id){
     '<div class="fgrp"><label>Ticker</label><input type="text" id="me-ticker" value="'+(m.ticker||'')+'" style="text-transform:uppercase"></div>'+
     '<div class="fgrp"><label>Cantidad</label><input type="number" id="me-qty" value="'+(m.qty||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label id="me-precio-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'Precio / 100N':'Precio ARS')+'</label><input type="number" id="me-ars" value="'+((m.mercado==='BONOS'||m.mercado==='ON')?(m.precioARS*100||''):(m.precioARS||''))+'" min="0" step="any"></div>'+
-    '<div class="fgrp"><label id="me-ccl-label">'+((m.mercado==='BONOS'||m.mercado==='ON')?'MEP':'CCL')+'</label><input type="number" id="me-ccl" value="'+(m.ccl||'')+'" min="0" step="any"></div>'+
+    '<div class="fgrp"><label id="me-ccl-label">'+((m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')?'MEP':'CCL')+'</label><input type="number" id="me-ccl" value="'+(m.ccl||'')+'" min="0" step="any"></div>'+
     '<div class="fgrp"><label>Comisión %</label><input type="number" id="me-com" value="'+(m.comisionPct||0)+'" min="0" max="100" step="0.01"></div>'+
     '<div class="fgrp" style="grid-column:1/-1"><label>Notas</label><input type="text" id="me-notas" value="'+(m.notas||'')+'"></div>'+
     '<div class="fgrp" style="grid-column:1/-1;display:flex;align-items:center"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none"><input type="checkbox" id="me-finish"'+(m.finish?' checked':'')+' style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0"> 🏁 A finish</label></div>';
@@ -3341,314 +1886,24 @@ function movModalClose(){
 }
 
 
-
-
-function checkMovSinTC(){
-  var warn=document.getElementById('warn-sin-tc');
-  if(!warn) return;
-  var malos=movimientos.filter(function(m){
-    return (m.tipo==='compra'||m.tipo==='venta') && !(m.ccl&&m.ccl>0);
-  });
-  if(!malos.length){warn.style.display='none';warn.innerHTML='';return;}
-  warn.style.display='';
-  var lista=malos.slice(0,8).map(function(m){return m.ticker+' ('+m.fecha+')'}).join(', ')+(malos.length>8?' y '+(malos.length-8)+' más':'');
-  warn.innerHTML='⚠️ '+malos.length+' movimiento'+(malos.length!==1?'s':'')+' sin CCL/MEP: <span style="opacity:.85">'+lista+'</span>';
+// ════════════════════════════════════════════════════════
+// SIMULADOR DE VENTA
+// ════════════════════════════════════════════════════════
+function divPopulateSelect(){
+  var sel = document.getElementById('d-ticker');
+  if(!sel) return;
+  var current = sel.value;
+  var tickers = [];
+  var seen = {};
+  movimientos.forEach(function(m){ if(m&&m.ticker&&!seen[m.ticker]&&m.tipo!=='aporte'){seen[m.ticker]=true;tickers.push(m.ticker);} });
+  tickers.sort();
+  sel.innerHTML = '<option value="">— seleccioná ticker —</option>' +
+    tickers.map(function(t){
+      return '<option value="'+t+'"'+(t===current?' selected':'')+'>'+t+'</option>';
+    }).join('');
 }
 
-function renderMovimientos(){
-  var body=document.getElementById('mov-body');
-  var empty=document.getElementById('mov-empty');
-  var wrap=document.getElementById('mov-wrap');
-  var filterEl=document.getElementById('mov-filter');
-  
-  // Guardar valores actuales de filtros y elemento con focus
-  var currentFilterVal=(filterEl?(filterEl.value||'').trim().toUpperCase():'');
-  var filterTipo=(document.getElementById('mov-filter-tipo')||{value:''}).value.toLowerCase();
-  var filterMkt=(document.getElementById('mov-filter-mkt')||{value:''}).value.toUpperCase();
-  var filterFecha=(document.getElementById('mov-filter-fecha')||{value:''}).value.trim();
-  var filterNotas=(document.getElementById('mov-filter-notas')||{value:''}).value.trim().toLowerCase();
-  var filterNoCCL=(document.getElementById('mov-filter-noccl')||{checked:false}).checked;
-  var filterNoMEP=(document.getElementById('mov-filter-nomep')||{checked:false}).checked;
-  var activeFocusId=document.activeElement?document.activeElement.id:null;
-
-  var filterVal=currentFilterVal;
-
-  var lista=movimientos.slice().sort(function(a,b){var fa=(a.fecha||'').split('/'),fb=(b.fecha||'').split('/');var da=fa.length===3?fa[2]+fa[1]+fa[0]:'0',db=fb.length===3?fb[2]+fb[1]+fb[0]:'0';return db.localeCompare(da);});
-  if(filterVal) lista=lista.filter(function(m){return (m.ticker||'').toUpperCase().indexOf(filterVal)>=0;});
-  if(filterTipo) lista=lista.filter(function(m){return (m.tipo||'').toLowerCase()===filterTipo;});
-  if(filterMkt) lista=lista.filter(function(m){
-    var mLabel=(m.mercado==='USA'?'NYSE':m.mercado==='ETF'?'ETF':(m.mercado||'')).toUpperCase();
-    return mLabel===filterMkt;
-  });
-  if(filterFecha) lista=lista.filter(function(m){return (m.fecha||'').indexOf(filterFecha)>=0;});
-  if(filterNotas) lista=lista.filter(function(m){return (m.notas||'').toLowerCase().indexOf(filterNotas)>=0;});
-  // Sin CCL en tabla: sólo mercados que NO son bonos/ON (esos usan MEP — ver filtro de abajo)
-  if(filterNoCCL) lista=lista.filter(function(m){
-    if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
-    var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
-    if(esBonoON)return false;
-    return !getCCL(m.fecha);
-  });
-  // Sin MEP en tabla: sólo bonos/ON. Chequea el MEP puntual, aunque haya caído a CCL como aproximación
-  if(filterNoMEP) lista=lista.filter(function(m){
-    if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
-    var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
-    if(!esBonoON)return false;
-    return !getMEP(m.fecha);
-  });
-
-  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterNoCCL||filterNoMEP;
-  document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
-  checkMovSinTC();
-  var histBody=document.getElementById('mov-historial-body');
-  var histArrow=document.getElementById('mov-historial-arrow');
-  if(!lista.length){empty.style.display='';wrap.style.display='none';return;}
-  empty.style.display='none';wrap.style.display='';
-  if(histBody&&histBody.style.display==='none'){histBody.style.display='block';if(histArrow)histArrow.textContent='▾';}
-
-  body.innerHTML=lista.map(function(m){
-    var mLabel=m.mercado==='USA'?'NYSE':m.mercado==='ETF'?'ETF':(m.mercado||'—');
-    var sid="'"+String(m.id)+"'";
-    var canReduce=m.tipo==='compra'&&m.qty>0;
-    var reduceHtml=canReduce
-      ? '<span style="display:inline-flex;align-items:center;gap:3px">'+
-          '<input id="red-qty-'+m.id+'" type="number" min="0.001" step="any" placeholder="-qty" style="width:54px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.65rem;padding:2px 4px;height:22px">'+
-          '<button class="btn btn-sm" style="color:var(--amber);border-color:#3e2c10" onclick="reduceMov('+sid+')">−</button>'+
-        '</span>'
-      : '';
-    // CCL/MEP efectivo: la tabla histórica tiene prioridad sobre el valor guardado
-    var _mEsBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
-    var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON);
-    var _mMepTabla=_mEsBonoON?getMEP(m.fecha):null;
-    var _mCclTabla=getCCL(m.fecha);
-    var _mTcTabla=_mEsBonoON?(_mMepTabla||_mCclTabla):_mCclTabla;
-    var _mTcEfectivo=_mTcTabla||m.ccl||null;
-    // precioUSD: para mercados ARS recalcular desde precioARS/tc_tabla; para USD usar el guardado
-    var _mPrecioUSD=(_mEsARS&&(m.precioARS||0)>0&&_mTcEfectivo>0)
-      ?(m.precioARS/_mTcEfectivo)
-      :(m.precioUSD||null);
-    // Alertas sobre la fuente del TC: bonos/ON sin MEP puntual (⚠MEP — puede haber caído a CCL como aproximación) vs resto sin CCL puntual (⚠ rojo)
-    var _mSinMEP=_mEsBonoON&&!_mMepTabla;
-    var _mCCLstr;
-    if(_mTcTabla){
-      var _mWarnInline=_mSinMEP?' <span style="color:var(--amber)" title="No hay MEP en la tabla histórica para '+m.fecha+'. Se está usando el CCL de esa fecha ('+Math.round(_mCclTabla)+') como aproximación.">⚠MEP</span>':'';
-      _mCCLstr=String(Math.round(_mTcTabla))+(_mTcTabla===m.ccl?'':' ✓')+_mWarnInline;
-    } else {
-      _mCCLstr=m.ccl?'<span style="color:var(--red)" title="No hay '+(_mEsBonoON?'MEP':'CCL')+' en la tabla histórica para '+m.fecha+'. Se está usando '+m.ccl+' cargado a mano en el movimiento, que puede no ser el valor real de ese día.">⚠ '+m.ccl+'</span>':'—';
-    }
-    return '<tr>'+
-      '<td class="mono">'+m.fecha+'</td>'+
-      '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
-      '<td><span class="mkt">'+mLabel+'</span></td>'+
-      '<td style="font-weight:600">'+m.ticker+'</td>'+
-      '<td class="mono">'+(m.qty||'')+'</td>'+
-      '<td class="mono">'+(m.precioARS?'$'+(_mEsBonoON?m.precioARS*100:m.precioARS).toLocaleString('es-AR'):'')+'</td>'+
-      '<td class="mono muted">'+_mCCLstr+'</td>'+
-      '<td class="mono">'+(_mPrecioUSD?'$'+_mPrecioUSD.toFixed(4):'—')+'</td>'+
-      '<td class="mono muted">'+(m.comisionPct?m.comisionPct.toFixed(2)+'%':'0%')+'</td>'+
-      (function(){
-        var comAbs=m.comision||0;
-        var totalARS=(m.qty||0)*(m.precioARS||0)+comAbs;
-        var tcRow=_mTcEfectivo||_mTcTabla||m.ccl||0;
-        var totalUSD=tcRow>0?totalARS/tcRow:null;
-        return '<td class="mono" style="color:var(--amber)">'+(comAbs>0?'$'+Math.round(comAbs).toLocaleString('es-AR'):'—')+'</td>'+
-               '<td class="mono" style="color:var(--accent)">'+(totalARS>0?'$'+Math.round(totalARS).toLocaleString('es-AR'):'—')+'</td>'+
-               '<td class="mono" style="color:var(--accent)">'+(totalUSD&&totalUSD>0?'U$S '+totalUSD.toFixed(0):'—')+'</td>';
-      })()+
-      '<td class="muted" style="max-width:100px;overflow:hidden;text-overflow:ellipsis">'+(m.notas||'')+'</td>'+
-      '<td style="white-space:nowrap">'+
-        '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">'+
-          reduceHtml+
-          '<button class="btn btn-sm" onclick="toggleFinish('+sid+')" title="A finish" style="'+(m.finish?'color:var(--amber);border-color:#3e2c10':'opacity:.3')+'">🏁</button>'+
-          '<button class="btn btn-sm" onclick="movModalOpen('+sid+')" title="Editar">✎</button>'+
-          '<button class="btn btn-d btn-sm" onclick="deleteMov('+sid+')" title="Borrar">✕</button>'+
-        '</div>'+
-      '</td>'+
-    '</tr>';
-  }).join('');
-
-  // Restaurar valores de filtros y focus en el elemento que estaba enfocado
-  requestAnimationFrame(function(){
-    // Restaurar valores de filtros (después de que el HTML fue regenerado)
-    var filterElNew=document.getElementById('mov-filter');
-    var filterTipoNew=document.getElementById('mov-filter-tipo');
-    var filterMktNew=document.getElementById('mov-filter-mkt');
-    var filterFechaNew=document.getElementById('mov-filter-fecha');
-    var filterNotasNew=document.getElementById('mov-filter-notas');
-    
-    if(filterElNew&&currentFilterVal)filterElNew.value=currentFilterVal;
-    if(filterTipoNew&&filterTipo)filterTipoNew.value=filterTipo;
-    if(filterMktNew&&filterMkt)filterMktNew.value=filterMkt;
-    if(filterFechaNew&&filterFecha)filterFechaNew.value=filterFecha;
-    if(filterNotasNew&&filterNotas)filterNotasNew.value=filterNotas;
-    
-    // Restaurar focus en el elemento que estaba enfocado
-    if(activeFocusId){
-      var elToFocus=document.getElementById(activeFocusId);
-      if(elToFocus)elToFocus.focus();
-    }
-    
-    // Scroll para que wrap quede visible SOLO al activar un filtro (no en cada re-render
-    // mientras el filtro sigue activo, porque eso te pisa el scroll manual — p.ej. al
-    // editar/borrar movimientos uno por uno dentro de una lista filtrada larga).
-    if(anyFilter&&!_movWasFiltered){
-      wrap.scrollTop=0;
-      var content=document.querySelector('.content');
-      var cardHeader=document.querySelector('#mov-card .card-header');
-      var headerH=cardHeader?cardHeader.getBoundingClientRect().bottom:0;
-      var wrapTop=wrap.getBoundingClientRect().top;
-      if(content&&wrapTop>headerH+4){
-        content.scrollTop+=wrapTop-headerH;
-      }
-    }
-    _movWasFiltered=anyFilter;
-  });
-}
-
-function getPositions(){
-  var pos={};
-  var lots={}; // ticker -> lotes de compra abiertos [{qtyOpen,unitUSD,unitUSDpuro,unitARS,fecha,id}]
-
-  // Procesar en orden CRONOLÓGICO (no orden de carga) para que el consumo de lotes
-  // por venta respete qué compras existían efectivamente a esa fecha.
-  var ordenados = movimientos.slice().sort(function(a,b){
-    var fa=(a&&a.fecha||'').split('/'), fb=(b&&b.fecha||'').split('/');
-    var da = fa.length===3? fa[2]+fa[1].padStart(2,'0')+fa[0].padStart(2,'0') : '0';
-    var db = fb.length===3? fb[2]+fb[1].padStart(2,'0')+fb[0].padStart(2,'0') : '0';
-    if(da!==db) return da<db?-1:1;
-    return (a&&a.id||0)-(b&&b.id||0);
-  });
-
-  ordenados.forEach(function(m){
-    if(!m||m.tipo==='aporte')return;
-    var key=m.ticker;
-    if(!pos[key])pos[key]={ticker:m.ticker,mercado:m.mercado,qty:0,costUSD:0,costARS:0,costUSDpuro:0,realizedPnl:0,dividendsUSD:0};
-    else if(m.mercado)pos[key].mercado=m.mercado; // actualizar con cada mov para que el último editado gane
-    var p=pos[key];
-    if(!lots[key])lots[key]=[];
-    var priceUSD=m.precioUSD||0;
-    var comUSD=m.comision||0;
-    if(m.tipo==='dividendo'){p.dividendsUSD+=priceUSD;}
-    else if(m.tipo==='compra'){
-      // Bonos y ONs: dividir por MEP del día; resto: por CCL
-      // La tabla histórica (Tipo de cambio) tiene PRIORIDAD sobre el CCL guardado en el movimiento
-      // Fallback: CCL_HOY como último recurso para no tratar ARS como USD
-      var _tc=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
-        :(getCCL(m.fecha)||m.ccl||CCL_HOY);
-      var usdPuro=isBonoUSDDirecto(m.ticker)?(m.precioARS||0)*m.qty:(_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty);
-      p.costUSD+=usdPuro+comUSD;  // consistente con costUSDpuro: usa precioARS/tc_dia
-      p.costARS+=(m.precioARS||0)*m.qty;
-      p.costUSDpuro+=usdPuro;  // USD real pagado: precioARS*qty/MEP o CCL según mercado
-      p.qty+=m.qty;
-      if(m.qty>0)lots[key].push({
-        qtyOpen:m.qty,
-        unitUSD:(usdPuro+comUSD)/m.qty,
-        unitUSDpuro:usdPuro/m.qty,
-        unitARS:(m.precioARS||0),
-        fecha:m.fecha, id:m.id
-      });
-    }
-    else if(m.tipo==='venta'){
-      // La tabla histórica tiene PRIORIDAD sobre el CCL guardado en el movimiento
-      var _tcV=(m.mercado==='BONOS'||m.mercado==='ON')
-        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
-        :(getCCL(m.fecha)||m.ccl||CCL_HOY);
-      var ventaUSDpuro=isBonoUSDDirecto(m.ticker)?(m.precioARS||0):(_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0));
-      var openLots=lots[key]||[];
-      var qtyTotalOpen=openLots.reduce(function(s,l){return s+l.qtyOpen;},0);
-
-      if(m.loteMethod==='barato'&&qtyTotalOpen>0.000001){
-        // Método nuevo (validado en GDC): descontar primero del lote de MENOR costo
-        // en USD, no del promedio ponderado — deja el costo restante más alto
-        // (cartera más pesimista).
-        var ordenLotes=openLots.slice().sort(function(a,b){return a.unitUSDpuro-b.unitUSDpuro;});
-        var restante=Math.min(m.qty,qtyTotalOpen);
-        var costBasisUSD=0,costBasisUSDpuro=0,costBasisARS=0;
-        for(var i=0;i<ordenLotes.length&&restante>0.000001;i++){
-          var lot=ordenLotes[i];
-          if(lot.qtyOpen<=0.000001)continue;
-          var take=Math.min(lot.qtyOpen,restante);
-          costBasisUSD+=take*lot.unitUSD;
-          costBasisUSDpuro+=take*lot.unitUSDpuro;
-          costBasisARS+=take*lot.unitARS;
-          lot.qtyOpen-=take;
-          restante-=take;
-        }
-        var qtyVendidaEfectiva=m.qty-restante; // por si pide más de lo abierto en lotes
-        var proceedsPuro=ventaUSDpuro*qtyVendidaEfectiva-comUSD;
-        p.realizedPnl+=proceedsPuro-costBasisUSDpuro;
-        p.costUSD-=costBasisUSD;
-        p.costARS-=costBasisARS;
-        p.costUSDpuro-=costBasisUSDpuro;
-        p.qty-=qtyVendidaEfectiva;
-        // Guardar ganancia realizada en el propio movimiento para estadísticas (x ticker, tipo, RF/RV)
-        m.gananciaUSD=proceedsPuro-costBasisUSDpuro;
-        m.costBasisUSD=costBasisUSDpuro;
-        m.gananciaPct=costBasisUSDpuro>0?(m.gananciaUSD/costBasisUSDpuro*100):null;
-      } else {
-        // Método legado (histórico, sin tocar): promedio ponderado de todas las compras
-        var avg=p.qty>0?p.costUSD/p.qty:0;
-        var avgARS=p.qty>0?p.costARS/p.qty:0;
-        var avgUSDpuro=p.qty>0?p.costUSDpuro/p.qty:0;
-        var costBasisPuro=avgUSDpuro*m.qty;
-        var proceedsPuro=ventaUSDpuro*m.qty-comUSD;
-        p.realizedPnl+=proceedsPuro-costBasisPuro;
-        p.costUSD-=avg*m.qty;
-        p.costARS-=avgARS*m.qty;
-        p.costUSDpuro-=costBasisPuro;
-        p.qty-=m.qty;
-        // Guardar ganancia realizada en el propio movimiento para estadísticas (x ticker, tipo, RF/RV)
-        m.gananciaUSD=proceedsPuro-costBasisPuro;
-        m.costBasisUSD=costBasisPuro;
-        m.gananciaPct=costBasisPuro>0?(m.gananciaUSD/costBasisPuro*100):null;
-        // Reducir todos los lotes abiertos proporcionalmente para no romper el
-        // tracking de lotes futuros (mantiene el promedio ponderado intacto).
-        if(qtyTotalOpen>0.000001){
-          var frac=m.qty/qtyTotalOpen;
-          openLots.forEach(function(l){ l.qtyOpen-=l.qtyOpen*frac; });
-        }
-      }
-    }
-  });
-
-  // Dividendos del Tracker (TRK.divs) confirmados para afectar PPC o ganancia de venta
-  // (ver trkAddDiv). Se recalcula siempre en vivo desde TRK.divs, así que borrar un
-  // dividendo del tracker revierte el efecto automáticamente.
-  if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
-    TRK.divs.forEach(function(d){
-      if(!d.pncApplied||!d.montoUSD)return;
-      var p=pos[d.ticker];
-      if(!p)return;
-      if(d.pncTarget==='ppc'){p.costUSDpuro-=d.montoUSD;}
-      else if(d.pncTarget==='venta'){p.realizedPnl+=d.montoUSD;}
-    });
-  }
-
-  return Object.values(pos);
-}
-
-// ─── Perf: getPositions() se calcula UNA vez por render de Portafolio ───
-// renderPortfolio() y las cards que dispara (inversiones chicas, perfil, próximos cobros, etc.)
-// pedían las posiciones por separado → el historial completo se recorría 4-5 veces por render
-// (y durante la actualización de precios hay un render por frame). Mientras dura un render se
-// reutiliza el resultado (clave: owner + cartera activa + cantidad de movimientos); fuera de un
-// render, getPositions() se comporta exactamente igual que antes (sin caché).
-var _GP_ON=0,_GP_CACHE={};
-var _getPositionsRaw=getPositions;
-getPositions=function(owner){
-  if(!_GP_ON)return _getPositionsRaw.apply(this,arguments);
-  var k=(owner||'')+'|'+(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:'')+'|'+((typeof movimientos!=='undefined'&&movimientos)?movimientos.length:0);
-  if(!_GP_CACHE[k])_GP_CACHE[k]=_getPositionsRaw.apply(this,arguments);
-  return _GP_CACHE[k];
-};
-var _renderPortfolioRaw=renderPortfolio;
-renderPortfolio=function(){
-  _GP_ON++;
-  try{return _renderPortfolioRaw.apply(this,arguments);}
-  finally{_GP_ON--;if(!_GP_ON)_GP_CACHE={};}
-};
-
+// ─── Comprar rápido (módulo en Home/Portafolio) ───
 function vbuyOnMktChange(){
   var mkt=document.getElementById('vbuy-mkt').value;
   var lbl=document.getElementById('vbuy-lbl-precio');
@@ -3689,8 +1944,8 @@ function vbuyConfirmar(){
   if(isNaN(qty)||qty<=0){flash(statusEl,'Cantidad inválida',true);return;}
   if(isNaN(precioARSInput)||precioARSInput<0){flash(statusEl,'Precio inválido',true);return;}
 
-  // Bonos/ONs: el usuario ingresa precio por 100 nominales → dividir por 100 para almacenar por nominal
   var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
+  if(mkt==='FCI')qty=qty/1000;
   var cclVal=getTC(fecha,mkt);
   if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP para esa fecha',true);return;}
   var ratio=getRatio(ticker);
@@ -3700,17 +1955,17 @@ function vbuyConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'compra', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Cargado desde módulo rápido (Portafolio)',
-    finish:finishEl&&finishEl.checked||false
+    finish:finishEl&&finishEl.checked||false, owner:undefined
   });
   saveAndRender();
-  tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'),cclVal);
+  tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'||mkt==='FCI'),cclVal);
   flash(statusEl,'Compra registrada ✓',false);
   vbuyClear();
 }
 
 // ─── Vender rápido (módulo en Home/Portafolio) ───
-// Motor de promedio ponderado: se toma directo de getPositions(), que ya deja
-// costUSDpuro/qty netos de toda la historia real de compras y ventas.
+// Mismos campos y mismo motor (lote más barato) que el Simulador de Venta,
+// pero ejecuta la venta real: crea el movimiento y actualiza la cartera.
 function vsellPopulateSelect(){
   var sel = document.getElementById('vsell-ticker');
   if(!sel) return;
@@ -3752,12 +2007,14 @@ function vsellPreview(){
   var cclEl=document.getElementById('vsell-ccl');
   var prevEl=document.getElementById('vsell-preview');
   var btnConfirm=document.getElementById('vsell-btn-confirmar');
+  var lblPrecioEl=document.getElementById('vsell-lbl-precio');
   if(!tickerEl||!prevEl) return;
   var ticker=tickerEl.value.trim().toUpperCase();
-  if(!ticker){ prevEl.innerHTML='<span style="color:var(--text3)">Elegí un ticker para ver el preview.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
+  if(!ticker){ if(lblPrecioEl)lblPrecioEl.textContent='Precio ARS'; prevEl.innerHTML='<span style="color:var(--text3)">Elegí un ticker para ver el preview.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
 
   var sector=getSector(ticker);
   var esBonoON=(sector==='bonos'||sector==='on');
+  if(lblPrecioEl) lblPrecioEl.textContent = esBonoON ? 'Precio /100N' : 'Precio ARS';
   var cclManual=parseFloat(cclEl.value);
   var fechaStr=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
   var cclTabla=fechaStr?(esBonoON?(getMEP(fechaStr)||getCCL(fechaStr)):getCCL(fechaStr)):null;
@@ -3769,6 +2026,8 @@ function vsellPreview(){
   var qtyVender=parseFloat(qtyEl.value);
   var ventaUSDxUnit=isBonoUSDDirecto(ticker)?(precioARS>0?precioARS:null):((precioARS>0&&ccl>0)?precioARS/ccl:null);
 
+  // Promedio ponderado: se toma directo de getPositions(), que ya deja costUSDpuro/qty
+  // netos de toda la historia (compras y ventas previas, sea cual sea el método usado en cada una).
   var posActual=getPositions().find(function(p){return p.ticker===ticker;});
   if(!posActual||posActual.qty<=0.000001){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
 
@@ -3843,15 +2102,19 @@ function vsellConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'venta', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Vendido desde módulo rápido (Portafolio)',
-    finish:false, loteMethod:'promedio'
+    finish:false, owner:undefined, loteMethod:'promedio'
   });
   saveAndRender();
-  tcStampearFecha(fecha,esBonoON,cclVal);
+  tcStampearFecha(fecha,(esBonoON||sector==='fci'),cclVal);
   flash(statusEl,'Venta registrada ✓',false);
   vsellClear();
   vsellPopulateSelect();
 }
 
+// ─── Estadísticas de Ganancia realizada (x ticker, x tipo, x RF/RV) ───
+// Usa gananciaUSD/gananciaPct/costBasisUSD que getPositions() guarda en cada
+// movimiento de venta (tanto ventas legado con promedio ponderado como ventas
+// nuevas con lote más barato). U$S = símbolo de dólar usado en toda esta vista.
 function vestadTipoTicker(ticker){
   var s=getSector(ticker);
   if(s==='bonos')return 'Bono';
@@ -3952,38 +2215,1186 @@ function renderVentaEstadisticas(){
   document.getElementById('vestad-rfrv').innerHTML=vestadTabla(porRFRV,'Clase');
 }
 
+// ─── Estadísticas Venta Histórica (prueba standalone, no toca movimientos reales) ───
+var _ventahistRows = [];
+var _ventahistDivs = []; // dividendos/rentas cobradas, persistidos aparte (identifican por ticker corto)
+var _ventahistAportes = []; // aportes/retiros de dinero (cuenta corriente pesos), persistidos aparte
+
+function ventahistParseFecha(v){
+  if(v==null||v==='') return null;
+  if(typeof v==='number'){
+    var d=new Date(Math.round((v-25569)*86400*1000));
+    var dd=d.getUTCDate(), mm=d.getUTCMonth()+1, yyyy=d.getUTCFullYear();
+    return (dd<10?'0':'')+dd+'/'+(mm<10?'0':'')+mm+'/'+yyyy;
+  }
+  var s=String(v).trim();
+  var m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){
+    var dd2=m[1].padStart(2,'0'), mm2=m[2].padStart(2,'0'), yyyy2=m[3].length===2?('20'+m[3]):m[3];
+    return dd2+'/'+mm2+'/'+yyyy2;
+  }
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return m[3].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+m[1];
+  return null;
+}
+
+function ventahistParseTipo(v){
+  var s=cmpNorm(v);
+  if(s==='compra'||s==='c'||s==='buy'||s==='cpra') return 'compra';
+  if(s==='venta'||s==='v'||s==='sell'||s==='vtas'||s==='vta') return 'venta';
+  return null; // VTTR, COTR, transferencias u otros códigos no se tratan como operación de mercado
+}
+
+function ventahistParseNum(v){
+  if(v==null||v==='') return NaN;
+  if(typeof v==='number') return v;
+  return cmpParseArgNum(v);
+}
+
+function ventahistFechaKey(f){
+  var p=f.split('/');
+  return p.length===3 ? p[2]+p[1].padStart(2,'0')+p[0].padStart(2,'0') : '0';
+}
+
+// Clasifica el activo en Bonos / Argentina / Brasil / Cedear a partir del texto de Especie.
+// Se usa solo para el desglose de Estadísticas Venta Histórica (no toca la clasificación real por ticker).
+var VHIST_BRASIL_RE=/ITAU|BANCO DO BRASIL|BRADESCO|VALE S\.A|GERDAU|EMBRAER|PETROLEO BRASILEIRO|SIDERURGICA|AMBEV|STONECO|PAGSEGURO|NU HOLDINGS|XP INC|BRASKEM|BRF S\.A|MERC\.?LIB|MSCI BRAZIL/i;
+function ventahistClasificarTipo(idRaw,esBonoON){
+  if(esBonoON) return 'Bonos';
+  if(/^CED/i.test(idRaw)) return VHIST_BRASIL_RE.test(idRaw)?'Brasil':'Cedear';
+  return 'Argentina';
+}
+function ventahistEsBonoON(idRaw){
+  return /BONO|BONTE|OBLIGAC|LETRA|LECAP|LECER|BOTE|BOPREAL|VALORES NEGOCIABLES|^ON\s|^L\.\s*T|^LT\s|^B\.\s*TES|^T\.D\./i.test(idRaw);
+}
+// Activos con split conocido dentro del período cargado: la variación de precio "por split" contamina
+// el promedio ponderado y da ganancias/pérdidas ficticias. Se excluyen por completo de la base histórica.
+var VHIST_EXCLUIDOS_RE=/^LONGVIE|^CELULOSA|^FERRUM/i;
+// Tickers cortos equivalentes (usados en el archivo de Dividendos/Rentas, que identifica por ticker y no por nombre completo).
+var VHIST_EXCLUIDOS_TICKERS=new Set(['LONG','CELU','FERR','ECOG']);
+function ventahistEstaExcluido(idRaw){
+  if(VHIST_EXCLUIDOS_TICKERS.has(String(idRaw||'').trim().toUpperCase())) return true;
+  return VHIST_EXCLUIDOS_RE.test(idRaw)||cmpNorm(idRaw).indexOf('ecogas')>=0;
+}
+
+// Parsea la matriz de filas (como la devuelve XLSX.utils.sheet_to_json({header:1})).
+// Soporta dos formatos:
+//  1) Formato simple: Ticker, Fecha, Tipo, Cantidad, Precio, Mercado (opcional)
+//  2) Formato de exportación de broker: Especie (nombre completo, no ticker), Operado/Liquida (fechas),
+//     Operación (CPRA/VTAS), Cantidad, Importe. En este caso el precio por unidad se calcula como
+//     Importe/Cantidad, así no hace falta adivinar si "Precio" viene cada 100 nominales o por unidad.
+function ventahistParseRows(rows){
+  // Requiere Especie/Ticker Y Cantidad en la misma fila: algunos exports de broker traen una
+  // mini-tabla de "filtros aplicados" antes de la tabla real que también menciona "Especie"
+  // pero sin columna Cantidad, y no queremos confundirla con el encabezado de datos.
+  var hdrIdx=rows.findIndex(function(r){
+    var n=r.map(cmpNorm);
+    var hasId=n.indexOf('especie')>=0||n.indexOf('ticker')>=0;
+    var hasQty=n.some(function(c){return c==='cantidad'||c==='qty'||c==='nominales';});
+    return hasId&&hasQty;
+  });
+  if(hdrIdx<0) return {error:'No se encontró la columna Especie o Ticker.'};
+  var hdr=rows[hdrIdx].map(cmpNorm);
+
+  var especieCol=hdr.indexOf('especie');
+  var tickerCol=hdr.indexOf('ticker');
+  var opCol=hdr.findIndex(function(c){return c==='operado';});
+  var liqCol=hdr.findIndex(function(c){return c==='liquida'||c==='liquidacion'||c==='liquidación';});
+  var fCol=hdr.indexOf('fecha');
+  var tipoOpCol=hdr.findIndex(function(c){return c==='operacion'||c==='operación';});
+  var tipoCol=hdr.indexOf('tipo');
+  var qCol=hdr.findIndex(function(c){return c==='cantidad'||c==='qty'||c==='nominales';});
+  var impCol=hdr.findIndex(function(c){return c==='importe'||c==='monto';});
+  var pCol=hdr.findIndex(function(c){return c.indexOf('precio')===0||c==='price';});
+  var mCol=hdr.indexOf('mercado');
+
+  var idCol=especieCol>=0?especieCol:tickerCol;
+  var dateCol=opCol>=0?opCol:(liqCol>=0?liqCol:fCol);
+  var typeCol=tipoOpCol>=0?tipoOpCol:tipoCol;
+
+  if(idCol<0||dateCol<0||typeCol<0||qCol<0){
+    return {error:'Faltan columnas necesarias. Necesito: (Especie o Ticker) + (Operado, Liquida o Fecha) + (Operación o Tipo) + Cantidad, y para el precio Importe o Precio.'};
+  }
+  if(impCol<0&&pCol<0){
+    return {error:'Necesito la columna Importe o la columna Precio para calcular el costo.'};
+  }
+
+  var parsed=[], errores=0, ignoradas=0;
+  rows.slice(hdrIdx+1).forEach(function(r,idx){
+    var idRaw=String(r[idCol]||'').trim();
+    if(!idRaw) return;
+    var fecha=ventahistParseFecha(r[dateCol]);
+    var tipo=ventahistParseTipo(r[typeCol]);
+    if(!tipo){ ignoradas++; return; }
+    var qty=Math.abs(ventahistParseNum(r[qCol]));
+    var precioARS=NaN;
+    if(impCol>=0){
+      var importe=Math.abs(ventahistParseNum(r[impCol]));
+      precioARS=(!isNaN(importe)&&qty>0)?(importe/qty):NaN;
+    }
+    if(isNaN(precioARS)&&pCol>=0){
+      precioARS=ventahistParseNum(r[pCol]);
+    }
+    var esBonoON=ventahistEsBonoON(idRaw);
+    var mercado=(mCol>=0&&r[mCol])?String(r[mCol]).trim().toUpperCase():(esBonoON?'BONOS':'');
+    var tipoActivo=ventahistClasificarTipo(idRaw,esBonoON);
+    if(!fecha||isNaN(qty)||qty<=0||isNaN(precioARS)||precioARS<0){errores++;return;}
+    parsed.push({ticker:idRaw,fecha:fecha,tipo:tipo,qty:qty,precioARS:precioARS,mercado:mercado,tipoActivo:tipoActivo,_idx:idx});
+  });
+
+  return {parsed:parsed,errores:errores,ignoradas:ignoradas};
+}
+
+function ventahistReadRows(ab){
+  // 1) intenta como Excel/CSV real
+  try{
+    var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
+    for(var i=0;i<wb.SheetNames.length;i++){
+      var ws=wb.Sheets[wb.SheetNames[i]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.some(function(r){return r.some(function(c){var n=cmpNorm(c);return n==='especie'||n==='ticker';});})) return rows;
+    }
+  }catch(ex){}
+  // 2) fallback: muchos brokers exportan un .xls que en realidad es HTML (ej. Portfolio Personal).
+  //    Reusa el mismo parser que ya usa Comparación de Portafolios para el formato viejo de Veta.
+  return cmpParseHTML(ab);
+}
+
+// ─── Dividendos y Rentas cobradas (archivo separado del broker, identifica por ticker corto) ───
+// Formato: Fecha, Cpbt (DIV/RTA/CANJ/RESC), Especie (ticker), Moneda (vacío=USD, "PESOS"=ARS), Divi/renta (monto).
+// Solo DIV y RTA se cuentan como ingreso: CANJ es un canje sin movimiento de caja, y RESC es un rescate/
+// redención total del bono (devolución de capital, no ganancia) — sumarlo como renta sobreestimaría la ganancia.
+function ventahistParseDivRows(rows){
+  var hdrIdx=rows.findIndex(function(r){
+    var n=r.map(cmpNorm);
+    return n.indexOf('fecha')>=0&&n.indexOf('especie')>=0&&n.indexOf('cpbt')>=0;
+  });
+  if(hdrIdx<0) return {error:'No se encontró la tabla de Dividendos/Rentas (columnas Fecha, Cpbt, Especie, Divi/renta).'};
+  var hdr=rows[hdrIdx].map(cmpNorm);
+  var fCol=hdr.indexOf('fecha');
+  var cpbtCol=hdr.indexOf('cpbt');
+  var idCol=hdr.indexOf('especie');
+  var monCol=hdr.indexOf('moneda');
+  var montoCol=hdr.indexOf('divi/renta');
+  if(fCol<0||cpbtCol<0||idCol<0||montoCol<0){
+    return {error:'Faltan columnas necesarias. Necesito: Fecha, Cpbt, Especie y Divi/renta.'};
+  }
+  var parsed=[], ignoradas=0, errores=0;
+  rows.slice(hdrIdx+1).forEach(function(r,idx){
+    var cpbt=cmpNorm(r[cpbtCol]);
+    if(cpbt!=='div'&&cpbt!=='rta'){ ignoradas++; return; }
+    var ticker=String(r[idCol]||'').trim().toUpperCase();
+    if(!ticker) return;
+    var fecha=ventahistParseFecha(r[fCol]);
+    var monto=ventahistParseNum(r[montoCol]);
+    var moneda=String(r[monCol]||'').trim().toUpperCase();
+    if(!fecha||isNaN(monto)||monto===0){ errores++; return; }
+    parsed.push({ticker:ticker,fecha:fecha,monto:monto,moneda:moneda,cpbt:cpbt,_idx:idx});
+  });
+  return {parsed:parsed,ignoradas:ignoradas,errores:errores};
+}
+
+// Traduce el sector real (getSector, el mismo que usa toda la cartera) a los 4 baldes de este desglose.
+function vhistSectorToTipo(sector){
+  if(sector==='bonos'||sector==='on') return 'Bonos';
+  if(sector==='argentina') return 'Argentina';
+  if(sector==='brasil') return 'Brasil';
+  return 'Cedear';
+}
+
+// Convierte cada cobro de dividendo/renta a USD y lo clasifica, usando getSector real (ticker corto → sector).
+function calcularDividendosHistoricos(rows){
+  return rows.map(function(r){
+    var sector=(typeof getSector==='function')?getSector(r.ticker):'nyse';
+    var tipoActivo=vhistSectorToTipo(sector);
+    var esBonoON=(sector==='bonos'||sector==='on');
+    var usd;
+    if(r.moneda==='PESOS'){
+      var tc=esBonoON?(getMEP(r.fecha)||MEP_HOY):(getCCL(r.fecha)||CCL_HOY);
+      usd=tc>0?(r.monto/tc):0;
+    } else {
+      usd=r.monto; // ya viene en USD
+    }
+    var anio=parseInt((r.fecha.split('/')[2])||'0',10);
+    return {ticker:r.ticker,fecha:r.fecha,anio:anio,tipoActivo:tipoActivo,usd:usd};
+  });
+}
+
+function ventahistResetFecha(){
+  var el=document.getElementById('vhist-add-fecha');
+  if(el) el.value=new Date().toISOString().split('T')[0];
+}
+
+// Persiste la base histórica (localStorage + Supabase), igual patrón que ccl_override/mep_override.
+function vhistPersist(){
+  try{ localStorage.setItem('ptNYSE_vhist_movs', JSON.stringify(_ventahistRows)); }catch(e){}
+  sbSetConfig('vhist_movs', _ventahistRows);
+}
+
+function ventahistOnFile(input){
+  var f=input.files[0];
+  if(!f) return;
+  document.getElementById('vhist-file-name').textContent=f.name;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var rows=ventahistReadRows(e.target.result);
+      var res=ventahistParseRows(rows);
+      if(res.error){ alert(res.error); return; }
+      if(!res.parsed.length){ alert('No se pudo leer ninguna fila válida. Revisá el formato del archivo.'); return; }
+      var excluidas=res.parsed.filter(function(r){return ventahistEstaExcluido(r.ticker);}).length;
+      var limpio=res.parsed.filter(function(r){return !ventahistEstaExcluido(r.ticker);});
+      if(_ventahistRows.length && !confirm('Ya tenés una base histórica guardada con '+_ventahistRows.length+' movimientos.\n¿Reemplazarla con este archivo ('+limpio.length+' movimientos)?')){ return; }
+      _ventahistRows=limpio;
+      vhistPersist();
+      var statusTxt=limpio.length+' operaciones guardadas como base histórica';
+      if(excluidas) statusTxt+=' · '+excluidas+' excluidas (splits: LONGVIE/ECOGAS/CELULOSA/FERRUM)';
+      if(res.ignoradas) statusTxt+=' · '+res.ignoradas+' filas ignoradas (transferencias u otros códigos)';
+      if(res.errores) statusTxt+=' · '+res.errores+' filas con error';
+      document.getElementById('vhist-file-status').textContent=statusTxt;
+      renderVentaHistorica();
+    }catch(ex){
+      alert('Error leyendo el archivo: '+ex.message);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+// Agrega un movimiento nuevo a mano, sin tener que resubir el Excel entero.
+function ventahistAddManual(){
+  var especieEl=document.getElementById('vhist-add-especie');
+  var fechaEl=document.getElementById('vhist-add-fecha');
+  var tipoEl=document.getElementById('vhist-add-tipo');
+  var qtyEl=document.getElementById('vhist-add-qty');
+  var precioEl=document.getElementById('vhist-add-precio');
+  var especie=(especieEl.value||'').trim();
+  var fecha=ventahistParseFecha(fechaEl.value);
+  var tipo=tipoEl.value;
+  var qty=ventahistParseNum(qtyEl.value);
+  var precio=ventahistParseNum(precioEl.value);
+  if(!especie){ alert('Falta el ticker/especie.'); return; }
+  if(ventahistEstaExcluido(especie)){ alert('Este activo está excluido de la base histórica (split conocido).'); return; }
+  if(!fecha){ alert('Fecha inválida.'); return; }
+  if(isNaN(qty)||qty<=0){ alert('Cantidad inválida.'); return; }
+  if(isNaN(precio)||precio<0){ alert('Precio inválido.'); return; }
+  var esBonoON=ventahistEsBonoON(especie);
+  var mercado=esBonoON?'BONOS':'';
+  var tipoActivo=ventahistClasificarTipo(especie,esBonoON);
+  var maxIdx=_ventahistRows.reduce(function(m,r){return Math.max(m,r._idx||0);},-1);
+  _ventahistRows.push({ticker:especie,fecha:fecha,tipo:tipo,qty:qty,precioARS:precio,mercado:mercado,tipoActivo:tipoActivo,_idx:maxIdx+1});
+  vhistPersist();
+  especieEl.value=''; qtyEl.value=''; precioEl.value='';
+  ventahistResetFecha();
+  document.getElementById('vhist-file-status').textContent=_ventahistRows.length+' movimientos en la base histórica';
+  renderVentaHistorica();
+}
+
+function ventahistClearBase(){
+  if(!_ventahistRows.length){ alert('La base histórica ya está vacía.'); return; }
+  if(!confirm('¿Vaciar toda la base histórica guardada ('+_ventahistRows.length+' movimientos)? Esta acción no se puede deshacer.')) return;
+  _ventahistRows=[];
+  vhistPersist();
+  document.getElementById('vhist-file-status').textContent='';
+  document.getElementById('vhist-file-name').textContent='Sin archivo';
+  renderVentaHistorica();
+}
+
+// Persiste los dividendos/rentas cobrados (mismo patrón que vhistPersist).
+function vhistDivsPersist(){
+  try{ localStorage.setItem('ptNYSE_vhist_divs', JSON.stringify(_ventahistDivs)); }catch(e){}
+  sbSetConfig('vhist_divs', _ventahistDivs);
+}
+
+function ventahistOnDivFile(input){
+  var f=input.files[0];
+  if(!f) return;
+  document.getElementById('vhist-div-file-name').textContent=f.name;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var rows=ventahistReadRows(e.target.result);
+      var res=ventahistParseDivRows(rows);
+      if(res.error){ alert(res.error); return; }
+      if(!res.parsed.length){ alert('No se pudo leer ninguna fila de Dividendos/Renta válida. Revisá el formato del archivo.'); return; }
+      var excluidas=res.parsed.filter(function(r){return ventahistEstaExcluido(r.ticker);}).length;
+      var limpio=res.parsed.filter(function(r){return !ventahistEstaExcluido(r.ticker);});
+      if(_ventahistDivs.length && !confirm('Ya tenés dividendos/rentas guardados ('+_ventahistDivs.length+').\n¿Reemplazarlos con este archivo ('+limpio.length+' cobros)?')){ return; }
+      _ventahistDivs=limpio;
+      vhistDivsPersist();
+      var statusTxt=limpio.length+' cobros guardados (dividendos + rentas)';
+      if(excluidas) statusTxt+=' · '+excluidas+' excluidos (splits)';
+      if(res.ignoradas) statusTxt+=' · '+res.ignoradas+' filas ignoradas (canjes/rescates, no son renta)';
+      if(res.errores) statusTxt+=' · '+res.errores+' filas con error';
+      document.getElementById('vhist-div-file-status').textContent=statusTxt;
+      renderVentaHistorica();
+    }catch(ex){
+      alert('Error leyendo el archivo: '+ex.message);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function ventahistClearDivs(){
+  if(!_ventahistDivs.length){ alert('No hay dividendos/rentas guardados.'); return; }
+  if(!confirm('¿Vaciar los dividendos/rentas guardados ('+_ventahistDivs.length+')? Esta acción no se puede deshacer.')) return;
+  _ventahistDivs=[];
+  vhistDivsPersist();
+  document.getElementById('vhist-div-file-status').textContent='';
+  document.getElementById('vhist-div-file-name').textContent='Sin archivo';
+  renderVentaHistorica();
+}
+
+// ─── Aportes y Retiros (export "Movimientos de Pesos", cuenta corriente completa) ───
+// Formato: Liquida/Operado, Operación, Especie, Cantidad, Precio, Importe, Saldo, Referencia.
+// Señal confiable: el CÓDIGO de Operación (no el texto de Referencia, que es inconsistente:
+// "TRF VALO A ICBC" contiene "TRF" pero es un retiro). PAGO = retiro (Importe siempre negativo),
+// COBR = aporte (Importe siempre positivo). El resto de los códigos (CCTE/CCCD, COTR/VTTR, TCCD/TOCT,
+// ARAN/ARPF, DECU, DEIN/NCIN, NOCR, DEME, CPRA/VTAS, etc.) son transferencias internas, comisiones,
+// retenciones o los movimientos de mercado ya cubiertos por el archivo de compras/ventas — se ignoran.
+function ventahistParseAportesRows(rows){
+  var hdrIdx=rows.findIndex(function(r){
+    var n=r.map(cmpNorm);
+    var hasOp=n.indexOf('operacion')>=0||n.indexOf('operación')>=0;
+    return hasOp&&n.indexOf('importe')>=0&&n.indexOf('saldo')>=0;
+  });
+  if(hdrIdx<0) return {error:'No se encontró la tabla de Movimientos de Pesos (columnas Operación, Importe, Saldo).'};
+  var hdr=rows[hdrIdx].map(cmpNorm);
+  var opCol=hdr.findIndex(function(c){return c==='operacion'||c==='operación';});
+  var impCol=hdr.indexOf('importe');
+  var fCol=hdr.indexOf('operado')>=0?hdr.indexOf('operado'):hdr.indexOf('liquida');
+  if(opCol<0||impCol<0||fCol<0){
+    return {error:'Faltan columnas necesarias. Necesito: Operado/Liquida, Operación e Importe.'};
+  }
+  var parsed=[], ignoradas=0, errores=0;
+  rows.slice(hdrIdx+1).forEach(function(r,idx){
+    var op=cmpNorm(r[opCol]);
+    if(op!=='pago'&&op!=='cobr'){ ignoradas++; return; }
+    var fecha=ventahistParseFecha(r[fCol]);
+    var importe=ventahistParseNum(r[impCol]);
+    if(!fecha||isNaN(importe)||importe===0){ errores++; return; }
+    var anio=parseInt(fecha.split('/')[2],10);
+    parsed.push({fecha:fecha,anio:anio,tipo:(op==='pago'?'retiro':'aporte'),montoARS:Math.abs(importe),_idx:idx});
+  });
+  return {parsed:parsed,ignoradas:ignoradas,errores:errores};
+}
+
+// Convierte cada aporte/retiro a USD con el MEP del día (mismo criterio que bonos/ON: la plata
+// entra/sale de la cuenta en pesos y se dolariza al tipo de cambio implícito de ese día).
+function calcularAportesHistoricos(rows){
+  return rows.map(function(r){
+    var tc=getMEP(r.fecha)||MEP_HOY;
+    var usd=tc>0?(r.montoARS/tc):0;
+    return {fecha:r.fecha,anio:r.anio,tipo:r.tipo,usd:(r.tipo==='retiro'?-usd:usd)};
+  });
+}
+
+function vhistAportesPersist(){
+  try{ localStorage.setItem('ptNYSE_vhist_aportes', JSON.stringify(_ventahistAportes)); }catch(e){}
+  sbSetConfig('vhist_aportes', _ventahistAportes);
+}
+
+function ventahistOnAportesFile(input){
+  var f=input.files[0];
+  if(!f) return;
+  document.getElementById('vhist-aportes-file-name').textContent=f.name;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var rows=ventahistReadRows(e.target.result);
+      var res=ventahistParseAportesRows(rows);
+      if(res.error){ alert(res.error); return; }
+      if(!res.parsed.length){ alert('No se encontraron movimientos PAGO/COBR válidos. Revisá el formato del archivo.'); return; }
+      if(_ventahistAportes.length && !confirm('Ya tenés aportes/retiros guardados ('+_ventahistAportes.length+').\n¿Reemplazarlos con este archivo ('+res.parsed.length+' movimientos)?')){ return; }
+      _ventahistAportes=res.parsed;
+      vhistAportesPersist();
+      var statusTxt=res.parsed.length+' movimientos de dinero guardados (PAGO/COBR)';
+      if(res.ignoradas) statusTxt+=' · '+res.ignoradas+' filas ignoradas (otros códigos: transferencias internas, comisiones, mercado, etc.)';
+      if(res.errores) statusTxt+=' · '+res.errores+' filas con error';
+      document.getElementById('vhist-aportes-file-status').textContent=statusTxt;
+      renderVentaHistorica();
+    }catch(ex){
+      alert('Error leyendo el archivo: '+ex.message);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function ventahistClearAportes(){
+  if(!_ventahistAportes.length){ alert('No hay aportes/retiros guardados.'); return; }
+  if(!confirm('¿Vaciar los aportes/retiros guardados ('+_ventahistAportes.length+')? Esta acción no se puede deshacer.')) return;
+  _ventahistAportes=[];
+  vhistAportesPersist();
+  document.getElementById('vhist-aportes-file-status').textContent='';
+  document.getElementById('vhist-aportes-file-name').textContent='Sin archivo';
+  renderVentaHistorica();
+}
+
+// Capital neto acumulado (aportes-retiros) al cierre de cada año, en USD. Sparse: solo tiene entrada
+// para años con al menos un movimiento; los años sin movimiento se resuelven arrastrando el último
+// valor conocido (ver vhistDenseYearMap).
+function vhistCapitalSnapshotsAportes(aportesEventos){
+  var ordenados=aportesEventos.slice().sort(function(a,b){
+    var da=ventahistFechaKey(a.fecha), db=ventahistFechaKey(b.fecha);
+    return da<db?-1:(da>db?1:0);
+  });
+  var cum=0, currentYear=null, snapshots={};
+  ordenados.forEach(function(a){
+    if(currentYear===null) currentYear=a.anio;
+    while(currentYear<a.anio){ snapshots[currentYear]=cum; currentYear++; }
+    cum+=a.usd;
+  });
+  if(currentYear!==null) snapshots[currentYear]=cum;
+  return snapshots;
+}
+
+// Capital en cartera A COSTO (posiciones abiertas) por grupo (Tipo o RF/RV), al cierre de cada año.
+// Mismo motor de promedio ponderado que calcularVentaHistorica, pero acumulando por grupo en vez de
+// por ticker, y snapshotenado en cada corte de año calendario. Las ventas sin compra registrada (activos
+// que ya se tenían antes del rango del archivo, ver ⚠️ en "Por Ticker") no restan capital de ningún
+// grupo porque no hay costo base que restarles — quedan afuera del cálculo, tal como se pidió.
+function vhistCapitalPorGrupoAnio(rows, groupOf){
+  var pos={}, capitalPorGrupo={}, snapshots={}, currentYear=null;
+  var ordenados=rows.slice().sort(function(a,b){
+    var da=ventahistFechaKey(a.fecha), db=ventahistFechaKey(b.fecha);
+    if(da!==db) return da<db?-1:1;
+    return a._idx-b._idx;
+  });
+  ordenados.forEach(function(r){
+    var anio=parseInt((r.fecha.split('/')[2])||'0',10);
+    if(currentYear===null) currentYear=anio;
+    while(currentYear<anio){ snapshots[currentYear]=Object.assign({},capitalPorGrupo); currentYear++; }
+    var key=r.ticker;
+    if(!pos[key]) pos[key]={qty:0,costUSDpuro:0};
+    var p=pos[key];
+    var esBonoON=(r.mercado==='BONOS'||r.mercado==='ON');
+    var tc=esBonoON?(getMEP(r.fecha)||MEP_HOY):(getCCL(r.fecha)||CCL_HOY);
+    var usdPuro=tc>0?(r.precioARS*r.qty/tc):0;
+    var grupo=groupOf(r);
+    if(capitalPorGrupo[grupo]===undefined) capitalPorGrupo[grupo]=0;
+    if(r.tipo==='compra'){
+      p.costUSDpuro+=usdPuro; p.qty+=r.qty;
+      capitalPorGrupo[grupo]+=usdPuro;
+    } else {
+      var avgUSDpuro=p.qty>0.000001?p.costUSDpuro/p.qty:0;
+      var qtyVendida=Math.min(r.qty,p.qty);
+      var costBasis=avgUSDpuro*qtyVendida;
+      p.costUSDpuro-=costBasis; p.qty-=qtyVendida;
+      capitalPorGrupo[grupo]-=costBasis;
+    }
+  });
+  if(currentYear!==null) snapshots[currentYear]=Object.assign({},capitalPorGrupo);
+  return snapshots;
+}
+
+// Arrastra hacia adelante el último valor conocido para cubrir sin huecos el rango [minY,maxY].
+// isObj=true para snapshots {grupo:valor} (vhistCapitalPorGrupoAnio), false para números sueltos
+// (vhistCapitalSnapshotsAportes).
+function vhistDenseYearMap(snapshots,minY,maxY,isObj){
+  var dense={}, last=isObj?{}:0;
+  for(var y=minY;y<=maxY;y++){
+    if(snapshots[y]!==undefined) last=isObj?Object.assign({},snapshots[y]):snapshots[y];
+    dense[y]=isObj?Object.assign({},last):last;
+  }
+  return dense;
+}
+
+// Reemplaza el "costo" de una matriz de vhistBuildMatrix por el capital promedio (inicio/fin de año)
+// de cada grupo, para que vhistRenderMatrix calcule el % de ganancia sobre capital invertido en vez de
+// sobre costo-base-de-lo-vendido-ese-año (que se infla con la rotación de cartera).
+function vhistApplyCapitalBase(matrix,capSnapshots){
+  var years=matrix.years;
+  var minY=years.length?Math.min.apply(null,years)-1:0;
+  var maxY=years.length?Math.max.apply(null,years):0;
+  var dense=vhistDenseYearMap(capSnapshots,minY,maxY,true);
+  var out={years:years,groups:{}};
+  Object.keys(matrix.groups).forEach(function(g){
+    var src=matrix.groups[g];
+    var perYear={}, totalCost=0;
+    years.forEach(function(y){
+      var capIni=(dense[y-1]&&dense[y-1][g])||0;
+      var capFin=(dense[y]&&dense[y][g])||0;
+      var capProm=(capIni+capFin)/2;
+      var gan=(src.perYear[y]&&src.perYear[y].gan)||0;
+      perYear[y]={cost:capProm,gan:gan};
+      totalCost+=capProm;
+    });
+    out.groups[g]={perYear:perYear,totalCost:totalCost,totalGan:src.totalGan};
+  });
+  return out;
+}
+
+function calcularVentaHistorica(rows){
+  var pos={};
+  var ventas=[]; // log de cada operación de venta individual, para desgloses por tipo/año
+  var ordenados=rows.slice().sort(function(a,b){
+    var da=ventahistFechaKey(a.fecha), db=ventahistFechaKey(b.fecha);
+    if(da!==db) return da<db?-1:1;
+    return a._idx-b._idx;
+  });
+  ordenados.forEach(function(r){
+    var key=r.ticker;
+    if(!pos[key]) pos[key]={ticker:key,qty:0,costUSDpuro:0,gananciaUSD:0,costBasisVendido:0,ventasCount:0,_sobreventa:0,tipoActivo:r.tipoActivo};
+    var p=pos[key];
+    var esBonoON=(r.mercado==='BONOS'||r.mercado==='ON');
+    // Bonos/ON: siempre MEP (sin caer a CCL); resto: CCL. Solo se usa el valor de HOY si falta directamente en la tabla.
+    var tc=esBonoON?(getMEP(r.fecha)||MEP_HOY):(getCCL(r.fecha)||CCL_HOY);
+    var usdPuro=tc>0?(r.precioARS*r.qty/tc):0;
+    if(r.tipo==='compra'){
+      p.costUSDpuro+=usdPuro;
+      p.qty+=r.qty;
+    } else {
+      var avgUSDpuro=p.qty>0.000001?p.costUSDpuro/p.qty:0;
+      var qtyVendida=Math.min(r.qty,p.qty);
+      var costBasis=avgUSDpuro*qtyVendida;
+      var proceeds=tc>0?(r.precioARS*qtyVendida/tc):0;
+      var gananciaVenta=proceeds-costBasis;
+      p.gananciaUSD+=gananciaVenta;
+      p.costBasisVendido+=costBasis;
+      p.costUSDpuro-=costBasis;
+      p.qty-=qtyVendida;
+      p.ventasCount++;
+      if(r.qty>qtyVendida) p._sobreventa+=(r.qty-qtyVendida);
+      if(qtyVendida>0.000001){
+        var anio=parseInt((r.fecha.split('/')[2])||'0',10);
+        ventas.push({ticker:key,fecha:r.fecha,anio:anio,tipoActivo:r.tipoActivo,gananciaUSD:gananciaVenta,costBasis:costBasis});
+      }
+    }
+  });
+  return {porTicker:Object.values(pos),ventas:ventas};
+}
+
+// Arma la matriz {years, groups:{label:{perYear:{año:{cost,gan}}, totalCost, totalGan}}} a partir del log de ventas.
+function vhistBuildMatrix(ventas, groupOf){
+  var years=Array.from(new Set(ventas.map(function(v){return v.anio;}))).sort();
+  var groups={};
+  ventas.forEach(function(v){
+    var g=groupOf(v);
+    if(!groups[g]) groups[g]={perYear:{},totalCost:0,totalGan:0};
+    var gr=groups[g];
+    if(!gr.perYear[v.anio]) gr.perYear[v.anio]={cost:0,gan:0};
+    gr.perYear[v.anio].cost+=v.costBasis;
+    gr.perYear[v.anio].gan+=v.gananciaUSD;
+    gr.totalCost+=v.costBasis;
+    gr.totalGan+=v.gananciaUSD;
+  });
+  return {years:years,groups:groups};
+}
+
+// Renderiza la matriz como tabla: filas=grupo (según rowOrder), columnas=años + Total.
+function vhistRenderMatrix(matrix,rowOrder,rowHeaderLabel){
+  var years=matrix.years, groups=matrix.groups;
+  var rows=rowOrder.filter(function(k){return groups[k];});
+  if(!rows.length) return '<div class="ibox">Sin datos.</div>';
+  var cl=function(n){return n===null?'':(n>=0?'pos':'neg');};
+  var fmtPct=function(n){return n===null?'—':(n>=0?'+':'')+n.toFixed(1)+'%';};
+  var thead='<tr><th>'+rowHeaderLabel+'</th>'+years.map(function(y){return '<th class="mono" style="text-align:center">'+y+'</th>';}).join('')+'<th class="mono" style="text-align:center">Total</th></tr>';
+  var totalsPerYear={}; years.forEach(function(y){totalsPerYear[y]={cost:0,gan:0};});
+  var grandCost=0, grandGan=0;
+  var bodyRows=rows.map(function(k){
+    var gr=groups[k];
+    var cells=years.map(function(y){
+      var c=gr.perYear[y];
+      if(c){totalsPerYear[y].cost+=c.cost;totalsPerYear[y].gan+=c.gan;}
+      if(!c||c.cost<=0.000001) return '<td class="mono muted" style="text-align:center">—</td>';
+      var pct=c.gan/c.cost*100;
+      return '<td class="mono '+cl(pct)+'" style="text-align:center">'+fmtPct(pct)+'</td>';
+    }).join('');
+    var totalPct=gr.totalCost>0.000001?(gr.totalGan/gr.totalCost*100):null;
+    grandCost+=gr.totalCost; grandGan+=gr.totalGan;
+    return '<tr><td class="mono">'+k+'</td>'+cells+'<td class="mono '+cl(totalPct)+'" style="text-align:center;font-weight:600">'+fmtPct(totalPct)+'</td></tr>';
+  }).join('');
+  var totalCells=years.map(function(y){
+    var t=totalsPerYear[y];
+    if(t.cost<=0.000001) return '<td class="mono muted" style="text-align:center">—</td>';
+    var pct=t.gan/t.cost*100;
+    return '<td class="mono '+cl(pct)+'" style="text-align:center;font-weight:600">'+fmtPct(pct)+'</td>';
+  }).join('');
+  var grandPct=grandCost>0.000001?(grandGan/grandCost*100):null;
+  var footRow='<tr style="border-top:1px solid var(--border)"><td class="mono" style="font-weight:600">Total</td>'+totalCells+'<td class="mono '+cl(grandPct)+'" style="text-align:center;font-weight:700">'+fmtPct(grandPct)+'</td></tr>';
+  return '<div class="tw panel-table"><table><thead>'+thead+'</thead><tbody>'+bodyRows+footRow+'</tbody></table></div>';
+}
+
+// Ganancia total por año calendario (todos los tipos combinados), como fila de métricas.
+// Si se pasa capSnapshotsAportes (aportes-retiros acumulados, ver vhistCapitalSnapshotsAportes), el %
+// se calcula contra el capital promedio invertido ese año (inicio/fin) en vez del costo-base-de-lo-vendido
+// (que compara mal: infla el % cuando hay mucha rotación de cartera dentro del año). Sin esa base
+// (todavía no se subió el archivo de Movimientos de Pesos) cae al cálculo anterior.
+function vhistRenderAnioTotal(ventas,capSnapshotsAportes){
+  var years=Array.from(new Set(ventas.map(function(v){return v.anio;}))).sort();
+  var cl=function(n){return n===null?'':(n>=0?'pos':'neg');};
+  var fmtUSD=function(n){return (n>=0?'+':'')+'U$S '+n.toFixed(2);};
+  var fmtPct=function(n){return n===null?'—':(n>=0?'+':'')+n.toFixed(2)+'%';};
+  var porAnio={};
+  years.forEach(function(y){porAnio[y]={cost:0,gan:0};});
+  ventas.forEach(function(v){porAnio[v.anio].cost+=v.costBasis;porAnio[v.anio].gan+=v.gananciaUSD;});
+  var denseCap=null;
+  if(capSnapshotsAportes){
+    var minY=years.length?Math.min.apply(null,years)-1:0;
+    var maxY=years.length?Math.max.apply(null,years):0;
+    denseCap=vhistDenseYearMap(capSnapshotsAportes,minY,maxY,false);
+  }
+  var cards=years.map(function(y){
+    var a=porAnio[y];
+    var pct, baseLabel='';
+    if(denseCap){
+      var capProm=((denseCap[y-1]||0)+(denseCap[y]||0))/2;
+      pct=capProm>0.000001?(a.gan/capProm*100):null;
+      baseLabel='<div class="metric-label" style="font-size:.5rem;opacity:.7">cap. prom. U$S '+capProm.toFixed(0)+'</div>';
+    } else {
+      pct=a.cost>0.000001?(a.gan/a.cost*100):null;
+    }
+    return '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto">'+
+      '<div class="metric-label" style="font-size:.56rem">'+y+'</div>'+
+      '<div class="metric-value '+cl(a.gan)+'" style="font-size:.8rem">'+fmtUSD(a.gan)+'</div>'+
+      '<div class="metric-value '+cl(pct)+'" style="font-size:.68rem">'+fmtPct(pct)+'</div>'+
+      baseLabel+
+    '</div>';
+  }).join('');
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px">'+cards+'</div>';
+}
+
+// Tabla compacta de dividendos/rentas por ticker corto (no se puede mergear con la tabla por Especie
+// descriptiva de arriba porque son dos sistemas de identificación distintos).
+function vhistRenderDivsPorTicker(divEventos){
+  if(!divEventos.length) return '';
+  var porTicker={};
+  divEventos.forEach(function(d){
+    if(!porTicker[d.ticker]) porTicker[d.ticker]={usd:0,n:0,tipoActivo:d.tipoActivo};
+    porTicker[d.ticker].usd+=d.usd;
+    porTicker[d.ticker].n++;
+  });
+  var sorted=Object.keys(porTicker).map(function(k){return Object.assign({ticker:k},porTicker[k]);}).sort(function(a,b){return b.usd-a.usd;});
+  var filas=sorted.map(function(p){
+    return '<tr><td class="mono">'+p.ticker+'</td><td class="mono muted">'+p.tipoActivo+'</td><td class="mono">'+p.n+'</td><td class="mono pos">+U$S '+p.usd.toFixed(2)+'</td></tr>';
+  }).join('');
+  return '<div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Tipo</th><th># Cobros</th><th>Total USD</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
+}
+
+function renderVentaHistorica(){
+  var resumenEl=document.getElementById('vhist-resumen');
+  var tablaEl=document.getElementById('vhist-ticker');
+  var anioEl=document.getElementById('vhist-anio');
+  var tipoEl=document.getElementById('vhist-tipo-anio');
+  var rfrvEl=document.getElementById('vhist-rfrv-anio');
+  var divsTickerEl=document.getElementById('vhist-divs-ticker');
+  if(!resumenEl||!tablaEl) return;
+  document.getElementById('vhist-count').textContent=_ventahistRows.length?(_ventahistRows.length+' movimientos guardados'):'Sin movimientos guardados';
+  var vhDivCount=document.getElementById('vhist-div-count');
+  if(vhDivCount) vhDivCount.textContent=_ventahistDivs.length?(_ventahistDivs.length+' cobros guardados'):'Sin dividendos/rentas guardados';
+  var vhAportesCount=document.getElementById('vhist-aportes-count');
+  if(vhAportesCount) vhAportesCount.textContent=_ventahistAportes.length?(_ventahistAportes.length+' movimientos guardados'):'Sin aportes/retiros guardados';
+
+  var divEventos=calcularDividendosHistoricos(_ventahistDivs);
+  if(divsTickerEl) divsTickerEl.innerHTML=vhistRenderDivsPorTicker(divEventos);
+
+  if(!_ventahistRows.length && !divEventos.length){
+    resumenEl.innerHTML='<div class="ibox">Subí un archivo o agregá movimientos a mano para ver el análisis.</div>';
+    tablaEl.innerHTML='';
+    if(anioEl) anioEl.innerHTML='';
+    if(tipoEl) tipoEl.innerHTML='';
+    if(rfrvEl) rfrvEl.innerHTML='';
+    return;
+  }
+  var calc=calcularVentaHistorica(_ventahistRows);
+  var resultados=calc.porTicker.filter(function(p){return p.ventasCount>0;});
+  var ventas=calc.ventas;
+  if(!resultados.length && !divEventos.length){
+    resumenEl.innerHTML='<div class="ibox">No se detectaron ventas en la base guardada (¿solo cargaste compras?).</div>';
+    tablaEl.innerHTML='';
+    if(anioEl) anioEl.innerHTML='';
+    if(tipoEl) tipoEl.innerHTML='';
+    if(rfrvEl) rfrvEl.innerHTML='';
+    return;
+  }
+  var totalGananciaCapital=resultados.reduce(function(s,p){return s+p.gananciaUSD;},0);
+  var totalDivs=divEventos.reduce(function(s,d){return s+d.usd;},0);
+  var totalGanancia=totalGananciaCapital+totalDivs;
+  var totalCostBasis=resultados.reduce(function(s,p){return s+p.costBasisVendido;},0);
+  var totalVentas=resultados.reduce(function(s,p){return s+p.ventasCount;},0);
+  var totalPct=totalCostBasis>0?(totalGanancia/totalCostBasis*100):null;
+  var cl=function(n){return n===null?'':(n>=0?'pos':'neg');};
+  var fmtUSD=function(n){return (n>=0?'+':'')+'U$S '+n.toFixed(2);};
+  var fmtPct=function(n){return n===null?'—':(n>=0?'+':'')+n.toFixed(2)+'%';};
+
+  resumenEl.innerHTML=
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem"># Ventas</div><div class="metric-value" style="font-size:.8rem">'+totalVentas+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Costo base total</div><div class="metric-value" style="font-size:.8rem">U$S '+totalCostBasis.toFixed(2)+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Dividendos/Rentas cobrados</div><div class="metric-value pos" style="font-size:.8rem">+U$S '+totalDivs.toFixed(2)+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Ganancia neta total</div><div class="metric-value '+cl(totalGanancia)+'" style="font-size:.8rem">'+fmtUSD(totalGanancia)+'</div></div>'+
+      '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Ganancia % total</div><div class="metric-value '+cl(totalPct)+'" style="font-size:.8rem">'+fmtPct(totalPct)+'</div></div>'+
+    '</div>';
+
+  // Los dividendos/rentas se suman como "ganancia" sin costo asociado (costBasis=0), así entran en los
+  // mismos baldes de año/tipo/RF-RV que las ventas, sin tocar la tabla por Ticker (que usa Especie descriptiva).
+  var ventasConDivs=ventas.concat(divEventos.map(function(d){
+    return {ticker:d.ticker,fecha:d.fecha,anio:d.anio,tipoActivo:d.tipoActivo,gananciaUSD:d.usd,costBasis:0};
+  }));
+
+  // Capital invertido: para el total se usa la plata real que entró/salió de la cuenta (aportes-retiros,
+  // ver ⚙️ tarjeta "Aportes y Retiros"); para Tipo/RF-RV (que no se puede prorratear desde los aportes,
+  // porque un depósito no dice a qué activo va) se usa el capital en cartera a costo de cada grupo.
+  // Las ventas sin compra registrada (activos ya tenidos antes del archivo) no entran en ninguno de los
+  // dos cálculos porque no tienen costo base que restar/sumar — quedan afuera, tal como se pidió.
+  var capSnapshotsAportes=_ventahistAportes.length?vhistCapitalSnapshotsAportes(calcularAportesHistoricos(_ventahistAportes)):null;
+  if(anioEl){
+    anioEl.innerHTML=vhistRenderAnioTotal(ventasConDivs,capSnapshotsAportes);
+  }
+  if(tipoEl){
+    var tipoMatrix=vhistBuildMatrix(ventasConDivs,function(v){return v.tipoActivo||'Argentina';});
+    if(_ventahistRows.length){
+      var capTipo=vhistCapitalPorGrupoAnio(_ventahistRows,function(r){return r.tipoActivo||'Argentina';});
+      tipoMatrix=vhistApplyCapitalBase(tipoMatrix,capTipo);
+    }
+    tipoEl.innerHTML=vhistRenderMatrix(tipoMatrix,['Bonos','Argentina','Brasil','Cedear'],'Tipo');
+  }
+  if(rfrvEl){
+    var rfrvMatrix=vhistBuildMatrix(ventasConDivs,function(v){return v.tipoActivo==='Bonos'?'RF':'RV';});
+    if(_ventahistRows.length){
+      var capRfrv=vhistCapitalPorGrupoAnio(_ventahistRows,function(r){return r.tipoActivo==='Bonos'?'RF':'RV';});
+      rfrvMatrix=vhistApplyCapitalBase(rfrvMatrix,capRfrv);
+    }
+    rfrvEl.innerHTML=vhistRenderMatrix(rfrvMatrix,['RF','RV'],'RF/RV');
+  }
+
+  var sorted=resultados.slice().sort(function(a,b){return b.gananciaUSD-a.gananciaUSD;});
+  var filas=sorted.map(function(p){
+    var pct=p.costBasisVendido>0?(p.gananciaUSD/p.costBasisVendido*100):null;
+    return '<tr>'+
+      '<td class="mono">'+p.ticker+(p._sobreventa>0.000001?' ⚠️':'')+'</td>'+
+      '<td class="mono muted">'+(p.tipoActivo||'')+'</td>'+
+      '<td class="mono">'+p.ventasCount+'</td>'+
+      '<td class="mono muted">U$S '+p.costBasisVendido.toFixed(2)+'</td>'+
+      '<td class="mono '+cl(p.gananciaUSD)+'">'+fmtUSD(p.gananciaUSD)+'</td>'+
+      '<td class="mono '+cl(pct)+'">'+fmtPct(pct)+'</td>'+
+      '<td class="mono muted">'+(p.qty>0.000001?p.qty.toFixed(2):'—')+'</td>'+
+    '</tr>';
+  }).join('');
+  tablaEl.innerHTML='<div class="tw panel-table"><table>'+
+    '<thead><tr><th>Ticker</th><th>Tipo</th><th># Ventas</th><th>Costo base</th><th>Ganancia neta</th><th>Ganancia %</th><th>Qty restante</th></tr></thead>'+
+    '<tbody>'+filas+'</tbody></table></div>'+
+    (sorted.some(function(p){return p._sobreventa>0.000001;})?'<div class="ibox" style="margin-top:8px;font-size:.68rem">⚠️ Los tickers marcados vendieron más cantidad de la que compraron dentro del archivo — probablemente ya tenías posición antes del rango de fechas subido, así que esa parte no tiene costo base cargado y no entra en el cálculo de ganancia.</div>':'');
+}
+
+// Guarda `valor` en CCL_TABLE o MEP_TABLE (según esBonoON) para `fecha`, solo si esa fecha
+// todavía no está en la tabla — nunca pisa un valor ya cargado. Persiste en localStorage +
+// Supabase (config), igual que el resto de los overrides de TC. La llaman addMov/
+// vbuyConfirmar/vsellConfirmar justo después de cargar el movimiento, para que la tabla
+// histórica se autocomplete con el CCL/MEP que el usuario ya vio/tipeó en cada operación —
+// antes solo addMov() lo hacía (y encima con el CCL_HOY de "hoy" en vez del valor real de la
+// fecha del movimiento), así que todo lo cargado desde el módulo rápido de Comprar/Vender
+// nunca completaba la tabla, y esas fechas quedaban con el ⚠ para siempre (reportado por Garo
+// 2026-09-18: ~30 fechas de jul-sep/2026, todas "Cargado/Vendido desde módulo rápido").
+function tcStampearFecha(fecha,esBonoON,valor){
+  if(!fecha||!(valor>0)) return;
+  var _fk=fmtKey(fecha);
+  var tabla=esBonoON?MEP_TABLE:CCL_TABLE;
+  if(tabla[_fk]) return;
+  tabla[_fk]=valor;
+  try{
+    localStorage.setItem('ptNYSE_ccl_override',JSON.stringify(CCL_TABLE));
+    localStorage.setItem('ptNYSE_mep_override',JSON.stringify(MEP_TABLE));
+  }catch(e){}
+  sbSetConfig('ccl_override',CCL_TABLE);
+  sbSetConfig('mep_override',MEP_TABLE);
+}
+// Backfill: recorre TODOS los movimientos ya cargados y completa los huecos de CCL_TABLE/
+// MEP_TABLE con lo que cada uno ya tiene guardado en m.ccl (promedio si un mismo día hay
+// varios movimientos con el mismo valor o valores parecidos — el dólar se mueve un poco
+// durante el día, es normal). No pisa ninguna fecha que ya esté en la tabla.
+// Si un día tiene valores MUY dispares entre sí (más de BACKFILL_DISPERSION_MAX de diferencia
+// entre el mínimo y el máximo — ej. 09/09/2026: TX31 cargado con 1487 vs el resto ~1525-1531,
+// un solo movimiento con el CCL/MEP mal tipeado) NO se promedia a ciegas: se deja esa fecha
+// sin completar y se reporta aparte, para que la carga a mano después de revisar cuál de los
+// valores está mal (caso real reportado por Garo 2026-09-18, MEP correcto de esa fecha: 1531).
+var BACKFILL_DISPERSION_MAX = 15; // diferencia absoluta máxima entre min y max de un mismo día
+function backfillTCDesdeMovimientos(){
+  var grupos={ccl:{},mep:{}};
+  movimientos.forEach(function(m){
+    if((m.tipo!=='compra'&&m.tipo!=='venta')||!(m.ccl>0)) return;
+    var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
+    var g=esBonoON?grupos.mep:grupos.ccl;
+    var fk=fmtKey(m.fecha);
+    if(!g[fk]) g[fk]={suma:0,n:0,min:m.ccl,max:m.ccl};
+    g[fk].suma+=m.ccl;g[fk].n++;
+    if(m.ccl<g[fk].min)g[fk].min=m.ccl;
+    if(m.ccl>g[fk].max)g[fk].max=m.ccl;
+  });
+  var completados=0,revisar=[];
+  [['ccl',CCL_TABLE,'CCL'],['mep',MEP_TABLE,'MEP']].forEach(function(par){
+    var grupo=grupos[par[0]],tabla=par[1],label=par[2];
+    Object.keys(grupo).forEach(function(fk){
+      if(tabla[fk]) return; // ya está cargada, no tocar
+      var g=grupo[fk];
+      if((g.max-g.min)>BACKFILL_DISPERSION_MAX){
+        revisar.push(fk+' ('+label+': min '+g.min+' / max '+g.max+')');
+        return;
+      }
+      tabla[fk]=Math.round((g.suma/g.n)*10)/10;completados++;
+    });
+  });
+  if(completados>0){
+    try{
+      localStorage.setItem('ptNYSE_ccl_override',JSON.stringify(CCL_TABLE));
+      localStorage.setItem('ptNYSE_mep_override',JSON.stringify(MEP_TABLE));
+    }catch(e){}
+    sbSetConfig('ccl_override',CCL_TABLE);
+    sbSetConfig('mep_override',MEP_TABLE);
+  }
+  return {completados:completados,revisar:revisar};
+}
+function backfillTCDesdeMovimientosUI(){
+  var r=backfillTCDesdeMovimientos();
+  renderMovimientos();
+  var msg=r.completados>0
+    ? ('Se completaron '+r.completados+' fecha'+(r.completados!==1?'s':'')+' en la tabla histórica de CCL/MEP, usando lo que ya estaba guardado en tus movimientos.')
+    : 'No había nada para completar automáticamente: o ya estaba todo en la tabla, o ningún movimiento pendiente tiene un CCL/MEP guardado para usar de base.';
+  if(r.revisar.length){
+    msg+='\n\n⚠️ '+r.revisar.length+' fecha'+(r.revisar.length!==1?'s':'')+' con valores muy distintos entre sí ese mismo día (probable error de tipeo en alguno) — no se completaron solas, revisalas a mano en la solapa "$ Tipo de Cambio":\n'+r.revisar.join('\n');
+  }
+  alert(msg);
+}
+
+function checkMovSinTC(){
+  var warn=document.getElementById('warn-sin-tc');
+  if(!warn) return;
+  var malos=movimientos.filter(function(m){
+    return (m.tipo==='compra'||m.tipo==='venta') && !(m.ccl&&m.ccl>0);
+  });
+  if(!malos.length){warn.style.display='none';warn.innerHTML='';return;}
+  warn.style.display='';
+  var lista=malos.slice(0,8).map(function(m){return m.ticker+' ('+m.fecha+')'}).join(', ')+(malos.length>8?' y '+(malos.length-8)+' más':'');
+  warn.innerHTML='⚠️ '+malos.length+' movimiento'+(malos.length!==1?'s':'')+' sin CCL/MEP: <span style="opacity:.85">'+lista+'</span>';
+}
+
+function renderMovimientos(){
+  var body=document.getElementById('mov-body');
+  var empty=document.getElementById('mov-empty');
+  var wrap=document.getElementById('mov-wrap');
+  var filterEl=document.getElementById('mov-filter');
+  
+  // Guardar valores actuales de filtros y elemento con focus
+  var currentFilterVal=(filterEl?(filterEl.value||'').trim().toUpperCase():'');
+  var filterTipo=(document.getElementById('mov-filter-tipo')||{value:''}).value.toLowerCase();
+  var filterMkt=(document.getElementById('mov-filter-mkt')||{value:''}).value.toUpperCase();
+  var filterFecha=(document.getElementById('mov-filter-fecha')||{value:''}).value.trim();
+  var filterNotas=(document.getElementById('mov-filter-notas')||{value:''}).value.trim().toLowerCase();
+  var filterNoCCL=(document.getElementById('mov-filter-noccl')||{checked:false}).checked;
+  var filterNoMEP=(document.getElementById('mov-filter-nomep')||{checked:false}).checked;
+  var activeFocusId=document.activeElement?document.activeElement.id:null;
+
+  var filterVal=currentFilterVal;
+
+  var lista=movimientos.slice().sort(function(a,b){var fa=(a.fecha||'').split('/'),fb=(b.fecha||'').split('/');var da=fa.length===3?fa[2]+fa[1]+fa[0]:'0',db=fb.length===3?fb[2]+fb[1]+fb[0]:'0';return db.localeCompare(da);});
+  if(filterVal) lista=lista.filter(function(m){return (m.ticker||'').toUpperCase().indexOf(filterVal)>=0;});
+  if(filterTipo) lista=lista.filter(function(m){return (m.tipo||'').toLowerCase()===filterTipo;});
+  if(filterMkt) lista=lista.filter(function(m){
+    var mLabel=(m.mercado==='USA'?'NYSE':m.mercado==='ETF'?'ETF':(m.mercado||'')).toUpperCase();
+    return mLabel===filterMkt;
+  });
+  if(filterFecha) lista=lista.filter(function(m){return (m.fecha||'').indexOf(filterFecha)>=0;});
+  if(filterNotas) lista=lista.filter(function(m){return (m.notas||'').toLowerCase().indexOf(filterNotas)>=0;});
+  // Sin CCL en tabla: sólo mercados que NO usan MEP (bonos/ON/FCI usan MEP — ver filtro de abajo)
+  if(filterNoCCL) lista=lista.filter(function(m){
+    if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
+    var usaMep=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
+    if(usaMep)return false;
+    return !getCCL(m.fecha);
+  });
+  // Sin MEP en tabla: bonos/ON/FCI. Chequea el MEP puntual, aunque haya caído a CCL como aproximación
+  if(filterNoMEP) lista=lista.filter(function(m){
+    if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
+    var usaMep=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
+    if(!usaMep)return false;
+    return !getMEP(m.fecha);
+  });
+
+  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterNoCCL||filterNoMEP;
+  document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
+  // Mostrar/ocultar botón "Borrar ticker" solo cuando hay filtro exacto de ticker
+  var btnPurgar=document.getElementById('btn-purgar-ticker');
+  if(btnPurgar)btnPurgar.style.display=(filterVal&&!filterTipo&&!filterMkt&&!filterFecha&&!filterNotas)?'':'none';
+  checkMovSinTC();
+  if(!lista.length){empty.style.display='';wrap.style.display='none';return;}
+  empty.style.display='none';wrap.style.display='';
+
+  body.innerHTML=lista.map(function(m){
+    var mLabel=m.mercado==='USA'?'NYSE':m.mercado==='ETF'?'ETF':(m.mercado||'—');
+    var sid="'"+String(m.id)+"'";
+    var canReduce=m.tipo==='compra'&&m.qty>0;
+    var reduceHtml=canReduce
+      ? '<span style="display:inline-flex;align-items:center;gap:3px">'+
+          '<input id="red-qty-'+m.id+'" type="number" min="0.001" step="any" placeholder="-qty" style="width:54px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.65rem;padding:2px 4px;height:22px">'+
+          '<button class="btn btn-sm" style="color:var(--amber);border-color:#3e2c10" onclick="reduceMov('+sid+')">−</button>'+
+        '</span>'
+      : '';
+    // CCL/MEP efectivo: la tabla histórica tiene prioridad sobre el valor guardado
+    var _mEsBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+    var _mEsFci=(m.mercado==='FCI');
+    var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON||_mEsFci);
+    var _mUsaMep=(_mEsBonoON||_mEsFci);
+    var _mMepTabla=_mUsaMep?getMEP(m.fecha):null;
+    var _mCclTabla=getCCL(m.fecha);
+    var _mTcTabla=_mUsaMep?(_mMepTabla||_mCclTabla):_mCclTabla;
+    var _mTcEfectivo=_mTcTabla||m.ccl||null;
+    // precioUSD: para mercados ARS recalcular desde precioARS/tc_tabla; para USD usar el guardado
+    var _mPrecioUSD=(_mEsARS&&(m.precioARS||0)>0&&_mTcEfectivo>0)
+      ?(m.precioARS/_mTcEfectivo)
+      :(m.precioUSD||null);
+    // Alertas sobre la fuente del TC: bonos/ON/FCI sin MEP puntual (⚠MEP — puede haber caído a CCL como aproximación) vs resto sin CCL puntual (⚠ rojo)
+    var _mSinMEP=_mUsaMep&&!_mMepTabla;
+    var _mCCLstr;
+    if(_mTcTabla){
+      var _mWarnInline=_mSinMEP?' <span style="color:var(--amber)" title="No hay MEP en la tabla histórica para '+m.fecha+'. Se está usando el CCL de esa fecha ('+Math.round(_mCclTabla)+') como aproximación.">⚠MEP</span>':'';
+      _mCCLstr=String(Math.round(_mTcTabla))+(_mTcTabla===m.ccl?'':' ✓')+_mWarnInline;
+    } else {
+      _mCCLstr=m.ccl?'<span style="color:var(--red)" title="No hay '+(_mUsaMep?'MEP':'CCL')+' en la tabla histórica para '+m.fecha+'. Se está usando '+m.ccl+' cargado a mano en el movimiento, que puede no ser el valor real de ese día.">⚠ '+m.ccl+'</span>':'—';
+    }
+    return '<tr>'+
+      '<td class="mono">'+m.fecha+'</td>'+
+      '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
+      '<td><span class="mkt">'+mLabel+'</span></td>'+
+      '<td style="font-weight:600">'+m.ticker+'</td>'+
+      '<td class="mono">'+(m.qty||'')+'</td>'+
+      '<td class="mono">'+(m.precioARS?'$'+(_mEsBonoON?m.precioARS*100:m.precioARS).toLocaleString('es-AR'):'')+'</td>'+
+      '<td class="mono muted">'+_mCCLstr+'</td>'+
+      '<td class="mono">'+(_mPrecioUSD?'$'+_mPrecioUSD.toFixed(4):'—')+'</td>'+
+      '<td class="mono muted">'+(m.comisionPct?m.comisionPct.toFixed(2)+'%':'0%')+'</td>'+
+      (function(){
+        var comAbs=m.comision||0;
+        var totalARS=(m.qty||0)*(m.precioARS||0)+comAbs;
+        var tcRow=_mTcEfectivo||_mTcTabla||m.ccl||0;
+        var totalUSD=tcRow>0?totalARS/tcRow:null;
+        return '<td class="mono" style="color:var(--amber)">'+(comAbs>0?'$'+Math.round(comAbs).toLocaleString('es-AR'):'—')+'</td>'+
+               '<td class="mono" style="color:var(--accent)">'+(totalARS>0?'$'+Math.round(totalARS).toLocaleString('es-AR'):'—')+'</td>'+
+               '<td class="mono" style="color:var(--accent)">'+(totalUSD&&totalUSD>0?'U$S '+totalUSD.toFixed(0):'—')+'</td>';
+      })()+
+      '<td class="muted" style="max-width:100px;overflow:hidden;text-overflow:ellipsis">'+(m.notas||'')+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap">'+
+          reduceHtml+
+          '<button class="btn btn-sm" onclick="toggleFinish('+sid+')" title="A finish" style="'+(m.finish?'color:var(--amber);border-color:#3e2c10':'opacity:.3')+'">🏁</button>'+
+          '<button class="btn btn-sm" onclick="movModalOpen('+sid+')" title="Editar">✎</button>'+
+          '<button class="btn btn-d btn-sm" onclick="deleteMov('+sid+')" title="Borrar">✕</button>'+
+        '</div>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+
+  // Restaurar valores de filtros y focus en el elemento que estaba enfocado
+  requestAnimationFrame(function(){
+    // Restaurar valores de filtros (después de que el HTML fue regenerado)
+    var filterElNew=document.getElementById('mov-filter');
+    var filterTipoNew=document.getElementById('mov-filter-tipo');
+    var filterMktNew=document.getElementById('mov-filter-mkt');
+    var filterFechaNew=document.getElementById('mov-filter-fecha');
+    var filterNotasNew=document.getElementById('mov-filter-notas');
+    
+    if(filterElNew&&currentFilterVal)filterElNew.value=currentFilterVal;
+    if(filterTipoNew&&filterTipo)filterTipoNew.value=filterTipo;
+    if(filterMktNew&&filterMkt)filterMktNew.value=filterMkt;
+    if(filterFechaNew&&filterFecha)filterFechaNew.value=filterFecha;
+    if(filterNotasNew&&filterNotas)filterNotasNew.value=filterNotas;
+    
+    // Restaurar focus en el elemento que estaba enfocado
+    if(activeFocusId){
+      var elToFocus=document.getElementById(activeFocusId);
+      if(elToFocus)elToFocus.focus();
+    }
+    
+    // Scroll para que wrap quede visible SOLO al activar un filtro (no en cada re-render
+    // mientras el filtro sigue activo, porque eso te pisa el scroll manual — p.ej. al
+    // editar/borrar movimientos uno por uno dentro de una lista filtrada larga).
+    if(anyFilter&&!_movWasFiltered){
+      wrap.scrollTop=0;
+      var content=document.querySelector('.content');
+      var cardHeader=document.querySelector('#mov-card .card-header');
+      var headerH=cardHeader?cardHeader.getBoundingClientRect().bottom:0;
+      var wrapTop=wrap.getBoundingClientRect().top;
+      if(content&&wrapTop>headerH+4){
+        content.scrollTop+=wrapTop-headerH;
+      }
+    }
+    _movWasFiltered=anyFilter;
+  });
+}
+
+function getPositions(owner){
+  var pos={};
+  var lots={}; // ticker -> lotes de compra abiertos [{qtyOpen,unitUSD,unitUSDpuro,unitARS,fecha,id}]
+
+  // Procesar en orden CRONOLÓGICO (no orden de carga) para que el consumo de lotes
+  // por venta respete qué compras existían efectivamente a esa fecha.
+  var ordenados = movimientos.slice().sort(function(a,b){
+    var fa=(a&&a.fecha||'').split('/'), fb=(b&&b.fecha||'').split('/');
+    var da = fa.length===3? fa[2]+fa[1].padStart(2,'0')+fa[0].padStart(2,'0') : '0';
+    var db = fb.length===3? fb[2]+fb[1].padStart(2,'0')+fb[0].padStart(2,'0') : '0';
+    if(da!==db) return da<db?-1:1;
+    return (a&&a.id||0)-(b&&b.id||0);
+  });
+
+  ordenados.forEach(function(m){
+    if(!m||m.tipo==='aporte')return;
+    if(owner==='cristian'){if(m.owner!=='cristian')return;}else{if(m.owner==='cristian')return;}
+    var key=m.ticker;
+    if(!pos[key])pos[key]={ticker:m.ticker,mercado:m.mercado,qty:0,costUSD:0,costARS:0,costUSDpuro:0,realizedPnl:0,dividendsUSD:0};
+    else if(m.mercado)pos[key].mercado=m.mercado; // actualizar con cada mov para que el último editado gane
+    var p=pos[key];
+    if(!lots[key])lots[key]=[];
+    var priceUSD=m.precioUSD||0;
+    var comUSD=m.comision||0;
+    if(m.tipo==='dividendo'){p.dividendsUSD+=priceUSD;}
+    else if(m.tipo==='compra'){
+      // Bonos y ONs: dividir por MEP del día; resto: por CCL
+      // La tabla histórica (Tipo de cambio) tiene PRIORIDAD sobre el CCL guardado en el movimiento
+      // Fallback: CCL_HOY como último recurso para no tratar ARS como USD
+      var _tc=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
+        :(getCCL(m.fecha)||m.ccl||CCL_HOY);
+      var usdPuro=isBonoUSDDirecto(m.ticker)?(m.precioARS||0)*m.qty:(_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty);
+      p.costUSD+=usdPuro+comUSD;  // consistente con costUSDpuro: usa precioARS/tc_dia
+      p.costARS+=(m.precioARS||0)*m.qty;
+      p.costUSDpuro+=usdPuro;  // USD real pagado: precioARS*qty/MEP o CCL según mercado
+      p.qty+=m.qty;
+      if(m.qty>0)lots[key].push({
+        qtyOpen:m.qty,
+        unitUSD:(usdPuro+comUSD)/m.qty,
+        unitUSDpuro:usdPuro/m.qty,
+        unitARS:(m.precioARS||0),
+        fecha:m.fecha, id:m.id
+      });
+    }
+    else if(m.tipo==='venta'){
+      // La tabla histórica tiene PRIORIDAD sobre el CCL guardado en el movimiento
+      var _tcV=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
+        ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
+        :(getCCL(m.fecha)||m.ccl||CCL_HOY);
+      var ventaUSDpuro=isBonoUSDDirecto(m.ticker)?(m.precioARS||0):(_tcV>0?(m.precioARS||0)/_tcV:(m.precioUSD||0));
+      var openLots=lots[key]||[];
+      var qtyTotalOpen=openLots.reduce(function(s,l){return s+l.qtyOpen;},0);
+
+      if(m.loteMethod==='barato'&&qtyTotalOpen>0.000001){
+        // Método nuevo (Laboratorio de Ventas validado): descontar primero del lote
+        // de MENOR costo en USD, no del promedio ponderado — deja el costo restante
+        // más alto (cartera más pesimista), tal como se probó en el laboratorio.
+        var ordenLotes=openLots.slice().sort(function(a,b){return a.unitUSDpuro-b.unitUSDpuro;});
+        var restante=Math.min(m.qty,qtyTotalOpen);
+        var costBasisUSD=0,costBasisUSDpuro=0,costBasisARS=0;
+        for(var i=0;i<ordenLotes.length&&restante>0.000001;i++){
+          var lot=ordenLotes[i];
+          if(lot.qtyOpen<=0.000001)continue;
+          var take=Math.min(lot.qtyOpen,restante);
+          costBasisUSD+=take*lot.unitUSD;
+          costBasisUSDpuro+=take*lot.unitUSDpuro;
+          costBasisARS+=take*lot.unitARS;
+          lot.qtyOpen-=take;
+          restante-=take;
+        }
+        var qtyVendidaEfectiva=m.qty-restante; // por si pide más de lo abierto en lotes
+        var proceedsPuro=ventaUSDpuro*qtyVendidaEfectiva-comUSD;
+        p.realizedPnl+=proceedsPuro-costBasisUSDpuro;
+        p.costUSD-=costBasisUSD;
+        p.costARS-=costBasisARS;
+        p.costUSDpuro-=costBasisUSDpuro;
+        p.qty-=qtyVendidaEfectiva;
+        // Guardar ganancia realizada en el propio movimiento para estadísticas (x ticker, tipo, RF/RV)
+        m.gananciaUSD=proceedsPuro-costBasisUSDpuro;
+        m.costBasisUSD=costBasisUSDpuro;
+        m.gananciaPct=costBasisUSDpuro>0?(m.gananciaUSD/costBasisUSDpuro*100):null;
+      } else {
+        // Método legado (histórico, sin tocar): promedio ponderado de todas las compras
+        var avg=p.qty>0?p.costUSD/p.qty:0;
+        var avgARS=p.qty>0?p.costARS/p.qty:0;
+        var avgUSDpuro=p.qty>0?p.costUSDpuro/p.qty:0;
+        var costBasisPuro=avgUSDpuro*m.qty;
+        var proceedsPuro=ventaUSDpuro*m.qty-comUSD;
+        p.realizedPnl+=proceedsPuro-costBasisPuro;
+        p.costUSD-=avg*m.qty;
+        p.costARS-=avgARS*m.qty;
+        p.costUSDpuro-=costBasisPuro;
+        p.qty-=m.qty;
+        // Guardar ganancia realizada en el propio movimiento para estadísticas (x ticker, tipo, RF/RV)
+        m.gananciaUSD=proceedsPuro-costBasisPuro;
+        m.costBasisUSD=costBasisPuro;
+        m.gananciaPct=costBasisPuro>0?(m.gananciaUSD/costBasisPuro*100):null;
+        // Reducir todos los lotes abiertos proporcionalmente para no romper el
+        // tracking de lotes futuros (mantiene el promedio ponderado intacto).
+        if(qtyTotalOpen>0.000001){
+          var frac=m.qty/qtyTotalOpen;
+          openLots.forEach(function(l){ l.qtyOpen-=l.qtyOpen*frac; });
+        }
+      }
+    }
+  });
+
+  // Dividendos del Tracker (TRK.divs) confirmados para afectar PPC o ganancia de venta
+  // (ver trkAddDiv). Se recalcula siempre en vivo desde TRK.divs, así que borrar un
+  // dividendo del tracker revierte el efecto automáticamente. No se aplica al desglose
+  // 'cristian' porque el dividendo del tracker no tiene owner asociado.
+  if(owner!=='cristian'&&typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
+    TRK.divs.forEach(function(d){
+      // montoPPC (si existe) = parte del dividendo que corresponde a nominales que todavía tenés (histórico Veta, v41)
+      var _mPPC=(d.montoPPC!=null)?d.montoPPC:d.montoUSD;
+      if(!d.pncApplied||!_mPPC)return;
+      var p=pos[d.ticker];
+      if(!p)return;
+      if(d.pncTarget==='ppc'){p.costUSDpuro-=_mPPC;}
+      else if(d.pncTarget==='venta'){p.realizedPnl+=d.montoUSD;}
+    });
+  }
+
+  return Object.values(pos);
+}
+
+// ─── Perf: getPositions() se calcula UNA vez por render de Portafolio ───
+// renderPortfolio() y las cards que dispara (inversiones chicas, perfil, próximos cobros, etc.)
+// pedían las posiciones por separado → el historial completo se recorría 4-5 veces por render
+// (y durante la actualización de precios hay un render por frame). Mientras dura un render se
+// reutiliza el resultado (clave: owner + cartera activa + cantidad de movimientos); fuera de un
+// render, getPositions() se comporta exactamente igual que antes (sin caché).
+var _GP_ON=0,_GP_CACHE={};
+var _getPositionsRaw=getPositions;
+getPositions=function(owner){
+  if(!_GP_ON)return _getPositionsRaw.apply(this,arguments);
+  var k=(owner||'')+'|'+(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:'')+'|'+((typeof movimientos!=='undefined'&&movimientos)?movimientos.length:0);
+  if(!_GP_CACHE[k])_GP_CACHE[k]=_getPositionsRaw.apply(this,arguments);
+  return _GP_CACHE[k];
+};
+var _renderPortfolioRaw=renderPortfolio;
+renderPortfolio=function(){
+  _GP_ON++;
+  try{return _renderPortfolioRaw.apply(this,arguments);}
+  finally{_GP_ON--;if(!_GP_ON)_GP_CACHE={};}
+};
+
 function renderPortfolio(){
   var all=getPositions();
-  var open=all.filter(function(p){return Math.abs(p.qty)>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
+  var open=all.filter(function(p){return p.qty>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
   // Próximos Cobros: calendario de flujos de bonos/ON (no depende de cotizaciones).
   var _calCobros=calcularCalendarioCobros();
   var _flujoProx30Map=_flujosMapaProx30(_calCobros);
   renderFlujosMiniResumen(_calCobros);
   // Badge "D": solo acciones/CEDEARs (los bonos/ON ya tienen F con el flujo exacto, no hace
   // falta duplicar), y solo cuando el historial estima que el próximo dividendo cae dentro de
-  // 30 días — ver calcularDivHistUpcoming30 (mira TRK.divs confirmados (este portafolio no tiene el array dividendos)).
+  // 30 días — ver calcularDivHistUpcoming30 (mira dividendos + TRK.divs confirmados).
   var _divHistorySet=calcularDivHistUpcoming30();
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
   var totalRpnl=all.reduce(function(a,p){return a+p.realizedPnl;},0);
+  var totalDivs=dividendos.reduce(function(a,d){return a+(d.usd||0);},0);
   if(!open.length){
     empty.style.display='';
     document.getElementById('panels-grid').style.display='none';
-    ['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+    ['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto','panel-fci'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     ['m-val','m-ganancia','m-divs','m-count'].forEach(function(id){document.getElementById(id).textContent='—';});document.getElementById('m-rend').innerHTML='—';
     renderDivsCard();
-    var liqARS=getRawNum('liq-ars');var liqUSD=getRawNum('liq-usd');
-    var _liqMEP=liqUSD+((MEP_HOY||CCL_HOY)>0?liqARS/(MEP_HOY||CCL_HOY):0);
-    renderMiniPie(0,0,_liqMEP>0?_liqMEP:0);
-    renderSectorPie({});
-    renderRVPie({});
     return;
   }
   empty.style.display='none';
   document.getElementById('panels-grid').style.display='';
-  var sectors={nyse:[],bonos:[],argentina:[],brasil:[],europa:[],on:[],china:[],cripto:[]};
-  var sectorCost={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0};
-  var sectorVal={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0};
+  var sectors={nyse:[],bonos:[],argentina:[],brasil:[],europa:[],on:[],china:[],cripto:[],fci:[]};
+  var sectorCost={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0,fci:0};
+  var sectorVal={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0,fci:0};
   // Tickers marcados "a finish" en algún movimiento
   var finishTickers=new Set(movimientos.filter(function(m){return m.finish;}).map(function(m){return m.ticker;}));
   // Pasada 1: acumular totales globales y por sector
@@ -3995,10 +3406,10 @@ function renderPortfolio(){
     var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var _isBRL=BRL_TICKERS.has(p.ticker);
-    var _fromByma=q&&q.fromByma;
-    var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL||_fromByma?price:(price/ratio)*CCL_HOY):null;
+    var fromByma=q&&q.fromByma;
+    var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=isBonoUSDDirecto(p.ticker)?p.costUSDpuro*100:(mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS);
-    var valueUSD=price!=null?(_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:_fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
+    var valueUSD=price!=null?(sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
     sectorCost[sector]=(sectorCost[sector]||0)+p.costUSDpuro;
@@ -4007,7 +3418,7 @@ function renderPortfolio(){
   });
 
   // Totales de Valor Mercado ARS por sector (para concentración)
-  var sectorTotalMktARS={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0};
+  var sectorTotalMktARS={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0,fci:0};
   open.forEach(function(p){
     var sec=getSector(p.ticker);
     sectorTotalMktARS[sec]=(sectorTotalMktARS[sec]||0)+(p._invARS||0);
@@ -4090,22 +3501,22 @@ function renderPortfolio(){
   open.forEach(function(p){
     var q=quotes[p.ticker];var price=q?q.price:null;
     var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
-    var _isARS2=(sector==='argentina'||sector==='bonos'||sector==='on');
+    var _isARS2=(sector==='argentina'||sector==='bonos'||sector==='on'||sector==='fci');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
     // Para bonos/ONs: auto-detectar bono dólar vs bono peso comparando PPC vs precio de mercado
     // Bono dólar (BC37D, GD29…): costARS guardado a CCL histórico muy bajo → PPC/mercado << 0.15
     // Bono peso (CUAP, DICP, TX31…): PPC/mercado ≈ 0.4-1.0 (precio en ARS real)
     var ppcFromARS=p.qty>0?p.costARS/p.qty*100:0;
-    // Bonos/ON: convertir USD→ARS con MEP_HOY. Resto: CCL_HOY
-    var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
+    // Bonos/ON/FCI: convertir USD→ARS con MEP_HOY. Resto: CCL_HOY
+    var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
     var ppcFromUSD=ppcUSD*_tcHoy*100;
     var mkt=p._mktARS||0;  // usar _mktARS de Pasada 1 (mercadoCedearARS aún no está declarada)
     var ppcCedearARS=isBonoUSDDirecto(p.ticker)
       ?ppcUSD*100
       :(_isBonoON
         ?ppcFromUSD
-        :(_isARS2?ppcUSD*CCL_HOY:ppcUSD*CCL_HOY));
+        :(sector==='fci'?ppcUSD*(MEP_HOY||CCL_HOY):ppcUSD*CCL_HOY));
     var mercadoCedearARS=p._mktARS;
     var inversionCedearARS=p._invARS;
     var pnlPct=mercadoCedearARS!=null&&ppcCedearARS>0?(mercadoCedearARS-ppcCedearARS)/ppcCedearARS*100:null;p._pnlPct=pnlPct;
@@ -4115,11 +3526,13 @@ function renderPortfolio(){
     // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya está en USD
     var _rawPrice=q?q.price:null;
     var _isArgentina=(sector==='argentina');
+    var fromByma=q&&q.fromByma;
     var priceUSD=_rawPrice!=null?(
       _isBonoON    ? _rawPrice*ratio/(_tcHoy||1) :
+      sector==='fci' ? _rawPrice/(_tcHoy||1) :
       _isArgentina ? _rawPrice*ratio/(CCL_HOY||1) :
       BRL_TICKERS.has(p.ticker) ? _rawPrice/(CCL_HOY||1) :
-      (q&&q.fromByma)           ? _rawPrice*ratio/(CCL_HOY||1) :
+      fromByma ? _rawPrice*ratio/(CCL_HOY||1) :
       _rawPrice
     ):null;
     var upside=targetUSD!=null&&priceUSD!=null&&priceUSD>0?(targetUSD-priceUSD)/priceUSD*100:null;
@@ -4147,11 +3560,35 @@ function renderPortfolio(){
     var _flujoTitle=_flujoEv?('Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' — '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total)):'';
     var flujoFlag=_flujoEv?'<span class="qhelp" style="color:var(--accent);font-size:.62rem;font-weight:800;margin-left:3px">F<span class="qhelp-tip">'+_flujoTitle.replace(/</g,'&lt;')+'</span></span>':'';
     var divHistFlag=_divHistorySet.has(p.ticker)?'<span class="qhelp" style="color:var(--blue);font-size:.62rem;font-weight:800;margin-left:3px">D<span class="qhelp-tip">Por tu historial, estimamos un dividendo dentro de 30 días</span></span>':'';
+    var cristianFlag=p.owner==='cristian'?'<span title="Activo de Cristian" style="font-size:.65rem;background:#3b1f6e;color:#a78bfa;border:1px solid #6d28d9;border-radius:3px;padding:0 3px;margin-left:3px">C</span>':'';
     var _mark=MARKS[p.ticker];
     var _markClass=_mark?' marked-'+_mark.type:'';
     var _markIcon=_mark?(_mark.type==='sell'?'🔴':_mark.type==='buy'?'🟢':'⭐'):'🏷';
     var _markBtnCls='mark-btn'+(_mark?' active':'');
     var _markNote=_mark&&_mark.note?'<span class="mark-note-tag" title="'+_mark.note.replace(/"/g,'&quot;')+'">'+_mark.note.replace(/</g,'&lt;')+'</span>':'';
+
+    // RSI (14) para todo menos Bonos/ONs. Para Bonos/ON con flujo cargado en FLUJOS_BONOS: TIR real
+    // (XIRR exacto contra el cronograma, ver calcularTIRReal). Si no hay flujo cargado todavía,
+    // fallback a TIR de EcoValores (solo Bonos, cobertura parcial). Sin ninguna de las dos: '—'.
+    var rsiCell;
+    if(_isBonoON){
+      var _tirReal=(typeof FLUJOS_BONOS!=='undefined'&&FLUJOS_BONOS[p.ticker])?calcularTIRReal(p.ticker):null;
+      if(_tirReal){
+        var _tirTip='TIR real: XIRR (act/365) del flujo exacto de FLUJOS_BONOS contra el precio de mercado de hoy, en '+_tirReal.moneda;
+        rsiCell='<span style="color:var(--text);font-weight:600" title="'+_tirTip+'">'+_tirReal.tir.toFixed(2)+'%</span>';
+      } else {
+        var _tirEntry=(sector==='bonos')?TIR_CACHE[p.ticker]:null;
+        rsiCell=_tirEntry&&_tirEntry.value!=null
+          ?'<span style="color:var(--text2);font-weight:600" title="TIR EcoValores (estimación externa, cobertura parcial)">'+_tirEntry.value.toFixed(2)+'%</span>'
+          :'<span style="color:var(--text3)">—</span>';
+      }
+    } else {
+      var _rsiEntry=RSI_CACHE[p.ticker];
+      rsiCell=_rsiEntry&&_rsiEntry.value!=null
+        ?'<span style="color:'+rsiColor(_rsiEntry.value)+';font-weight:600">'+_rsiEntry.value.toFixed(1)+'</span>'
+        :'<span style="color:var(--text3)">—</span>';
+    }
+
     // % Tipo: peso a valor de mercado sobre el total de renta variable o renta fija (FCI sin columna)
     var ptipoCell='';
     if(sector!=='fci'){
@@ -4200,6 +3637,7 @@ function renderPortfolio(){
       '<td class="mono col-pventa">'+targetCell+'</td>'+
       ptipoCell+
       rebalCell+
+      '<td class="mono col-rsi">'+rsiCell+'</td>'+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
@@ -4216,7 +3654,7 @@ function renderPortfolio(){
       if(typeof _ptPct!=='undefined'&&_ptPct!=null&&sector!=='fci'){_tt.pt+=_ptPct;_tt.ptOk=true;}
     }
   });
-  var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'}];
+  var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'},{id:'fci',key:'fci'}];
   panelDefs.forEach(function(def){
     var rows=sectors[def.key];var panel=document.getElementById('panel-'+def.id);var body=document.getElementById('body-'+def.id);var meta=document.getElementById('panel-'+def.id+'-meta');
     if(!panel||!body){return;}
@@ -4237,12 +3675,12 @@ function renderPortfolio(){
           (def.key==='fci'?'<td></td><td></td><td></td>':
           '<td class="col-pventa"></td>'+
           '<td class="mono col-ptipo">'+(_t.ptOk?_t.pt.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'')+'</td>'+
-          '<td class="col-rebal"></td><td></td>')+
+          '<td class="col-rebal"></td><td class="col-rsi"></td><td></td>')+
         '</tr>';
       } else { _tf.innerHTML=''; }
     }catch(_e){console.warn('panel totales',_e);}panelSortApply(body);
     var val=sectorVal[def.key];
-    var _tc=(def.key==='bonos'||def.key==='on')?MEP_HOY:CCL_HOY;
+    var _tc=(def.key==='bonos'||def.key==='on'||def.key==='fci')?MEP_HOY:CCL_HOY;
     var valARS=val>0&&_tc>0?Math.round(val*_tc):null;
     meta.innerHTML=rows.length+' posiciones'+(valARS?' · <span class="port-sensitive">$'+valARS.toLocaleString('es-AR')+'</span>':'');
   });
@@ -4260,7 +3698,7 @@ function renderPortfolio(){
 
   // Mini pie distribución — liquidez ARS convertida con MEP
   var _liqMEP=liqUSD+((MEP_HOY||CCL_HOY)>0?liqARS/(MEP_HOY||CCL_HOY):0);
-  var _fija=(sectorVal.bonos||0)+(sectorVal.on||0);
+  var _fija=(sectorVal.bonos||0)+(sectorVal.on||0)+(sectorVal.fci||0);
   var _variable=totalVal-_fija;
   renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
   // Sector pie desglose
@@ -4268,7 +3706,14 @@ function renderPortfolio(){
   // RV pie por país
   renderRVPie(sectorVal);
 
-  document.getElementById('m-divs').textContent='—';
+  // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
+  var trkDivsTotal=0;
+  try{var td=TRK.divs||[];try{var _lsTrkP=localStorage.getItem(TRK.DKEY);if(_lsTrkP){var _lsTrkPD=JSON.parse(_lsTrkP);if(_lsTrkPD.length>td.length)td=_lsTrkPD;}}catch(_e){}
+  if(true){td.forEach(function(d){var u=d.moneda==='USD'?(d.montoUSD||d.monto||0):(d.monto||0)/(CCL_TABLE[d.fecha]||CCL_HOY);trkDivsTotal+=u||0;});}}catch(e){}
+  var movDivsTotal=movimientos.filter(function(m){return m.tipo==='dividendo';}).reduce(function(a,m){return a+(m.precioUSD||0);},0);
+  var regDivsTotal=(dividendos||[]).reduce(function(a,d){return a+(d.usd||0);},0);
+  var allDivs=trkDivsTotal+movDivsTotal+regDivsTotal;
+  document.getElementById('m-divs').textContent=allDivs>0?'$'+Math.round(allDivs).toLocaleString('es-AR'):'—';
 
   // Rendimiento = (ValTotal - CostoTotal) / CostoTotal * 100
   // Rendimiento: usa inversión inicial si está cargada, si no usa costUSD
@@ -4339,20 +3784,478 @@ function renderPortfolio(){
   renderPerfilComparacion();
 }
 
+// ─── Exportar portafolio a XLS ───
+function exportPortfolioXLS(){
+  var all=getPositions();
+  var open=all.filter(function(p){return p.qty>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
+  var rows=[['Ticker','Sector','Cantidad','PPC ARS','Mercado ARS','Inversión ARS','Δ%']];
+  open.forEach(function(p){
+    var q=quotes[p.ticker];var price=q?q.price:null;
+    var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
+    var _isBonoON=(sector==='bonos'||sector==='on');
+    var _sectorIsARS=(sector==='argentina'||_isBonoON);
+    var _isBRL=BRL_TICKERS.has(p.ticker);
+    var fromByma=q&&q.fromByma;
+    var mktARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
+    var invARS=mktARS!=null?(_isBonoON?mktARS*p.qty/100:mktARS*p.qty):p.costARS;
+    var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
+    var _tc=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
+    var ppcARS=_isBonoON?ppcUSD*_tc*100:(sector==='fci'?ppcUSD*(MEP_HOY||CCL_HOY):ppcUSD*CCL_HOY);
+    var pnl=mktARS!=null&&ppcARS>0?(mktARS-ppcARS)/ppcARS*100:null;
+    rows.push([p.ticker,sector,p.qty,ppcARS>0?Math.round(ppcARS):null,mktARS!=null?Math.round(mktARS):null,Math.round(invARS),pnl!=null?Math.round(pnl*10)/10:null]);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Portafolio');
+  var d=new Date(),ds=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
+  XLSX.writeFile(wb,'Portafolio_'+ds+'.xlsx');
+}
+
 // ─── Comparación de portafolios ───
-var _cmpData={portafolio:null,broker:null};
-var _cmpNombres={portafolio:{},broker:{}};
-var _cmpChecked=new Set();
-function cmpNorm(s){return String(s).replace(/[\s​]+/g,' ').toLowerCase().trim();}
-function cmpParseRows(ab){
+// ─── Noticias de la cartera (v44) ─────────────────────────────────────────────
+// Fuente: Finnhub /company-news + /quote (variación del subyacente en USA).
+// Solo sectores con cobertura en Finnhub (CEDEAR/NYSE). Argentina, bonos, ON y FCI quedan afuera.
+var NWS_SECTORS={nyse:1,europa:1,china:1,cripto:1,brasil:1};
+var NWS_TTL=3*3600*1000, NWS_LS='gdc_nws_v1';
+var nwsFiltro='hi', nwsExpand={}, nwsBusy=false;
+var nwsCache=(function(){try{return JSON.parse(localStorage.getItem(NWS_LS)||'null')||{};}catch(e){return {};}})();
+var NWS_JUNK=/(stocks? to (buy|watch|own|hold)|\btop \d+|best stocks|\b\d+ (stocks|reasons|things)|should you (buy|sell)|is it (time|too late)|motley fool|zacks rank|millionaire|here'?s why|what to know|prediction:|\bcould (rise|soar|double|triple|jump|surge|climb)|\bhow (this|these|to)\b|\d+% upside|beaten[- ]down|is .{1,40} a buy\b|buy the dip|forever stock|no-brainer|screaming buy|smartest .* buy|(stock|shares) .{0,20}vs\.? )/i;
+var NWS_HI=/(\bearnings\b|quarterly results|\bq[1-4] (results|revenue|profit|sales)|\bbeats?\b|\bmiss(es|ed)?\b|\bguidance\b|\boutlook\b|\bforecasts?\b|downgrad|upgrad|\bacquir|\bacquisition|\bmerger\b|\bbuyout\b|\btakeover\b|lawsuit|\bsued\b|\bprobe\b|investigat|\bsec\b|\bdoj\b|\bftc\b|antitrust|\bfda\b|\brecall\b|bankrupt|\bceo (steps|resign|out|exit)|names? .{1,30} ceo|\blayoffs?\b|job cuts|dividend (cut|suspen|hike|increase|raise)|\bbuyback\b|repurchase|stock split|\btariffs?\b|export (ban|curb|restriction|control)|trading halt|\bplunge|\bsoars?\b|\btumbles?\b|\bsurges?\b|\bcrash|\brate (cut|hike)s?|\bcuts? rates|raises? rates|central bank|\bselic\b|\belections?\b|\binflation\b|\bfiscal\b|\bdefault\b|\bimpeach)/i;
+var NWS_MD=/(\banalysts?\b|price target|\b(raises|lifts|cuts|lowers|boosts) .{0,30}targets?\b|\brating\b|partner|\bdeal\b|contract|\blaunch|\bunveil|dividend|regulat|sanction|\bstake\b|insider|expan|\binvest|approv|\bchips?\b|\bai\b)/i;
+// Símbolo alternativo para buscar noticias en Finnhub (ADR en USA) cuando el ticker de cartera no es US
+var NWS_SYM={'BBAS3':'BDORY'};
+// Contexto país/sector: si ≥2 posiciones del mismo sector se mueven fuerte en la misma dirección
+var NWS_GRUPO_MIN=2;
+var NWS_PAIS={
+  brasil:{label:'Brasil',flag:'🇧🇷',proxy:'EWZ',cat:'general',q:'Brasil Ibovespa bolsa',kw:/(brazil|brasil|ibovespa|bovespa|\blula\b|haddad|\bselic\b|banco central do brasil|\bbcb\b|\breais?\b|petrobras|\bvale\b|\bb3\b|itau|bradesco|banco do brasil)/i},
+  china:{label:'China',flag:'🇨🇳',proxy:'FXI',cat:'general',q:'China bolsa acciones',kw:/(china|chinese|beijing|\bpboc\b|yuan|hang seng|xi jinping|shanghai|shenzhen)/i},
+  europa:{label:'Europa',flag:'🇪🇺',proxy:'VGK',cat:'general',q:'bolsas europeas',kw:/(europe|european|\becb\b|lagarde|euro ?zone|stoxx|\bdax\b|\bftse\b|germany|france|britain|\buk\b)/i},
+  cripto:{label:'Cripto',flag:'🪙',proxy:'IBIT',cat:'crypto',q:'bitcoin ethereum',kw:null},
+  argentina:{label:'Argentina',flag:'🇦🇷',proxy:'ARGT',cat:'general',q:'Argentina economía Merval',kw:/(argentin|\bmilei\b|\bcaputo\b|\bbcra\b|merval|buenos aires|\bypf\b|galicia|\bperonis)/i},
+  nyse:{label:'EE.UU.',flag:'🇺🇸',proxy:'SPY',cat:'general',q:'Wall Street acciones',kw:/(\bfed\b|federal reserve|powell|inflation|\bcpi\b|\bpce\b|jobs report|payrolls|treasur|\byields?\b|s&p 500|nasdaq|wall street|dow jones|recession|tariff|shutdown)/i}
+};
+var nwsSecBusy={};
+function nwsGLink(q){return 'https://news.google.com/search?q='+encodeURIComponent(q+' when:2d')+'&hl=es-419&gl=AR&ceid=AR:es-419';}
+async function nwsLoadSector(sec){
+  var cfg=NWS_PAIS[sec];if(!cfg||nwsSecBusy[sec])return;nwsSecBusy[sec]=true;
+  var dias=nwsDias(),fromTs=Date.now()/1000-dias*86400,to=new Date(),from=new Date(fromTs*1000);
+  var out={news:[],q:null},seen={};
+  function add(arr,tag){(Array.isArray(arr)?arr:[]).forEach(function(n){
+    if(!n||!n.headline||!n.datetime||n.datetime<fromTs)return;
+    if(tag==='gen'&&cfg.kw&&!cfg.kw.test(n.headline+' '+(n.summary||'')))return;
+    var k=n.headline.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);if(seen[k])return;seen[k]=1;
+    out.news.push({headline:n.headline,source:n.source,url:n.url,datetime:n.datetime,summary:(n.summary||'').slice(0,280)});});}
+  try{add(await nwsFetchJSON(FBASE+'/company-news?symbol='+cfg.proxy+'&from='+nwsYmd(from)+'&to='+nwsYmd(to)+'&token='+FKEY),'etf');}catch(e){}
   try{
-    var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
-    for(var i=0;i<wb.SheetNames.length;i++){
-      var ws=wb.Sheets[wb.SheetNames[i]];
-      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      if(rows.length>1)return rows;
+    nwsCache.gen=nwsCache.gen||{};
+    if(!nwsCache.gen[cfg.cat])nwsCache.gen[cfg.cat]=await nwsFetchJSON(FBASE+'/news?category='+cfg.cat+'&token='+FKEY);
+    add(nwsCache.gen[cfg.cat],'gen');
+    add(nwsLog.filter(function(n){return cfg.cat==='crypto'?n.cat==='crypto':n.cat!=='crypto';}),'gen');
+  }catch(e){}
+  try{var q=await nwsFetchJSON(FBASE+'/quote?symbol='+cfg.proxy+'&token='+FKEY);if(q&&q.c)out.q={c:q.c,chg:q.pc?(q.c-q.pc)/q.pc*100:0};}catch(e){}
+  out.news.sort(function(a,b){return b.datetime-a.datetime;});out.news=out.news.slice(0,30);
+  nwsCache.sec=nwsCache.sec||{};nwsCache.sec[sec]=out;
+  try{var c=Object.assign({},nwsCache);delete c.gen;localStorage.setItem(NWS_LS,JSON.stringify(c));}catch(e){}
+  nwsSecBusy[sec]=false;nwsRender();
+}
+function nwsEsc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function nwsAgo(ts){var m=Math.max(0,Math.round((Date.now()-ts*1000)/60000));if(m<60)return 'hace '+m+' min';var h=Math.round(m/60);if(h<24)return 'hace '+h+' h';return 'hace '+Math.round(h/24)+' d';}
+function nwsYmd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function nwsUmbral(){var v=parseFloat((document.getElementById('nws-umbral')||{}).value);return v>0?v:3;}
+function nwsDias(){var v=parseInt((document.getElementById('nws-dias')||{}).value,10);return v>0?v:2;}
+// Valor USD de una posición (misma lógica que vigRender)
+function nwsValUSD(p){
+  var q=quotes[p.ticker];if(!q||q.price==null||!p.qty)return 0;
+  var sector=getSector(p.ticker),isBonoON=(sector==='bonos'||sector==='on'),isFci=(sector==='fci');
+  if(sector==='argentina'||isBonoON||isFci){var tc=(isBonoON||isFci)?(MEP_HOY||CCL_HOY):CCL_HOY;if(!(tc>0))return 0;var ars=isBonoON?q.price*p.qty/100:q.price*p.qty;return ars/tc;}
+  var pu=q.fromByma?q.price/(CCL_HOY||1):q.price/getRatio(p.ticker);return pu*p.qty;
+}
+function nwsCartera(){
+  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
+  var tot=0;pos.forEach(function(p){p._v=nwsValUSD(p);tot+=p._v;});
+  return pos.filter(function(p){return NWS_SECTORS[getSector(p.ticker)];})
+    .map(function(p){return {ticker:p.ticker,sector:getSector(p.ticker),sym:NWS_SYM[p.ticker]||getFinnhubTicker(p.ticker),w:tot>0?p._v/tot*100:0,localChg:quotes[p.ticker]?quotes[p.ticker].changePct:null};})
+    .sort(function(a,b){return b.w-a.w;});
+}
+function nwsClasif(n,chgAbs,umbral){
+  var h=n.headline||'';
+  if(NWS_JUNK.test(h))return 'lo';
+  var lvl=NWS_HI.test(h)?'hi':(NWS_MD.test(h)?'md':'lo');
+  // Si el ticker se movió fuerte, lo reciente (24 h) sube un nivel: probablemente explica el movimiento
+  if(chgAbs>=umbral&&(Date.now()/1000-n.datetime)<86400){if(lvl==='md')lvl='hi';else if(lvl==='lo')lvl='md';}
+  return lvl;
+}
+async function nwsFetchJSON(url){
+  for(var k=0;k<2;k++){
+    var r=await fetchWithTimeout(url,{},10000);
+    if(r.status===429){await new Promise(function(ok){setTimeout(ok,2500);});continue;}
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }
+  throw new Error('Límite de Finnhub');
+}
+async function nwsPool(items,limit,worker){
+  var idx=0;
+  async function run(){while(idx<items.length){var it=items[idx++];try{await worker(it);}catch(e){}}}
+  var ws=[];for(var k=0;k<Math.min(limit,items.length);k++)ws.push(run());
+  await Promise.all(ws);
+}
+async function nwsLoad(force){
+  var cart=nwsCartera();
+  var st=document.getElementById('nws-status');
+  var dias=nwsDias();
+  var fresh=nwsCache.ts&&(Date.now()-nwsCache.ts<NWS_TTL)&&nwsCache.dias===dias;
+  if(!force&&fresh){nwsRender();return;}
+  if(nwsBusy)return;nwsBusy=true;
+  try{await nwsLoadPanorama(force);}catch(e){}
+  var to=new Date(),from=new Date(Date.now()-dias*86400000);
+  var data={},done=0,errs=0;
+  if(st)st.textContent='Buscando noticias… 0/'+cart.length;
+  await nwsPool(cart,3,async function(p){
+    var ent={news:[],q:null};
+    try{
+      var arr=await nwsFetchJSON(FBASE+'/company-news?symbol='+encodeURIComponent(p.sym)+'&from='+nwsYmd(from)+'&to='+nwsYmd(to)+'&token='+FKEY);
+      var seen={};
+      ent.news=(Array.isArray(arr)?arr:[]).filter(function(n){
+        if(!n||!n.headline||!n.datetime)return false;
+        if(n.datetime*1000<from.getTime())return false;
+        var k=n.headline.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);if(seen[k])return false;seen[k]=1;return true;
+      }).slice(0,40).map(function(n){return {headline:n.headline,source:n.source,url:n.url,datetime:n.datetime,summary:(n.summary||'').slice(0,280)};});
+    }catch(e){errs++;}
+    try{var q=await nwsFetchJSON(FBASE+'/quote?symbol='+encodeURIComponent(p.sym)+'&token='+FKEY);if(q&&q.c)ent.q={c:q.c,chg:q.pc?(q.c-q.pc)/q.pc*100:0};}catch(e){}
+    data[p.ticker]=ent;done++;
+    if(st)st.textContent='Buscando noticias… '+done+'/'+cart.length;
+  });
+  nwsCache={ts:Date.now(),dias:dias,data:data,gen:(nwsCache&&nwsCache.gen)||{}};
+  try{var _c=Object.assign({},nwsCache);delete _c.gen;localStorage.setItem(NWS_LS,JSON.stringify(_c));}catch(e){}
+  nwsBusy=false;
+  if(st)st.textContent=errs?(errs+' tickers sin respuesta de Finnhub'):'';
+  nwsRender();nwsAfterQuotes();
+}
+function nwsGrupoHTML(g,umbral){
+  var cfg=NWS_PAIS[g.sec],d=nwsCache.sec&&nwsCache.sec[g.sec];
+  if(!d&&!nwsSecBusy[g.sec])setTimeout(function(){nwsLoadSector(g.sec);},0);
+  var col=g.up?'var(--accent)':'var(--red)';
+  var tks=g.rows.map(function(r){return r.p.ticker+' '+(r.chg>=0?'+':'')+r.chg.toFixed(2).replace('.',',')+'%';}).join(' · ');
+  var h='<div style="border:1px solid var(--amber);border-radius:var(--radius);background:var(--surface2);padding:.65rem .9rem;margin-bottom:.6rem">'
+    +'<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px"><span style="font-weight:600;font-size:.92rem">'+cfg.flag+' '+cfg.label+'</span>'
+    +'<span style="font-size:.72rem;color:'+col+'">'+g.rows.length+' posiciones '+(g.up?'suben':'bajan')+' fuerte</span>'
+    +'<span style="font-size:.68rem;color:var(--text3);font-family:var(--mono)">'+nwsEsc(tks)+'</span>'
+    +(d&&d.q?'<span style="font-size:.72rem;font-family:var(--mono);color:'+(d.q.chg>=0?'var(--accent)':'var(--red)')+'">'+cfg.proxy+' '+(d.q.chg>=0?'+':'')+d.q.chg.toFixed(2).replace('.',',')+'%</span>':'')
+    +'<span style="font-size:.6rem;font-family:var(--mono);color:var(--amber);border:1px solid var(--amber);border-radius:20px;padding:1px 7px">CONTEXTO PAÍS / SECTOR</span>'
+    +'<span style="flex:1"></span><a href="'+nwsGLink(cfg.q)+'" target="_blank" rel="noopener" style="font-size:.68rem;color:var(--blue)">Google News ↗</a></div>';
+  if(!d){return h+'<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Buscando noticias de '+cfg.label+'…</div></div>';}
+  var avg=g.rows.reduce(function(a,r){return a+Math.abs(r.chg);},0)/g.rows.length;
+  var rank={hi:0,md:1,lo:2};
+  var items=d.news.map(function(n){var o=Object.assign({},n);o.lvl=nwsClasif(n,avg,umbral);return o;}).filter(function(n){return n.lvl!=='lo';})
+    .sort(function(a,b){return rank[a.lvl]-rank[b.lvl]||b.datetime-a.datetime;});
+  if(!items.length)h+='<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Finnhub no trae noticias relevantes de '+cfg.label+' en la ventana. Probá con Google News ↗</div>';
+  var key='sec:'+g.sec,lim=nwsExpand[key]?items.length:5;
+  items.slice(0,lim).forEach(function(n){h+=nwsItemHTML(n);});
+  if(items.length>5)h+='<button class="btn btn-sm" style="margin-top:6px" onclick="nwsToggle(\''+key+'\')">'+(nwsExpand[key]?'Ver menos':'+'+(items.length-5)+' más')+'</button>';
+  return h+'</div>';
+}
+
+// ─── Panorama por país (v46) ───────────────────────────────────────────────
+// Siempre visible: noticias macro de cada país donde hay exposición, ordenado por peso.
+// Fuente: Finnhub /news (general + crypto) filtrado por palabras clave del país. Como /news trae solo
+// las últimas ~100 notas, se guarda un registro local de 72 h para no perder el dato de la mañana.
+var NWS_MACRO=/(inflation|\bcpi\b|\bpce\b|\bppi\b|consumer prices|\bfed\b|federal reserve|\bfomc\b|powell|rate (cut|hike)s?|interest rates?|jobs report|payrolls|jobless|unemployment|\bgdp\b|recession|central bank|\becb\b|lagarde|\bselic\b|\bbcra\b|\bpboc\b|elections?|fiscal|budget|deficit|tariffs?|treasury yields?|\bimf\b|\bdefault\b|stimulus|shutdown|retail sales|consumer (spending|confidence)|\bpmi\b)/i;
+// Datos "de primera línea" (pesan más) y sorpresa vs. lo esperado
+var NWS_TOP=/(inflation|\bcpi\b|\bpce\b|consumer prices|jobs report|payrolls|unemployment rate|\bgdp\b|rate (cut|hike|decision)s?|holds? rates|\bfomc\b|\bselic\b|interest rates?)/i;
+var NWS_SURPRISE=/(than expected|expectations|forecasts?|surprise|unexpected|cooler|hotter|estimates)/i;
+// Marcadores propios de EE.UU.: una nota de otro país (BCE, Brasil…) solo cuenta para EE.UU. si también los menciona
+var NWS_US_OWN=/(\bus\b|\bu\.s\.|american|\bfed\b|federal reserve|powell|wall street|treasur|\bs&p\b|nasdaq|dow jones|white house|washington|trump)/i;
+function nwsPanScore(n){var m=NWS_MACRO.test(n.headline),t=NWS_TOP.test(n.headline);return (t?3:m?2:NWS_HI.test(n.headline)?1:0)+((m||t)&&NWS_SURPRISE.test(n.headline)?1:0);}
+var NWS_PAN_LS='gdc_nws_pan_v1',NWS_LOG_LS='gdc_nws_log_v1',NWS_PAN_TTL=30*60*1000;
+var nwsPan=(function(){try{return JSON.parse(localStorage.getItem(NWS_PAN_LS)||'null');}catch(e){return null;}})();
+var nwsLog=(function(){try{return JSON.parse(localStorage.getItem(NWS_LOG_LS)||'[]')||[];}catch(e){return [];}})();
+var nwsPanBusy=false;
+function nwsExposicion(){
+  var tot=0,by={};
+  getPositions().filter(function(p){return p.qty>0.000001;}).forEach(function(p){
+    var v=nwsValUSD(p);if(!v)return;tot+=v;
+    var sc=getSector(p.ticker),k=(sc==='argentina'||sc==='bonos'||sc==='on'||sc==='fci')?'argentina':sc;
+    by[k]=(by[k]||0)+v;
+  });
+  return Object.keys(by).filter(function(k){return NWS_PAIS[k];}).map(function(k){return {sec:k,w:tot>0?by[k]/tot*100:0};}).sort(function(a,b){return b.w-a.w;});
+}
+function nwsLogMerge(arr,cat){
+  var lim=Date.now()/1000-72*3600,seen={};
+  nwsLog.forEach(function(n){seen[n.k]=1;});
+  (Array.isArray(arr)?arr:[]).forEach(function(n){
+    if(!n||!n.headline||!n.datetime||n.datetime<lim)return;
+    var k=n.headline.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);if(seen[k])return;seen[k]=1;
+    nwsLog.push({k:k,cat:cat,headline:n.headline,source:n.source,url:n.url,datetime:n.datetime,summary:(n.summary||'').slice(0,280)});
+  });
+  nwsLog=nwsLog.filter(function(n){return n.datetime>=lim;}).sort(function(a,b){return b.datetime-a.datetime;}).slice(0,500);
+  try{localStorage.setItem(NWS_LOG_LS,JSON.stringify(nwsLog));}catch(e){}
+}
+async function nwsLoadPanorama(force){
+  if(nwsPanBusy)return;
+  if(!force&&nwsPan&&Date.now()-nwsPan.ts<NWS_PAN_TTL)return;
+  nwsPanBusy=true;
+  try{
+    var exp=nwsExposicion();
+    nwsCache.gen=nwsCache.gen||{};
+    try{var g=await nwsFetchJSON(FBASE+'/news?category=general&token='+FKEY);nwsCache.gen.general=g;nwsLogMerge(g,'general');}catch(e){}
+    if(exp.some(function(e){return e.sec==='cripto';})){try{var c=await nwsFetchJSON(FBASE+'/news?category=crypto&token='+FKEY);nwsCache.gen.crypto=c;nwsLogMerge(c,'crypto');}catch(e){}}
+    var q={};
+    await nwsPool(exp,3,async function(e){try{var d=await nwsFetchJSON(FBASE+'/quote?symbol='+NWS_PAIS[e.sec].proxy+'&token='+FKEY);if(d&&d.c)q[e.sec]={c:d.c,chg:d.pc?(d.c-d.pc)/d.pc*100:0};}catch(x){}});
+    nwsPan={ts:Date.now(),q:q};
+    try{localStorage.setItem(NWS_PAN_LS,JSON.stringify(nwsPan));}catch(e){}
+  }finally{nwsPanBusy=false;}
+}
+function nwsPaisNews(sec,fromTs){
+  var cfg=NWS_PAIS[sec];
+  return nwsLog.filter(function(n){
+    if(n.datetime<fromTs)return false;
+    if(cfg.cat==='crypto')return n.cat==='crypto';
+    var txt=n.headline+' '+(n.summary||'');
+    if(n.cat==='crypto'||!cfg.kw||!cfg.kw.test(txt))return false;
+    if(sec==='nyse'){for(var k in NWS_PAIS){var o=NWS_PAIS[k];if(k!=='nyse'&&o.kw&&o.kw.test(txt)&&!NWS_US_OWN.test(txt))return false;}}
+    return true;
+  });
+}
+function nwsPanoramaHTML(){
+  var stale=!nwsPan||(Date.now()-nwsPan.ts>NWS_PAN_TTL);
+  if(stale&&!nwsPanBusy)setTimeout(function(){nwsLoadPanorama(false).then(nwsRender);},0);
+  var h='<div style="border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);padding:.65rem .9rem;margin-bottom:.9rem">'
+    +'<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:.35rem"><span style="font-weight:600;font-size:.92rem">🌎 Panorama por país</span>'
+    +'<span style="font-size:.65rem;color:var(--text3)">noticias macro de los países donde tenés exposición · ordenado por peso</span><span style="flex:1"></span>'
+    +(nwsPanBusy||!nwsPan?'<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">actualizando…</span>':'')+'</div>';
+  if(!nwsPan&&!nwsLog.length)return h+'<div style="font-size:.75rem;color:var(--text3)">Cargando panorama…</div></div>';
+  var fromTs=Date.now()/1000-nwsDias()*86400,rank={hi:0,md:1,lo:2};
+  nwsExposicion().forEach(function(e,idx){
+    var cfg=NWS_PAIS[e.sec],q=nwsPan&&nwsPan.q&&nwsPan.q[e.sec];
+    var items=nwsPaisNews(e.sec,fromTs).filter(function(n){return !NWS_JUNK.test(n.headline);}).map(function(n){
+      var o=Object.assign({},n);o.macro=NWS_MACRO.test(n.headline)||NWS_TOP.test(n.headline);o.score=nwsPanScore(n);
+      o.lvl=(o.macro||NWS_HI.test(n.headline))?'hi':'md';
+      if(o.macro)o.tag='Macro';return o;
+    }).sort(function(a,b){return (b.score-a.score)||(b.datetime-a.datetime);});
+    var key='pan:'+e.sec,lim=nwsExpand[key]?Math.min(items.length,10):3;
+    h+='<div style="padding:.45rem 0;'+(idx?'border-top:1px solid var(--border2)':'')+'">'
+      +'<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span style="font-weight:600;font-size:.84rem">'+cfg.flag+' '+cfg.label+'</span>'
+      +'<span style="font-size:.68rem;color:var(--text3)">'+e.w.toFixed(1).replace('.',',')+'% de la cartera</span>'
+      +(q?'<span style="font-size:.72rem;font-family:var(--mono);color:'+(q.chg>=0?'var(--accent)':'var(--red)')+'">'+cfg.proxy+' '+(q.chg>=0?'+':'')+q.chg.toFixed(2).replace('.',',')+'%</span>':'')
+      +'<span style="flex:1"></span><a href="'+nwsGLink(cfg.q)+'" target="_blank" rel="noopener" style="font-size:.66rem;color:var(--blue)">Google News ↗</a></div>';
+    if(!items.length)h+='<div style="font-size:.72rem;color:var(--text3);padding:4px 0 0">Sin noticias macro en Finnhub para esta ventana.</div>';
+    items.slice(0,lim).forEach(function(n){h+=nwsItemHTML(n);});
+    if(items.length>3)h+='<button class="btn btn-sm" style="margin-top:4px" onclick="nwsToggle(\''+key+'\')">'+(nwsExpand[key]?'Ver menos':'+'+(Math.min(items.length,10)-3)+' más')+'</button>';
+    h+='</div>';
+  });
+  return h+'</div>';
+}
+
+// ─── Traducción de titulares al español (v47) ──────────────────────────────
+// Google Translate (endpoint público gtx, en lotes) con fallback a MyMemory por titular.
+// Las traducciones se guardan en localStorage: cada titular se traduce una sola vez.
+var NWS_TR_LS='gdc_nws_tr_v1';
+var nwsTrMap=(function(){try{return JSON.parse(localStorage.getItem(NWS_TR_LS)||'{}')||{};}catch(e){return {};}})();
+var nwsTrOn=(function(){try{return localStorage.getItem('gdc_nws_tr_on')!=='0';}catch(e){return true;}})();
+var nwsTrPend={},nwsTrTried={},nwsTrBusy=false;
+document.addEventListener('DOMContentLoaded',function(){var c=document.getElementById('nws-tr');if(c)c.checked=nwsTrOn;});
+function nwsTr(t){if(!nwsTrOn||!t)return t;var k=t.trim();if(nwsTrMap[k])return nwsTrMap[k];if(!nwsTrTried[k])nwsTrPend[k]=1;return t;}
+function nwsTrToggle(el){nwsTrOn=!!el.checked;try{localStorage.setItem('gdc_nws_tr_on',nwsTrOn?'1':'0');}catch(e){}nwsRender();}
+function nwsTrSave(){
+  try{var ks=Object.keys(nwsTrMap);if(ks.length>2000)ks.slice(0,ks.length-2000).forEach(function(k){delete nwsTrMap[k];});localStorage.setItem(NWS_TR_LS,JSON.stringify(nwsTrMap));}catch(e){}
+}
+async function nwsTrGoogle(list){
+  var url='https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=es&dt=t&q='+encodeURIComponent(list.join('\n'));
+  var r=await fetchWithTimeout(url,{},10000);if(!r.ok)throw new Error('HTTP '+r.status);
+  var d=await r.json();var out=(d&&d[0]||[]).map(function(x){return x&&x[0]||'';}).join('').split('\n');
+  if(out.length!==list.length)throw new Error('lote desalineado');
+  return out;
+}
+async function nwsTrMyMemory(t){
+  var r=await fetchWithTimeout('https://api.mymemory.translated.net/get?q='+encodeURIComponent(t)+'&langpair=en|es',{},8000);
+  if(!r.ok)throw new Error('HTTP '+r.status);var d=await r.json();
+  var tr=d&&d.responseData&&d.responseData.translatedText;if(!tr||/MYMEMORY WARNING/i.test(tr))throw new Error('sin cupo');return tr;
+}
+async function nwsTrFlush(){
+  if(nwsTrBusy||!nwsTrOn)return;
+  var ks=Object.keys(nwsTrPend);if(!ks.length)return;
+  nwsTrBusy=true;nwsTrPend={};ks.forEach(function(k){nwsTrTried[k]=1;});
+  // lotes de ~1500 caracteres para no pasarse del largo de URL
+  var lotes=[],cur=[],len=0;
+  ks.forEach(function(k){var l=encodeURIComponent(k).length+3;if(cur.length&&len+l>1500){lotes.push(cur);cur=[];len=0;}cur.push(k.replace(/\n/g,' '));len+=l;});
+  if(cur.length)lotes.push(cur);
+  var n=0;
+  for(var i=0;i<lotes.length;i++){
+    var L=lotes[i];
+    try{var out=await nwsTrGoogle(L);L.forEach(function(k,j){if(out[j]&&out[j].trim())nwsTrMap[k]=out[j].trim();});n+=L.length;}
+    catch(e){
+      for(var j=0;j<L.length&&j<15;j++){try{nwsTrMap[L[j]]=await nwsTrMyMemory(L[j]);n++;}catch(x){break;}}
     }
-  }catch(ex){}
+  }
+  nwsTrSave();nwsTrBusy=false;
+  if(n)nwsRender();
+}
+function nwsSetFiltro(f,btn){nwsFiltro=f;document.querySelectorAll('#nws-filtros .nws-chip').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');nwsRender();}
+function nwsToggle(t){nwsExpand[t]=!nwsExpand[t];nwsRender();}
+function nwsItemHTML(n){
+  var col=n.tag?'var(--blue)':{hi:'var(--red)',md:'var(--amber)',lo:'var(--text3)'}[n.lvl],lab=n.tag||{hi:'Alto',md:'Medio',lo:'Bajo'}[n.lvl];
+  return '<div style="display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--border)">'
+    +'<span style="font-size:.6rem;font-family:var(--mono);color:'+col+';border:1px solid '+col+';border-radius:20px;padding:1px 7px;height:fit-content;white-space:nowrap">'+lab+'</span>'
+    +'<div style="flex:1;min-width:0"><a href="'+nwsEsc(n.url)+'" target="_blank" rel="noopener" title="'+nwsEsc((nwsTrOn?'Original: '+n.headline+(n.summary?'\n\n':''):'')+(n.summary||''))+'" style="color:var(--text);text-decoration:none;font-size:.8rem;line-height:1.4">'+nwsEsc(nwsTr(n.headline))+'</a>'
+    +'<div style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">'+nwsEsc(n.source)+' · '+nwsAgo(n.datetime)+'</div></div></div>';
+}
+function nwsRender(){
+  var list=document.getElementById('nws-list');if(!list)return;
+  var kp=document.getElementById('nws-kpis');
+  if(!nwsCache.data){list.innerHTML='<div style="color:var(--text3);font-size:.8rem">Tocá ⟳ Actualizar para traer las noticias.</div>';return;}
+  var umbral=nwsUmbral(),rank={hi:0,md:1,lo:2},maxR=nwsFiltro==='hi'?0:nwsFiltro==='md'?1:2;
+  var cart=nwsCartera(),tot=0,nHi=0,conNov=0,movs=[],rest=[];
+  cart.forEach(function(p){
+    var e=nwsCache.data[p.ticker];if(!e)return;
+    var chg=e.q?e.q.chg:p.localChg;var abs=Math.abs(chg||0);
+    var items=e.news.map(function(n){var o=Object.assign({},n);o.lvl=nwsClasif(n,abs,umbral);return o;})
+      .sort(function(a,b){return rank[a.lvl]-rank[b.lvl]||b.datetime-a.datetime;});
+    tot+=items.length;if(items.length)conNov++;
+    items.forEach(function(n){if(n.lvl==='hi')nHi++;});
+    var row={p:p,chg:chg,items:items,big:abs>=umbral};
+    (row.big?movs:rest).push(row);
+  });
+  // Agrupar movimientos fuertes por sector y dirección
+  var grupos=[],gk={};
+  movs.forEach(function(r){var k=r.p.sector+(r.chg>=0?'+':'-');(gk[k]=gk[k]||{sec:r.p.sector,up:r.chg>=0,rows:[]}).rows.push(r);});
+  Object.keys(gk).forEach(function(k){var g=gk[k];if(g.rows.length>=NWS_GRUPO_MIN&&NWS_PAIS[g.sec]){grupos.push(g);g.rows.forEach(function(r){r.grupo=g;});}});
+  if(kp)kp.innerHTML=[['Noticias',tot],['Alto impacto',nHi],['Tickers con novedades',conNov+' de '+cart.length],['Movimiento ≥ '+umbral+'%',movs.length]]
+    .map(function(k,i){return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.55rem .75rem"><div style="font-size:.62rem;color:var(--text3);font-family:var(--mono)">'+k[0]+'</div><div style="font-size:1.1rem;font-weight:600;color:'+(i===1&&k[1]?'var(--red)':i===3&&k[1]?'var(--amber)':'var(--text)')+'">'+k[1]+'</div></div>';}).join('');
+  function card(r,forceAll){
+    var shown=r.items.filter(function(n){return forceAll||rank[n.lvl]<=maxR;});
+    if(!shown.length&&!r.big)return '';
+    var lim=nwsExpand[r.p.ticker]?shown.length:5;
+    var chgTxt=r.chg==null?'':'<span style="font-size:.72rem;font-family:var(--mono);color:'+(r.chg>=0?'var(--accent)':'var(--red)')+'">'+(r.chg>=0?'+':'')+r.chg.toFixed(2).replace('.',',')+'% hoy</span>';
+    var h='<div style="border:1px solid '+(r.big?'var(--amber)':'var(--border)')+';border-radius:var(--radius);background:var(--surface);padding:.65rem .9rem;margin-bottom:.6rem">'
+      +'<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px"><span style="font-weight:600;font-size:.92rem">'+nwsEsc(r.p.ticker)+'</span>'
+      +(r.p.sym!==r.p.ticker?'<span style="font-size:.65rem;color:var(--text3);font-family:var(--mono)">'+nwsEsc(r.p.sym)+'</span>':'')
+      +'<span style="font-size:.68rem;color:var(--text3)">'+r.p.w.toFixed(1).replace('.',',')+'% de la cartera</span>'+chgTxt
+      +(r.big?'<span style="font-size:.6rem;font-family:var(--mono);color:var(--amber);border:1px solid var(--amber);border-radius:20px;padding:1px 7px">MOVIMIENTO FUERTE</span>':'')
+      +'<span style="flex:1"></span><span style="font-size:.65rem;color:var(--text3)">'+r.items.length+' noticias</span></div>';
+    if(r.big&&!r.items.length)h+='<div style="font-size:.75rem;color:var(--text3);padding:6px 0;border-top:1px solid var(--border)">Sin noticias propias'+(r.grupo?': ver contexto de '+NWS_PAIS[r.grupo.sec].label+' arriba':': probablemente movimiento de sector o de mercado')+' · <a href="'+nwsGLink(r.p.ticker+' acciones')+'" target="_blank" rel="noopener" style="color:var(--blue)">buscar en Google News ↗</a></div>';
+    shown.slice(0,lim).forEach(function(n){h+=nwsItemHTML(n);});
+    if(shown.length>5)h+='<button class="btn btn-sm" style="margin-top:6px" onclick="nwsToggle(\''+nwsEsc(r.p.ticker)+'\')">'+(nwsExpand[r.p.ticker]?'Ver menos':'+'+(shown.length-5)+' más')+'</button>';
+    return h+'</div>';
+  }
+  var html=nwsPanoramaHTML();
+  if(movs.length){html+='<div style="font-size:.7rem;font-family:var(--mono);color:var(--amber);margin:.2rem 0 .45rem">¿POR QUÉ SE MOVIERON HOY? (variación ≥ '+umbral+'%)</div>';
+    grupos.forEach(function(g){html+=nwsGrupoHTML(g,umbral);});
+    movs.sort(function(a,b){return Math.abs(b.chg)-Math.abs(a.chg);}).forEach(function(r){html+=card(r,true);});
+    html+='<div style="font-size:.7rem;font-family:var(--mono);color:var(--text3);margin:.9rem 0 .45rem">RESTO DE LA CARTERA · por peso</div>';}
+  var restH=rest.map(function(r){return card(r,false);}).join('');
+  html+=restH||'<div style="color:var(--text3);font-size:.8rem">Sin noticias para este filtro.</div>';
+  var ts=new Date(nwsCache.ts);
+  html+='<div style="font-size:.65rem;color:var(--text3);margin-top:.6rem">Actualizado '+ts.toLocaleString('es-AR')+' · la variación es la del subyacente en USA (Finnhub). Pasá el mouse por un titular para ver el resumen.</div>';
+  list.innerHTML=html;
+  setTimeout(nwsTrFlush,0);
+}
+// Se llama al final de fetchAllQuotes: marca en el menú cuántas posiciones se movieron ≥ umbral
+function nwsAfterQuotes(){
+  try{
+    var umbral=nwsUmbral(),n=0;
+    nwsCartera().forEach(function(p){
+      var e=nwsCache.data&&nwsCache.data[p.ticker];
+      var fresh=nwsCache.ts&&(Date.now()-nwsCache.ts<NWS_TTL);
+      var chg=(fresh&&e&&e.q)?e.q.chg:p.localChg;
+      if(chg!=null&&Math.abs(chg)>=umbral)n++;
+    });
+    var b=document.getElementById('nws-navbadge');
+    if(b){b.textContent=n?String(n):'';b.style.display=n?'':'none';b.title=n?(n+' posiciones se movieron ≥ '+umbral+'% hoy'):'';}
+    var pg=document.getElementById('page-noticias');if(pg&&pg.classList.contains('active')&&nwsCache.data)nwsRender();
+  }catch(e){}
+}
+
+// ─── Vigilancia ──────────────────────────────────────────────────────────────
+var VIG_KEY='ptNYSE_vigilancia';
+var vigItems=[];
+try{vigItems=JSON.parse(localStorage.getItem(VIG_KEY))||[];}catch(e){vigItems=[];}
+
+function vigAdd(){
+  var ticker=document.getElementById('vig-ticker').value.trim().toUpperCase();
+  var qty=parseFloat(document.getElementById('vig-qty').value)||0;
+  if(!ticker)return;
+  var ex=vigItems.find(function(v){return v.ticker===ticker;});
+  if(ex){ex.qty=qty;}else{vigItems.push({ticker:ticker,qty:qty});}
+  try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}
+  document.getElementById('vig-ticker').value='';
+  document.getElementById('vig-qty').value='';
+  vigRender();
+}
+
+function vigRemove(ticker){
+  vigItems=vigItems.filter(function(v){return v.ticker!==ticker;});
+  try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}
+  vigRender();
+}
+
+function vigRender(){
+  var body=document.getElementById('vig-body');
+  var empty=document.getElementById('vig-empty');
+  var table=document.getElementById('vig-table');
+  if(!vigItems.length){empty.style.display='';table.style.display='none';return;}
+  empty.style.display='none';table.style.display='';
+  var totARS=0,totUSD=0;
+  body.innerHTML=vigItems.map(function(v){
+    var q=quotes[v.ticker];
+    var price=q?q.price:null;
+    var sector=getSector(v.ticker);
+    var ratio=getRatio(v.ticker);
+    var isBonoON=(sector==='bonos'||sector==='on');
+    var isFci=(sector==='fci');
+    var isARS=(sector==='argentina'||isBonoON||isFci);
+    var _vTc=(isBonoON||isFci)?(MEP_HOY||CCL_HOY):CCL_HOY;
+    var priceARS=null,priceUSD=null,valARS=null,valUSD=null;
+    if(price!=null){
+      if(isARS){
+        priceARS=price;
+        priceUSD=_vTc>0?price/_vTc:null;
+        if(v.qty){valARS=isBonoON?price*v.qty/100:price*v.qty;valUSD=_vTc>0?valARS/_vTc:null;}
+      }else{
+        var _vigFromByma=q&&q.fromByma;
+        priceUSD=_vigFromByma?price/(CCL_HOY||1):price/ratio;
+        priceARS=_vigFromByma?price:(CCL_HOY>0?priceUSD*CCL_HOY:null);
+        if(v.qty){valUSD=priceUSD*v.qty;valARS=CCL_HOY>0?valUSD*CCL_HOY:null;}
+      }
+    }
+    if(valARS)totARS+=valARS;
+    if(valUSD)totUSD+=valUSD;
+    var chg=q?q.changePct:null;
+    var chgColor=chg==null?'var(--text3)':chg>=0?'var(--accent)':'var(--red)';
+    var chgStr=chg==null?'—':(chg>=0?'+':'')+chg.toFixed(1)+'%';
+    var fmt=function(n,prefix){return n==null?'—':prefix+(Math.round(n)).toLocaleString('es-AR');};
+    var fmtD=function(n,prefix){return n==null?'—':prefix+n.toFixed(2);};
+    return '<tr>'+
+      '<td style="font-weight:600">'+v.ticker+'</td>'+
+      '<td class="mono">'+(v.qty||'—')+'</td>'+
+      '<td class="mono">'+(priceARS!=null?'$'+Math.round(priceARS).toLocaleString('es-AR'):'—')+'</td>'+
+      '<td class="mono">'+fmt(valARS,'$')+'</td>'+
+      '<td class="mono">'+fmtD(priceUSD,'u$s ')+'</td>'+
+      '<td class="mono">'+fmt(valUSD,'u$s ')+'</td>'+
+      '<td class="mono" style="color:'+chgColor+'">'+chgStr+'</td>'+
+      '<td><button class="btn btn-d btn-sm" onclick="vigRemove(\''+v.ticker+'\')">✕</button></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('vig-tot-ars').textContent=totARS?'$'+Math.round(totARS).toLocaleString('es-AR'):'—';
+  document.getElementById('vig-tot-usd').textContent=totUSD?'u$s '+Math.round(totUSD).toLocaleString('es-AR'):'—';
+}
+
+var _cmpData={gdc:null,veta:null};
+var _cmpNombres={gdc:{},veta:{}};
+var _cmpLiqVeta=null; // {ars,usd,usdc} de la hoja Liquidez del xlsx de Veta Capital
+function cargarGDCEnComparacion(){
+  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
+  if(!pos.length){alert('El portafolio no tiene posiciones.');return;}
+  var map={};
+  pos.forEach(function(p){map[p.ticker]=p.qty;});
+  _cmpData.gdc=map;
+  _cmpNombres.gdc={};
+  var el=document.getElementById('cmp-gdc-name');
+  if(el)el.textContent='Portafolio actual';
+  showPage('comparacion',document.querySelector('[onclick*="comparacion"]'));
+}
+function cmpNorm(s){return String(s).replace(/[\s ​]+/g,' ').toLowerCase().trim();}
+function cmpParseHTML(ab){
   var txt=new TextDecoder('utf-8').decode(ab);
   var doc=new DOMParser().parseFromString(txt,'text/html');
   var rows=[];
@@ -4362,81 +4265,145 @@ function cmpParseRows(ab){
   });
   return rows;
 }
-function cargarJuliEnComparacion(){
-  var pos=getPositions().filter(function(p){return Math.abs(p.qty)>0.000001;});
-  if(!pos.length){alert('El portafolio no tiene posiciones.');return;}
-  var map={};pos.forEach(function(p){map[p.ticker]=p.qty;});
-  _cmpData.portafolio=map;_cmpNombres.portafolio={};
-  var el=document.getElementById('cmp-port-name');
-  if(el)el.textContent='Portafolio actual';
-  showPage('comparacion',document.querySelector('[onclick*="comparacion"]'));
+function cmpParseRows(ab){
+  try{
+    var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
+    for(var i=0;i<wb.SheetNames.length;i++){
+      var ws=wb.Sheets[wb.SheetNames[i]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.some(function(r){return r.some(function(c){return cmpNorm(c)==='ticker'});}))return rows;
+    }
+  }catch(ex){}
+  return cmpParseHTML(ab);
 }
-function cmpLoadPortfolio(input){
+function cmpParseArgNum(s){
+  if(s==null)return NaN;
+  var t=String(s).replace(/US\$|\$|\s/g,'').trim();
+  if(!t)return NaN;
+  t=t.replace(/\./g,'').replace(',','.');
+  return parseFloat(t);
+}
+function cmpFindSheetName(wb,re){
+  for(var i=0;i<wb.SheetNames.length;i++){if(re.test(wb.SheetNames[i]))return wb.SheetNames[i];}
+  return null;
+}
+// Formato nuevo de Veta Capital (xlsx real, hojas Liquidez/Inversiones/Futuros/Opciones,
+// header en la 3ra fila de cada hoja). Devuelve null si no es este formato (para poder
+// caer al parser viejo del .xls disfrazado de HTML).
+function cmpReadVetaWorkbook(ab){
+  var wb;
+  try{wb=XLSX.read(new Uint8Array(ab),{type:'array'});}catch(ex){return null;}
+  var invName=cmpFindSheetName(wb,/inversiones/i);
+  if(!invName)return null;
+  var invRows=XLSX.utils.sheet_to_json(wb.Sheets[invName],{header:1,defval:''});
+  // El ticker viene en "Codigo" (o, en formatos viejos de Veta, "TituloEspecie");
+  // "TipoEspecie" es solo la categoría (Cedears/Títulos Públicos/Moneda) y no sirve como header-anchor.
+  var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){var n=cmpNorm(c);return n==='codigo'||n==='tituloespecie';});});
+  var map={},nombres={};
+  if(hdrIdx>=0){
+    var hdr=invRows[hdrIdx].map(cmpNorm);
+    var tCol=hdr.indexOf('codigo');
+    if(tCol<0)tCol=hdr.indexOf('tituloespecie');
+    var dCol=hdr.indexOf('denominacion');
+    if(dCol<0)dCol=hdr.indexOf('descripcionespecie');
+    var totCol=hdr.indexOf('total');
+    var tipoCol=hdr.indexOf('tipoespecie');
+    invRows.slice(hdrIdx+1).forEach(function(r){
+      if(tipoCol>=0&&cmpNorm(r[tipoCol])==='moneda')return; // efectivo, ya comparado vía Liquidez
+      var ticker=String(r[tCol]||'').trim().toUpperCase();
+      if(!ticker)return;
+      var q=cmpParseArgNum(r[totCol]);
+      if(isNaN(q)||q<=0)return;
+      map[ticker]=(map[ticker]||0)+q; // suma Disponible + Garantia
+      var desc=String(r[dCol]||'').trim();
+      if(desc)nombres[ticker]=desc;
+    });
+  }
+  var liq={ars:0,usd:0,usdc:0};
+  var liqName=cmpFindSheetName(wb,/liquidez/i);
+  if(liqName){
+    var liqRows=XLSX.utils.sheet_to_json(wb.Sheets[liqName],{header:1,defval:''});
+    var lHdrIdx=liqRows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='denominacion';});});
+    if(lHdrIdx>=0){
+      var lHdr=liqRows[lHdrIdx].map(cmpNorm);
+      var mCol=lHdr.indexOf('moneda');
+      var lTotCol=lHdr.indexOf('total');
+      liqRows.slice(lHdrIdx+1).forEach(function(r){
+        var mon=cmpNorm(r[mCol]);
+        var v=cmpParseArgNum(r[lTotCol]);
+        if(isNaN(v))return;
+        if(mon==='ars')liq.ars+=v;
+        else if(mon==='usd')liq.usd+=v;
+        else if(mon==='usdc')liq.usdc+=v;
+      });
+    }
+  }
+  return {positions:map,nombres:nombres,liq:liq};
+}
+function cmpLoadFile(who,input){
   var f=input.files[0];if(!f)return;
-  document.getElementById('cmp-port-name').textContent=f.name;
+  document.getElementById('cmp-'+who+'-name').textContent=f.name;
   var reader=new FileReader();
   reader.onload=function(e){
-    var rows=cmpParseRows(e.target.result);
+    var ab=e.target.result;
+    if(who==='veta'){
+      // Veta Capital (formato nuevo): xlsx real con hojas Liquidez/Inversiones/Futuros/Opciones
+      var vw=cmpReadVetaWorkbook(ab);
+      if(vw){
+        _cmpData.veta=vw.positions;
+        _cmpNombres.veta=vw.nombres;
+        _cmpLiqVeta=vw.liq;
+        return;
+      }
+      _cmpLiqVeta=null;
+    }
+    // Fallback: formato viejo de Veta (.xls disfrazado de HTML) o archivo GDC (.xlsx con columna Ticker)
+    var rows=(who==='veta')?cmpParseHTML(ab):cmpParseRows(ab);
     if(!rows||!rows.length){alert('No se pudo leer el archivo.');return;}
-    var hdrIdx=rows.findIndex(function(r){return r.some(function(c){return cmpNorm(c)==='ticker';});});
-    if(hdrIdx<0){alert('No se encontró columna Ticker.');return;}
+    var isVeta=(who==='veta');
+    var hdrIdx=rows.findIndex(function(r){
+      return r.some(function(c){
+        var s=cmpNorm(c);
+        return s==='ticker'||s.includes('nombre de la especie');
+      });
+    });
+    // Fallback Veta: primera fila con 4+ celdas no vacías
+    if(hdrIdx<0&&isVeta){
+      hdrIdx=rows.findIndex(function(r){
+        return r.filter(function(c){return String(c).trim();}).length>=4;
+      });
+    }
+    if(hdrIdx<0){alert('No se encontró la cabecera del archivo.');return;}
     var hdr=rows[hdrIdx].map(cmpNorm);
     var tCol=hdr.indexOf('ticker');
-    var qCol=hdr.findIndex(function(c){return c.includes('cantidad');});
-    if(qCol<0){alert('No se encontró columna Cantidad.');return;}
-    var map={};
+    var nCol=hdr.findIndex(function(c){return c.includes('nombre de la especie');});
+    if(isVeta&&nCol<0)nCol=1; // columna fija confirmada del broker
+    // Para Veta: Cantidad siempre en col 3 (estructura fija del broker)
+    var qCol=isVeta?3:hdr.findIndex(function(c){return c.includes('cantidad');});
+    if(!isVeta&&qCol<0){alert('No se encontró columna Cantidad.');return;}
+    var map={},nombres={};
     rows.slice(hdrIdx+1).forEach(function(r){
-      var t=String(r[tCol]||'').trim().toUpperCase();
+      var raw=String(r[isVeta?nCol:tCol]||'').trim();
+      if(!raw)return;
+      var ticker,nombre='';
+      if(isVeta){
+        var parts=raw.split(/\s+/);
+        var first=parts[0].toUpperCase();
+        if(/^(SUBTOTAL|USD|VENCIMIENTO|VENCIDO|GTIA)/i.test(first))return;
+        ticker=first;
+        nombre=parts.slice(1).join(' ');
+      }else{
+        ticker=raw.toUpperCase();
+      }
       var q=parseFloat(String(r[qCol]||'').trim().replace(/\./g,'').replace(',','.'));
-      if(t&&!isNaN(q)&&q>0)map[t]=q;
+      if(ticker&&!isNaN(q)&&q>0){map[ticker]=q;if(nombre)nombres[ticker]=nombre;}
     });
-    _cmpData.portafolio=map;_cmpNombres.portafolio={};
+    _cmpData[who]=map;
+    _cmpNombres[who]=nombres;
   };
   reader.readAsArrayBuffer(f);
 }
-function cmpParseBullText(txt){
-  var lines=txt.split(/\r?\n/);
-  var tickerRe=/^[A-Z][A-Z0-9]{1,7}$/;
-  var map={};
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim();
-    if(!tickerRe.test(line))continue;
-    var ticker=line;
-    var j=i+1;
-    while(j<lines.length&&!lines[j].trim())j++;
-    if(j>=lines.length)continue;
-    if(lines[j].indexOf('\t')===-1){
-      // Bull siempre agrega una línea de descripción del activo entre el ticker y la
-      // fila de datos (ej: 'ABEV' / 'CEDEAR AMBEV S.A.' / '106,00\tUSD 8,98\t...') — saltarla.
-      j++;
-      while(j<lines.length&&!lines[j].trim())j++;
-    }
-    if(j>=lines.length)continue;
-    var dataLine=lines[j];
-    if(dataLine.indexOf('\t')===-1)continue;
-    var cols=dataLine.trim().split('\t');
-    if(cols.length<2)continue;
-    // La primera columna de la fila de datos es la Cantidad (no la segunda).
-    var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
-    if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
-  }
-  return map;
-}
-function cmpBullTextChanged(){
-  var txt=document.getElementById('cmp-bull-textarea').value;
-  var m=cmpParseBullText(txt);
-  var n=Object.keys(m).length;
-  var el=document.getElementById('cmp-bull-status');
-  if(n>0){
-    _cmpData.broker=m;
-    el.textContent='✓ '+n+' posiciones cargadas';
-    el.style.color='var(--accent)';
-  }else{
-    _cmpData.broker=null;
-    el.textContent=txt.trim()?'Sin posiciones detectadas':'';
-    el.style.color='var(--text3)';
-  }
-}
+var _cmpChecked=new Set();
 function cmpToggleCheck(t,cb){
   if(cb.checked)_cmpChecked.add(t);else _cmpChecked.delete(t);
   var row=cb.closest('tr');
@@ -4446,78 +4413,85 @@ function cmpToggleCheck(t,cb){
   var el=document.getElementById('cmp-resolved-count');
   if(el)el.textContent=_cmpChecked.size+' / '+total+' resueltos';
 }
+function cmpLiqRow(label,box,veta,decimals){
+  var diff=box-veta;
+  var ok=Math.abs(diff)<(decimals?0.01:1);
+  var opts={minimumFractionDigits:decimals,maximumFractionDigits:decimals};
+  var sc=ok?'var(--accent)':'#f59e0b';
+  return '<tr><td class="mono">'+label+'</td>'
+    +'<td class="mono">'+box.toLocaleString('es-AR',opts)+'</td>'
+    +'<td class="mono">'+veta.toLocaleString('es-AR',opts)+'</td>'
+    +'<td class="mono" style="color:'+sc+'">'+(diff>0?'+':'')+diff.toLocaleString('es-AR',opts)+'</td>'
+    +'<td><span style="font-size:.65rem;color:'+sc+'">'+(ok?'✓ Igual':'Diferente')+'</span></td>'
+    +'</tr>';
+}
 function runComparacion(){
   var el=document.getElementById('cmp-result');
-  if(!_cmpData.portafolio||!_cmpData.broker){
-    el.innerHTML='<div style="font-size:.8rem;color:var(--text3);padding:.6rem 0">Cargá los dos archivos primero.</div>';return;
+  var html='';
+  if(_cmpLiqVeta){
+    var liqArsBox=getRawNum('liq-ars');
+    var liqUsdBox=getRawNum('liq-usd');
+    var vetaArs=_cmpLiqVeta.ars||0;
+    var vetaUsdTotal=(_cmpLiqVeta.usd||0)+(_cmpLiqVeta.usdc||0);
+    html+='<div style="font-size:.65rem;font-family:var(--mono);color:var(--text3);margin-bottom:4px">Liquidez</div>';
+    html+='<div class="tw panel-table" style="margin-bottom:1rem"><table><thead><tr>'
+      +'<th>Moneda</th><th>Recuadro</th>'
+      +'<th><img src="../Veta.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
+      +'<th>Diferencia</th><th>Estado</th>'
+      +'</tr></thead><tbody>'
+      +cmpLiqRow('ARS (Pesos)',liqArsBox,vetaArs,0)
+      +cmpLiqRow('USD (Dólares+cable)',liqUsdBox,vetaUsdTotal,2)
+      +'</tbody></table></div>';
   }
-  var port=_cmpData.portafolio,broker=_cmpData.broker;
-  var tickers=new Set(Object.keys(port).concat(Object.keys(broker)));
+  if(!_cmpData.gdc||!_cmpData.veta){
+    if(!html)html='<div style="font-size:.8rem;color:var(--text3);padding:.6rem 0">Cargá los dos archivos primero.</div>';
+    el.innerHTML=html;return;
+  }
+  var gdc=_cmpData.gdc,veta=_cmpData.veta;
+  var tickers=new Set(Object.keys(gdc).concat(Object.keys(veta)));
   var diffs=[];
   tickers.forEach(function(t){
-    var p=port[t]||0,b=broker[t]||0,diff=p-b;
-    var status=p>0&&!broker[t]?'Solo Juli':!port[t]&&b>0?'Solo Bull':Math.abs(diff)<0.0001?'Igual':'Diferente';
-    if(status!=='Igual')diffs.push({t:t,p:p,b:b,diff:diff,status:status});
+    var g=gdc[t]||0,v=veta[t]||0;
+    var diff=g-v;
+    var status=g>0&&!veta[t]?'Solo GDC':!gdc[t]&&v>0?'Solo Veta':Math.abs(diff)<0.0001?'Igual':'Diferente';
+    if(status!=='Igual')diffs.push({t:t,g:g,v:v,diff:diff,status:status});
   });
-  var order={'Solo Bull':0,'Solo Juli':1,'Diferente':2};
+  var order={'Solo Veta':0,'Solo GDC':1,'Diferente':2};
   diffs.sort(function(a,b){return (order[a.status]-order[b.status])||a.t.localeCompare(b.t);});
   if(!diffs.length){
-    el.innerHTML='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias — los portafolios coinciden.</div>';return;
+    html+='<div style="font-size:.82rem;color:var(--accent);padding:.6rem 0">✓ Sin diferencias en posiciones — los portafolios coinciden.</div>';
+    el.innerHTML=html;return;
   }
-  var html='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
+  html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">'
     +'<span style="font-size:.65rem;font-family:var(--mono);color:var(--text3)">'+diffs.length+' diferencia(s)</span>'
     +'<span id="cmp-resolved-count" style="font-size:.65rem;font-family:var(--mono);color:var(--accent)">'+_cmpChecked.size+' / '+diffs.length+' resueltos</span>'
     +'</div>';
   html+='<div class="tw panel-table"><table><thead><tr>'
     +'<th style="width:28px"></th>'
-    +'<th>Ticker</th><th>Juli</th>'
-    +'<th><img src="../Bull.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
+    +'<th>Ticker</th><th>GDC</th>'
+    +'<th><img src="../Veta.png" style="height:13px;vertical-align:middle;opacity:.85"></th>'
     +'<th>Diferencia</th><th>Estado</th>'
     +'</tr></thead><tbody>';
   diffs.forEach(function(d){
-    var sc=d.status==='Solo Juli'?'var(--accent)':d.status==='Solo Bull'?'#448aff':'#f59e0b';
-    var diffStr=d.p>0&&d.b>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
+    var sc=d.status==='Solo GDC'?'var(--accent)':d.status==='Solo Veta'?'#448aff':'#f59e0b';
+    var diffStr=d.g>0&&d.v>0?(d.diff>0?'+':'')+d.diff.toLocaleString('es-AR'):'—';
     var done=_cmpChecked.has(d.t);
+    var nombre=(_cmpNombres.veta&&_cmpNombres.veta[d.t])||(_cmpNombres.gdc&&_cmpNombres.gdc[d.t])||'';
     html+='<tr style="'+(done?'opacity:.35;text-decoration:line-through':'')+'">'
       +'<td style="text-align:center;padding:.25rem .35rem">'
       +'<input type="checkbox"'+(done?' checked':'')+' onchange="cmpToggleCheck(\''+d.t+'\',this)" style="accent-color:var(--accent);cursor:pointer;width:13px;height:13px">'
       +'</td>'
-      +'<td><span style="font-weight:700;font-family:var(--mono)">'+d.t+'</span></td>'
-      +'<td class="mono">'+(d.p?d.p.toLocaleString('es-AR'):'—')+'</td>'
-      +'<td class="mono">'+(d.b?d.b.toLocaleString('es-AR'):'—')+'</td>'
+      +'<td><span style="font-weight:700;font-family:var(--mono)">'+d.t+'</span>'
+      +(nombre?'<br><span style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">'+nombre+'</span>':'')
+      +'</td>'
+      +'<td class="mono">'+(d.g?d.g.toLocaleString('es-AR'):'—')+'</td>'
+      +'<td class="mono">'+(d.v?d.v.toLocaleString('es-AR'):'—')+'</td>'
       +'<td class="mono" style="color:'+sc+'">'+diffStr+'</td>'
       +'<td><span style="font-size:.65rem;color:'+sc+'">'+d.status+'</span></td>'
       +'</tr>';
   });
   html+='</tbody></table></div>';
   el.innerHTML=html;
-}
-
-// ─── Exportar portafolio a XLS ───
-function exportPortfolioXLS(){
-  var all=getPositions();
-  var open=all.filter(function(p){return Math.abs(p.qty)>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
-  var rows=[['Ticker','Sector','Cantidad','PPC ARS','Mercado ARS','Inversión ARS','Δ%']];
-  open.forEach(function(p){
-    var q=quotes[p.ticker];var price=q?q.price:null;
-    var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
-    var _isBonoON=(sector==='bonos'||sector==='on');
-    var _sectorIsARS=(sector==='argentina'||_isBonoON);
-    var _isBRL=BRL_TICKERS.has(p.ticker);
-    var _fromBymaXLS=q&&q.fromByma;
-    var mktARS=price!=null?(_sectorIsARS||_isBRL||_fromBymaXLS?price:(price/ratio)*CCL_HOY):null;
-    var invARS=mktARS!=null?(_isBonoON?mktARS*p.qty/100:mktARS*p.qty):p.costARS;
-    var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
-    var _tc=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
-    var ppcARS=_isBonoON?ppcUSD*_tc*100:ppcUSD*CCL_HOY;
-    var pnl=mktARS!=null&&ppcARS>0?(mktARS-ppcARS)/ppcARS*100:null;
-    rows.push([p.ticker,sector,p.qty,ppcARS>0?Math.round(ppcARS):null,mktARS!=null?Math.round(mktARS):null,Math.round(invARS),pnl!=null?Math.round(pnl*10)/10:null]);
-  });
-  var ws=XLSX.utils.aoa_to_sheet(rows);
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Portafolio');
-  var d=new Date(),ds=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
-  XLSX.writeFile(wb,'Portafolio_'+ds+'.xlsx');
 }
 
 // ─── CCL Implícito ───
@@ -4535,10 +4509,10 @@ function calcCCLI(){
 
 // ─── Tickers cerca del objetivo ───
 var NT_THRESHOLD=(function(){
-  try{var s=localStorage.getItem('ptJuli_ntThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>0)return v;}}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_ntThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>0)return v;}}catch(e){}
   return 4;
 })();
-function ntSavePersist(){try{localStorage.setItem('ptJuli_ntThreshold',String(NT_THRESHOLD));}catch(e){}}
+function ntSavePersist(){try{localStorage.setItem('ptNYSE_ntThreshold',String(NT_THRESHOLD));}catch(e){}}
 function ntOnSlider(v){
   var n=parseFloat(v);if(isNaN(n)||n<=0)return;
   NT_THRESHOLD=n;ntSavePersist();
@@ -4563,7 +4537,7 @@ function renderNearTarget(){
   var lbl=document.getElementById('nt-pct-label');if(lbl)lbl.textContent=(NT_THRESHOLD%1===0?NT_THRESHOLD.toFixed(0):NT_THRESHOLD.toFixed(1))+'%';
 
   var all=getPositions();
-  var open=all.filter(function(p){return Math.abs(p.qty)>0.000001;});
+  var open=all.filter(function(p){return p.qty>0.000001;});
   var items=[];
   open.forEach(function(p){
     var q=quotes[p.ticker];if(!q||q.price==null)return;
@@ -4571,11 +4545,11 @@ function renderNearTarget(){
     var ratio=getRatio(p.ticker);
     var sector=getSector(p.ticker);
     var _isBonoON=(sector==='bonos'||sector==='on');
-    var _isARS=(sector==='argentina'||sector==='bonos'||sector==='on');
-    var _tcHoy=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
-    // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
-    var _ntFromByma=q&&q.fromByma;
-    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='argentina'?q.price*ratio/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price*ratio/(CCL_HOY||1):q.price);
+    var _isARS=(sector==='argentina'||sector==='bonos'||sector==='on'||sector==='fci');
+    var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
+    // bonos/ON/FCI: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya en USD
+    var _ntFromByma=q.fromByma;
+    var priceUSD=_isBonoON?(q.price*ratio/(_tcHoy||1)):(sector==='fci'?q.price/(_tcHoy||1):sector==='argentina'?q.price*ratio/(CCL_HOY||1):BRL_TICKERS.has(p.ticker)?q.price/(CCL_HOY||1):_ntFromByma?q.price*ratio/(CCL_HOY||1):q.price);
     if(!(priceUSD>0))return;
     var upside=(targetUSD-priceUSD)/priceUSD*100;
     if(!(upside>=0)||upside>NT_THRESHOLD)return;
@@ -4610,10 +4584,10 @@ function renderNearTarget(){
 
 // ─── Inversiones Pequeñas ───
 var SI_THRESHOLD=(function(){
-  try{var s=localStorage.getItem('ptJuli_siThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>=0)return v;}}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_siThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>=0)return v;}}catch(e){}
   return 0.5;
 })();
-function siSavePersist(){try{localStorage.setItem('ptJuli_siThreshold',String(SI_THRESHOLD));}catch(e){}}
+function siSavePersist(){try{localStorage.setItem('ptNYSE_siThreshold',String(SI_THRESHOLD));}catch(e){}}
 function siOnSlider(v){
   var n=parseFloat(v);if(isNaN(n)||n<0)return;
   SI_THRESHOLD=n;siSavePersist();
@@ -5002,17 +4976,16 @@ function renderPerfilComparacion(){
   wrap.innerHTML=html;
 }
 
-
 // ─── Toggle columna Cantidad (oculta por defecto para layout compacto) ───
 function toggleQtyCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
   if(show){grid.classList.remove('hide-qty');}else{grid.classList.add('hide-qty');}
-  try{localStorage.setItem('ptJuli_showQty',show?'1':'0');}catch(e){}
+  try{localStorage.setItem('ptNYSE_showQty',show?'1':'0');}catch(e){}
 }
 (function initQtyToggle(){
   var show='0';
-  try{var s=localStorage.getItem('ptJuli_showQty');if(s!==null)show=s;}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_showQty');if(s!==null)show=s;}catch(e){}
   function apply(){
     var cb=document.getElementById('qty-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
@@ -5082,8 +5055,8 @@ document.addEventListener('click',function(e){
 });
 
 // ─── Distribución de la cartera (RV / RF / Liquidez) vs rango objetivo del perfil (solapa Recomendaciones) ───
-var DIST_LS_KEY='ptJuli_distPerfil';
-var DIST_PERFIL=(function(){try{var s=localStorage.getItem(DIST_LS_KEY);if(s==='agresivo'||s==='moderado')return s;}catch(e){}return 'moderado';})();
+var DIST_LS_KEY='ptNYSE_distPerfil';
+var DIST_PERFIL=(function(){try{var s=localStorage.getItem(DIST_LS_KEY);if(s==='agresivo'||s==='moderado')return s;}catch(e){}return 'agresivo';})();
 var DIST_LAST=null,DIST_SB_LOADED=false,DIST_OPEN=false,DIST_PLAN_OPEN=false;
 function distTogglePlan(){DIST_PLAN_OPEN=!DIST_PLAN_OPEN;distRender();}
 function distSetPerfil(p){
@@ -5324,7 +5297,7 @@ function pvAlertFiltrar(t){var fEl=document.getElementById('port-ticker-filter')
 
 // ─── SPY: historial diario (ajustado por dividendos) para comparar el % Anual ───
 var SPY_HIST=null,SPY_KEYS=null,_spyLoading=false;
-var SPY_LS_KEY='ptJuli_spyHist';
+var SPY_LS_KEY='ptNYSE_spyHist';
 (function(){try{var c=JSON.parse(localStorage.getItem(SPY_LS_KEY)||'null');if(c&&c.data){SPY_HIST=c.data;SPY_KEYS=Object.keys(c.data).sort();window._spyDay=c.day;}}catch(e){}})();
 async function fetchSPYHist(force){
   var hoy=new Date().toISOString().slice(0,10);
@@ -5383,11 +5356,11 @@ function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
   if(show){grid.classList.remove('hide-pventa');}else{grid.classList.add('hide-pventa');}
-  try{localStorage.setItem('ptJuli_showPVenta',show?'1':'0');}catch(e){}
+  try{localStorage.setItem('ptNYSE_showPVenta',show?'1':'0');}catch(e){}
 }
 (function initPVentaToggle(){
   var show='0';
-  try{var s=localStorage.getItem('ptJuli_showPVenta');if(s!==null)show=s;}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_showPVenta');if(s!==null)show=s;}catch(e){}
   function apply(){
     var cb=document.getElementById('pventa-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
@@ -5401,11 +5374,11 @@ function togglePTipoCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
   if(show){grid.classList.remove('hide-ptipo');}else{grid.classList.add('hide-ptipo');}
-  try{localStorage.setItem('ptJuli_showPTipo',show?'1':'0');}catch(e){}
+  try{localStorage.setItem('ptNYSE_showPTipo',show?'1':'0');}catch(e){}
 }
 (function initPTipoToggle(){
   var show='0';
-  try{var s=localStorage.getItem('ptJuli_showPTipo');if(s!==null)show=s;}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_showPTipo');if(s!==null)show=s;}catch(e){}
   function apply(){
     var cb=document.getElementById('ptipo-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
@@ -5419,11 +5392,11 @@ function toggleRebalCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
   if(show){grid.classList.remove('hide-rebal');}else{grid.classList.add('hide-rebal');}
-  try{localStorage.setItem('ptJuli_showRebal',show?'1':'0');}catch(e){}
+  try{localStorage.setItem('ptNYSE_showRebal',show?'1':'0');}catch(e){}
 }
 (function initRebalToggle(){
   var show='0';
-  try{var s=localStorage.getItem('ptJuli_showRebal');if(s!==null)show=s;}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_showRebal');if(s!==null)show=s;}catch(e){}
   function apply(){
     var cb=document.getElementById('rebal-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
@@ -5437,11 +5410,11 @@ function togglePAnualCol(show){
   var grid=document.getElementById('panels-grid');
   if(!grid)return;
   if(show){grid.classList.remove('hide-panual');try{fetchSPYHist();}catch(e){}}else{grid.classList.add('hide-panual');}
-  try{localStorage.setItem('ptJuli_showPAnual',show?'1':'0');}catch(e){}
+  try{localStorage.setItem('ptNYSE_showPAnual',show?'1':'0');}catch(e){}
 }
 (function initPAnualToggle(){
   var show='0';
-  try{var s=localStorage.getItem('ptJuli_showPAnual');if(s!==null)show=s;}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_showPAnual');if(s!==null)show=s;}catch(e){}
   function apply(){
     var cb=document.getElementById('panual-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
@@ -5633,31 +5606,36 @@ async function fetchFinnhub(ticker){
 
 async function fetchAllQuotes(){
   fetchTopbarRates();
-  var pos=getPositions().filter(function(p){return Math.abs(p.qty)>0.000001;});
+  var pos=getPositions().filter(function(p){return p.qty>0.000001;});
   if(!pos.length){flash(document.getElementById('ref-status'),'No hay posiciones',true);return;}
   _quoteRunId++; // nueva corrida: lo que no se refresque en este ciclo queda marcado "stale"
   // NO limpiar quotes — mantener cotizaciones viejas hasta que lleguen las nuevas
-  try{localStorage.removeItem('ptJuli_q3');localStorage.removeItem('ptJuli_q3_ts');}catch(e){}
+  try{localStorage.removeItem('ptNYSE_q3');localStorage.removeItem('ptNYSE_q3_ts');}catch(e){}
   var icon=document.getElementById('ref-icon');var status=document.getElementById('ref-status');var prog=document.getElementById('pos-prog');var pfill=document.getElementById('pfill');
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
 
-  // Estrategia de cotizaciones (igual que GDC, la referencia):
+  // Estrategia de cotizaciones:
   // FASE 1 (paralelo): Yahoo .BA para TODO (acciones argentinas, CEDEARs USA/Brasil/Europa/China/Cripto)
-  //   - argentina: precio ARS directo
-  //   - todos los demás no-BRL: fromByma=true → renderPortfolio usa el precio ARS real del CEDEAR
-  //     directamente, en vez de sintetizar con Finnhub (subyacente USD)/ratio, que diverge del
-  //     precio real de mercado en BYMA (bug de RBLX/SPY con la lógica vieja Finnhub-primero).
-  // FASE 2 (secuencial): Finnhub fallback SOLO para tickers donde Yahoo .BA falló
+  //   - argentina: precio ARS directo, sin normalizar
+  //   - todos los demás no-BRL: normalizar ARS→USD-equiv (price*ratio/CCL_HOY) para que
+  //     renderPortfolio pueda hacer (price/ratio)*CCL_HOY y recuperar el precio BYMA real
+  // FASE 2 (secuencial): Finnhub fallback SOLO para tickers donde Yahoo falló
+  //   - aplica a nyse/brasil/europa/china/cripto (no a argentina: no tiene equiv. NYSE)
+  //   - Finnhub devuelve USD por acción subyacente, renderPortfolio lo convierte igual
   // Bonos/ONs: data912 como siempre (paralelo con Fase 1)
-  // 'argentina' se maneja aparte (fetchArgAll): antes dependia unicamente de Yahoo .BA a
-  // traves de la cadena de proxies publicos (allorigins/corsproxy/thingproxy/jsonp.afeld),
-  // que suele fallar entera y dejaba las acciones locales sin cotizacion nueva. data912
+
+  // 'argentina' se maneja aparte (fetchArgAll): antes dependía únicamente de Yahoo .BA a
+  // través de la cadena de proxies públicos (allorigins/corsproxy/thingproxy/jsonp.afeld),
+  // que suele fallar entera y dejaba las acciones locales sin cotización nueva. data912
   // expone /live/arg_stocks (misma familia de API ya usada y confiable para bonos/ONs) — se usa como
   // fuente primaria y Yahoo .BA queda de fallback por ticker.
-  var bymaPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='bonos'&&s!=='on'&&s!=='argentina';});
+  var bymaPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='bonos'&&s!=='on'&&s!=='fci'&&s!=='argentina';});
   var argPos=pos.filter(function(p){return getSector(p.ticker)==='argentina';});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
+  var fciPos=pos.filter(function(p){return getSector(p.ticker)==='fci';});
+  // 'argentina' incluido: Finnhub tiene datos BYMA para acciones locales (CECO2.BA, HARG.BA, etc.)
+  // y puede ser más fresco que el cache de Yahoo para small-caps
   // 'argentina' se sacó del fallback a Finnhub: Finnhub es un proveedor de EEUU y, para un
   // ticker sin mapeo explícito (getFinnhubTicker devuelve el ticker "pelado"), puede resolverlo
   // a una acción/ADR de otro mercado que casualmente comparte el símbolo — pasó con LOMA (Loma
@@ -5688,7 +5666,7 @@ async function fetchAllQuotes(){
 
   function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
 
-  // ── FASE 1: Yahoo .BA para todas las posiciones no-bono/ON (paralelo) ──
+  // ── FASE 1: Yahoo .BA para todas las posiciones no-bono/ON (paralelo) ───────
 
   // Limita cuántos fetchYahooAR() concurrentes se disparan a la vez. Probado en vivo (2026-09-11):
   // api.allorigins.win (el único proxy vivo hoy, ver changelog) responde bien a 1 pedido (~2.5s)
@@ -5723,8 +5701,11 @@ async function fetchAllQuotes(){
         var cq=esBRLDirecto?null:mapCedears[p.ticker.toUpperCase()];
         var _esData912=cq&&cq.price>0;
         var fbq=_esData912?cq:await fetchYahooAR(p.ticker,esBRLDirecto?'.SA':'.BA');
+        // argentina: ya viene en ARS → guardar directo
+        // BRL_TICKERS (B3 directo): guardar en ARS sin normalizar
+        // Todo lo demás (nyse/brasil/europa/china/cripto CEDEAR): guardar ARS directo
         if(s!=='argentina'&&!esBRLDirecto){
-          fbq.fromByma=true;
+          fbq.fromByma=true; // precio en ARS/CEDEAR — renderPortfolio lo usa directamente (sin CCL race)
         }
         quotes[p.ticker]=fbq;
         _stampQuote(p.ticker,_esData912?'data912':'yahoo');
@@ -5735,7 +5716,7 @@ async function fetchAllQuotes(){
     });
   }
 
-  // ── Acciones argentinas: data912 (arg_eq) → fallback Yahoo .BA por ticker ──
+  // ── Acciones argentinas: data912 (arg_eq) → fallback Yahoo .BA por ticker ────
   async function fetchArgAll(){
     var map={};
     try{map=await fetchArgEqAPI();}catch(e){}
@@ -5747,14 +5728,14 @@ async function fetchAllQuotes(){
         if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
         else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){
-        // Sin dato nuevo: se mantiene la ultima cotizacion cargada (para 'argentina'
-        // no hay fallback a Finnhub, ver nota arriba)
+        // Sin dato nuevo: se mantiene la última cotización cargada (mismo criterio
+        // que antes — para 'argentina' no hay fallback a Finnhub, ver nota arriba)
       }
       updateProgress();
     });
   }
 
-  // ── FASE 2: Finnhub fallback para tickers donde Yahoo .BA falló (secuencial) ──
+  // ── FASE 2: Finnhub fallback para tickers donde Yahoo .BA falló (secuencial) ─
   async function fetchFinnhubFallback(){
     var fallbackPos=bymaPos.filter(function(p){
       return finnhubFallbackSectors.has(getSector(p.ticker))&&!quotes[p.ticker]&&!BRL_TICKERS.has(p.ticker);
@@ -5763,15 +5744,16 @@ async function fetchAllQuotes(){
     for(var i=0;i<fallbackPos.length;i++){
       var p=fallbackPos[i];
       try{
+        // Finnhub: USD por acción subyacente → renderPortfolio hace (price/ratio)*CCL_HOY
         quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
         _stampQuote(p.ticker,'finnhub');
-        renderPortfolio();
+        renderPortfolio(); // actualizar UI al llegar cada precio
       }catch(e){ errors++; }
       if(i<fallbackPos.length-1)await delay(1100);
     }
   }
 
-  // ── Bonos soberanos: data912 arg_bonds → fallback Yahoo ──
+  // ── Bonos soberanos: data912 → fallback Yahoo ──────────────────────────────
   async function fetchBonosAll(){
     var map={};
     try{map=await fetchBonosAPI();}catch(e){}
@@ -5785,7 +5767,7 @@ async function fetchAllQuotes(){
     });
   }
 
-  // ── ONs corporativas: data912 arg_corp → fallback arg_bonds → fallback Yahoo ──
+  // ── ONs corporativas: data912 → fallback bonos → fallback Yahoo ───────────
   async function fetchONsAll(){
     var map={};
     try{map=await fetchONsAPI();}catch(e){}
@@ -5803,19 +5785,278 @@ async function fetchAllQuotes(){
     });
   }
 
-  // Fase 1 + bonos/ON en paralelo, luego Fase 2 (fallback) sólo para lo que falló
-  await Promise.all([fetchBymaAll(),fetchArgAll(),fetchBonosAll(),fetchONsAll()]);
+  // FCI: ArgentinaDatos (fuente CAFCI) — mapa ticker → categoría + nombre del fondo
+  // Verificado 02/07/2026: "Adcap Gestión Estratégica III - Clase A" en /v1/finanzas/fci/rentaFija
+  var FCI_AD_FONDOS={'AGE3':{cat:'rentaFija',nombre:'Adcap Gestión Estratégica III - Clase A'}};
+  function _fciNorm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();}
+  var _fciCatCache={};
+
+  async function fetchFCIAll(){
+    await Promise.all(fciPos.map(async function(p){
+      var cfg=FCI_AD_FONDOS[p.ticker];
+      if(!cfg){updateProgress();return;}
+      try{
+        if(!_fciCatCache[cfg.cat]){
+          _fciCatCache[cfg.cat]=Promise.all([
+            fetchWithTimeout('https://api.argentinadatos.com/v1/finanzas/fci/'+cfg.cat+'/ultimo',{},8000).then(function(r){return r.ok?r.json():[];}),
+            fetchWithTimeout('https://api.argentinadatos.com/v1/finanzas/fci/'+cfg.cat+'/penultimo',{},8000).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];})
+          ]);
+        }
+        var res=await _fciCatCache[cfg.cat];
+        var target=_fciNorm(cfg.nombre);
+        var find=function(list){if(!list||!list.length)return null;for(var i=0;i<list.length;i++){if(_fciNorm(list[i].fondo)===target&&list[i].vcp>0)return list[i];}return null;};
+        var cur=find(res[0]);
+        var prev=find(res[1]);
+        if(cur){
+          // VCP en ARS por cuotaparte — igual que argentina (fromByma=true)
+          quotes[p.ticker]={price:parseFloat(cur.vcp),prevClose:prev?parseFloat(prev.vcp):parseFloat(cur.vcp),fromByma:true,fromFci:true};
+          _stampQuote(p.ticker,'cafci');
+        }
+      }catch(e){/* ArgentinaDatos no disponible — sin precio actualizado */}
+      updateProgress();
+    }));
+  }
+
+  // Fase 1: Yahoo .BA + data912 para bonos/ON + CAFCI para FCI en paralelo
+  await Promise.all([fetchBymaAll(),fetchArgAll(),fetchBonosAll(),fetchONsAll(),fetchFCIAll()]);
+  // Fase 2: Finnhub fallback para los que Yahoo no pudo resolver
   await fetchFinnhubFallback();
 
   // Render final con todos los datos listos
   renderPortfolio();
+  (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
 
   icon.textContent='⟳';prog.style.display='none';
   status.className=errors>0?'emsg':'smsg';
   status.textContent=errors>0?errors+' sin datos':'Actualizado';
   setTimeout(function(){status.textContent='';},5000);
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
-  try{localStorage.setItem('ptJuli_q3',JSON.stringify(quotes));localStorage.setItem('ptJuli_q3_ts',Date.now());}catch(e){}
+  try{localStorage.setItem('ptNYSE_q3',JSON.stringify(quotes));localStorage.setItem('ptNYSE_q3_ts',Date.now());}catch(e){}
+
+  // RSI: refresco oportunista (no bloquea el render de precios; cada ticker respeta su propio TTL)
+  if(typeof fetchAllRSI==='function') fetchAllRSI();
+  // TIR de Bonos: idem, oportunista
+  if(typeof fetchAllTIR==='function') fetchAllTIR();
+  // Noticias: badge de movimientos fuertes (v44)
+  if(typeof nwsAfterQuotes==='function') nwsAfterQuotes();
+}
+
+// ─── RSI (14, método Wilder) ───────────────────────────────────────────────
+// No aplica a Bonos/ONs (ahí va TIR). Símbolo Yahoo: Argentina usa .BA, el resto ticker directo
+// (así matchea el gráfico "de fábrica" de TradingView, que es lo que la gente compara).
+function getRsiSymbol(ticker){
+  return getSector(ticker)==='argentina' ? (ticker+'.BA') : ticker;
+}
+
+function wilderRSI(closes, period){
+  period = period || 14;
+  if(!closes || closes.length < period+1) return null;
+  var gains=0, losses=0, i;
+  for(i=1;i<=period;i++){
+    var d=closes[i]-closes[i-1];
+    if(d>=0) gains+=d; else losses-=d;
+  }
+  var avgGain=gains/period, avgLoss=losses/period;
+  for(i=period+1;i<closes.length;i++){
+    var d2=closes[i]-closes[i-1];
+    var g=d2>0?d2:0, l=d2<0?-d2:0;
+    avgGain=(avgGain*(period-1)+g)/period;
+    avgLoss=(avgLoss*(period-1)+l)/period;
+  }
+  if(avgLoss===0) return 100;
+  var rs=avgGain/avgLoss;
+  return 100-100/(1+rs);
+}
+
+// Colores según rangos pedidos: >75 rojo, 67-75 naranja, 33-67 neutro, 25-33 verde suave, <25 verde fuerte
+function rsiColor(v){
+  if(v==null||isNaN(v)) return 'var(--text3)';
+  if(v>75) return 'var(--red)';
+  if(v>67) return 'var(--orange)';
+  if(v<25) return 'var(--accent)';
+  if(v<33) return 'var(--green-soft)';
+  return 'var(--text2)';
+}
+
+// Trae cierres diarios (3 meses) vía la misma cadena de proxies que ya usa fetchYahooAR
+async function fetchRSICloses(symbol){
+  var chartUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=3mo';
+  var tries=[
+    function(){
+      return fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(chartUrl),{},8000)
+        .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
+        .then(function(j){return JSON.parse(j.contents||'{}');});
+    },
+    function(){
+      return fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(chartUrl),{},8000)
+        .then(function(r){return r.ok?r.json():Promise.reject('!ok');});
+    },
+    function(){
+      return fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(chartUrl),{},8000)
+        .then(function(r){return r.ok?r.json():Promise.reject('!ok');});
+    }
+  ];
+  for(var i=0;i<tries.length;i++){
+    try{
+      var j=await tries[i]();
+      var res=j&&j.chart&&j.chart.result&&j.chart.result[0];
+      var closes=res&&res.indicators&&res.indicators.quote&&res.indicators.quote[0]&&res.indicators.quote[0].close;
+      if(closes){
+        closes=closes.filter(function(c){return c!=null;});
+        if(closes.length>=15) return closes;
+      }
+    }catch(e){}
+  }
+  throw new Error('Sin datos RSI para '+symbol);
+}
+
+// Recalcula RSI para todos los tickers abiertos (excepto bonos/ONs), respetando un TTL
+// de 12hs por ticker para no golpear los proxies gratuitos en cada auto-refresh de precios.
+var _fetchAllRSIRunning=false;
+async function fetchAllRSI(){
+  if(_fetchAllRSIRunning) return;
+  _fetchAllRSIRunning=true;
+  try{
+    var pos=getPositions().filter(function(p){return p.qty>0.000001;});
+    var seen={};
+    var list=pos.filter(function(p){
+      var s=getSector(p.ticker);
+      if(s==='bonos'||s==='on')return false;
+      if(seen[p.ticker])return false;
+      seen[p.ticker]=true;
+      return true;
+    });
+    var TTL=12*60*60*1000;
+    var now=Date.now();
+    var pending=list.filter(function(p){
+      var c=RSI_CACHE[p.ticker];
+      return !c || (now-c.ts)>TTL;
+    });
+    for(var i=0;i<pending.length;i++){
+      var p=pending[i];
+      try{
+        var closes=await fetchRSICloses(getRsiSymbol(p.ticker));
+        var val=wilderRSI(closes,14);
+        if(val!=null) RSI_CACHE[p.ticker]={value:val,ts:Date.now()};
+      }catch(e){ /* se deja el valor cacheado previo, si había */ }
+      if(i%5===4) renderPortfolio();
+      if(i<pending.length-1) await new Promise(function(r){setTimeout(r,600);});
+    }
+    try{localStorage.setItem('ptNYSE_rsi',JSON.stringify(RSI_CACHE));}catch(e){}
+    renderPortfolio();
+  } finally {
+    _fetchAllRSIRunning=false;
+  }
+}
+
+// ─── Toggle columna RSI (oculta por defecto) ───
+function toggleRSICol(show){
+  var grid=document.getElementById('panels-grid');
+  if(!grid)return;
+  if(show){grid.classList.remove('hide-rsi');}else{grid.classList.add('hide-rsi');}
+  try{localStorage.setItem('ptNYSE_showRSI',show?'1':'0');}catch(e){}
+}
+(function initRSIToggle(){
+  var show='0';
+  try{var s=localStorage.getItem('ptNYSE_showRSI');if(s!==null)show=s;}catch(e){}
+  function apply(){
+    var cb=document.getElementById('rsi-toggle');var grid=document.getElementById('panels-grid');
+    if(cb)cb.checked=(show==='1');
+    if(grid&&show!=='1')grid.classList.add('hide-rsi');
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
+})();
+
+// ─── TIR de Bonos (fuente: EcoValores research, cobertura parcial) ────────
+// Parsea TODAS las tablas de la página: para cada tabla busca la columna
+// cuyo header sea "% TIR" (o "TIR"), y para cada fila con un link a
+// ticker.php?t=XXX toma el valor de esa columna. Tablas sin columna TIR
+// (Acciones, Cedears, Commodities, etc.) se ignoran solas al no matchear.
+function parseEcoValoresTIR(html){
+  var map={};
+  try{
+    var doc=new DOMParser().parseFromString(html,'text/html');
+    var tables=doc.querySelectorAll('table');
+    tables.forEach(function(table){
+      var headerCells=table.querySelectorAll('thead th, tr:first-child th, tr:first-child td');
+      var tirIdx=-1;
+      headerCells.forEach(function(th,i){
+        var t=(th.textContent||'').trim().toLowerCase();
+        if(tirIdx<0 && (t==='% tir'||t==='tir')) tirIdx=i;
+      });
+      if(tirIdx<0) return;
+      var rows=table.querySelectorAll('tr');
+      rows.forEach(function(tr){
+        var a=tr.querySelector('a[href*="ticker.php?t="]');
+        if(!a) return;
+        var m=(a.getAttribute('href')||'').match(/[?&]t=([A-Za-z0-9]+)/);
+        if(!m) return;
+        var ticker=m[1].toUpperCase();
+        var cells=tr.querySelectorAll('td');
+        if(cells.length<=tirIdx) return;
+        var raw=(cells[tirIdx].textContent||'').trim().replace('%','').replace(',','.');
+        var val=parseFloat(raw);
+        if(!isNaN(val)) map[ticker]=val;
+      });
+    });
+  }catch(e){}
+  return map;
+}
+
+async function fetchEcoValoresTIR(){
+  var url='https://bonos.ecovalores.com.ar/eco/';
+  var tries=[
+    function(){
+      return fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(url),{},9000)
+        .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
+        .then(function(j){return j.contents||'';});
+    },
+    function(){
+      return fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),{},9000)
+        .then(function(r){return r.ok?r.text():Promise.reject('!ok');});
+    },
+    function(){
+      return fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),{},9000)
+        .then(function(r){return r.ok?r.text():Promise.reject('!ok');});
+    }
+  ];
+  for(var i=0;i<tries.length;i++){
+    try{
+      var html=await tries[i]();
+      var map=parseEcoValoresTIR(html);
+      if(Object.keys(map).length) return map;
+    }catch(e){}
+  }
+  throw new Error('Sin datos de TIR (EcoValores)');
+}
+
+// Trae TIR para todos los Bonos abiertos en un solo fetch (EcoValores no pagina).
+// TTL de 12hs igual que RSI. Tickers no presentes en EcoValores quedan en '—'.
+var _fetchAllTIRRunning=false;
+async function fetchAllTIR(){
+  if(_fetchAllTIRRunning) return;
+  _fetchAllTIRRunning=true;
+  try{
+    var pos=getPositions().filter(function(p){return p.qty>0.000001 && getSector(p.ticker)==='bonos';});
+    if(!pos.length) return;
+    var TTL=12*60*60*1000;
+    var now=Date.now();
+    var stale=pos.some(function(p){var c=TIR_CACHE[p.ticker];return !c||(now-c.ts)>TTL;});
+    if(!stale) return;
+    var map={};
+    try{ map=await fetchEcoValoresTIR(); }catch(e){ return; }
+    pos.forEach(function(p){
+      if(map.hasOwnProperty(p.ticker)){
+        TIR_CACHE[p.ticker]={value:map[p.ticker],ts:now};
+      } else if(!TIR_CACHE[p.ticker]){
+        TIR_CACHE[p.ticker]={value:null,ts:now}; // marcado "consultado, sin cobertura" para no reintentar cada render
+      }
+    });
+    try{localStorage.setItem('ptNYSE_tir',JSON.stringify(TIR_CACHE));}catch(e){}
+    renderPortfolio();
+  } finally {
+    _fetchAllTIRRunning=false;
+  }
 }
 
 function exportCSV(){
@@ -5829,7 +6070,7 @@ function exportCSV(){
 function clearAll(){
   if(!confirm('Borrar todo? Se perderan los movimientos cargados.'))return;
   movimientos=[];quotes={};
-  try{localStorage.removeItem('ptJuli_mov2');localStorage.removeItem('ptJuli_q3');}catch(e){}
+  try{localStorage.removeItem('ptNYSE_mov2');localStorage.removeItem('ptNYSE_q3');}catch(e){}
   sbSaveArray('movimientos', []);
   saveAndRender();
 }
@@ -5877,7 +6118,7 @@ function renderRatios(){
 function updateRatioInline(ticker){
   var input=document.getElementById('ri-'+ticker);var ratio=parseFloat(input.value);var sel=document.getElementById('ratios-status');
   if(!ratio||ratio<=0){flash(sel,'Ratio inválido para '+ticker,true);return;}
-  RATIOS_TABLE[ticker]=ratio;try{localStorage.setItem('ptJuli_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
+  RATIOS_TABLE[ticker]=ratio;try{localStorage.setItem('ptNYSE_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
   sbSetConfig('ratios', RATIOS_TABLE);
   renderRatios();recalcMovimientos(ticker);flash(sel,ticker+' actualizado a '+ratio,false);
 }
@@ -5896,14 +6137,14 @@ function saveRatio(){
   var ticker=document.getElementById('r-ticker').value.trim().toUpperCase();var ratio=parseFloat(document.getElementById('r-ratio').value);var sel=document.getElementById('ratios-status');
   if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
   if(!ratio||ratio<=0){flash(sel,'Ratio inválido',true);return;}
-  RATIOS_TABLE[ticker]=ratio;try{localStorage.setItem('ptJuli_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
+  RATIOS_TABLE[ticker]=ratio;try{localStorage.setItem('ptNYSE_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
   sbSetConfig('ratios', RATIOS_TABLE);
   document.getElementById('r-ticker').value='';document.getElementById('r-ratio').value='';
   renderRatios();recalcMovimientos(ticker);flash(sel,'Ratio actualizado',false);
 }
 
 function deleteRatio(ticker){
-  delete RATIOS_TABLE[ticker];try{localStorage.setItem('ptJuli_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
+  delete RATIOS_TABLE[ticker];try{localStorage.setItem('ptNYSE_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
   sbSetConfig('ratios', RATIOS_TABLE);
   renderRatios();recalcMovimientos(ticker);
 }
@@ -5935,7 +6176,7 @@ function importRatiosXLSX(input){
         RATIOS_TABLE[ticker]=ratio_val;
         RATIOS_META[ticker]={nombre:nombre,mercado:mercado,pais:pais,rubro:rubro};
       });
-      try{localStorage.setItem(typeof WL_KEY!=='undefined'?'ptJuli_ratios':'ptJuli_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
+      try{localStorage.setItem(typeof WL_KEY!=='undefined'?'ptNYSE_ratios':'ptNYSE_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
       sbSetConfig('ratios',RATIOS_TABLE);
       sbSetConfig('ratios_meta',RATIOS_META);
       renderRatios();
@@ -5945,7 +6186,80 @@ function importRatiosXLSX(input){
   };
   reader.readAsArrayBuffer(file);
 }
-var SECTOR_LABELS={nyse:'🇺🇸 NYSE',europa:'🇪🇺 Europa',china:'🇨🇳 China',cripto:'₿ Cripto',brasil:'🇧🇷 Brasil'};
+var dividendos = [];
+document.addEventListener('DOMContentLoaded',function(){
+  var df=document.getElementById('d-fecha');
+  if(df){
+    df.value=new Date().toISOString().split('T')[0];
+    df.addEventListener('change',function(){var f=this.value.split('-').reverse().join('/');var c=getCCL(f);if(c){document.getElementById('d-ccl').value=c;calcDivUSD();}});
+  }
+  document.getElementById('d-ars').addEventListener('input',calcDivUSD);
+  document.getElementById('d-ccl').addEventListener('input',calcDivUSD);
+  divPopulateSelect();
+});
+
+function calcDivUSD(){
+  var ars=parseFloat(document.getElementById('d-ars').value);var ccl=parseFloat(document.getElementById('d-ccl').value);
+  document.getElementById('d-usd').value=(ars&&ccl)?(ars/ccl).toFixed(2):'—';
+}
+
+function addDividendo(){
+  var ticker=document.getElementById('d-ticker').value.trim().toUpperCase();
+  var fechaInput=document.getElementById('d-fecha').value;var fecha=fechaInput.split('-').reverse().join('/');
+  var ars=parseFloat(document.getElementById('d-ars').value);
+  var ccl=parseFloat(document.getElementById('d-ccl').value)||getCCL(fecha);
+  var notas=document.getElementById('d-notas').value;var sel=document.getElementById('d-status');
+  if(!ticker){flash(sel,'Ingresa un ticker',true);return;}
+  if(!ars||ars<=0){flash(sel,'Ingresa el monto',true);return;}
+  var usd=ccl?ars/ccl:null;
+  dividendos.push({id:Date.now(),fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas});
+  try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
+  sbSetConfig('dividendos', dividendos);
+  renderDividendos();renderPortfolio();renderDivsCard();
+  document.getElementById('d-ars').value='';document.getElementById('d-ccl').value='';document.getElementById('d-usd').value='';document.getElementById('d-notas').value='';
+  flash(sel,'Dividendo registrado',false);
+}
+
+function deleteDividendo(id){
+  var _st=document.getElementById('d-status');
+  if(_st) flash(_st,'Eliminando...', false);
+  dividendos=dividendos.filter(function(d){return String(d.id)!==String(id);});
+  try{
+    var pd=JSON.parse(localStorage.getItem('ptNYSE_divs_del')||'[]');
+    if(pd.indexOf(String(id))<0) pd.push(String(id));
+    localStorage.setItem('ptNYSE_divs_del',JSON.stringify(pd));
+  }catch(e){}
+  try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
+  renderDividendos();renderPortfolio();renderDivsCard();
+  sbSetConfig('dividendos',dividendos).then(function(ok){
+    if(ok){
+      try{localStorage.removeItem('ptNYSE_divs_del');}catch(e){}
+      if(_st) flash(_st,'Eliminado y guardado ✓',false);
+    } else {
+      if(_st) flash(_st,'Eliminado localmente (sin servidor)',true);
+    }
+  });
+}
+
+function clearDividendos(){
+  if(!confirm('Borrar todos los dividendos?'))return;
+  dividendos=[];try{localStorage.removeItem('ptNYSE_divs');}catch(e){}
+  sbSetConfig('dividendos', []);
+  renderDividendos();renderPortfolio();renderDivsCard();
+}
+
+function renderDividendos(){
+  var empty=document.getElementById('d-empty');var wrap=document.getElementById('d-wrap');var body=document.getElementById('d-body');var totalEl=document.getElementById('d-total');
+  if(!dividendos.length){empty.style.display='';wrap.style.display='none';totalEl.textContent='';return;}
+  empty.style.display='none';wrap.style.display='';
+  var totalUSD=dividendos.reduce(function(a,d){return a+(d.usd||0);},0);
+  totalEl.textContent='Total: $'+Math.round(totalUSD).toLocaleString('es-AR')+' USD';
+  body.innerHTML=dividendos.slice().sort(function(a,b){return b.fecha.split('/').reverse().join('').localeCompare(a.fecha.split('/').reverse().join(''));}).map(function(d){
+    return '<tr><td class="mono">'+d.fecha+'</td><td style="font-weight:700">'+d.ticker+'</td><td class="mono">$'+(d.ars||0).toLocaleString('es-AR')+'</td><td class="mono muted">'+(d.ccl||'—')+'</td><td class="mono pos">$'+Math.round(d.usd||0).toLocaleString('es-AR')+'</td><td class="muted">'+(d.notas||'')+'</td><td><button class="btn btn-d btn-sm" onclick="deleteDividendo('+d.id+')">x</button></td></tr>';
+  }).join('');
+}
+
+var SECTOR_LABELS={nyse:'🇺🇸 NYSE',europa:'🇪🇺 Europa',china:'🇨🇳 China',cripto:'₿ Cripto',brasil:'🇧🇷 Brasil',fci:'📈 FCI'};
 function renderTargets(){
   var body=document.getElementById('targets-body');
   var pos_map={};getPositions().forEach(function(p){if(p.qty>0)pos_map[p.ticker]=p;});
@@ -5959,16 +6273,17 @@ function renderTargets(){
   var countEl=document.getElementById('targets-filter-count');
   if(countEl){countEl.textContent=tickers.length<allTickers.length?(tickers.length+' de '+allTickers.length+' tickers'):(allTickers.length+' tickers');}
   body.innerHTML=tickers.map(function(t){
-    var targetUSD=TARGET_TABLE[t];var ratio=getRatio(t);var sector=getSector(t);var _isBonoON=(sector==='bonos'||sector==='on');var _tcHoyT=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;var targetARS=targetUSD!=null?(targetUSD/ratio)*_tcHoyT:null;var pos=pos_map[t];var q=quotes[t];
-    // Para bonos/ON q.price viene en ARS (precio CEDEAR en $); para NYSE viene en USD
-    var mercadoARS=q?(_isBonoON?q.price:(q.price/ratio)*_tcHoyT):null;
+    var targetUSD=TARGET_TABLE[t];var ratio=getRatio(t);var sector=getSector(t);var _isBonoON=(sector==='bonos'||sector==='on');var _tcHoyT=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;var targetARS=targetUSD!=null?(targetUSD/ratio)*_tcHoyT:null;var pos=pos_map[t];var q=quotes[t];
+    var _tIsARS=(sector==='argentina'||sector==='bonos'||sector==='on'||sector==='fci');
+    var _tFromByma=q&&q.fromByma;
+    var mercadoARS=q?(_tIsARS||_tFromByma?q.price:(q.price/ratio)*_tcHoyT):null;
     var targetPct=null;
     if(targetUSD!=null&&q&&q.price>0){
       if(_isBonoON){targetPct=targetARS!=null&&mercadoARS>0?((targetARS-mercadoARS)/mercadoARS*100):null;}
-      else{targetPct=((targetUSD-q.price)/q.price*100);}
+      else{var _tPriceUSD=_tIsARS||_tFromByma?q.price*ratio/(_tcHoyT||1):q.price;targetPct=_tPriceUSD>0?((targetUSD-_tPriceUSD)/_tPriceUSD*100):null;}
     }
     var pctHtml=targetPct!=null?'<span class="'+(targetPct>=0?'pos':'neg')+'">'+(targetPct>=0?'+':'')+targetPct.toFixed(1)+'%</span>':'—';
-    var _useMEP=(sector==='bonos'||sector==='on');var _tcLabel=_useMEP?'MEP':'CCL';var _arsColor=_useMEP?'var(--blue)':'var(--text2)';
+    var _useMEP=(sector==='bonos'||sector==='on'||sector==='fci');var _tcLabel=_useMEP?'MEP':'CCL';var _arsColor=_useMEP?'var(--blue)':'var(--text2)';
     var arsInput='<input type="number" min="0" step="any" value="'+(targetARS!=null?Math.round(targetARS):'')+'" placeholder="ARS ('+_tcLabel+')" id="ta-'+t+'" title="Conversión vía '+_tcLabel+'" style="width:110px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:'+_arsColor+';font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:26px" oninput="tgtSyncRowARS(\''+t+'\')" onkeydown="if(event.key===\'Enter\')saveTarget(\''+t+'\')">';
     return '<tr><td style="font-weight:700">'+t+'</td><td><span class="mkt" style="font-size:.6rem">'+SECTOR_LABELS[sector]+'</span></td><td><input type="number" min="0" step="any" value="'+(targetUSD!=null?targetUSD:'')+'" placeholder="USD" id="ti-'+t+'" style="width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.75rem;padding:3px 8px;height:26px" oninput="tgtSyncRowUSD(\''+t+'\')" onkeydown="if(event.key===\'Enter\')saveTarget(\''+t+'\')"></td><td class="mono">'+arsInput+'</td><td>'+pctHtml+'</td><td class="gap-row" style="gap:4px"><button class="btn btn-a btn-sm" onclick="saveTarget(\''+t+'\')">✓</button><button class="btn btn-d btn-sm" onclick="deleteTarget(\''+t+'\')" title="Eliminar">✕</button></td></tr>';
   }).join('');
@@ -5977,13 +6292,13 @@ function renderTargets(){
 
 function tgtGetCCL(ticker){
   var sector=getSector(ticker);
-  var useMEP=(sector==='bonos'||sector==='on');
+  var useMEP=(sector==='bonos'||sector==='on'||sector==='fci');
   return useMEP?(MEP_HOY||CCL_HOY):CCL_HOY;
 }
 
 function tgtIsMEP(ticker){
   var sector=getSector(ticker);
-  return (sector==='bonos'||sector==='on');
+  return (sector==='bonos'||sector==='on'||sector==='fci');
 }
 
 function tgtUpdateLabel(ticker){
@@ -6053,7 +6368,7 @@ function addTarget(){
   if(!ticker){flash(sel,'Ingresá un ticker',true);return;}
   if(!usd||usd<=0){flash(sel,'Ingresá un precio válido',true);return;}
   TARGET_TABLE[ticker]=usd;
-  try{localStorage.setItem('ptJuli_targets',JSON.stringify(TARGET_TABLE));}catch(e){}
+  try{localStorage.setItem('ptNYSE_targets',JSON.stringify(TARGET_TABLE));}catch(e){}
   sbSetConfig('targets',TARGET_TABLE);
   document.getElementById('tgt-ticker').value='';
   document.getElementById('tgt-usd').value='';
@@ -6063,7 +6378,7 @@ function addTarget(){
 
 function deleteTarget(ticker){
   delete TARGET_TABLE[ticker];
-  try{localStorage.setItem('ptJuli_targets',JSON.stringify(TARGET_TABLE));}catch(e){}
+  try{localStorage.setItem('ptNYSE_targets',JSON.stringify(TARGET_TABLE));}catch(e){}
   sbSetConfig('targets',TARGET_TABLE);
   renderTargets();renderPortfolio();
 }
@@ -6071,7 +6386,7 @@ function deleteTarget(ticker){
 function saveTarget(ticker){
   var input=document.getElementById('ti-'+ticker);var val=input.value.trim().replace(',','.');var sel=document.getElementById('targets-status');
   TARGET_TABLE[ticker]=val===''?null:parseFloat(val);
-  try{localStorage.setItem('ptJuli_targets',JSON.stringify(TARGET_TABLE));}catch(e){}
+  try{localStorage.setItem('ptNYSE_targets',JSON.stringify(TARGET_TABLE));}catch(e){}
   sbSetConfig('targets', TARGET_TABLE);
   renderTargets();renderPortfolio();flash(sel,ticker+' actualizado',false);
 }
@@ -6080,10 +6395,10 @@ function saveTarget(ticker){
 // TRACKER DE DIVIDENDOS CCL — con PIN + ojo privacidad
 // ════════════════════════════════════════════════════════
 var TRK = {
-  DKEY: 'trk_divs_v1_juli',
-  PKEY: 'trk_pin_v1_juli',
-  SKEY: 'trk_session_v1_juli',
-  CKEY: 'trk_ccl_v1_juli',
+  DKEY: 'trk_divs_v1_gdc',
+  PKEY: 'trk_pin_v1_gdc',
+  SKEY: 'trk_session_v1_gdc',
+  CKEY: 'trk_ccl_v1_gdc',
   divs: [],
   ccl: null,
   hidden: false,
@@ -6209,10 +6524,10 @@ var ARB_PAIRS = [
   }
 ];
 
-function arbSave(){ try{localStorage.setItem('ptJuli_arb_pairs',JSON.stringify(ARB_PAIRS));}catch(e){} }
+function arbSave(){ try{localStorage.setItem('ptNYSE_arb_pairs',JSON.stringify(ARB_PAIRS));}catch(e){} }
 function arbLoad(){
   try{
-    var s=localStorage.getItem('ptJuli_arb_pairs');
+    var s=localStorage.getItem('ptNYSE_arb_pairs');
     if(s){ ARB_PAIRS=JSON.parse(s); }
   }catch(e){}
 }
@@ -6353,7 +6668,7 @@ async function fetchTopbarRates(){
     var dc=await rc.json();
     var vc=parseFloat(dc.venta);
     if(vc>0){
-      CCL_HOY=vc;CCL_TABLE[_HOY_KEY]=vc;try{localStorage.setItem('ptJuli_ccl_override',JSON.stringify(CCL_TABLE));}catch(e){}sbSetConfig('ccl_override',CCL_TABLE);
+      CCL_HOY=vc;CCL_TABLE[_HOY_KEY]=vc;try{localStorage.setItem('ptNYSE_ccl_override',JSON.stringify(CCL_TABLE));}catch(e){}sbSetConfig('ccl_override',CCL_TABLE);
       document.getElementById('tb-ccl').textContent='$'+vc.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
       document.getElementById('tb-ccl-src').textContent='venta';
       var rcTag2=document.getElementById('rc-ccl-tag');
@@ -6387,7 +6702,7 @@ async function fetchTopbarRates(){
     var dm=await rm.json();
     var vm=parseFloat(dm.venta);
     if(vm>0){
-      MEP_HOY=vm;MEP_TABLE[_HOY_KEY]=vm;try{localStorage.setItem('ptJuli_mep_override',JSON.stringify(MEP_TABLE));}catch(e){}sbSetConfig('mep_override',MEP_TABLE);
+      MEP_HOY=vm;MEP_TABLE[_HOY_KEY]=vm;try{localStorage.setItem('ptNYSE_mep_override',JSON.stringify(MEP_TABLE));}catch(e){}sbSetConfig('mep_override',MEP_TABLE);
       document.getElementById('tb-mep').textContent='$'+vm.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
       document.getElementById('tb-mep-src').textContent='venta';
     }
@@ -6443,6 +6758,15 @@ function trkResetAll(){
   initTracker();
 }
 
+function trkDeleteDiv(id){
+  var idx=TRK.divs.findIndex(function(d){return d.id===id;});
+  if(idx<0) return;
+  TRK.divs.splice(idx,1);
+  trkSave();
+  trkRender();
+  renderDivsCard();
+}
+
 function trkToggleEye(){
   TRK.hidden=!TRK.hidden;
   var icon=document.getElementById('trk-eye-icon');
@@ -6459,15 +6783,6 @@ function trkToggleEye(){
 
 function trkFmt2(n){return parseFloat(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
-function trkDeleteDiv(id){
-  var idx=TRK.divs.findIndex(function(d){return d.id===id;});
-  if(idx<0) return;
-  TRK.divs.splice(idx,1);
-  trkSave();
-  trkRender();
-  renderDivsCard();
-}
-
 function trkRender(){
   var tbody=document.getElementById('trk-tbody');
   var empty=document.getElementById('trk-empty');
@@ -6480,25 +6795,196 @@ function trkRender(){
     confirmedDivs.forEach(function(d){
       var tr=document.createElement('tr');
       var mOrig=d.moneda==='USD'?'USD '+trkFmt2(d.monto):'$ '+trkFmt2(d.monto);
-      var mUSD='USD '+trkFmt2(d.montoUSD);
-      var cclF=d.cclUsado?'$'+Math.round(d.cclUsado).toLocaleString('es-AR'):'—';
+      var _cclHist=null;
+      if(d.moneda==='ARS'&&d.fecha){var _fp=d.fecha.split('-');if(_fp.length===3){var _fk=_fp[2]+'/'+_fp[1]+'/'+_fp[0];_cclHist=CCL_TABLE[_fk]||null;if(!_cclHist){var _ddt=new Date(d.fecha+'T12:00:00');for(var _di=1;_di<=7&&!_cclHist;_di++){for(var _sg=-1;_sg<=1;_sg+=2){var _dd2=new Date(_ddt);_dd2.setDate(_dd2.getDate()+_sg*_di);var _fk2=String(_dd2.getDate()).padStart(2,'0')+'/'+String(_dd2.getMonth()+1).padStart(2,'0')+'/'+_dd2.getFullYear();if(CCL_TABLE[_fk2]){_cclHist=CCL_TABLE[_fk2];break;}}}}}}
+      var _cclEf=d.moneda==='ARS'?(_cclHist||d.cclUsado):null;
+      var _mUSD=d.moneda==='USD'?d.monto:(_cclEf?d.monto/_cclEf:d.montoUSD);
+      var mUSD='USD '+trkFmt2(_mUSD);
+      var cclF=_cclEf?'$'+Math.round(_cclEf).toLocaleString('es-AR'):'—';
       var accF=d.acciones?d.acciones.toLocaleString('es-AR'):'—';
       var fechaF=d.fecha.split('-').reverse().join('/');
       tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" onclick="trkDeleteDiv('+d.id+')">x</button></td>';
       tbody.appendChild(tr);
     });
+    // Footer con totales
+    var _tfootEl=document.getElementById('trk-tfoot');
+    if(_tfootEl){
+      var _sumARS=0,_sumUSD=0;
+      confirmedDivs.forEach(function(d){
+        var _fp2=d.fecha?d.fecha.split('-'):[];
+        var _cclH2=null;
+        if(d.moneda==='ARS'&&_fp2.length===3){
+          var _fk2=_fp2[2]+'/'+_fp2[1]+'/'+_fp2[0];
+          _cclH2=CCL_TABLE[_fk2]||null;
+          if(!_cclH2){var _dt2=new Date(d.fecha+'T12:00:00');for(var _di2=1;_di2<=7&&!_cclH2;_di2++){for(var _sg2=-1;_sg2<=1;_sg2+=2){var _dd2=new Date(_dt2);_dd2.setDate(_dd2.getDate()+_sg2*_di2);var _fk2b=String(_dd2.getDate()).padStart(2,'0')+'/'+String(_dd2.getMonth()+1).padStart(2,'0')+'/'+_dd2.getFullYear();if(CCL_TABLE[_fk2b]){_cclH2=CCL_TABLE[_fk2b];break;}}}}
+          _sumARS+=d.monto||0;
+          var _cclEf2=_cclH2||d.cclUsado;
+          _sumUSD+=_cclEf2?(d.monto/_cclEf2):d.montoUSD;
+        } else if(d.moneda==='USD'){
+          _sumUSD+=d.monto||0;
+        }
+      });
+      var _tfRow=document.createElement('tr');
+      _tfRow.style.cssText='border-top:2px solid var(--border2);background:var(--surface2)';
+      _tfRow.innerHTML='<td colspan="3" style="font-weight:700;font-size:.75rem;padding:.6rem .85rem;color:var(--text2)">TOTAL</td>'
+        +'<td class="mono trk-sensitive" style="text-align:right;font-weight:700;color:var(--accent);padding:.6rem .85rem">$ '+_sumARS.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+        +'<td class="mono trk-sensitive" style="text-align:right;font-weight:700;color:var(--accent);padding:.6rem .85rem">USD '+trkFmt2(_sumUSD)+'</td>'
+        +'<td colspan="3" style="padding:.6rem .85rem"></td>';
+      _tfootEl.innerHTML='';
+      _tfootEl.appendChild(_tfRow);
+    }
   }
-  var totalUSD=confirmedDivs.reduce(function(s,d){return s+d.montoUSD;},0);
+  function _trkMontoUSD(d){
+    if(d.moneda==='USD') return d.monto;
+    var fp=d.fecha?d.fecha.split('-'):[];
+    if(fp.length!==3) return d.cclUsado?d.monto/d.cclUsado:d.montoUSD;
+    var fk=fp[2]+'/'+fp[1]+'/'+fp[0];
+    var cclH=CCL_TABLE[fk]||null;
+    if(!cclH){var dt=new Date(d.fecha+'T12:00:00');for(var di=1;di<=7&&!cclH;di++){for(var sg=-1;sg<=1;sg+=2){var d2=new Date(dt);d2.setDate(d2.getDate()+sg*di);var fk2=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();if(CCL_TABLE[fk2]){cclH=CCL_TABLE[fk2];break;}}}}
+    var ccl=cclH||d.cclUsado;
+    return ccl?d.monto/ccl:d.montoUSD;
+  }
+  var totalUSD=confirmedDivs.reduce(function(s,d){return s+_trkMontoUSD(d);},0);
   var now=new Date();var mes=now.getMonth();var anio=now.getFullYear();
-  var mesUSD=confirmedDivs.filter(function(d){var fd=new Date(d.fecha+'T12:00:00');return fd.getMonth()===mes&&fd.getFullYear()===anio;}).reduce(function(s,d){return s+d.montoUSD;},0);
+  var mesUSD=confirmedDivs.filter(function(d){var fd=new Date(d.fecha+'T12:00:00');return fd.getMonth()===mes&&fd.getFullYear()===anio;}).reduce(function(s,d){return s+_trkMontoUSD(d);},0);
   document.getElementById('trk-m-usd').textContent='USD '+trkFmt2(totalUSD);
   document.getElementById('trk-m-mes').textContent='USD '+trkFmt2(mesUSD);
   document.getElementById('trk-m-count').textContent=confirmedDivs.length;
   if(TRK.ccl&&totalUSD>0)document.getElementById('trk-m-ars-sub').textContent='≈ $'+Math.round(totalUSD*TRK.ccl).toLocaleString('es-AR')+' ARS';
   else document.getElementById('trk-m-ars-sub').textContent='';
   document.getElementById('trk-total-badge').textContent=confirmedDivs.length?'Total: USD '+trkFmt2(totalUSD):'';
+  try{trkRenderFlujo();}catch(e){console.warn('trkRenderFlujo',e);}
   trkRenderPending();
   if(TRK.hidden)document.querySelectorAll('.trk-sensitive').forEach(function(el){el.classList.add('trk-blurred');});
+}
+
+// ══ Flujo cobrado por mes / año (v42) ══════════════════════════════════════
+// Agrupa TRK.divs confirmados (dividendos + renta/amortización de bonos y ON) por
+// año y mes, en USD con la misma conversión que el historial (CCL de la fecha ±7
+// días → cclUsado → montoUSD). Usa el monto completo cobrado (no montoPPC).
+var TRK_FLUJO={anio:null,chart:null};
+var TRK_FLUJO_TOPN=8; // tickers que muestra el tooltip del gráfico, de mayor a menor
+var TRK_MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function trkDivUSD(d){
+  if(d.moneda==='USD') return d.monto||0;
+  var fp=d.fecha?d.fecha.split('-'):[];
+  var cclH=null;
+  if(fp.length===3){
+    cclH=CCL_TABLE[fp[2]+'/'+fp[1]+'/'+fp[0]]||null;
+    if(!cclH){var dt=new Date(d.fecha+'T12:00:00');for(var di=1;di<=7&&!cclH;di++){for(var sg=-1;sg<=1&&!cclH;sg+=2){var d2=new Date(dt);d2.setDate(d2.getDate()+sg*di);var k=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();cclH=CCL_TABLE[k]||null;}}}
+  }
+  var ccl=cclH||d.cclUsado;
+  return ccl?(d.monto||0)/ccl:(d.montoUSD||0);
+}
+function trkDivEsRenta(d){
+  if(d.tipo==='RENTA') return true;
+  var sec=null;try{sec=getSector(d.ticker);}catch(e){}
+  return sec==='bonos'||sec==='on';
+}
+function trkFlujoData(){
+  var by={};
+  (TRK.divs||[]).forEach(function(d){
+    if(!d||d.estado==='pendiente'||!d.fecha) return;
+    var p=d.fecha.split('-'); if(p.length!==3) return;
+    var y=parseInt(p[0],10), m=parseInt(p[1],10)-1;
+    if(!(y>1990)||m<0||m>11) return;
+    var usd=trkDivUSD(d); if(!isFinite(usd)||!usd) return;
+    if(!by[y]) by[y]={div:[0,0,0,0,0,0,0,0,0,0,0,0],renta:[0,0,0,0,0,0,0,0,0,0,0,0],tk:[{},{},{},{},{},{},{},{},{},{},{},{}],n:0};
+    var _esR=trkDivEsRenta(d);
+    by[y][_esR?'renta':'div'][m]+=usd;
+    var _tk=by[y].tk[m], _tn=(d.ticker||'?').toUpperCase();
+    if(!_tk[_tn]) _tk[_tn]={usd:0,n:0,renta:_esR};
+    _tk[_tn].usd+=usd; _tk[_tn].n++;
+    by[y].n++;
+  });
+  return by;
+}
+function trkFlujoSelAnio(y){TRK_FLUJO.anio=y;trkRenderFlujo();if(TRK.hidden)document.querySelectorAll('#trk-flujo-card .trk-sensitive').forEach(function(el){el.classList.add('trk-blurred');});}
+function trkRenderFlujo(){
+  var card=document.getElementById('trk-flujo-card'); if(!card) return;
+  var by=trkFlujoData();
+  var years=Object.keys(by).map(Number).sort(function(a,b){return a-b;});
+  if(!years.length){card.style.display='none';return;}
+  card.style.display='';
+  var now=new Date(), yNow=now.getFullYear(), mNow=now.getMonth();
+  if(TRK_FLUJO.anio==null||!by[TRK_FLUJO.anio]) TRK_FLUJO.anio=by[yNow]?yNow:years[years.length-1];
+  var ySel=TRK_FLUJO.anio;
+  function sum(a){return a.reduce(function(s,v){return s+v;},0);}
+  function mesT(y,m){return by[y]?by[y].div[m]+by[y].renta[m]:0;}
+  function tot(y){return by[y]?sum(by[y].div)+sum(by[y].renta):0;}
+  function f2(n){return 'USD '+trkFmt2(n||0);}
+  function f0(n){return Math.round(n||0).toLocaleString('es-AR');}
+
+  // ── KPIs ──
+  var ytd=tot(yNow), mesesT=mNow+1, prom=ytd/mesesT;
+  var prevYtd=0; for(var j=0;j<=mNow;j++) prevYtd+=mesT(yNow-1,j);
+  var ult12=0; for(var i=0;i<12;i++){var dt=new Date(yNow,mNow-i,1);ult12+=mesT(dt.getFullYear(),dt.getMonth());}
+  var prev=tot(yNow-1);
+  var varTxt=prevYtd>0?(((ytd/prevYtd)-1)*100):null;
+  var ars12=(TRK.ccl&&ult12>0)?' · ≈ $'+Math.round(ult12*TRK.ccl).toLocaleString('es-AR'):'';
+  var kpi=function(lbl,val,sub){return '<div class="trk-metric"><div class="trk-metric-label">'+lbl+'</div><div class="trk-metric-val trk-sensitive">'+val+'</div><div class="trk-metric-sub trk-sensitive">'+(sub||'')+'</div></div>';};
+  document.getElementById('trk-flujo-kpis').innerHTML=
+    kpi('En lo que va de '+yNow,f2(ytd),varTxt!=null?('<span style="color:'+(varTxt>=0?'var(--green)':'var(--red)')+'">'+(varTxt>=0?'+':'')+varTxt.toFixed(1)+'%</span> vs mismo período '+(yNow-1)):'')
+   +kpi('Promedio mensual '+yNow,f2(prom),'sobre '+mesesT+' mes'+(mesesT>1?'es':''))
+   +kpi('Flujo anual (últ. 12 meses)',f2(ult12),'≈ '+f2(ult12/12)+'/mes'+ars12)
+   +kpi('Total '+(yNow-1),f2(prev),by[yNow-1]?('div '+f0(sum(by[yNow-1].div))+' · renta '+f0(sum(by[yNow-1].renta))):'sin registros');
+  document.getElementById('trk-flujo-badge').textContent=years.length>1?(years[0]+'–'+years[years.length-1]):String(years[0]);
+
+  // ── Selector de año ──
+  document.getElementById('trk-flujo-years').innerHTML='<span style="font-size:.6rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-right:2px">Gráfico</span>'
+    +years.slice().reverse().map(function(y){return '<button class="trk-flujo-yr'+(y===ySel?' on':'')+'" onclick="trkFlujoSelAnio('+y+')">'+y+'</button>';}).join('');
+
+  // ── Gráfico mensual del año elegido (apilado dividendos / renta + línea año anterior) ──
+  var canvas=document.getElementById('trk-flujo-chart');
+  if(canvas&&typeof Chart!=='undefined'){
+    try{var ex=Chart.getChart(canvas);if(ex)ex.destroy();}catch(e){}
+    var ds=[
+      {type:'bar',label:'Dividendos',data:by[ySel].div.map(function(v){return +v.toFixed(2);}),backgroundColor:'#448aff',stack:'s',borderRadius:3,maxBarThickness:34},
+      {type:'bar',label:'Renta bonos/ON',data:by[ySel].renta.map(function(v){return +v.toFixed(2);}),backgroundColor:'#00e676',stack:'s',borderRadius:3,maxBarThickness:34}
+    ];
+    if(by[ySel-1]) ds.push({type:'line',label:'Total '+(ySel-1),data:TRK_MESES.map(function(_,m){return +mesT(ySel-1,m).toFixed(2);}),borderColor:'#ffd600',backgroundColor:'#ffd600',borderDash:[4,4],borderWidth:1.5,pointRadius:2,tension:.25});
+    TRK_FLUJO.chart=new Chart(canvas.getContext('2d'),{
+      data:{labels:TRK_MESES,datasets:ds},
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{position:'bottom',labels:{color:'#7a9cc5',boxWidth:10,font:{size:10}}},
+          tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': USD '+trkFmt2(c.parsed.y);},
+            footer:function(items){
+              var t=0;items.forEach(function(it){if(it.dataset.type==='bar')t+=it.parsed.y;});
+              var out=['Total '+ySel+': USD '+trkFmt2(t)];
+              var m=items.length?items[0].dataIndex:-1, tk=(m>=0&&by[ySel])?by[ySel].tk[m]:null;
+              if(tk){
+                var arr=Object.keys(tk).map(function(k){return {t:k,usd:tk[k].usd,n:tk[k].n,r:tk[k].renta};}).sort(function(a,b){return b.usd-a.usd;});
+                if(arr.length){
+                  out.push('');out.push('Mayores pagos:');
+                  arr.slice(0,TRK_FLUJO_TOPN).forEach(function(a){
+                    out.push((a.r?'◆ ':'● ')+a.t+'  USD '+trkFmt2(a.usd)+(t>0?'  ('+Math.round(a.usd/t*100)+'%)':'')+(a.n>1?'  ×'+a.n:''));
+                  });
+                  if(arr.length>TRK_FLUJO_TOPN){var resto=arr.slice(TRK_FLUJO_TOPN).reduce(function(s2,a){return s2+a.usd;},0);out.push('+'+(arr.length-TRK_FLUJO_TOPN)+' más  USD '+trkFmt2(resto));}
+                }
+              }
+              return out;
+            }},
+            footerFont:{weight:'normal',size:11},footerColor:'#e8f0ff',footerSpacing:3}},
+        scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#7a9cc5',font:{size:10}}},
+          y:{stacked:true,beginAtZero:true,grid:{color:'rgba(38,64,112,.45)'},ticks:{color:'#7a9cc5',font:{size:10},callback:function(v){return 'U$S '+Math.round(v).toLocaleString('es-AR');}}}}}
+    });
+  }
+
+  // ── Tabla mes × año ──
+  var ys=years.slice().reverse();
+  var h='<thead><tr><th>Mes</th>'+ys.map(function(y){return '<th class="'+(y===ySel?'sel':'')+'">'+y+'</th>';}).join('')+'</tr></thead><tbody>';
+  TRK_MESES.forEach(function(lbl,m){
+    h+='<tr class="'+(m===mNow?'cur':'')+'"><td>'+lbl+'</td>'+ys.map(function(y){
+      var fut=(y===yNow&&m>mNow), v=mesT(y,m);
+      return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'" style="'+(fut?'color:var(--text3)':'')+'">'+(fut?'':(v>0?f0(v):'—'))+'</td>';
+    }).join('')+'</tr>';
+  });
+  h+='<tr class="tot"><td>Total USD</td>'+ys.map(function(y){return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(tot(y))+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Dividendos</td>'+ys.map(function(y){return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(sum(by[y].div))+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Renta bonos/ON</td>'+ys.map(function(y){return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(sum(by[y].renta))+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Promedio mensual</td>'+ys.map(function(y){var n=(y===yNow)?mesesT:12;return '<td class="trk-sensitive'+(y===ySel?' sel':'')+'">'+f0(tot(y)/n)+'</td>';}).join('')+'</tr>';
+  h+='<tr class="sub"><td>Cobros</td>'+ys.map(function(y){return '<td class="'+(y===ySel?'sel':'')+'">'+by[y].n+'</td>';}).join('')+'</tr>';
+  document.getElementById('trk-flujo-table').innerHTML=h+'</tbody>';
 }
 
 function trkAddDiv(){
@@ -6551,20 +7037,215 @@ function trkAddDiv(){
   renderPortfolio();
 }
 
-// ── Importación desde broker (Bull Market) ──────────────────────────────────
+// ══ Histórico Veta → PPC (importación ÚNICA, formato viejo "Movimientos Dividendos y
+// Rentas Cobradas" .xls = HTML disfrazado). Toma DIV y RTA en efectivo (renta +
+// amortización − gastos), y solo resta del PPC si: (a) el activo sigue en cartera hoy,
+// (b) según los movimientos de la app lo tenías a la fecha del cobro, y (c) en proporción
+// a las nominales de ese momento que todavía conservás (mínimo de tenencia desde el cobro
+// hasta hoy / tenencia del broker a esa fecha). Nada se aplica sin confirmar; se revierte
+// con hvRevert(). Los registros quedan en TRK.divs con fuente:'veta_hist' y montoPPC.
+var HVETA={rows:[],excl:[]};
+function _hvYMD(fechaAR){var f=(fechaAR||'').split('/');return f.length===3?f[2]+f[1].padStart(2,'0')+f[0].padStart(2,'0'):'0';}
+function _hvIsoYMD(iso){return (iso||'').replace(/-/g,'');}
+function _hvDays(a,b){return Math.abs((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/86400000);}
+function _hvFmt(n,d){return (n||0).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function _hvTC(iso,mercado){
+  // TC de la fecha del cobro, o el día anterior más cercano (hasta 7 días). Nunca el de hoy.
+  var esBono=(mercado==='BONOS'||mercado==='ON'||mercado==='FCI');
+  var d=new Date(iso+'T12:00:00');
+  for(var i=0;i<=7;i++){
+    var k=(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();
+    var v=esBono?(MEP_TABLE[k]||CCL_TABLE[k]):CCL_TABLE[k];
+    if(v) return {tc:v,fecha:k,tipo:(esBono&&MEP_TABLE[k])?'MEP':'CCL'};
+    d.setDate(d.getDate()-1);
+  }
+  return null;
+}
+function hvParse(html){
+  if(html.charCodeAt(0)===0xFEFF) html=html.slice(1);
+  var doc=new DOMParser().parseFromString(html,'text/html');
+  var rows=[],excl=[];
+  Array.prototype.forEach.call(doc.querySelectorAll('tr'),function(tr){
+    var c=Array.prototype.map.call(tr.querySelectorAll('td'),function(td){return (td.textContent||'').replace(/ /g,' ').trim();});
+    if(c.length<12) return;
+    var fecha=trkImpParseDate(c[1]); if(!fecha) return;
+    var cpbt=(c[2]||'').toUpperCase(), esp=(c[4]||'').toUpperCase(), mon=(c[5]||'').toUpperCase();
+    if(!esp) return;
+    var r={fecha:fecha,ticker:esp,tipo:cpbt,qtyBroker:trkImpParseNum(c[6]),divi:trkImpParseNum(c[7]),amort:trkImpParseNum(c[9]),gastos:trkImpParseNum(c[11])};
+    if(cpbt!=='DIV'&&cpbt!=='RTA'){r.motivo=cpbt==='CANJ'?'Canje de especie (no es un cobro)':(cpbt==='RESC'?'Rescate / vencimiento':'Comprobante '+cpbt);excl.push(r);return;}
+    if(mon!==''&&mon!=='PESOS'){r.motivo='Pago en especie ('+mon+'), no en efectivo';excl.push(r);return;}
+    r.moneda=(mon==='PESOS')?'ARS':'USD';
+    r.monto=r.divi+r.amort-r.gastos;
+    if(!(r.monto>0)){r.motivo='Monto 0';excl.push(r);return;}
+    rows.push(r);
+  });
+  return {rows:rows,excl:excl};
+}
+function hvAnalyze(parsed){
+  // Línea de tiempo de tenencia por ticker (solo posiciones propias, igual que getPositions())
+  var tl={};
+  movimientos.forEach(function(m){
+    if(!m||m.owner==='cristian')return;
+    if(m.tipo!=='compra'&&m.tipo!=='venta')return;
+    (tl[m.ticker]=tl[m.ticker]||[]).push({ymd:_hvYMD(m.fecha),d:(m.tipo==='compra'?1:-1)*(m.qty||0),id:m.id||0});
+  });
+  Object.keys(tl).forEach(function(k){tl[k].sort(function(a,b){return a.ymd<b.ymd?-1:(a.ymd>b.ymd?1:a.id-b.id);});});
+  var posMap={};getPositions().forEach(function(p){posMap[p.ticker]=p;});
+  var usados={};
+  var rows=[],excl=parsed.excl.slice();
+  parsed.rows.forEach(function(r){
+    var ev=tl[r.ticker], p=posMap[r.ticker];
+    if(!ev||!p){r.motivo='No figura en tus movimientos';excl.push(r);return;}
+    var ymd=_hvIsoYMD(r.fecha), q=0;
+    ev.forEach(function(e){if(e.ymd<ymd)q+=e.d;});
+    r.qtyFecha=q;
+    var run=q,min=q;
+    ev.forEach(function(e){if(e.ymd>=ymd){run+=e.d;if(run<min)min=run;}});
+    r.qtyHoy=run;r.qtyMin=Math.max(min,0);
+    if(run<=0.000001){r.motivo='Ya no está en cartera';excl.push(r);return;}
+    if(q<=0.000001){r.motivo='En la app no lo tenías a esa fecha'+(r.qtyBroker?' (broker: '+_hvFmt(r.qtyBroker,0)+')':'');excl.push(r);return;}
+    var base=r.qtyBroker>0?r.qtyBroker:q;
+    r.factor=Math.min(r.qtyMin,base)/base;
+    if(r.factor<=0.000001){r.motivo='Vendiste todas las que tenías a esa fecha (después recompraste)';excl.push(r);return;}
+    r.warnQty=r.qtyBroker>0&&Math.abs(q-r.qtyBroker)/r.qtyBroker>0.02;
+    r.mercado=p.mercado;
+    if(r.moneda==='USD'){r.tc=null;r.montoUSD=r.monto;}
+    else{
+      var t=_hvTC(r.fecha,p.mercado);
+      if(!t){r.motivo='Sin CCL/MEP cargado para esa fecha';excl.push(r);return;}
+      r.tc=t.tc;r.tcTipo=t.tipo;r.montoUSD=r.monto/t.tc;
+    }
+    r.montoPPC=r.montoUSD*r.factor;
+    // ¿Ya está en el tracker? (mismo ticker y moneda, ±7 días)
+    var ex=TRK.divs.find(function(d){return !usados[d.id]&&d.ticker===r.ticker&&d.moneda===r.moneda&&d.fecha&&_hvDays(d.fecha,r.fecha)<=7;});
+    if(ex){
+      usados[ex.id]=true;
+      if(ex.fuente==='veta_hist'||ex.hvFactor!=null){r.motivo='Ya importado en una corrida anterior';excl.push(r);return;}
+      if(ex.pncApplied){r.motivo='Ya estaba en el tracker y aplicado al PPC ('+ex.fecha+')';excl.push(r);return;}
+      r.existId=ex.id;r.existFecha=ex.fecha;
+    }
+    r.sel=true;
+    rows.push(r);
+  });
+  rows.sort(function(a,b){return a.ticker<b.ticker?-1:(a.ticker>b.ticker?1:a.fecha.localeCompare(b.fecha));});
+  excl.sort(function(a,b){return a.ticker<b.ticker?-1:(a.ticker>b.ticker?1:a.fecha.localeCompare(b.fecha));});
+  HVETA.rows=rows;HVETA.excl=excl;
+}
+function hvFile(inp){
+  var f=inp.files&&inp.files[0]; if(!f)return;
+  var st=document.getElementById('hv-status');
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    try{
+      var parsed=hvParse(ev.target.result);
+      if(!parsed.rows.length&&!parsed.excl.length){st.className='emsg';st.textContent='No reconozco el formato — ¿es el .xls viejo "Movimientos Dividendos y Rentas Cobradas"?';return;}
+      hvAnalyze(parsed);
+      st.className='smsg';st.textContent=f.name;
+      hvRender();
+    }catch(e){st.className='emsg';st.textContent='Error: '+e.message;console.error(e);}
+  };
+  rd.readAsText(f,'utf-8');
+  inp.value='';
+}
+function hvToggle(i,v){HVETA.rows[i].sel=v;hvRender();}
+function hvToggleTk(tk,v){HVETA.rows.forEach(function(r){if(r.ticker===tk)r.sel=v;});hvRender();}
+function hvToggleAll(v){HVETA.rows.forEach(function(r){r.sel=v;});hvRender();}
+function hvRender(){
+  var box=document.getElementById('hv-result'); if(!box)return;
+  var rows=HVETA.rows, excl=HVETA.excl;
+  var posMap={};getPositions().forEach(function(p){posMap[p.ticker]=p;});
+  var tks={},orden=[];
+  rows.forEach(function(r){if(!tks[r.ticker]){tks[r.ticker]={n:0,nSel:0,usd:0};orden.push(r.ticker);}var t=tks[r.ticker];t.n++;if(r.sel){t.nSel++;t.usd+=r.montoPPC;}});
+  var totUSD=0,totN=0;
+  var sumHtml=orden.map(function(tk){
+    var t=tks[tk],p=posMap[tk];totUSD+=t.usd;totN+=t.nSel;
+    var ppcA=p.costUSDpuro/p.qty, ppcN=(p.costUSDpuro-t.usd)/p.qty, dp=ppcA?((ppcN/ppcA)-1)*100:0;
+    var neg=ppcN<0;
+    return '<tr><td><input type="checkbox" '+(t.nSel===t.n?'checked':'')+' onchange="hvToggleTk(\''+tk+'\',this.checked)"></td>'+
+      '<td style="font-weight:700">'+tk+'</td><td class="mono" style="text-align:right">'+t.nSel+'/'+t.n+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(t.usd,2)+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(ppcA,4)+'</td>'+
+      '<td class="mono" style="text-align:right'+(neg?';color:var(--red)':'')+'">'+_hvFmt(ppcN,4)+(neg?' ⚠':'')+'</td>'+
+      '<td class="mono" style="text-align:right;color:'+(dp<0?'var(--red)':'var(--text2)')+'">'+dp.toFixed(2)+'%</td></tr>';
+  }).join('');
+  var detHtml=rows.map(function(r,i){
+    return '<tr'+(r.sel?'':' style="opacity:.45"')+'><td><input type="checkbox" '+(r.sel?'checked':'')+' onchange="hvToggle('+i+',this.checked)"></td>'+
+      '<td style="font-weight:700">'+r.ticker+'</td><td class="mono">'+r.fecha+'</td><td>'+r.tipo+(r.amort?' <span class="muted" title="Incluye amortización: '+_hvFmt(r.amort,2)+'">+am</span>':'')+'</td><td>'+r.moneda+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(r.monto,2)+'</td>'+
+      '<td class="mono" style="text-align:right">'+(r.tc?_hvFmt(r.tc,0)+' '+r.tcTipo:'—')+'</td>'+
+      '<td class="mono" style="text-align:right">'+_hvFmt(r.montoUSD,2)+'</td>'+
+      '<td class="mono" style="text-align:right'+(r.warnQty?';color:var(--amber)':'')+'" title="Broker a la fecha / app a la fecha / mínimo desde el cobro / hoy">'+_hvFmt(r.qtyBroker,0)+' / '+_hvFmt(r.qtyFecha,0)+' / '+_hvFmt(r.qtyMin,0)+' / '+_hvFmt(r.qtyHoy,0)+(r.warnQty?' ⚠':'')+'</td>'+
+      '<td class="mono" style="text-align:right">'+(r.factor*100).toFixed(0)+'%</td>'+
+      '<td class="mono" style="text-align:right;font-weight:700">'+_hvFmt(r.montoPPC,2)+'</td>'+
+      '<td style="font-size:.6rem">'+(r.existId!=null?'<span style="color:var(--amber)" title="Ya estaba en el tracker sin aplicar al PPC — se marca como aplicado en vez de duplicarlo">actualiza '+r.existFecha+'</span>':'nuevo')+'</td></tr>';
+  }).join('');
+  var exHtml=excl.map(function(r){
+    return '<tr><td style="font-weight:700">'+r.ticker+'</td><td class="mono">'+r.fecha+'</td><td>'+r.tipo+'</td><td class="mono" style="text-align:right">'+_hvFmt(r.monto!=null?r.monto:r.divi,2)+'</td><td style="font-size:.65rem">'+r.motivo+'</td></tr>';
+  }).join('');
+  var th='style="text-align:right"';
+  box.innerHTML=
+    '<div class="gap-row" style="margin:10px 0">'+
+      '<b class="mono">'+totN+' cobros · USD '+_hvFmt(totUSD,2)+' a restar de PPC en '+orden.filter(function(t){return tks[t].nSel;}).length+' activos</b>'+
+      '<button class="btn btn-sm" onclick="hvToggleAll(true)">Todos</button><button class="btn btn-sm" onclick="hvToggleAll(false)">Ninguno</button>'+
+      '<button class="btn btn-a" onclick="hvApply()" '+(totN?'':'disabled')+'>Aplicar al PPC</button>'+
+    '</div>'+
+    '<div class="card-title" style="margin:6px 0">Impacto por activo</div>'+
+    '<div class="tw" style="max-height:320px;overflow-y:auto"><table><thead><tr><th></th><th>Ticker</th><th '+th+'>Cobros</th><th '+th+'>USD a restar</th><th '+th+'>PPC actual</th><th '+th+'>PPC nuevo</th><th '+th+'>Var.</th></tr></thead><tbody>'+sumHtml+'</tbody></table></div>'+
+    '<details style="margin-top:10px"><summary class="card-title" style="cursor:pointer">Detalle por cobro ('+rows.length+')</summary>'+
+    '<div class="tw" style="max-height:420px;overflow-y:auto"><table><thead><tr><th></th><th>Ticker</th><th>Fecha</th><th>Tipo</th><th>Mon.</th><th '+th+'>Monto</th><th '+th+'>TC</th><th '+th+'>USD</th><th '+th+' title="Broker a la fecha / app a la fecha / mínimo desde el cobro / hoy">Nominales B/A/mín/hoy</th><th '+th+'>% aplica</th><th '+th+'>USD a PPC</th><th></th></tr></thead><tbody>'+detHtml+'</tbody></table></div></details>'+
+    '<details style="margin-top:10px"><summary class="card-title" style="cursor:pointer">Excluidos ('+excl.length+')</summary>'+
+    '<div class="tw" style="max-height:320px;overflow-y:auto"><table><thead><tr><th>Ticker</th><th>Fecha</th><th>Tipo</th><th '+th+'>Monto</th><th>Motivo</th></tr></thead><tbody>'+exHtml+'</tbody></table></div></details>';
+}
+function hvApply(){
+  var sel=HVETA.rows.filter(function(r){return r.sel;});
+  if(!sel.length)return;
+  var tot=sel.reduce(function(s,r){return s+r.montoPPC;},0);
+  var nTk={};sel.forEach(function(r){nTk[r.ticker]=1;});
+  if(!confirm('Vas a restar USD '+tot.toFixed(2)+' del PPC de '+Object.keys(nTk).length+' activos ('+sel.length+' cobros históricos de Veta).\n\nSe puede deshacer con "Revertir importación histórica".\n\n¿Confirmás?'))return;
+  sel.forEach(function(r){
+    if(r.existId!=null){
+      var e=TRK.divs.find(function(x){return x.id===r.existId;}); if(!e)return;
+      e._hvPrev={montoUSD:e.montoUSD,cclUsado:e.cclUsado,pncApplied:e.pncApplied,pncTarget:e.pncTarget,estado:e.estado||null};
+      if(e.montoUSD==null)e.montoUSD=(e.moneda==='USD')?e.monto:(r.tc?e.monto/r.tc:r.montoUSD);
+      if(e.cclUsado==null&&r.tc)e.cclUsado=r.tc;
+      e.montoPPC=r.montoPPC;e.hvFactor=r.factor;e.pncApplied=true;e.pncTarget='ppc';
+      delete e.estado;
+    } else {
+      TRK.divs.push({id:Date.now()+Math.random(),ticker:r.ticker,fecha:r.fecha,moneda:r.moneda,monto:r.monto,montoUSD:r.montoUSD,montoPPC:r.montoPPC,cclUsado:r.tc||null,acciones:r.qtyBroker||null,pncApplied:true,pncTarget:'ppc',tipo:r.tipo==='RTA'?'RENTA':'DIV',fuente:'veta_hist',hvFactor:r.factor});
+    }
+  });
+  TRK.divs.sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  trkSave();trkRender();renderPortfolio();
+  HVETA.rows=[];HVETA.excl=[];
+  document.getElementById('hv-result').innerHTML='';
+  var st=document.getElementById('hv-status');st.className='smsg';st.textContent='Aplicado: '+sel.length+' cobros, USD '+tot.toFixed(2)+' restados del PPC.';
+}
+function hvRevert(){
+  var nNew=TRK.divs.filter(function(d){return d.fuente==='veta_hist';}).length;
+  var nUpd=TRK.divs.filter(function(d){return d._hvPrev;}).length;
+  if(!nNew&&!nUpd){alert('No hay importación histórica aplicada.');return;}
+  if(!confirm('Se van a borrar '+nNew+' cobros históricos importados y restaurar '+nUpd+' que ya estaban en el tracker. El PPC vuelve a como estaba.\n\n¿Confirmás?'))return;
+  TRK.divs=TRK.divs.filter(function(d){return d.fuente!=='veta_hist';});
+  TRK.divs.forEach(function(d){
+    if(!d._hvPrev)return;
+    var p=d._hvPrev;
+    d.montoUSD=p.montoUSD;d.cclUsado=p.cclUsado;d.pncApplied=p.pncApplied;d.pncTarget=p.pncTarget;
+    if(p.estado)d.estado=p.estado;
+    delete d.montoPPC;delete d.hvFactor;delete d._hvPrev;
+  });
+  trkSave();trkRender();renderPortfolio();
+  var st=document.getElementById('hv-status');st.className='smsg';st.textContent='Importación histórica revertida.';
+}
+
+// ── Importación XLS del broker ────────────────────────────────────────────
 function trkImpInit(){
-  [['trk-imp-file-ars','ARS'],['trk-imp-file-usd','USD'],['trk-imp-file-cable','USD']].forEach(function(pair){
-    var el = document.getElementById(pair[0]);
-    if(!el) return;
-    var moneda = pair[1];
-    el.addEventListener('change', function(e){
-      var file = e.target.files[0];
-      if(!file) return;
-      var reader = new FileReader();
-      reader.onload = function(ev){ trkImpParseBM(ev.target.result, file.name, moneda); };
-      reader.readAsArrayBuffer(file);
-      this.value = ''; // reset input para poder subir el mismo archivo de nuevo
-    });
+  document.getElementById('trk-imp-file').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){ trkImpParse(ev.target.result, file.name); };
+    reader.readAsArrayBuffer(file);
+    this.value = ''; // reset input para poder subir el mismo archivo de nuevo
   });
 }
 
@@ -6589,86 +7270,151 @@ function trkImpBuildKey(row){
   return (row.fecha||'')+'|'+(row.ticker||'')+'|'+(row.moneda||'')+'|'+(row.monto||0);
 }
 
-function trkImpParseBMNum(v){
+function trkImpParseOldHTML(html){
+  // Quitar BOM si existe
+  if(html.charCodeAt(0)===0xFEFF) html=html.slice(1);
+
+  // Estrategia: en vez de capturar <tr>...</tr> con multilinea (que falla en JS),
+  // extraemos todos los <td> del documento en orden y los agrupamos por <tr>
+  // Para eso detectamos los límites de <tr> y reconstruimos los grupos.
+
+  // 1. Limpiar el HTML dejando solo la estructura de tabla
+  // Reemplazar saltos de línea y tabs para aplanar
+  var flat = html.replace(/[\r\n\t]+/g, ' ');
+
+  // 2. Extraer grupos de celdas por fila: partir por <tr
+  var trBlocks = flat.split(/<tr[\s>]/i);
+  var tagRe = /<[^>]+>/g;
+  var tdRe  = /<td[^>]*>(.*?)<\/td>/gi;
+
+  var rows = [];
+
+  for(var b=0; b<trBlocks.length; b++){
+    var block = trBlocks[b];
+    // Extraer todas las <td> de este bloque
+    var cells = [];
+    var m;
+    tdRe.lastIndex = 0;
+    while((m = tdRe.exec(block)) !== null){
+      var raw = m[1].replace(tagRe,'').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').trim();
+      cells.push(raw);
+    }
+
+    // Estructura real del broker:
+    // [0]=vacío(checkbox) [1]=fecha [2]=tipo [3]=nro [4]=especie [5]=moneda|portafolio [6]=portafolio|divi [7]=divi|%divi
+    // Si hay columna moneda (PESOS): [5]=PESOS [6]=portafolio [7]=divi/renta
+    // Si no hay columna moneda (USD): [5]=portafolio [6]=divi/renta
+
+    if(cells.length < 7) continue;
+
+    // La fecha está en cells[1] (cells[0] es el td vacío)
+    var fecha = trkImpParseDate(cells[1]);
+    if(!fecha) continue;
+
+    var cpbt    = (cells[2]||'').trim().toUpperCase();
+    var especie = (cells[4]||'').trim().toUpperCase();
+
+    if(!especie) continue;
+    if(cpbt === 'RESC' || cpbt === 'RES') continue;
+
+    // Estructura fija del broker:
+    // [0]=vacío [1]=fecha [2]=tipo [3]=nro.cpbt [4]=especie
+    // [5]=moneda (vacío=USD, 'PESOS'=ARS, o nombre especie en casos raros)
+    // [6]=portafolio (acciones) [7]=Divi/Renta ← monto real [8]=%divi ...
+    var c5 = (cells[5]||'').trim();
+    var moneda = (c5.toUpperCase() === 'PESOS') ? 'ARS' : 'USD';
+    var portafolio = trkImpParseNum(cells[6]);
+    var diviRenta  = trkImpParseNum(cells[7]);
+
+    if(diviRenta === 0) continue;
+
+    rows.push({
+      fecha:    fecha,
+      ticker:   especie,
+      tipo:     cpbt,
+      moneda:   moneda,
+      monto:    diviRenta,
+      acciones: portafolio || null
+    });
+  }
+
+  return rows;
+}
+
+// ── Nuevo formato Veta Capital: export real xlsx de "Movimientos > Actividad"
+// (hoja "Movimientos", filas de metadata + cabecera Liquidación/Concertación/
+// Concepto/Especie/Cantidad/Precio/Importe/Estado/Comprobante/Referencia).
+// El ticker y la descripción del instrumento vienen como texto libre dentro
+// de "Referencia": "Liquidación de Caja de Valores - Especie [NNNNN] TICKER -
+// DESCRIPCION: Rta. X%. Posiciones al DATE." Se incluyen tanto dividendos de
+// acciones/CEDEARs como cupones (renta) de bonos/ONs — se etiquetan por
+// palabras clave en la descripción ('RENTA' para bonos/ON, 'DIV' para el
+// resto) pero no se descartan; el usuario decide fila por fila en el panel.
+// Devuelve null si el archivo no matchea este formato (para poder caer al
+// parser viejo del .xls disfrazado de HTML).
+function trkImpParseVetaNum(v){
   if(typeof v==='number') return v;
   return trkImpParseNum(String(v==null?'':v));
 }
-function trkImpParseBMDate(v){
+function trkImpParseVetaDate(v){
   if(v instanceof Date){
     var y=v.getFullYear(),mo=String(v.getMonth()+1).padStart(2,'0'),d=String(v.getDate()).padStart(2,'0');
     return y+'-'+mo+'-'+d;
   }
-  if(typeof v==='number'){
-    // Serial Excel (días desde 1899-12-30) — mismo criterio que el importador de movimientos Bull Market
-    var ms=(v-25569)*86400000;
-    var d2=new Date(ms);
-    if(isNaN(d2.getTime())) return null;
-    var y2=d2.getUTCFullYear(),mo2=String(d2.getUTCMonth()+1).padStart(2,'0'),dd2=String(d2.getUTCDate()).padStart(2,'0');
-    return y2+'-'+mo2+'-'+dd2;
-  }
   return trkImpParseDate(String(v==null?'':v));
 }
-
-// Bull Market exporta el extracto de "Cuenta Corriente" (Pesos / Dólares / Dólar
-// Cable) como XLSX, uno por moneda — la moneda de cada fila queda determinada por
-// CUÁL de los 3 archivos se sube (el archivo no trae columna de moneda propia).
-// El <dimension> declarado por Bull Market suele venir mal (menos filas de las
-// reales), así que primero se recalcula el rango real a partir de las celdas
-// existentes. Se importan los comprobantes "DIVIDENDOS" (acciones/CEDEARs) y
-// "RENTA Y AMORTIZ" (cupones de bonos/ONs); el resto (compras, ventas, cauciones,
-// retenciones, etc.) se ignora.
-function trkImpParseBullMarket(wb, moneda){
-  var shName = wb.SheetNames[0];
+function trkImpParseVetaMovimientos(wb){
+  var shName=cmpFindSheetName(wb,/movimientos/i);
   if(!shName) return null;
-  var ws = wb.Sheets[shName];
+  var rows=XLSX.utils.sheet_to_json(wb.Sheets[shName],{header:1,defval:''});
 
-  var range={s:{r:0,c:0},e:{r:0,c:0}};
-  Object.keys(ws).filter(function(k){return k[0]!=='!';}).forEach(function(k){
-    var coord=XLSX.utils.decode_cell(k);
-    if(coord.r>range.e.r)range.e.r=coord.r;
-    if(coord.c>range.e.c)range.e.c=coord.c;
+  var hdrIdx=rows.findIndex(function(r){
+    var norm=r.map(cmpNorm);
+    return norm.indexOf('concepto')>=0 && norm.indexOf('especie')>=0 && norm.indexOf('referencia')>=0;
   });
-  if(range.e.r<1) return null;
+  if(hdrIdx<0) return null;
 
-  function gc(r,c){
-    var cell=ws[XLSX.utils.encode_cell({r:r,c:c})];
-    return cell?(cell.v!==undefined?cell.v:''):'';
-  }
-  function norm(s){return String(s==null?'':s).trim().toLowerCase();}
+  var hdr=rows[hdrIdx].map(cmpNorm);
+  var cLiq        = hdr.findIndex(function(h){return h.indexOf('liquidac')>=0;});
+  var cConcepto   = hdr.indexOf('concepto');
+  var cEspecie    = hdr.indexOf('especie');
+  var cCantidad   = hdr.indexOf('cantidad');
+  var cReferencia = hdr.indexOf('referencia');
+  if(cLiq<0||cConcepto<0||cEspecie<0||cCantidad<0||cReferencia<0) return null;
 
-  var hdr=[];
-  for(var c=0;c<=range.e.c;c++) hdr.push(norm(gc(0,c)));
-  var cLiq     = hdr.findIndex(function(h){return h.indexOf('liquida')>=0;});
-  var cComp    = hdr.indexOf('comprobante');
-  var cEspecie = hdr.indexOf('especie');
-  var cImporte = hdr.indexOf('importe');
-  if(cLiq<0||cComp<0||cEspecie<0||cImporte<0) return null;
+  var refRe=/Especie\s*\[\s*\d+\s*\]\s*([A-Z0-9]+)\s*-\s*([^:]+):/i;
+  var cuponRe=/\b(BONO|OBLIGACI[OÓ]N|LETRA|LECAP|LEDIV|LELIQ|BOTE|TITULO\s+P[UÚ]BLICO)\b/i;
 
   var out=[];
-  for(var r=1;r<=range.e.r;r++){
-    var comp=norm(gc(r,cComp));
-    var tipo=null;
-    if(comp==='dividendos') tipo='DIV';
-    else if(comp.indexOf('renta')>=0 && comp.indexOf('amortiz')>=0) tipo='RENTA';
-    else continue;
+  for(var i=hdrIdx+1;i<rows.length;i++){
+    var r=rows[i];
+    if(!r||!r.length) continue;
+    var concepto=cmpNorm(r[cConcepto]);
+    if(concepto.indexOf('liquidaci')<0 || concepto.indexOf('cv')<0) continue; // solo "Liquidación de CV"
 
-    var ticker=String(gc(r,cEspecie)||'').trim().toUpperCase();
-    if(!ticker) continue;
+    var referencia=String(r[cReferencia]||'');
+    var m=referencia.match(refRe);
+    if(!m) continue;
+    var descr=m[2].trim();
+    var tipo=cuponRe.test(descr)?'RENTA':'DIV'; // bono/ON vs accion/CEDEAR — solo etiqueta, no filtra
 
-    var fecha=trkImpParseBMDate(gc(r,cLiq));
+    var fecha=trkImpParseVetaDate(r[cLiq]);
     if(!fecha) continue;
 
-    var monto=trkImpParseBMNum(gc(r,cImporte));
+    var ticker=m[1].trim().toUpperCase();
+    var especieCol=String(r[cEspecie]||'').trim().toUpperCase();
+    var moneda=(especieCol==='ARS')?'ARS':'USD';
+    var monto=trkImpParseVetaNum(r[cCantidad]);
     if(!monto||monto<=0) continue;
 
-    out.push({fecha:fecha,ticker:ticker,tipo:tipo,moneda:moneda,monto:monto,acciones:null,descr:ticker+' — '+gc(r,cComp)});
+    out.push({fecha:fecha,ticker:ticker,tipo:tipo,moneda:moneda,monto:monto,acciones:null,descr:descr});
   }
   return out.length?out:null;
 }
 
-// Convierte el monto de una fila pendiente de importación a USD, usando el mismo
-// criterio que la carga manual (trkAddDiv): CCL de la fecha en CCL_TABLE, y si no
-// está, el CCL de referencia (TRK.ccl). Si la fila ya está en USD, no hace falta CCL.
+// Convierte el monto de una fila pendiente de importación a USD, usando el
+// mismo criterio que la carga manual (trkAddDiv): CCL de la fecha del
+// dividendo en CCL_TABLE, y si no está, el CCL de referencia (TRK.ccl).
 function _trkImpMontoUSD(row){
   if(row.moneda==='USD') return {montoUSD:row.monto,cclUsado:null,ok:true};
   var cclFecha=CCL_TABLE[(row.fecha||'').split('-').reverse().join('/')]||TRK.ccl||null;
@@ -6676,8 +7422,8 @@ function _trkImpMontoUSD(row){
   return {montoUSD:row.monto/cclFecha,cclUsado:cclFecha,ok:true};
 }
 
-// Calcula el impacto en el PPC del activo que tendría cargar esta fila, sin
-// aplicarlo — para mostrarlo en el panel antes de que el usuario confirme.
+// Calcula el impacto en el PPC del activo que tendría cargar esta fila,
+// sin aplicarlo — para mostrarlo en el panel antes de que el usuario confirme.
 function _trkImpPPCPreview(row){
   var conv=_trkImpMontoUSD(row);
   if(!conv.ok) return {ok:false};
@@ -6693,18 +7439,32 @@ function _trkImpPPCPreview(row){
   return {ok:true,montoUSD:conv.montoUSD,cclUsado:conv.cclUsado,target:'venta'};
 }
 
-function trkImpParseBM(input, fname, moneda){
+function trkImpParse(input, fname){
   var status = document.getElementById('trk-imp-status');
   status.className='smsg';
   status.textContent = 'Procesando...';
 
   try{
-    var wb=XLSX.read(new Uint8Array(input),{type:'array'});
-    var rows=trkImpParseBullMarket(wb, moneda);
+    var rows=null;
+    var isNewFormat=false;
+
+    // 1) Intentar como xlsx real: nuevo formato Veta Capital (hoja "Movimientos",
+    // export de Detalles > Movimientos > Actividad)
+    try{
+      var wb=XLSX.read(new Uint8Array(input),{type:'array'});
+      rows=trkImpParseVetaMovimientos(wb);
+      if(rows) isNewFormat=true;
+    }catch(exWb){ rows=null; }
+
+    // 2) Fallback: formato viejo del broker (.xls disfrazado de HTML)
+    if(!rows){
+      var html=new TextDecoder('utf-8').decode(input);
+      rows=trkImpParseOldHTML(html);
+    }
 
     if(!rows||!rows.length){
       status.className='emsg';
-      status.textContent='No se encontraron filas de dividendos/renta en el archivo.';
+      status.textContent='No se encontraron filas de dividendos en el archivo.';
       return;
     }
 
@@ -6712,22 +7472,21 @@ function trkImpParseBM(input, fname, moneda){
     document.getElementById('trk-imp-badge').textContent = fname||'';
     status.className='smsg';
     status.textContent = res.added
-      ? (res.added+' fila(s) nueva(s) agregadas a "Pendientes de revisión" ↓ ('+res.dup+' ya existían)')
+      ? (res.added+' fila(s) nueva(s) agregadas a "Pendientes de revisión" ↓ ('+res.dup+' ya existían)'+(isNewFormat?'':' — formato viejo detectado'))
       : ('Sin filas nuevas — las '+res.dup+' encontradas ya estaban cargadas o pendientes.');
     setTimeout(function(){status.textContent='';},8000);
 
   } catch(err){
     status.className='emsg';
     status.textContent = 'Error al procesar: ' + err.message;
-    console.error('trkImpParseBM error:', err);
+    console.error('trkImpParse error:', err);
   }
 }
 
-// Punto de entrada único para encolar filas nuevas (carga manual, y automática si
-// se configura más adelante): dedupea contra TRK.divs (confirmados + pendientes)
-// y las agrega con estado:'pendiente' — persistidas en Supabase igual que
-// cualquier dividendo, listas para que el usuario las confirme una por una en el
-// panel "Pendientes de revisión".
+// Punto de entrada único para carga manual (input file) y automática (tarea programada):
+// dedupea contra TRK.divs (confirmados + pendientes) y encola las filas nuevas con
+// estado:'pendiente' — persistidas en Supabase igual que cualquier dividendo, listas
+// para que el usuario las confirme una por una en el panel "Pendientes de revisión".
 function trkQueuePendingRows(rows){
   var existKeys = {};
   TRK.divs.forEach(function(d){ existKeys[trkImpBuildKey(d)] = true; });
@@ -6736,7 +7495,7 @@ function trkQueuePendingRows(rows){
   rows.forEach(function(r){
     var key=trkImpBuildKey(r);
     if(existKeys[key]){ dup++; return; }
-    existKeys[key]=true;
+    existKeys[key]=true; // evita duplicados dentro del mismo archivo
     added++;
     TRK.divs.unshift({
       id: Date.now()+Math.random(),
@@ -6842,6 +7601,28 @@ function trkPendingDiscard(id){
   trkRender();
 }
 
+// Punto de entrada para la tarea programada (vía javascript_tool en el navegador de Claude):
+// recibe el xlsx de Veta como base64 y hace exactamente lo mismo que subirlo a mano —
+// las filas nuevas quedan pendientes de revisión, nunca se confirman solas.
+window.trkAutoImportFromXLSX = function(base64, fname){
+  try{
+    var bin = atob(base64);
+    var bytes = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+
+    var wb = XLSX.read(bytes, {type:'array'});
+    var rows = trkImpParseVetaMovimientos(wb);
+    if(!rows || !rows.length){
+      return {ok:false, error:'No se encontraron filas de "Liquidación de cv" en el archivo.'};
+    }
+    var res = trkQueuePendingRows(rows);
+    document.getElementById('trk-imp-badge').textContent = fname||'';
+    return {ok:true, added:res.added, dup:res.dup, total:res.total};
+  }catch(err){
+    return {ok:false, error:String(err&&err.message||err)};
+  }
+};
+
 function trkCalcCCL(){
   var ars=parseFloat(document.getElementById('trk-calc-ars').value);
   var usd=parseFloat(document.getElementById('trk-calc-usd').value);
@@ -6858,10 +7639,12 @@ function trkCalcCCL(){
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (function(){
-  var DATA_VERSION='juli_v1';
+  var DATA_VERSION='v19_ghost_fix';
 
   // ── Carga inicial desde Supabase (con fallback a localStorage) ──
   async function initFromSupabase(){
+    var _authed = await authEnsureSession();
+    if(!_authed){ document.getElementById('lupd').textContent='Iniciá sesión para ver tu portfolio'; return; }
     document.getElementById('lupd').textContent='Cargando desde Supabase...';
     await sbPing();
 
@@ -6870,12 +7653,12 @@ function trkCalcCCL(){
     // sbMov === []    → tabla vacía legítima (portfolio nuevo) → NO usar localStorage (puede estar contaminado)
     // sbMov.length>0  → datos reales → usar y cachear
     var sbMov = await sbLoadArray('movimientos');
-    // Reconciliar cambios locales sin confirmar en la nube (ver saveAndRender/ptJuli_pending_sync).
+    // Reconciliar cambios locales sin confirmar en la nube (ver saveAndRender/ptNYSE_pending_sync).
     // Si hay un snapshot pendiente con movimientos que Supabase no tiene, reintentar guardarlos
     // ANTES de aceptar la versión de Supabase como fuente de verdad — evita perder compras/ventas
     // cargadas justo antes de un corte de red o un reload.
     try{
-      var _pendingRaw=localStorage.getItem('ptJuli_pending_sync');
+      var _pendingRaw=localStorage.getItem('ptNYSE_pending_sync');
       if(_pendingRaw){
         var _pending=JSON.parse(_pendingRaw);
         var _cloudIds={};(sbMov||[]).forEach(function(m){if(m&&m.id!=null)_cloudIds[m.id]=true;});
@@ -6888,46 +7671,52 @@ function trkCalcCCL(){
           console.warn('[initFromSupabase] '+_missing.length+' movimiento(s) local(es) no estaban en Supabase — reintentando guardarlos.');
           var _resynced=await sbSaveArrayRetry('movimientos',_pending);
           sbMov=_pending;
-          if(_resynced){ localStorage.removeItem('ptJuli_pending_sync'); }
+          if(_resynced){ localStorage.removeItem('ptNYSE_pending_sync'); }
           else { setTimeout(function(){warnSaveFailed();},500); }
         } else {
-          localStorage.removeItem('ptJuli_pending_sync');
+          localStorage.removeItem('ptNYSE_pending_sync');
         }
       }
     }catch(e){ console.warn('[initFromSupabase] reconciliación de pendientes falló',e); }
     if(sbMov !== null && sbMov.length){
       // Supabase tiene datos → fuente de verdad
       movimientos = sbMov.filter(function(m){return m!=null;});
-      try{localStorage.setItem('ptJuli_mov2',JSON.stringify(movimientos));localStorage.setItem('ptJuli_version',DATA_VERSION);}catch(e){}
+      try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));localStorage.setItem('ptNYSE_version',DATA_VERSION);}catch(e){}
     } else if(sbMov === null){
       // Supabase inalcanzable → fallback localStorage (solo si versión coincide)
-      var storedVersion=null;try{storedVersion=localStorage.getItem('ptJuli_version');}catch(e){}
-      var saved=null;try{saved=localStorage.getItem('ptJuli_mov2');}catch(e){}
+      var storedVersion=null;try{storedVersion=localStorage.getItem('ptNYSE_version');}catch(e){}
+      var saved=null;try{saved=localStorage.getItem('ptNYSE_mov2');}catch(e){}
       if(saved&&storedVersion===DATA_VERSION){
         try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}
       }
       // Si no coincide versión → movimientos=[] y el usuario verá portafolio vacío hasta que Supabase vuelva
     } else {
-      // sbMov === [] → tabla vacía (portfolio nuevo o recién limpiado)
-      if(PRELOADED.length){
-        movimientos=PRELOADED;
-        sbSaveArray('movimientos',movimientos);
-        try{localStorage.setItem('ptJuli_mov2',JSON.stringify(movimientos));localStorage.setItem('ptJuli_version',DATA_VERSION);}catch(e){}
-      } else {
-        // Sin PRELOADED: intentar recuperar desde localStorage (datos ingresados antes de que Supabase los guardara)
-        var _storedVer=null;try{_storedVer=localStorage.getItem('ptJuli_version');}catch(e){}
-        var _savedMov=null;try{_savedMov=localStorage.getItem('ptJuli_mov2');}catch(e){}
-        if(_savedMov&&_savedMov!=='[]'&&(!_storedVer||_storedVer===DATA_VERSION)){
-          try{
-            var _recovered=JSON.parse(_savedMov).filter(function(m){return m!=null;});
-            if(_recovered.length){
-              movimientos=_recovered;
-              sbSaveArray('movimientos',movimientos); // sincronizar a Supabase para que quede persistido
-            }
-          }catch(e){}
-        }
-      }
+      // sbMov === [] → tabla vacía
+      // PRELOADED deshabilitado: los datos reales viven en Supabase.
+      // Si la tabla queda vacía, el portfolio muestra vacío hasta que se restituyan los datos.
     }
+
+    // 2. Dividendos
+    var sbDivs = await sbGetConfig('dividendos');
+    if(sbDivs && sbDivs.length){
+      dividendos = sbDivs;
+      try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
+    } else {
+      try{var sd=localStorage.getItem('ptNYSE_divs');if(sd)dividendos=JSON.parse(sd);}catch(e){}
+      // Sincronizar a Supabase si hay datos en localStorage que nunca se guardaron
+      if(dividendos.length) sbSetConfig('dividendos', dividendos);
+    }
+    // Aplicar borrados pendientes (protección ante datos stale de Supabase)
+    try{
+      var _pd=JSON.parse(localStorage.getItem('ptNYSE_divs_del')||'[]');
+      if(_pd.length){
+        dividendos=dividendos.filter(function(d){return _pd.indexOf(String(d.id))<0;});
+        try{localStorage.setItem('ptNYSE_divs',JSON.stringify(dividendos));}catch(e){}
+        sbSetConfig('dividendos',dividendos).then(function(ok){
+          if(ok){try{localStorage.removeItem('ptNYSE_divs_del');}catch(e){}}
+        });
+      }
+    }catch(e){}
 
     // 3. Tracker divs CCL
     var sbTrkDivs = await sbLoadArray('trk_divs');
@@ -6942,39 +7731,50 @@ function trkCalcCCL(){
 
     // 4. Ratios
     var sbRatios = await sbGetConfig('ratios');
-    if(sbRatios){Object.keys(sbRatios).forEach(function(t){RATIOS_TABLE[t]=sbRatios[t];});try{localStorage.setItem('ptJuli_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}}
-    else{try{var sr=localStorage.getItem('ptJuli_ratios');if(sr){var lsr=JSON.parse(sr);Object.keys(lsr).forEach(function(t){RATIOS_TABLE[t]=lsr[t];});}}catch(e){}}
+    if(sbRatios){Object.keys(sbRatios).forEach(function(t){RATIOS_TABLE[t]=sbRatios[t];});try{localStorage.setItem('ptNYSE_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}}
+    else{try{var sr=localStorage.getItem('ptNYSE_ratios');if(sr){var lsr=JSON.parse(sr);Object.keys(lsr).forEach(function(t){RATIOS_TABLE[t]=lsr[t];});}}catch(e){}}
 
     // Ratios meta (nombre, mercado, país, rubro)
     var sbRatiosMeta = await sbGetConfig('ratios_meta');
     if(sbRatiosMeta){Object.keys(sbRatiosMeta).forEach(function(t){RATIOS_META[t]=sbRatiosMeta[t];});}
-    else{sbSetConfig('ratios_meta', RATIOS_META);}
+    else{if(Object.keys(RATIOS_META).length>0){sbSetConfig('ratios_meta',RATIOS_META);}}
 
     // 5. Targets
     var sbTargets = await sbGetConfig('targets');
-    if(sbTargets){Object.assign(TARGET_TABLE, sbTargets);try{localStorage.setItem('ptJuli_targets',JSON.stringify(TARGET_TABLE));}catch(e){}}
-    else{try{var st=localStorage.getItem('ptJuli_targets');if(st){Object.assign(TARGET_TABLE,JSON.parse(st));}}catch(e){}}
+    if(sbTargets){Object.assign(TARGET_TABLE, sbTargets);try{localStorage.setItem('ptNYSE_targets',JSON.stringify(TARGET_TABLE));}catch(e){}}
+    else{try{var st=localStorage.getItem('ptNYSE_targets');if(st){Object.assign(TARGET_TABLE,JSON.parse(st));}}catch(e){}}
 
     // 5b. Rubros override
     var sbRubros = await sbGetConfig('rubros');
-    if(sbRubros){Object.assign(USER_RUBRO_TABLE, sbRubros);try{localStorage.setItem('ptJuli_rubros',JSON.stringify(USER_RUBRO_TABLE));}catch(e){}}
-    else{try{var sru=localStorage.getItem('ptJuli_rubros');if(sru){Object.assign(USER_RUBRO_TABLE,JSON.parse(sru));}}catch(e){}}
+    if(sbRubros){Object.assign(USER_RUBRO_TABLE, sbRubros);try{localStorage.setItem('ptNYSE_rubros',JSON.stringify(USER_RUBRO_TABLE));}catch(e){}}
+    else{try{var sru=localStorage.getItem('ptNYSE_rubros');if(sru){Object.assign(USER_RUBRO_TABLE,JSON.parse(sru));}}catch(e){}}
+
+    // 5c. Watchlist
+    var sbWl = await sbGetConfig('wl_gdc');
+    if(sbWl && Array.isArray(sbWl) && sbWl.length){
+      try{localStorage.setItem(WL_KEY, JSON.stringify(sbWl));}catch(e){}
+      wlRender();
+    } else {
+      var _lsWl = wlLoad();
+      if(_lsWl.length){ sbSetConfig('wl_gdc', _lsWl); }
+    }
+
 
 
     // 6. CCL/MEP override
     var sbCclOvr = await sbGetConfig('ccl_override');
     if(sbCclOvr){Object.assign(CCL_TABLE, sbCclOvr);}
-    else{try{var sc=localStorage.getItem('ptJuli_ccl_override');if(sc)Object.assign(CCL_TABLE,JSON.parse(sc));}catch(e){}}
+    else{try{var sc=localStorage.getItem('ptNYSE_ccl_override');if(sc)Object.assign(CCL_TABLE,JSON.parse(sc));}catch(e){}}
     var sbMepOvr = await sbGetConfig('mep_override');
     if(sbMepOvr){Object.assign(MEP_TABLE, sbMepOvr);}
-    else{try{var sm=localStorage.getItem('ptJuli_mep_override');if(sm)Object.assign(MEP_TABLE,JSON.parse(sm));}catch(e){}}
+    else{try{var sm=localStorage.getItem('ptNYSE_mep_override');if(sm)Object.assign(MEP_TABLE,JSON.parse(sm));}catch(e){}}
 
     // 7. Liquidez
     var sbLiq = await sbGetConfig('liquidez');
     if(sbLiq){
       if(sbLiq.ars) setFmtNum('liq-ars', sbLiq.ars, 0);
       if(sbLiq.usd) setFmtNum('liq-usd', sbLiq.usd, 2);
-      try{localStorage.setItem('ptJuli_liq',JSON.stringify(sbLiq));}catch(e){}
+      try{localStorage.setItem('ptNYSE_liq',JSON.stringify(sbLiq));}catch(e){}
     } else { loadLiquidez(); }
 
     // 8. Inversión inicial
@@ -6983,28 +7783,58 @@ function trkCalcCCL(){
       setFmtNum('inv-sidebar-usd', sbInv, 0);
       var di=document.getElementById('inv-inicial-usd-display');
       if(di)di.textContent='$'+Math.round(parseFloat(sbInv)).toLocaleString('es-AR');
-      try{localStorage.setItem('ptJuli_inv_inicial',String(sbInv));}catch(e){}
+      try{localStorage.setItem('ptNYSE_inv_inicial',String(sbInv));}catch(e){}
     } else{loadInvInicial();}
-
-    // 9a. Objetivo rendimiento
-    var sbPerfTarget = await sbGetConfig('perf_target');
-    if(sbPerfTarget){
-      var ptInp=document.getElementById('perf-target-usd');
-      if(ptInp){ptInp.value=sbPerfTarget;perfCalcUpdate();}
-      try{localStorage.setItem('ptJuli_perf_target',String(sbPerfTarget));}catch(e){}
-    }
 
     // 9. Quotes cache (solo localStorage - datos volátiles)
     try{
-      var sq=localStorage.getItem('ptJuli_q3');
-      var sqTs=parseInt(localStorage.getItem('ptJuli_q3_ts')||'0');
+      var sq=localStorage.getItem('ptNYSE_q3');
+      var sqTs=parseInt(localStorage.getItem('ptNYSE_q3_ts')||'0');
       var sqAge=(Date.now()-sqTs)/1000/3600;
       if(sq && sqAge < 4){ quotes=JSON.parse(sq); }
-      else { localStorage.removeItem('ptJuli_q3'); localStorage.removeItem('ptJuli_q3_ts'); }
+      else { localStorage.removeItem('ptNYSE_q3'); localStorage.removeItem('ptNYSE_q3_ts'); }
     }catch(e){}
 
+    // 9e. RSI cache (solo localStorage - el TTL de 12hs por ticker se valida dentro de fetchAllRSI)
+    try{
+      var srsi=localStorage.getItem('ptNYSE_rsi');
+      if(srsi) RSI_CACHE=JSON.parse(srsi)||{};
+    }catch(e){}
+
+    // 9f. TIR cache (Bonos, EcoValores) - mismo esquema que RSI
+    try{
+      var stir=localStorage.getItem('ptNYSE_tir');
+      if(stir) TIR_CACHE=JSON.parse(stir)||{};
+    }catch(e){}
+
+    // 9b. Base histórica de Estadísticas Venta Histórica (persistida, no toca movimientos reales)
+    var sbVhist = await sbGetConfig('vhist_movs');
+    if(sbVhist && Array.isArray(sbVhist)){
+      _ventahistRows=sbVhist;
+      try{localStorage.setItem('ptNYSE_vhist_movs',JSON.stringify(_ventahistRows));}catch(e){}
+    } else {
+      try{var svh=localStorage.getItem('ptNYSE_vhist_movs'); if(svh){_ventahistRows=JSON.parse(svh);}}catch(e){}
+    }
+    // 9c. Dividendos/Rentas cobrados de Estadísticas Venta Histórica (persistido aparte)
+    var sbVhistDivs = await sbGetConfig('vhist_divs');
+    if(sbVhistDivs && Array.isArray(sbVhistDivs)){
+      _ventahistDivs=sbVhistDivs;
+      try{localStorage.setItem('ptNYSE_vhist_divs',JSON.stringify(_ventahistDivs));}catch(e){}
+    } else {
+      try{var svhd=localStorage.getItem('ptNYSE_vhist_divs'); if(svhd){_ventahistDivs=JSON.parse(svhd);}}catch(e){}
+    }
+    // 9d. Aportes/Retiros de Estadísticas Venta Histórica (persistido aparte)
+    var sbVhistAportes = await sbGetConfig('vhist_aportes');
+    if(sbVhistAportes && Array.isArray(sbVhistAportes)){
+      _ventahistAportes=sbVhistAportes;
+      try{localStorage.setItem('ptNYSE_vhist_aportes',JSON.stringify(_ventahistAportes));}catch(e){}
+    } else {
+      try{var svha=localStorage.getItem('ptNYSE_vhist_aportes'); if(svha){_ventahistAportes=JSON.parse(svha);}}catch(e){}
+    }
+    if(typeof renderVentaHistorica==='function') renderVentaHistorica();
+
     // 10a. Migración una-sola-vez: bonos/ONs deben usar MEP (no CCL) para la conversión a USD
-    var MIG_KEY='ptJuli_mig_bonosMEP_v1';
+    var MIG_KEY='ptNYSE_mig_bonosMEP_v1';
     var _migDone=false;
     try{if(localStorage.getItem(MIG_KEY)==='1')_migDone=true;}catch(e){}
     if(!_migDone){
@@ -7030,7 +7860,7 @@ function trkCalcCCL(){
     }
 
     // 10b. Migración una-sola-vez: rellenar CCL y precioUSD faltantes en cualquier movimiento
-    var MIG_KEY_FILL='ptJuli_mig_fillCCL_v1';
+    var MIG_KEY_FILL='ptNYSE_mig_fillCCL_v1';
     var _fillDone=false;
     try{if(localStorage.getItem(MIG_KEY_FILL)==='1')_fillDone=true;}catch(e){}
     if(!_fillDone){
@@ -7038,7 +7868,7 @@ function trkCalcCCL(){
       movimientos.forEach(function(m){
         if(!m||m.tipo==='aporte'||!m.ticker||!m.fecha)return;
         if(m.ccl&&m.ccl>0)return; // ya tiene CCL
-        var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
+        var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
         var tcFecha=esBonoON?(getMEP(m.fecha)||getCCL(m.fecha)):getCCL(m.fecha);
         if(tcFecha&&tcFecha>0){
           m.ccl=tcFecha;
@@ -7069,7 +7899,7 @@ function trkCalcCCL(){
     var _cclFixed=false;
     movimientos.forEach(function(m){
       if(!m||!m.fecha) return;
-      var isBono=(m.mercado==='BONOS'||m.mercado==='ON');
+      var isBono=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
       if(!m.ccl||m.ccl===0){
         var tcVal=isBono?(MEP_TABLE[m.fecha]||CCL_TABLE[m.fecha]):(CCL_TABLE[m.fecha]);
         if(tcVal){
@@ -7080,23 +7910,28 @@ function trkCalcCCL(){
         }
       }
     });
-    if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptJuli_mov2',JSON.stringify(movimientos));}catch(e){} }
+    if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem('ptNYSE_mov2',JSON.stringify(movimientos));}catch(e){} }
 
     // Dolz extra desde Supabase
     var sbDolz = await sbGetConfig('dolz_extra');
     if(Array.isArray(sbDolz)) DOLZ_EXTRA = new Set(sbDolz);
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();ventahistResetFecha();
     document.getElementById('lupd').textContent='Datos cargados ✓';
-    _juliInitDone = true;
+    _gdcInitDone = true;
     if(initFromSupabase._done) initFromSupabase._done();
 
     // Si no hay quotes en caché, lanzar fetch inmediato (no esperar 5 min)
     if(Object.keys(quotes).length === 0){
       setTimeout(function(){ if(typeof fetchAllQuotes==='function') fetchAllQuotes(); }, 500);
     }
+    // RSI: dispara siempre al cargar; internamente sólo pide lo que esté vencido (>12hs) o falte
+    setTimeout(function(){ if(typeof fetchAllRSI==='function') fetchAllRSI(); }, 1500);
+    // TIR de Bonos (EcoValores): mismo criterio, un solo fetch para toda la cartera
+    setTimeout(function(){ if(typeof fetchAllTIR==='function') fetchAllTIR(); }, 2000);
   }
 
+  window.initFromSupabase = initFromSupabase; // expuesta para el listener de auth (login/logout)
   initFromSupabase();
 
   // ── Auto-refresh cada 10 minutos mientras la pagina esta abierta ──
@@ -7284,17 +8119,20 @@ var SECTOR_PIE_COLORS={
   brasil:'rgba(250,204,21,.85)',
   europa:'rgba(251,146,60,.85)',
   china:'rgba(248,113,113,.85)',
-  cripto:'rgba(192,132,252,.85)'
+  cripto:'rgba(192,132,252,.85)',
+  fci:'rgba(16,185,129,.85)'
 };
 var SECTOR_PIE_BORDER={
   nyse:'#ef4444',bonos:'#f97316',on:'#9ca3af',
   argentina:'#38bdf8',brasil:'#facc15',
-  europa:'#fb923c',china:'#ff5252',cripto:'#c084fc'
+  europa:'#fb923c',china:'#ff5252',cripto:'#c084fc',
+  fci:'#10b981'
 };
 var SECTOR_PIE_LABEL={
   nyse:'USA',bonos:'Bonos',on:'ON',
   argentina:'Argentina',brasil:'Brasil',
-  europa:'Europa',china:'China',cripto:'Cripto'
+  europa:'Europa',china:'China',cripto:'Cripto',
+  fci:'FCI'
 };
 
 function renderSectorPie(sectorVal){
@@ -7438,7 +8276,8 @@ var RUBRO_MAP={
   'CRWD':'Tecnología','HPQ':'Tecnología','IBM':'Tecnología','CSCO':'Tecnología','AMAT':'Tecnología',
   'LRCX':'Tecnología','KLAC':'Tecnología','MU':'Tecnología','WDC':'Tecnología','NXPI':'Tecnología',
   'GLOB':'Tecnología','BIGO':'Tecnología','SAP':'Tecnología','ASML':'Tecnología','SONY':'Tecnología',
-  'TSM':'Tecnología','SSNLF':'Tecnología','BIDU':'Tecnología',
+  'TSM':'Tecnología','SSNLF':'Tecnología','BIDU':'Tecnología','MRVL':'Tecnología','PLTR':'Tecnología',
+  'ARM':'Tecnología','ALAB':'Tecnología','CRWV':'Tecnología','NBIS':'Tecnología','SNDK':'Tecnología',
   // E-commerce / Retail
   'AMZN':'E-commerce','MELI':'E-commerce','BABA':'E-commerce','JD':'E-commerce','PDD':'E-commerce',
   'SHOP':'E-commerce','WMT':'E-commerce','TGT':'E-commerce','COST':'E-commerce','EBAY':'E-commerce',
@@ -7484,8 +8323,10 @@ var RUBRO_MAP={
   'LOMA':'Construcción','HARG':'Construcción',
   // Inmobiliario
   'IRSA':'Inmobiliario','IRCP':'Inmobiliario',
-  // Agro
-  'BRF':'Agro','BRFS':'Agro',
+  // Agro / Materiales básicos
+  'BRF':'Agro','BRFS':'Agro','MOS':'Agro','GGB':'Materiales','BBD':'Finanzas','BBAS3':'Finanzas',
+  'PETR3':'Energía','PAGS':'Tecnología','STNE':'Tecnología','ARCO':'Consumo','HOG':'Automotriz',
+  'EWZ':'ETF','UNP':'Industrial',
   // Cripto / Exchange
   'COIN':'Cripto'
 };
@@ -7502,10 +8343,10 @@ var RUBRO_OPTIONS_DEFAULT=[
 var RUBRO_OPTIONS=RUBRO_OPTIONS_DEFAULT.slice(); // se puede extender por el usuario
 
 function _rubroLoadCatalog(){
-  try{var s=localStorage.getItem('ptJuli_rubro_catalog');if(s){RUBRO_OPTIONS=JSON.parse(s);}}catch(e){}
+  try{var s=localStorage.getItem('ptNYSE_rubro_catalog');if(s){RUBRO_OPTIONS=JSON.parse(s);}}catch(e){}
 }
 function _rubroSaveCatalog(){
-  try{localStorage.setItem('ptJuli_rubro_catalog',JSON.stringify(RUBRO_OPTIONS));}catch(e){}
+  try{localStorage.setItem('ptNYSE_rubro_catalog',JSON.stringify(RUBRO_OPTIONS));}catch(e){}
 }
 
 function getRubro(ticker){
@@ -7513,7 +8354,6 @@ function getRubro(ticker){
 }
 
 // ── Catálogo ──────────────────────────────────────────────────
-
 function movFormToggle(){
   var body=document.getElementById('mov-form-body');
   var arrow=document.getElementById('mov-form-arrow');
@@ -7670,7 +8510,7 @@ function rubroSaveAll(){
 }
 
 function _rubroPersist(){
-  try{localStorage.setItem('ptJuli_rubros',JSON.stringify(USER_RUBRO_TABLE));}catch(e){}
+  try{localStorage.setItem('ptNYSE_rubros',JSON.stringify(USER_RUBRO_TABLE));}catch(e){}
   sbSetConfig('rubros', USER_RUBRO_TABLE);
 }
 
@@ -7686,6 +8526,7 @@ function dbDestroyAll(){
 function dbMakeChart(id,config){
   var canvas=document.getElementById(id);
   if(!canvas)return;
+  // Destruir instancia previa en ese canvas (por si quedó huérfana fuera de DB_CHARTS)
   try{var ex=Chart.getChart(canvas);if(ex)ex.destroy();}catch(e){}
   var ctx=canvas.getContext('2d');
   DB_CHARTS[id]=new Chart(ctx,config);
@@ -7699,9 +8540,11 @@ var DB_SECTOR_LABEL={
 var DB_SECTOR_COLOR={
   nyse:'#ef4444',bonos:'#f97316',on:'#9ca3af',
   argentina:'#38bdf8',brasil:'#facc15',
-  europa:'#fb923c',china:'#ff5252',cripto:'#c084fc'
+  europa:'#fb923c',china:'#ff5252',cripto:'#c084fc',
+  fci:'#10b981'
 };
 
+var DB_LAST_RUBRO = null;
 function renderDashboard(){
   if(typeof Chart==='undefined'){
     setTimeout(renderDashboard,400);
@@ -7718,26 +8561,33 @@ function renderDashboard(){
   var posData=[];
   open.forEach(function(p){
     var q=quotes[p.ticker];
-    if(!q||!q.price)return;
     var sector=getSector(p.ticker);
     var isBonoON=(sector==='bonos'||sector==='on');
     var isArgentina=(sector==='argentina');
     var ratio=RATIOS_TABLE[p.ticker]||1;
     var mep=mepHoy||tcHoy;
-    // Misma lógica que renderPortfolio línea ~1930:
-    // NYSE/Brasil/Europa/China/Cripto: price en USD, qty en CEDEARs → (price/ratio)*qty
-    // Argentina: price en ARS → (price/CCL)*qty
-    // Bonos/ON: price en ARS por 100 nominales → (price/MEP)*qty/100
     var _isBRL=BRL_TICKERS.has(p.ticker);
-    var valUSD=isBonoON ? (q.price/mep)*p.qty/100
-              :isArgentina ? (q.price/tcHoy)*p.qty
-              :_isBRL ? (q.price/tcHoy)*p.qty
-              :q.fromByma ? (q.price/tcHoy)*p.qty
-              :(q.price/ratio)*p.qty;
-    // costo promedio USD por unidad = costUSDpuro / qty
-    var costUSDtotal=p.costUSDpuro; // USD pagado real; para bonos valUSD y costUSDpuro son consistentes entre sí
+    var valUSD;
+    if(q&&q.price){
+      // Misma lógica que renderPortfolio:
+      // NYSE/Brasil/Europa/China/Cripto: price en USD, qty en CEDEARs → (price/ratio)*qty
+      // Argentina: price en ARS → (price/CCL)*qty
+      // Bonos/ON: price en ARS por 100 nominales → (price/MEP)*qty/100
+      // BRL: price en Reales → (price/CCL)*qty
+      valUSD=isBonoON ? (q.price/mep)*p.qty/100
+            :sector==='fci' ? (q.price/mep)*p.qty
+            :isArgentina ? (q.price/tcHoy)*p.qty
+            :_isBRL ? (q.price/tcHoy)*p.qty
+            :q.fromByma ? (q.price/tcHoy)*p.qty
+            :(q.price/ratio)*p.qty;
+    } else {
+      // Sin cotización: usar costo USD como proxy para que la distribución sea correcta
+      valUSD=p.costUSDpuro||0;
+    }
+    if(!valUSD)return;
+    var costUSDtotal=p.costUSDpuro||0;
     var gainUSD=valUSD-costUSDtotal;
-    posData.push({ticker:p.ticker,sector:sector,valUSD:valUSD,gainUSD:gainUSD,costUSD:costUSDtotal});
+    posData.push({ticker:p.ticker,sector:sector,valUSD:valUSD,gainUSD:gainUSD,costUSD:costUSDtotal,hasQuote:!!(q&&q.price)});
   });
 
   // ── Gráfico 1: Top 10 posiciones por valor ───────────────
@@ -7855,6 +8705,7 @@ function renderDashboard(){
     {key:'bonos',  label:'Bonos'},
     {key:'brasil', label:'Brasil'},
     {key:'on',     label:'ONs'},
+    {key:'fci',    label:'FCI'},
     {key:'cripto', label:'Cripto'},
     {key:'europa', label:'Europa'},
     {key:'china',  label:'China'}
@@ -7932,6 +8783,7 @@ function renderDashboard(){
 
   // Función para mostrar detalle al hacer clic
   function dbShowRubroDetail(rubroName, color){
+    DB_LAST_RUBRO = {name: rubroName, color: color};
     var detail=document.getElementById('db-rubros-detail');
     var title=document.getElementById('db-rubros-detail-title');
     var tbody=document.getElementById('db-rubros-detail-tbody');
@@ -8034,6 +8886,7 @@ function renderDashboard(){
 
   renderWorldMap(posData);
   renderPerfChart();
+  if(DB_LAST_RUBRO) dbShowRubroDetail(DB_LAST_RUBRO.name, DB_LAST_RUBRO.color);
 }
 
 
@@ -8056,7 +8909,7 @@ function renderWorldMap(posData) {
 
   var sectorToRegion = {
     nyse:'usa', cripto:'usa',
-    argentina:'arg', bonos:'arg', on:'arg',
+    argentina:'arg', bonos:'arg', on:'arg', fci:'arg',
     brasil:'bra', europa:'eur', china:'chn'
   };
   var regionVal = { usa:0, arg:0, bra:0, eur:0, chn:0 };
@@ -8259,11 +9112,13 @@ function renderPerfChart() {
     .catch(function() { draw(); });
 }
 
-
 /* ── Watchlist "Tickers en la mira" ─────────────────────────────── */
-const WL_KEY = 'wl_juli_v1';
+const WL_KEY = 'wl_gdc_v1';
 function wlLoad(){ try{ return JSON.parse(localStorage.getItem(WL_KEY))||[]; }catch(e){ return []; } }
-function wlSave(arr){ localStorage.setItem(WL_KEY, JSON.stringify(arr)); }
+function wlSave(arr){
+  try{ localStorage.setItem(WL_KEY, JSON.stringify(arr)); }catch(e){}
+  sbSetConfig('wl_gdc', arr);
+}
 function wlRender(){
   const arr = wlLoad();
   const el = document.getElementById('wl-list');
@@ -8294,223 +9149,6 @@ function wlDel(i){
   wlRender();
 }
 wlRender();
-
-</script>
-
-
-
-
-
-
-
-
-<script>
-(function(){
-  var LS_KEY='ptJuli_inicio';
-  var SB_KEY='aniv_inicio';
-  function anivRender(val){
-    var el=document.getElementById('aniv-display');
-    if(!el)return;
-    if(!val){el.textContent='';return;}
-    var start=new Date(val+'T12:00:00');
-    var aniv=new Date(start);aniv.setFullYear(aniv.getFullYear()+1);
-    var now=new Date();now.setHours(12,0,0,0);
-    if(now>=aniv){el.innerHTML='<span style="color:var(--accent)">✓ 1 año</span>';return;}
-    var y=aniv.getFullYear()-now.getFullYear();
-    var m=aniv.getMonth()-now.getMonth();
-    var total=y*12+m;
-    if(aniv.getDate()<now.getDate())total--;
-    if(total<0)total=0;
-    var label=total===1?'1 mes':total+' meses';
-    el.innerHTML='<span style="color:#ffd600;font-weight:600">'+label+' para el año</span>';
-  }
-  window.anivUpdate=function(){
-    var val=document.getElementById('aniv-fecha').value;
-    try{if(val)localStorage.setItem(LS_KEY,val);else localStorage.removeItem(LS_KEY);}catch(e){}
-    anivRender(val);
-    if(typeof sbSetConfig==='function') sbSetConfig(SB_KEY, val||null);
-  };
-  document.addEventListener('DOMContentLoaded',function(){
-    try{var s=localStorage.getItem(LS_KEY);if(s){document.getElementById('aniv-fecha').value=s;anivRender(s);}}catch(e){}
-    if(typeof sbGetConfig==='function'){
-      sbGetConfig(SB_KEY).then(function(val){
-        if(val){
-          document.getElementById('aniv-fecha').value=val;
-          anivRender(val);
-          try{localStorage.setItem(LS_KEY,val);}catch(e){}
-        }
-      }).catch(function(){});
-    }
-  });
-})();
-</script>
-
-<script>
-/* ── RENDIMIENTO ANUAL ── */
-(function(){
-  var RA_SBKEY = 'rendanual_periodos';
-  var periodos = [];
-  var saveTimer = null;
-
-  function parseNum(s){ return parseFloat(String(s||'').replace(/[^0-9.\-]/g,'')); }
-  function fmtPct(n){ return Math.round(n) + '%'; }
-  function fmtUsd(n){ return 'u$s ' + Math.round(n).toLocaleString('es-AR'); }
-
-  function calc(p){
-    var pu = parseNum(p.pusiste), te = parseNum(p.tenes);
-    if(isNaN(pu)||isNaN(te)||pu===0) return null;
-    var diff = te - pu;
-    var comision = diff * 0.20;
-    return { ganas_pct: diff/pu*100, comision_usd: comision, neto_pct: (diff-comision)/pu*100 };
-  }
-
-  function raSaveDebounced(){
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(function(){
-      var json = JSON.stringify(periodos);
-      try{ localStorage.setItem('ra_backup_juli', json); }catch(e){}
-      if(typeof sbSetConfig==='function') sbSetConfig(RA_SBKEY, json);
-    }, 800);
-  }
-
-  async function raLoad(){
-    var data = null;
-    if(typeof sbGetConfig==='function') data = await sbGetConfig(RA_SBKEY);
-    if(data){
-      try{
-        if(typeof data==='string') data = JSON.parse(data);
-        if(Array.isArray(data)) periodos = data;
-      }catch(e){}
-    } else {
-      try{
-        var ls = localStorage.getItem('ra_backup_juli');
-        if(ls){ var p=JSON.parse(ls); if(Array.isArray(p)) periodos=p; }
-      }catch(e){}
-    }
-    raRender();
-  }
-
-  function raUpdateHeader(){
-    var el = document.getElementById('perf-result-usd');
-    if(!periodos.length){ if(el){ el.textContent='—'; el.style.color='var(--text3)'; } return; }
-    var lastIdx = periodos.length - 1;
-    // Calcular desde los datos guardados ANTES de cualquier sync (para coincidir con la tabla)
-    var cHeader = calc(periodos[lastIdx]);
-    // Sync pusiste del último período con INV. INICIAL USD
-    var invVal = typeof getRawNum==='function' ? getRawNum('inv-sidebar-usd') : 0;
-    if(invVal > 0){
-      periodos[lastIdx].pusiste = String(Math.round(invVal));
-      var wraps = document.querySelectorAll('#ra-container .ra-period-wrap');
-      var lastWrap = wraps[lastIdx];
-      if(lastWrap){
-        var pInput = lastWrap.querySelector('tbody tr:first-child td:nth-child(2) input.ra-input');
-        if(pInput) pInput.value = Math.round(invVal).toLocaleString('es-AR');
-      }
-      if(typeof raUpdateCalc==='function') raUpdateCalc(lastIdx);
-    }
-    if(!el) return;
-    if(!cHeader){ el.textContent='—'; el.style.color='var(--text3)'; return; }
-    el.textContent = 'u$s ' + Math.round(cHeader.comision_usd).toLocaleString('es-AR');
-    el.style.color = cHeader.comision_usd >= 0 ? 'var(--accent)' : 'var(--red)';
-  }
-
-  function raRender(){
-    var cont = document.getElementById('ra-container');
-    var emp  = document.getElementById('ra-empty');
-    if(!cont) return;
-    cont.querySelectorAll('.ra-period-wrap').forEach(function(el){ el.remove(); });
-    if(!periodos.length){ if(emp) emp.style.display=''; raUpdateHeader(); return; }
-    if(emp) emp.style.display='none';
-    periodos.forEach(function(p,i){ cont.appendChild(raCreateEl(p,i)); });
-    raUpdateHeader();
-  }
-
-  function raCreateEl(p, idx){
-    var c = calc(p);
-    var ganasPct    = c ? fmtPct(c.ganas_pct)   : '—';
-    var comisionUsd = c ? fmtUsd(c.comision_usd) : '—';
-    var netoPct     = c ? fmtPct(c.neto_pct)     : '—';
-    var colPos = 'var(--accent)', colNone = 'var(--text3)';
-    var wrap = document.createElement('div');
-    wrap.className = 'ra-period-wrap';
-    wrap.innerHTML =
-      '<table class="ra-table">'+
-        '<thead><tr>'+
-          '<th class="ra-date-th">'+
-            '<input class="ra-input ra-input-date" value="'+(p.fecha||'')+'" placeholder="Fecha"'+
-            ' onchange="raPatch('+idx+',\'fecha\',this.value)" />'+
-          '</th>'+
-          '<th>Total</th>'+
-          '<th>20% s/Ganancia</th>'+
-          '<th class="ra-no-border">'+
-            '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
-              '<span style="font-size:.58rem;color:var(--text3)">Meses</span>'+
-              '<input class="ra-input" style="width:34px;text-align:center" value="'+(p.meses||'')+'"'+
-              ' onchange="raPatch('+idx+',\'meses\',this.value)" />'+
-              '<button class="btn btn-sm btn-d ra-del-btn" onclick="raDelete('+idx+')" title="Eliminar">🗑</button>'+
-            '</div>'+
-          '</th>'+
-        '</tr></thead>'+
-        '<tbody>'+
-          '<tr>'+
-            '<td class="ra-label">Pusiste</td>'+
-            '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.pusiste||'')+'" placeholder="—"'+
-            ' onchange="raPatch('+idx+',\'pusiste\',this.value);raUpdateCalc('+idx+')" /></td>'+
-            '<td style="text-align:right;padding:.38rem .55rem">'+
-              '<span class="ra-val-big" id="ra-com-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+comisionUsd+'</span>'+
-            '</td>'+
-            '<td class="ra-no-border"></td>'+
-          '</tr>'+
-          '<tr>'+
-            '<td class="ra-label">Tenes</td>'+
-            '<td><span class="ra-curr">u$s</span><input class="ra-input" value="'+(p.tenes||'')+'" placeholder="—"'+
-            ' onchange="raPatch('+idx+',\'tenes\',this.value);raUpdateCalc('+idx+')" /></td>'+
-            '<td class="ra-th-cell">Ganaste neto</td>'+
-            '<td class="ra-no-border"></td>'+
-          '</tr>'+
-          '<tr class="ra-row-pct">'+
-            '<td class="ra-label">Ganas %</td>'+
-            '<td class="ra-pct-auto" id="ra-pct-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+ganasPct+'</td>'+
-            '<td style="text-align:right;padding:.38rem .55rem">'+
-              '<span class="ra-val-big" id="ra-neto-'+idx+'" style="color:'+(c?colPos:colNone)+'">'+netoPct+'</span>'+
-            '</td>'+
-            '<td class="ra-no-border"></td>'+
-          '</tr>'+
-        '</tbody>'+
-      '</table>';
-    return wrap;
-  }
-
-  window.raPatch = function(idx, key, val){
-    if(periodos[idx]) periodos[idx][key] = val;
-    raSaveDebounced();
-  };
-
-  window.raUpdateCalc = function(idx){
-    if(!periodos[idx]) return;
-    var c = calc(periodos[idx]);
-    var colPos = 'var(--accent)', colNone = 'var(--text3)';
-    var set = function(id, txt, hasVal){
-      var el = document.getElementById(id); if(!el) return;
-      el.textContent = txt; el.style.color = hasVal ? colPos : colNone;
-    };
-    set('ra-pct-'+idx,  c ? fmtPct(c.ganas_pct)   : '—', !!c);
-    set('ra-com-'+idx,  c ? fmtUsd(c.comision_usd) : '—', !!c);
-    set('ra-neto-'+idx, c ? fmtPct(c.neto_pct)     : '—', !!c);
-  };
-
-  window.raAddPeriodo = function(){
-    periodos.push({fecha:'',meses:'',pusiste:'',tenes:''});
-    raSaveDebounced(); raRender();
-  };
-
-  window.raDelete = function(idx){
-    if(!confirm('¿Eliminar este período?')) return;
-    periodos.splice(idx,1); raSaveDebounced(); raRender();
-  };
-
-  document.addEventListener('DOMContentLoaded', raLoad);
-})();
 
 // ── % Dolarizado ──────────────────────────────────────────────────────────
 var DOLZ_EXTRA = new Set();
@@ -8564,5 +9202,3 @@ async function dolzToggleTicker(ticker){
   renderPortfolio();
 }
 
-</script>
-</body></html>
