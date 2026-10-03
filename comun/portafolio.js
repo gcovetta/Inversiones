@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=65, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=66, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v66 | 2026-10-03 | Feat: cada portafolio guarda un resumen (posiciones, valores, distribución, liquidez y cobros de 30 días) en su Supabase para la nueva vista familiar (Familia/), como mucho cada 3 minutos. Con carteras (Omar) se guarda una por cartera. (famQueueSnapshot / famSaveSnapshot)',
   'v65 | 2026-10-03 | Versión unificada: desde ahora los 5 portafolios comparten un único número de versión (el del código común comun/portafolio.js). El badge de abajo a la derecha lo toma del código que realmente cargó el navegador, así se puede contrastar que todos estén en la misma versión.'
 ];
 (function(){
@@ -3785,6 +3786,14 @@ function renderPortfolio(){
     } else { dolzEl.textContent='—'; }
   }
   dolzBuildList(open);
+  // Resumen para la vista familiar (Familia/): se guarda en el Supabase de este portafolio
+  try{famQueueSnapshot({
+    sectorVal:sectorVal, dolzPct:dolzPct, liqUSD:liqUSD, liqARS:liqARS, liqTotalUSD:liqTotalUSD,
+    totalVal:totalVal,
+    totalCost:open.reduce(function(a,p){return a+(p._valueUSD!=null?(p.costUSDpuro||0):0);},0),
+    pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null};}),
+    cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
+  });}catch(_e){console.warn('famQueueSnapshot',_e);}
 
   // Ganancia Neta = Valor Total USD - Inv. Inicial USD
   var gananciaEl=document.getElementById('m-ganancia');
@@ -5653,6 +5662,36 @@ function perfCalcUpdate(){
   el.style.color = result>=0?'var(--accent)':'var(--red)';
 }
 function cargarPortafolioEnComparacion(){return cargarJuliEnComparacion();}
+
+// ─── Resumen para la vista familiar ───────────────────────────────────────────
+// Después de cada render (con cotizaciones cargadas) se guarda en config 'resumen_familia' un
+// resumen de lo calculado. Familia/index.html lee los 5 resúmenes. Se guarda como mucho cada
+// 3 minutos salvo que el total cambie más de 0,5%. Con varias carteras (Omar) se guarda una
+// entrada por cartera.
+var _famPrev=null,_famTimer=null,_famLastSave=0,_famLastTotal=0,_famLoaded=false;
+function famQueueSnapshot(d){
+  if(typeof _gdcInitDone==='undefined'||!_gdcInitDone)return;
+  if(!d||!(d.totalVal>0)||!d.pos.length)return;
+  clearTimeout(_famTimer);
+  _famTimer=setTimeout(function(){famSaveSnapshot(d);},4000);
+}
+async function famSaveSnapshot(d){
+  try{
+    var now=Date.now(),tot=d.totalVal+d.liqTotalUSD;
+    if(now-_famLastSave<180000&&_famLastTotal>0&&Math.abs(tot/_famLastTotal-1)<0.005)return;
+    if(!_famLoaded){_famLoaded=true;try{_famPrev=await sbGetConfig('resumen_familia');}catch(e){}}
+    var cart=(typeof CARTERA_ACTIVA!=='undefined')?CARTERA_ACTIVA:'principal';
+    var doc=(_famPrev&&typeof _famPrev==='object'&&_famPrev.carteras)?_famPrev:{carteras:{}};
+    doc.v=1;doc.id=CFG.id;doc.nombre=CFG.nombre;doc.ts=now;doc.appVersion=APP_VERSION;
+    doc.ccl=CCL_HOY;doc.mep=MEP_HOY;
+    doc.liq={usd:d.liqUSD||0,ars:d.liqARS||0,totalUSD:d.liqTotalUSD||0};
+    if(cart==='principal'||!doc.cobros)doc.cobros=d.cobros;
+    doc.carteras[cart]={ts:now,totalVal:d.totalVal,totalCost:d.totalCost,sectorVal:d.sectorVal,dolzPct:d.dolzPct,pos:d.pos};
+    _famPrev=doc;
+    var ok=await sbSetConfig('resumen_familia',doc);
+    if(ok){_famLastSave=now;_famLastTotal=tot;}
+  }catch(e){console.warn('famSaveSnapshot',e);}
+}
 
 function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');

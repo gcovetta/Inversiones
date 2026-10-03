@@ -3,18 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portafolios — Inversiones</title>
+<title>Carteras administradas — Inversiones</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <style>
-:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px}
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px}
 *{box-sizing:border-box;margin:0;padding:0}
 html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}
-header{padding:1rem 2rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+header{padding:1rem 2rem;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
 .logo{font-weight:700;font-size:1.05rem;letter-spacing:-.02em}
 .subtitle{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-left:auto}
-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.5rem}
+#user-box{align-items:center;gap:8px;font-family:var(--mono);font-size:.65rem;color:var(--text2)}
+#user-box button,.gbtn{font-family:var(--mono);font-size:.68rem;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:4px 10px;cursor:pointer}
+main{flex:1;display:flex;flex-direction:column;align-items:center;padding:2.5rem 1.5rem}
+@media(max-width:600px){header{padding:.8rem 1rem}main{padding:1.5rem 1rem}}
 .section-label{font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.85rem;margin-top:1.8rem;text-align:left;width:100%;max-width:920px;padding-left:2px}
 .section-label:first-of-type{margin-top:0}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.85rem;width:100%;max-width:920px;margin-bottom:.5rem}
@@ -29,96 +33,212 @@ a.card:hover .card-icon{border-color:var(--accent);background:rgba(0,230,118,0.0
 .card-path{font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:1px}
 .card-arrow{font-size:.85rem;color:var(--accent);margin-top:auto;padding-top:.35rem;opacity:.7;transition:opacity .15s,transform .15s}
 a.card:hover .card-arrow{opacity:1;transform:translateX(3px)}
+#gate{max-width:420px;margin:10vh auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.8rem 1.6rem}
+#gate h2{font-size:1rem;margin-bottom:.6rem}
+#gate p{color:var(--text2);font-size:.82rem;line-height:1.55;margin-bottom:1.1rem}
+#gate-err{display:none;color:var(--red);font-size:.75rem;margin-top:.8rem}
 footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:.6rem;color:var(--text3);text-align:center}
+/* ── Carteras administradas ── */
+
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
+#portal{width:100%;max-width:920px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+#portal h1{font-size:1.05rem;margin:0}
+.sub{font-family:var(--mono);font-size:.68rem;color:var(--text2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.chip{font-family:var(--mono);font-size:.7rem;border:1px solid var(--border2);background:var(--surface2);border-radius:14px;padding:3px 10px;color:var(--text);cursor:pointer;user-select:none}
+.chip.off{opacity:.38}.chip.err{border-color:var(--red);color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+.k{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem .9rem}
+.kl{font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
+.kv{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-top:3px}
+.ks{font-family:var(--mono);font-size:.64rem;color:var(--text2);margin-top:2px}
+#portal .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:860px){#portal .grid{grid-template-columns:1fr}}
+.full{grid-column:1/-1}
+#portal .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:0}
+.ch{padding:.55rem .9rem;border-bottom:1px solid var(--border);font-size:.84rem;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cb{padding:.75rem .9rem}
+.tw{overflow-x:auto}
+#portal table{width:100%;border-collapse:collapse;font-size:.75rem}
+#portal th{font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;text-align:right;padding:.3rem .45rem;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+#portal td{font-family:var(--mono);text-align:right;padding:.38rem .45rem;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.det td{background:var(--surface2);font-size:.7rem;color:var(--text2)}
+tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
+.bar{display:flex;height:20px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surface2)}
+.bar.sm{height:14px}
+.seg{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.6rem;font-weight:700;color:#0b1120;white-space:nowrap;overflow:hidden}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-family:var(--mono);font-size:.62rem;color:var(--text2)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.lbl{font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:0 0 4px}
+.pp{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:14px}
+.pbox{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .7rem}
+.pbox h4{margin:0 0 6px;font-size:.78rem;display:flex;align-items:center;gap:6px}
+.av{width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:6px;background:var(--surface2)}
+#portal a{color:var(--text);text-decoration:none}#portal a:hover{text-decoration:underline}
+.grn{color:var(--accent)}.red{color:var(--red)}.yel{color:var(--amber)}.mut{color:var(--text3)}
+.gate{max-width:460px;margin:12vh auto;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.6rem}
+.gate p{color:var(--text2);font-size:.85rem;line-height:1.5}
+.btn{display:inline-block;font-family:var(--mono);font-size:.75rem;background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:6px 12px;cursor:pointer}
+.note{font-size:.7rem;color:var(--text3);font-family:var(--mono);margin-top:14px;line-height:1.6}
+
+
 </style>
 </head>
 <body>
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Portafolio Tracker</span>
+  <span class="subtitle">Carteras administradas</span>
+  <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
-  <div class="section-label">📊 Portafolios</div>
-  <div class="grid">
-    <a class="card" href="GDC/PortafolioGDC.html">
-      <div class="card-top">
-        <img class="card-avatar" src="GDC/PerfilGaston.png" alt="GDC">
-        <div class="card-name">GDC</div>
-      </div>
-      <div class="card-path">GDC/PortafolioGDC.html</div>
-      <div class="card-arrow">→</div>
-    </a>
-    <a class="card" href="Omar/PortafolioOmar.html">
-      <div class="card-top">
-        <img class="card-avatar" src="Omar/perfilOmar.png" alt="Omar">
-        <div class="card-name">Omar</div>
-      </div>
-      <div class="card-path">Omar/PortafolioOmar.html</div>
-      <div class="card-arrow">→</div>
-    </a>
-    <a class="card" href="Hilda/PortfolioHilda.html">
-      <div class="card-top">
-        <img class="card-avatar" src="Hilda/PerfilHilda.png" alt="Hilda">
-        <div class="card-name">Hilda</div>
-      </div>
-      <div class="card-path">Hilda/PortfolioHilda.html</div>
-      <div class="card-arrow">→</div>
-    </a>
-    <a class="card" href="Ana/PortafolioAna.html">
-      <div class="card-top">
-        <img class="card-avatar" src="Ana/PerfilAna.png" alt="Ana">
-        <div class="card-name">Ana</div>
-      </div>
-      <div class="card-path">Ana/PortafolioAna.html</div>
-      <div class="card-arrow">→</div>
-    </a>
-    <a class="card" href="Juli/PortafolioJuli.html">
-      <div class="card-top">
-        <img class="card-avatar" src="Juli/Juli.png" alt="Juli">
-        <div class="card-name">Juli</div>
-      </div>
-      <div class="card-path">Juli/PortafolioJuli.html</div>
-      <div class="card-arrow">→</div>
-    </a>
+  <div id="gate" style="display:none">
+    <h2>🔒 Acceso privado</h2>
+    <p>Ingresá con tu cuenta de Google para ver las carteras administradas.</p>
+    <button class="gbtn" onclick="authLogin()" style="font-size:.8rem;padding:8px 16px">Ingresar con Google</button>
+    <div id="gate-err">Esa cuenta de Google no tiene acceso.</div>
   </div>
-
-  <div class="section-label">🛠 Herramientas</div>
-  <div class="grid">
-    <a class="card" href="https://gcovetta.github.io/portafolio-tracker/Control_de_Obra.html">
-      <div class="card-top">
-        <div class="card-icon">🏠</div>
-        <div class="card-name">Control Obra</div>
-      </div>
-      <div class="card-path">Control_de_Obra.html</div>
-      <div class="card-arrow">→</div>
-    </a>
-    <a class="card" href="https://gcovetta.github.io/Task/pendientes.html">
-      <div class="card-top">
-        <div class="card-icon">✅</div>
-        <div class="card-name">Tareas Pendientes</div>
-      </div>
-      <div class="card-path">Task/pendientes.html</div>
-      <div class="card-arrow">→</div>
-    </a>
-    <a class="card" href="https://gcovetta.github.io/comparador-obra/">
-      <div class="card-top">
-        <div class="card-icon">🔨</div>
-        <div class="card-name">Comparador Materiales</div>
-      </div>
-      <div class="card-path">comparador-obra/</div>
-      <div class="card-arrow">→</div>
-    </a>
-    <a class="card" href="https://gcovetta.github.io/portafolio-tracker/GastoTrack_6.html">
-      <div class="card-top">
-        <div class="card-icon">💰</div>
-        <div class="card-name">Control de Gastos</div>
-      </div>
-      <div class="card-path">GastoTrack_6.html</div>
-      <div class="card-arrow">→</div>
-    </a>
+  <div id="main-content" style="display:none;width:100%;flex-direction:column;align-items:center">
+    <div class="section-label">📊 Portafolios</div>
+    <div class="grid">
+      <a class="card" href="GDC/PortafolioGDC.html"><div class="card-top"><img class="card-avatar" src="GDC/PerfilGaston.png" alt="GDC"><div class="card-name">GDC</div></div><div class="card-path">GDC/PortafolioGDC.html</div><div class="card-arrow">→</div></a>
+      <a class="card" href="Omar/PortafolioOmar2.html"><div class="card-top"><img class="card-avatar" src="Omar/perfilOmar.png" alt="Omar"><div class="card-name">Omar</div></div><div class="card-path">Omar/PortafolioOmar2.html</div><div class="card-arrow">→</div></a>
+      <a class="card" href="Hilda/PortafolioHilda.html"><div class="card-top"><img class="card-avatar" src="Hilda/PerfilHilda.png" alt="Hilda"><div class="card-name">Hilda</div></div><div class="card-path">Hilda/PortafolioHilda.html</div><div class="card-arrow">→</div></a>
+      <a class="card" href="Ana/PortafolioAna2.html"><div class="card-top"><img class="card-avatar" src="Ana/PerfilAna.png" alt="Ana"><div class="card-name">Ana</div></div><div class="card-path">Ana/PortafolioAna2.html</div><div class="card-arrow">→</div></a>
+      <a class="card" href="Juli/PortafolioJuli.html"><div class="card-top"><img class="card-avatar" src="Juli/Juli.png" alt="Juli"><div class="card-name">Juli</div></div><div class="card-path">Juli/PortafolioJuli.html</div><div class="card-arrow">→</div></a>
+    </div>
+    <div class="section-label">📈 Resumen de las carteras</div>
+    <div id="portal"><div class="sub">Cargando resúmenes…</div></div>
+    <div class="section-label">🛠 Herramientas</div>
+    <div class="grid">
+      <a class="card" href="https://gcovetta.github.io/portafolio-tracker/Control_de_Obra.html"><div class="card-top"><div class="card-icon">🏠</div><div class="card-name">Control Obra</div></div><div class="card-path">Control_de_Obra.html</div><div class="card-arrow">→</div></a>
+      <a class="card" href="https://gcovetta.github.io/Task/pendientes.html"><div class="card-top"><div class="card-icon">✅</div><div class="card-name">Tareas Pendientes</div></div><div class="card-path">Task/pendientes.html</div><div class="card-arrow">→</div></a>
+      <a class="card" href="https://gcovetta.github.io/comparador-obra/"><div class="card-top"><div class="card-icon">🔨</div><div class="card-name">Comparador Materiales</div></div><div class="card-path">comparador-obra/</div><div class="card-arrow">→</div></a>
+      <a class="card" href="https://gcovetta.github.io/portafolio-tracker/GastoTrack_6.html"><div class="card-top"><div class="card-icon">💰</div><div class="card-name">Control de Gastos</div></div><div class="card-path">GastoTrack_6.html</div><div class="card-arrow">→</div></a>
+    </div>
   </div>
 </main>
-<footer>gcovetta · github.io/Inversiones</footer>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v1</footer>
+<script>
+var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false}];
+var ALLOWED='gcovetta@gmail.com';
+var SECT={nyse:['USA','#ef4444'],argentina:['Argentina','#38bdf8'],brasil:['Brasil','#facc15'],europa:['Europa','#fb923c'],china:['China','#f87171'],cripto:['Cripto','#c084fc'],bonos:['Bonos','#f97316'],on:['ON','#9ca3af'],fci:['FCI','#10b981']};
+var RV=['nyse','argentina','brasil','europa','china','cripto'],RF=['bonos','on','fci'];
+var DATA={},OFF={},OPEN={};
+try{OFF=JSON.parse(localStorage.getItem('fam_off')||'{}')||{};}catch(e){}
+function n0(v){return Math.round(v||0).toLocaleString('es-AR');}
+function n1(v){return (v||0).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1});}
+function pct(v){return (v>0?'+':'')+n1(v)+'%';}
+function k(v){return Math.abs(v)>=1000?(Math.round(v/100)/10).toLocaleString('es-AR')+'k':n0(v);}
+function ago(ts){if(!ts)return '—';var s=(Date.now()-ts)/1000;if(s<3600)return 'hace '+Math.max(1,Math.round(s/60))+' min';if(s<86400)return 'hace '+Math.round(s/3600)+' h';var d=Math.round(s/86400);return d===1?'ayer':'hace '+d+' días';}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+async function loadOne(c,tok){
+  try{
+    var r=await fetch(c.url+'/rest/v1/config?key=eq.resumen_familia&select=value',{headers:{apikey:c.key,Authorization:'Bearer '+(c.auth?tok:c.key)}});
+    if(!r.ok)return {err:'HTTP '+r.status};
+    var d=await r.json();if(!d||!d[0])return {err:'sin resumen'};
+    var v=d[0].value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){}}
+    if(!v||!v.carteras)return {err:'sin resumen'};
+    return {doc:v};
+  }catch(e){return {err:'sin conexión'};}
+}
+function agg(doc){
+  var o={val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,liq:(doc.liq&&doc.liq.totalUSD)||0,liqUSD:(doc.liq&&doc.liq.usd)||0,cobros:doc.cobros||[],carteras:Object.keys(doc.carteras)};
+  Object.keys(doc.carteras).forEach(function(cn){var c=doc.carteras[cn];
+    o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
+    Object.keys(c.sectorVal||{}).forEach(function(s){o.sect[s]=(o.sect[s]||0)+(c.sectorVal[s]||0);});
+    if(c.dolzPct!=null)o.dolz+=c.dolzPct/100*(c.totalVal||0);
+    (c.pos||[]).forEach(function(p){var x=o.pos[p.t]||(o.pos[p.t]={t:p.t,s:p.s,q:0,v:0,c:0,an:p.an,pnl:p.pnl});x.q+=p.q;x.v+=p.v;x.c+=p.c;if(x!==o.pos[p.t])return;});
+  });
+  Object.values(o.pos).forEach(function(x){x.pnl=x.c>0?(x.v/x.c-1)*100:x.pnl;});
+  o.total=o.val+o.liq;
+  o.rv=RV.reduce(function(a,s){return a+(o.sect[s]||0);},0);o.rf=RF.reduce(function(a,s){return a+(o.sect[s]||0);},0);
+  o.dolzUSD=o.dolz+o.liqUSD;o.pesos=Math.max(0,o.total-o.dolzUSD);
+  return o;
+}
+function bar(parts,total,sm){
+  return '<div class="bar'+(sm?' sm':'')+'">'+parts.filter(function(p){return p.v>0;}).map(function(p){var w=p.v/total*100;return '<div class="seg" title="'+esc(p.l)+' '+n1(w)+'%" style="width:'+w+'%;background:'+p.c+'">'+(w>=(sm?12:8)?esc(p.l)+' '+Math.round(w)+'%':'')+'</div>';}).join('')+'</div>';
+}
+function legend(parts,total){return '<div class="legend">'+parts.filter(function(p){return p.v>0;}).map(function(p){return '<span><i style="background:'+p.c+'"></i>'+esc(p.l)+' '+n1(p.v/total*100)+'%</span>';}).join('')+'</div>';}
+function distBlocks(o,sm){
+  var tipo=[{l:'RV',v:o.rv,c:'var(--accent)'},{l:'RF',v:o.rf,c:'var(--blue)'},{l:'Liq',v:o.liq,c:'#7a9cc5'}];
+  var merc=Object.keys(SECT).map(function(s){return {l:SECT[s][0],v:o.sect[s]||0,c:SECT[s][1]};}).sort(function(a,b){return b.v-a.v;});
+  merc.push({l:'Liquidez',v:o.liq,c:'#7a9cc5'});
+  var mon=[{l:'Dolarizado',v:o.dolzUSD,c:'var(--accent)'},{l:'Pesos',v:o.pesos,c:'var(--amber)'}];
+  return '<div class="lbl">Por tipo</div>'+bar(tipo,o.total,sm)+(sm?'':legend(tipo,o.total))+
+    '<div class="lbl" style="margin-top:10px">Por mercado</div>'+bar(merc,o.total,sm)+legend(merc,o.total)+
+    '<div class="lbl" style="margin-top:10px">Moneda de exposición</div>'+bar(mon,o.total,sm)+(sm?'':legend(mon,o.total));
+}
+function render(){
+  var app=document.getElementById('portal');
+  var on=CFG.filter(function(c){return !OFF[c.id]&&DATA[c.id]&&DATA[c.id].o;});
+  var chips=CFG.map(function(c){var d=DATA[c.id]||{};var cls='chip'+(OFF[c.id]?' off':'')+(d.err?' err':'');return '<span class="'+cls+'" title="'+(d.err?esc(d.err):'Click para incluir/excluir')+'" onclick="toggleP(\''+c.id+'\')">'+esc(c.nombre)+(d.err?' ⚠':' ✓')+'</span>';}).join('');
+  if(!on.length){app.innerHTML='<div class="top"><h1>📈 Carteras administradas</h1><div class="chips">'+chips+'</div></div><div class="sub">No hay resúmenes para mostrar. Cada portafolio guarda su resumen al abrirlo con cotizaciones cargadas.</div>';return;}
+  var F={val:0,cost:0,sect:{},liq:0,liqUSD:0,dolzUSD:0,pesos:0,total:0,rv:0,rf:0,pos:{},cob:{}};
+  var ccl=0;
+  on.forEach(function(c){var o=DATA[c.id].o;ccl=ccl||o.ccl;
+    ['val','cost','liq','liqUSD','dolzUSD','pesos','total','rv','rf'].forEach(function(k2){F[k2]+=o[k2];});
+    Object.keys(o.sect).forEach(function(s){F.sect[s]=(F.sect[s]||0)+o.sect[s];});
+    Object.values(o.pos).forEach(function(p){var x=F.pos[p.t]||(F.pos[p.t]={t:p.t,s:p.s,v:0,by:[]});x.v+=p.v;x.by.push({c:c,p:p});});
+    o.cobros.forEach(function(cb){var key=cb.f+'|'+cb.t;var x=F.cob[key]||(F.cob[key]={f:cb.f,t:cb.t,who:[],usd:0,ars:0});x.who.push(c.nombre);if(cb.m==='USD')x.usd+=cb.x;else x.ars+=cb.x;});
+  });
+  var gan=F.val-F.cost;
+  var cobs=Object.values(F.cob).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:0;});
+  var cU=cobs.reduce(function(a,x){return a+x.usd;},0),cA=cobs.reduce(function(a,x){return a+x.ars;},0);
+  var h='<div class="top"><h1>📈 Carteras administradas</h1><span class="sub">datos al último ingreso a cada portafolio · USD a valor de mercado</span><div class="chips">'+chips+'</div></div>';
+  h+='<div class="kpis">'+
+    '<div class="k"><div class="kl">Total administrado (USD)</div><div class="kv">'+n0(F.total)+'</div><div class="ks">'+(ccl?'≈ $'+n0(F.total*ccl)+' al CCL':'')+'</div></div>'+
+    '<div class="k"><div class="kl">Ganancia no realizada</div><div class="kv '+(gan>=0?'grn':'red')+'">'+(gan>=0?'+':'−')+n0(Math.abs(gan))+'</div><div class="ks">'+(F.cost>0?pct(gan/F.cost*100)+' sobre lo invertido':'')+'</div></div>'+
+    '<div class="k"><div class="kl">Cobros próximos 30 días</div><div class="kv">USD '+n0(cU)+'</div><div class="ks">'+(cA?'+ ARS '+n0(cA)+' · ':'')+cobs.length+' pago'+(cobs.length!==1?'s':'')+'</div></div>'+
+    '<div class="k"><div class="kl">Liquidez total</div><div class="kv">USD '+n0(F.liq)+'</div><div class="ks">'+(F.total>0?n1(F.liq/F.total*100)+'% del total':'')+'</div></div></div>';
+  // por persona
+  h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table><thead><tr><th>Portafolio</th><th>USD</th><th>% del total</th><th>Δ%</th><th>RV / RF / Liq</th><th>Actualizado</th></tr></thead><tbody>'+
+    on.slice().sort(function(a,b){return DATA[b.id].o.total-DATA[a.id].o.total;}).map(function(c){var o=DATA[c.id].o;var d=o.cost>0?(o.val/o.cost-1)*100:null;var old=Date.now()-o.ts>7*86400000;
+      return '<tr><td><a href="'+c.link+'"><img class="av" src="'+c.img+'" onerror="this.style.visibility=\'hidden\'"><b>'+esc(c.nombre)+'</b></a>'+(o.carteras.length>1?' <span class="mut">('+o.carteras.length+' carteras)</span>':'')+'</td><td>'+n0(o.total)+'</td><td>'+n1(o.total/F.total*100)+'%</td><td class="'+(d==null?'mut':d>=0?'grn':'red')+'">'+(d==null?'—':pct(d))+'</td><td>'+Math.round(o.rv/o.total*100)+' / '+Math.round(o.rf/o.total*100)+' / '+Math.round(o.liq/o.total*100)+'</td><td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'">'+ago(o.ts)+'</td></tr>';}).join('')+
+    '</tbody></table></div></div>';
+  // distribucion familia
+  h+='<div class="card"><div class="ch">Distribución total</div><div class="cb">'+distBlocks(F,false)+'</div></div>';
+  // por persona distribucion
+  h+='<div class="card full"><div class="ch">Distribución por portafolio</div><div class="cb"><div class="pp" style="margin-top:0">'+
+    on.map(function(c){var o=DATA[c.id].o;return '<div class="pbox"><h4><img class="av" src="'+c.img+'" onerror="this.style.visibility=\'hidden\'">'+esc(c.nombre)+' <span class="mut" style="font-family:var(--mono);font-size:.62rem;font-weight:400;margin-left:auto">USD '+n0(o.total)+'</span></h4>'+distBlocks(o,true)+'</div>';}).join('')+
+    '</div></div></div>';
+  // mayores posiciones
+  var top=Object.values(F.pos).sort(function(a,b){return b.v-a.v;}).slice(0,20);
+  h+='<div class="card"><div class="ch">Mayores posiciones <span class="sub">click = detalle</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th>USD</th><th>% del total</th><th>Quién la tiene</th></tr></thead><tbody>'+
+    top.map(function(x){var pf=x.v/F.total*100;var col=pf>3?'red':pf>2?'yel':'';
+      var r='<tr class="clk" onclick="toggleT(\''+esc(x.t)+'\')"><td><b>'+esc(x.t)+'</b> <span class="mut">'+(SECT[x.s]?SECT[x.s][0]:'')+'</span></td><td>'+n0(x.v)+'</td><td class="'+col+'">'+n1(pf)+'%</td><td style="text-align:left;white-space:normal">'+x.by.sort(function(a,b){return b.p.v-a.p.v;}).map(function(b){return esc(b.c.nombre)+' '+k(b.p.v);}).join(' · ')+'</td></tr>';
+      if(OPEN[x.t])r+=x.by.map(function(b){var ppc=b.p.q>0?b.p.c/b.p.q:null;return '<tr class="det"><td>&nbsp;&nbsp;'+esc(b.c.nombre)+'</td><td>'+n0(b.p.v)+'</td><td>cant. '+b.p.q.toLocaleString('es-AR')+'</td><td style="text-align:left">'+(ppc?'PPC USD '+ppc.toLocaleString('es-AR',{maximumFractionDigits:2})+' · ':'')+'Δ '+(b.p.pnl!=null?pct(b.p.pnl):'—')+(b.p.an!=null?' · '+pct(b.p.an)+' anual':'')+'</td></tr>';}).join('');
+      return r;}).join('')+'</tbody></table></div></div>';
+  // cobros
+  h+='<div class="card"><div class="ch">Próximos cobros de todos <span class="sub">30 días · bonos/ON con flujo cargado</span></div><div class="cb tw">'+(cobs.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th>Quién</th><th>Monto</th></tr></thead><tbody>'+
+    cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
+  h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
+  app.innerHTML=h;
+}
+function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
+function toggleT(t){OPEN[t]=!OPEN[t];render();}
+var SB=null;
+function authLogin(){SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});}
+function authLogout(){SB.auth.signOut().then(function(){location.reload();});}
+async function boot(){
+  SB=window.supabase.createClient(CFG[0].url,CFG[0].key);
+  var se=null;try{var r=await SB.auth.getSession();se=r&&r.data&&r.data.session;}catch(e){}
+  var gate=document.getElementById('gate'),main=document.getElementById('main-content'),ub=document.getElementById('user-box');
+  if(!se||!se.user||se.user.email!==ALLOWED){
+    if(se&&se.user){document.getElementById('gate-err').style.display='block';try{await SB.auth.signOut();}catch(e){}}
+    gate.style.display='block';main.style.display='none';ub.style.display='none';return;
+  }
+  gate.style.display='none';main.style.display='flex';ub.style.display='flex';
+  document.getElementById('user-email').textContent=se.user.email;
+  var res=await Promise.all(CFG.map(function(c){return loadOne(c,se.access_token);}));
+  CFG.forEach(function(c,i){var r=res[i];DATA[c.id]=r.doc?{o:agg(r.doc)}:{err:r.err};});
+  render();
+}
+boot();
+</script>
 </body>
 </html>
