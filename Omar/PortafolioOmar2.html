@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
+v40 | 2026-10-03 | Feat: (1) columna opcional "Rebalanceo" (checkbox "Mostrar Rebalanceo", apagada por defecto): para activos con % Tipo > 2% (amarillo/rojo) indica cuánto vender en $ y en unidades (u. o VN) para volver al 2% de su tipo; para renta variable por debajo del umbral de la card de inversiones chicas, cuánto comprar para llegar a ese umbral; tooltip con el cálculo. (2) fila TOTAL al pie de cada recuadro (tfoot, no se mueve al ordenar): Δ% ponderado (mercado vs costo), Inversión $ total a mercado, costo total, suma de % Tipo y peso del recuadro en su tipo ("x% de la RV/RF"). Los totales son de las filas visibles (respetan filtros). (renderPortfolio / toggleRebalCol / initRebalToggle)
+v39 | 2026-10-03 | Chore: se elimina del Resumen de Portafolio el gráfico de torta Renta fija / Renta variable / Liquidez (canvas m-pie-chart; renderMiniPie queda sin efecto) porque ya lo cubre la card "Distribución de la cartera". La card de distribución deja de ocupar todo el ancho (máx. 720px). (markup page-portafolio)
 v38 | 2026-10-03 | Feat: card "Distribución de la cartera" — los objetivos ahora salen de la solapa Recomendaciones (PERFIL_TARGETS[Agresivo|Moderado].composicion, rangos RV / RF / Liquidez); FCI se suma a Renta fija como en Recomendaciones. La tabla de detalle es colapsable y arranca colapsada. "Para llegar" se muestra en pesos: lo que falta (o sobra) para entrar en el rango, en USD × CCL para Renta variable y USD × MEP para Renta fija y Liquidez; si está dentro del rango, "en rango". (distRender)
 v37 | 2026-10-03 | Feat: card "Distribución de la cartera" arriba de las tablas de Portafolio — barra actual vs objetivo de Renta variable / Renta fija (Bonos+ON) / FCI / Liquidez (ARS+USD), todo a valor de mercado en USD, con tabla de diferencia en puntos y cuánto comprar o cuánto sobra para llegar al objetivo. Checkbox de perfil Moderado / Agresivo que cambia los objetivos (Agresivo: RV 75 / RF 15 / FCI 0 / Liq 10 — Moderado: RV 50 / RF 35 / FCI 5 / Liq 10; sin FCI en el portafolio, su % pasa a RF). Perfil por defecto: Moderado; se guarda en Supabase (config perfil_inversor) y en localStorage. (distRender / distSetPerfil, hook en renderPortfolio)
 v36 | 2026-10-03 | Fix: Omar usaba el mismo prefijo de localStorage que GDC (ptNYSE_) — movimientos en caché, snapshot pendiente de sync, liquidez, targets, marcas, preferencias de columnas, etc. se compartían si ambos se abrían en el mismo navegador (mismo origen gcovetta.github.io). Todas las claves pasan a ptOmar_ con migración única de preferencias/config (sin copiar movimientos ni cotizaciones, que vienen de Supabase). Además, protección en la reconciliación de pendientes: un snapshot que no comparte ningún movimiento con Supabase se descarta. (todas las claves localStorage, initFromSupabase)
@@ -193,6 +195,8 @@ tr:hover td{background:var(--surface2)}
 .panels-grid.hide-qty .panel-table td:last-child{display:none}
 .panels-grid.hide-pventa .panel-table .col-pventa{display:none}
 .panels-grid.hide-ptipo .panel-table .col-ptipo{display:none}
+.panels-grid.hide-rebal .panel-table .col-rebal{display:none}
+.panel-table tfoot td{background:var(--surface2);border-top:2px solid var(--border2);font-weight:700}
 #panels-grid .panel-table thead th.ps-sortable{cursor:pointer;user-select:none}
 #panels-grid .panel-table thead th.ps-sortable:hover{color:var(--text)}
 #panels-grid .panel-table .ps-arrow{color:var(--accent);font-size:.6rem}
@@ -420,7 +424,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: card &quot;Distribución de la cartera&quot; — los objetivos ahora salen de la solapa Recomendaciones (PERFIL_TARGETS[Agresivo|Moderado].composicion, rangos RV / RF / Liquidez); FCI se suma a Renta fija como en Recomendaciones. La tabla de detalle es colapsable y arranca colapsada. &quot;Para llegar&quot; se muestra en pesos: lo que falta (o sobra) para entrar en el rango, en USD × CCL para Renta variable y USD × MEP para Renta fija y Liquidez; si está dentro del rango, &quot;en rango&quot;. (distRender)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v38 · 03/10/2026</div>
+<div id="claude-version-badge" title="Feat: (1) columna opcional &quot;Rebalanceo&quot; (checkbox &quot;Mostrar Rebalanceo&quot;, apagada por defecto): para activos con % Tipo > 2% (amarillo/rojo) indica cuánto vender en $ y en unidades (u. o VN) para volver al 2% de su tipo; para renta variable por debajo del umbral de la card de inversiones chicas, cuánto comprar para llegar a ese umbral; tooltip con el cálculo. (2) fila TOTAL al pie de cada recuadro (tfoot, no se mueve al ordenar): Δ% ponderado (mercado vs costo), Inversión $ total a mercado, costo total, suma de % Tipo y peso del recuadro en su tipo (&quot;x% de la RV/RF&quot;). Los totales son de las filas visibles (respetan filtros). (renderPortfolio / toggleRebalCol / initRebalToggle)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v40 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -598,9 +602,6 @@ tr:hover td{background:var(--surface2)}
           <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
             <div style="position:relative;height:190px"><canvas id="m-pie-rv" width="420" height="190"></canvas></div>
           </div>
-          <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
-            <div style="position:relative;height:190px"><canvas id="m-pie-chart" width="420" height="190"></canvas></div>
-          </div>
         </div>
         <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;width:155px">
@@ -672,43 +673,43 @@ tr:hover td{background:var(--surface2)}
           <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
         </div>
       </div>
-            <div class="panels-grid hide-qty hide-pventa hide-ptipo" id="panels-grid" style="align-items:start">
+            <div class="panels-grid hide-qty hide-pventa hide-ptipo hide-rebal" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="display:none">
             <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
           </div>
           <div class="card" id="panel-brasil" style="display:none">
             <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
           </div>
           <div class="card" id="panel-europa" style="display:none">
             <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-bonos" style="display:none">
             <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
           </div>
           <div class="card" id="panel-on" style="display:none">
             <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
           </div>
           <div class="card" id="panel-china" style="display:none">
             <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-argentina" style="display:none">
             <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
           </div>
           <div class="card" id="panel-cripto" style="display:none">
             <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
+            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -815,11 +816,14 @@ tr:hover td{background:var(--surface2)}
           <label class="qty-toggle" title="Mostrar/ocultar columna % Tipo (peso del activo sobre su renta variable o renta fija, a valor de mercado)">
             <input type="checkbox" id="ptipo-toggle" onchange="togglePTipoCol(this.checked)"> Mostrar % Tipo
           </label>
+          <label class="qty-toggle" title="Mostrar/ocultar columna Rebalanceo (cuánto vender para volver al 2% o comprar para llegar al umbral de inversiones chicas)">
+            <input type="checkbox" id="rebal-toggle" onchange="toggleRebalCol(this.checked)"> Mostrar Rebalanceo
+          </label>
           <span id="ref-status" class="emsg"></span>
           <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
         </div>
         <div id="pos-prog" style="position:absolute;bottom:0;left:0;right:0;line-height:0"><div class="pbar" style="border-radius:0;height:3px;background:var(--border)"><div class="pfill" id="pfill" style="width:0%"></div></div></div>
-        <div class="card" id="dist-card" style="display:none;margin-bottom:1rem">
+        <div class="card" id="dist-card" style="display:none;margin-bottom:1rem;max-width:720px">
         <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span class="card-title">📊 Distribución de la cartera</span>
           <label class="qty-toggle" title="Objetivos de perfil moderado"><input type="checkbox" id="dist-perfil-moderado" onchange="distSetPerfil('moderado')"> Moderado</label>
@@ -4021,6 +4025,7 @@ function renderPortfolio(){
   var _fRVWhite=document.getElementById('port-filter-rv-white');
   var _rvFilterOn=(_fRVRed&&_fRVRed.checked)||(_fRVYellow&&_fRVYellow.checked)||(_fRVWhite&&_fRVWhite.checked);
 
+  var _panelTot={};
   // Pasada 2: construir filas
   open.forEach(function(p){
     var q=quotes[p.ticker];var price=q?q.price:null;
@@ -4094,6 +4099,28 @@ function renderPortfolio(){
       var _ptCol=_ptPct==null?'var(--text)':_ptPct>3?'var(--red)':_ptPct>2?'#eab308':'var(--text)';
       ptipoCell='<td class="mono col-ptipo">'+(_ptPct!=null?'<span style="color:'+_ptCol+'">'+_ptPct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%</span>':'<span style="color:var(--text3)">—</span>')+'</td>';
     }
+    // Rebalanceo: vender hasta el 2% del tipo si supera el 2%; comprar hasta el umbral de inversiones chicas (solo RV)
+    var rebalCell='';
+    if(sector!=='fci'){
+      var _rbTxt='<span style="color:var(--text3)">—</span>',_rbTip='';
+      var _isBonoU=(sector==='bonos'||sector==='on');
+      var _unitARS=mercadoCedearARS!=null&&mercadoCedearARS>0&&!isBonoUSDDirecto(p.ticker)?(_isBonoU?mercadoCedearARS/100:mercadoCedearARS):null;
+      var _uLbl=_isBonoU?' VN':' u.';
+      var _fmtU=function(ars){if(!_unitARS)return '';var u=Math.round(ars/_unitARS);return u>0?' <span style="font-size:.64rem;color:var(--text3)">· '+u.toLocaleString('es-AR')+_uLbl+'</span>':'';};
+      var _ptLbl=_isBonoU?'la RF':'la RV';
+      if(_ptPct!=null&&_ptPct>2&&_ptDen>0){
+        var _objARS=_ptDen*0.02,_sellARS=inversionCedearARS-_objARS;
+        _rbTxt='<span style="color:'+_ptCol+'">vender <span class="port-sensitive">$'+Math.round(_sellARS).toLocaleString('es-AR')+'</span>'+_fmtU(_sellARS)+'</span>';
+        _rbTip=p.ticker+' · '+_ptPct.toFixed(1)+'% de '+_ptLbl+' (total $'+Math.round(_ptDen).toLocaleString('es-AR')+')\nObjetivo 2% → $'+Math.round(_objARS).toLocaleString('es-AR')+'\nVender $'+Math.round(_sellARS).toLocaleString('es-AR')+(_unitARS?' ≈ '+Math.round(_sellARS/_unitARS).toLocaleString('es-AR')+_uLbl+' a $'+Math.round(_isBonoU?_unitARS*100:_unitARS).toLocaleString('es-AR')+(_isBonoU?' c/100 VN':''):'');
+      } else if(!_isBonoU&&_ptPct!=null&&_ptDen>0&&typeof SI_THRESHOLD!=='undefined'&&SI_THRESHOLD>0&&_ptPct<SI_THRESHOLD){
+        var _thrARS=_ptDen*SI_THRESHOLD/100,_buyARS=_thrARS-inversionCedearARS;
+        if(_buyARS>0){
+          _rbTxt='<span style="color:var(--accent)">comprar <span class="port-sensitive">$'+Math.round(_buyARS).toLocaleString('es-AR')+'</span>'+_fmtU(_buyARS)+'</span>';
+          _rbTip=p.ticker+' · '+_ptPct.toFixed(2)+'% de la RV, debajo del umbral de inversiones chicas ('+SI_THRESHOLD+'%)\nUmbral → $'+Math.round(_thrARS).toLocaleString('es-AR')+'\nComprar $'+Math.round(_buyARS).toLocaleString('es-AR')+(_unitARS?' ≈ '+Math.round(_buyARS/_unitARS).toLocaleString('es-AR')+_uLbl+' a $'+Math.round(_unitARS).toLocaleString('es-AR'):'');
+        }
+      }
+      rebalCell='<td class="mono col-rebal"'+(_rbTip?' title="'+_rbTip.replace(/"/g,'&quot;')+'"':'')+'>'+_rbTxt+'</td>';
+    }
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
@@ -4105,6 +4132,7 @@ function renderPortfolio(){
       '<td class="mono muted">'+ppcARS+'</td>'+
       '<td class="mono col-pventa">'+targetCell+'</td>'+
       ptipoCell+
+      rebalCell+
       '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
@@ -4112,7 +4140,13 @@ function renderPortfolio(){
     // tabla en vez de mostrarse con el precio vacío.
     var _passColor=!!_portTkFilter||!_colorFilterOn||pnlPct===null||((_fGreen&&_fGreen.checked)&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct<0);
     var _passRV=!_rvFilterOn||((_fRVRed&&_fRVRed.checked)&&invColor==='var(--red)')||((_fRVYellow&&_fRVYellow.checked)&&invColor==='#eab308')||((_fRVWhite&&_fRVWhite.checked)&&invColor==='var(--text)');
-    if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor&&_passRV) sectors[sector].push(row);
+    if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor&&_passRV){ sectors[sector].push(row);
+      // Acumular totales del recuadro (filas visibles)
+      var _tt=_panelTot[sector]||(_panelTot[sector]={inv:0,cost:0,costInv:0,pt:0,ptOk:false});
+      _tt.inv+=inversionCedearARS||0;
+      if(pnlPct!=null&&inversionCedearARS>0){_tt.costInv+=inversionCedearARS;_tt.cost+=inversionCedearARS/(1+pnlPct/100);}
+      if(typeof _ptPct!=='undefined'&&_ptPct!=null&&sector!=='fci'){_tt.pt+=_ptPct;_tt.ptOk=true;}
+    }
   });
   var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'}];
   panelDefs.forEach(function(def){
@@ -4120,7 +4154,25 @@ function renderPortfolio(){
     if(!panel||!body){return;}
     if(!panel||!body){return;}
     if(!rows||!rows.length){panel.style.display='none';return;}
-    panel.style.display='';body.innerHTML=rows.join('');panelSortApply(body);
+    panel.style.display='';body.innerHTML=rows.join('');
+    try{
+      var _tb=body.parentNode,_tf=_tb.tFoot||_tb.createTFoot(),_t=_panelTot[def.key];
+      if(_t&&rows.length>1){
+        var _dPct=_t.cost>0?(_t.costInv/_t.cost-1)*100:null;
+        var _isRF=(def.key==='bonos'||def.key==='on');
+        var _wTxt=(_t.ptOk&&def.key!=='fci')?'<div style="font-size:.6rem;color:var(--text2);font-weight:500">'+_t.pt.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'% de '+(_isRF?'la RF':'la RV')+'</div>':'';
+        _tf.innerHTML='<tr><td>TOTAL'+_wTxt+'</td>'+
+          '<td style="text-align:center;padding:.38rem .5rem">'+deltaUpCellFn(_dPct,null)+'</td>'+
+          '<td class="mono"><span class="port-sensitive">$'+Math.round(_t.inv).toLocaleString('es-AR')+'</span></td>'+
+          '<td class="mono"><span style="color:var(--text3)">—</span></td>'+
+          '<td class="mono muted"><span class="port-sensitive" title="Costo total de las posiciones con cotización">$'+Math.round(_t.cost).toLocaleString('es-AR')+'</span></td>'+
+          (def.key==='fci'?'<td></td><td></td><td></td>':
+          '<td class="col-pventa"></td>'+
+          '<td class="mono col-ptipo">'+(_t.ptOk?_t.pt.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'')+'</td>'+
+          '<td class="col-rebal"></td><td></td>')+
+        '</tr>';
+      } else { _tf.innerHTML=''; }
+    }catch(_e){console.warn('panel totales',_e);}panelSortApply(body);
     var val=sectorVal[def.key];
     var _tc=(def.key==='bonos'||def.key==='on')?MEP_HOY:CCL_HOY;
     var valARS=val>0&&_tc>0?Math.round(val*_tc):null;
@@ -4867,6 +4919,24 @@ function togglePTipoCol(show){
     var cb=document.getElementById('ptipo-toggle');var grid=document.getElementById('panels-grid');
     if(cb)cb.checked=(show==='1');
     if(grid){if(show==='1')grid.classList.remove('hide-ptipo');else grid.classList.add('hide-ptipo');}
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
+})();
+
+// ─── Toggle columna Rebalanceo (oculta por defecto) ───
+function toggleRebalCol(show){
+  var grid=document.getElementById('panels-grid');
+  if(!grid)return;
+  if(show){grid.classList.remove('hide-rebal');}else{grid.classList.add('hide-rebal');}
+  try{localStorage.setItem('ptOmar_showRebal',show?'1':'0');}catch(e){}
+}
+(function initRebalToggle(){
+  var show='0';
+  try{var s=localStorage.getItem('ptOmar_showRebal');if(s!==null)show=s;}catch(e){}
+  function apply(){
+    var cb=document.getElementById('rebal-toggle');var grid=document.getElementById('panels-grid');
+    if(cb)cb.checked=(show==='1');
+    if(grid){if(show==='1')grid.classList.remove('hide-rebal');else grid.classList.add('hide-rebal');}
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();

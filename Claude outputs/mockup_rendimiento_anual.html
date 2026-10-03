@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup — % Anual por posición</title>
+<style>
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px 16px}
+.wrap{max-width:980px;margin:0 auto}
+h2{font-size:.95rem;margin:28px 0 6px}
+p.n{font-size:.76rem;color:var(--text2);margin:0 0 10px;line-height:1.55}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ch{display:flex;align-items:center;gap:10px;padding:.55rem .9rem;border-bottom:1px solid var(--border)}
+.ct{font-size:.85rem;font-weight:600}.tag{font-family:var(--mono);font-size:.66rem;color:var(--text2)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+th{font-family:var(--mono);font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:.35rem .6rem;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+td{font-family:var(--mono);padding:.4rem .6rem;border-bottom:1px solid var(--border);white-space:nowrap}
+th.hl,td.hl{background:rgba(0,230,118,.06)}
+.b{display:inline-block;border-radius:5px;padding:1px 7px;font-weight:700;font-size:.74rem}
+.g{color:var(--accent);background:rgba(126,232,162,.13);border:1px solid var(--accent)}
+.y{color:var(--amber);background:rgba(249,115,22,.13);border:1px solid var(--amber)}
+.r{color:var(--red);background:rgba(248,113,113,.13);border:1px solid var(--red)}
+.red{color:var(--red)}.grn{color:var(--accent)}.mut{color:var(--text3)}.t2{color:var(--text2)}
+.sm{font-size:.62rem;color:var(--text3);display:block;margin-top:1px}
+tfoot td{background:var(--surface2);font-weight:700;border-top:2px solid var(--border2);border-bottom:none}
+.pop{max-width:470px;background:#0d1626;border:1px solid var(--border2);border-radius:8px;padding:.7rem .85rem;font-family:var(--mono);font-size:.7rem;color:var(--text2);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.pop h4{margin:0 0 6px;font-size:.78rem;color:var(--text)}
+.pop table{font-size:.68rem}.pop td,.pop th{padding:.25rem .4rem}
+.pop .res{display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){.cmp{grid-template-columns:1fr}}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem .75rem;font-size:.72rem;color:var(--text2);line-height:1.6}
+.box b{color:var(--text)}
+</style></head><body><div class="wrap">
+
+<p class="n" style="color:var(--text3)">Mockup del punto 3 con números inventados. Sería una columna opcional con su checkbox "Mostrar % Anual", apagada por defecto.</p>
+
+<h2>1 · Cómo se ve en la tabla</h2>
+<p class="n">La columna va al lado de Δ%. Arriba se ve el % anual y abajo, en chico, cuánto tiempo hace que tenés la posición.</p>
+<div class="card">
+  <div class="ch"><span class="ct">🇺🇸 USA</span><span class="tag">5 posiciones</span></div>
+  <div class="tw"><table>
+    <thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="hl">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>% Tipo</th></tr></thead>
+    <tbody>
+      <tr><td><b>AMZN</b></td><td><span class="b g">+38%</span></td><td class="hl grn">+19,6%<span class="sm">1a 9m · 3 compras</span></td><td>$4.200.000</td><td>$21.000</td><td class="t2">$15.200</td><td class="red">3,4%</td></tr>
+      <tr><td><b>MSFT</b></td><td><span class="b g">+12%</span></td><td class="hl grn">+28,1%<span class="sm">5m · 1 compra</span></td><td>$2.900.000</td><td>$18.500</td><td class="t2">$16.500</td><td style="color:var(--amber)">2,3%</td></tr>
+      <tr><td><b>KO</b></td><td><span class="b y">+6%</span></td><td class="hl t2">+4,3%<span class="sm">2a 10m · incl. div.</span></td><td>$2.100.000</td><td>$14.300</td><td class="t2">$13.500</td><td>1,7%</td></tr>
+      <tr><td><b>PFE</b></td><td><span class="b r">−14%</span></td><td class="hl red">−5,1%<span class="sm">2a 1m · incl. div.</span></td><td>$1.360.000</td><td>$8.900</td><td class="t2">$10.350</td><td>1,1%</td></tr>
+      <tr><td><b>NVDA</b></td><td><span class="b g">+9%</span></td><td class="hl mut">+9% s/anualizar<span class="sm">25 días</span></td><td>$400.000</td><td>$12.100</td><td class="t2">$11.100</td><td>0,3%</td></tr>
+    </tbody>
+    <tfoot><tr><td>TOTAL<span class="sm" style="color:var(--text2)">8,8% de la RV</span></td><td><span class="b g">+15%</span></td><td class="hl grn">+14,2%<span class="sm">recuadro</span></td><td>$10.960.000</td><td class="mut">—</td><td class="t2">$9.560.000</td><td>8,8%</td></tr></tfoot>
+  </table></div>
+</div>
+<p class="n" style="margin-top:8px">· <b>Verde:</b> más del 10% anual en USD. <b>Gris:</b> entre 0 y 10%. <b>Rojo:</b> negativo.<br>
+· <b>Menos de 90 días:</b> el % no se anualiza y va en gris con "s/anualizar", como NVDA.<br>
+· <b>Fila TOTAL:</b> muestra la TIR del recuadro entero, con todos sus flujos juntos.<br>
+· <b>Ordenar:</b> se puede ordenar por esta columna, como las demás.</p>
+
+<h2>2 · Detalle al hacer click en el %</h2>
+<p class="n">Se abre un popup con cada flujo que entra en el cálculo, para que veas de dónde sale el número:</p>
+<div class="pop">
+  <h4>AMZN · rendimiento anual en USD</h4>
+  <table>
+    <thead><tr><th>Fecha</th><th>Movimiento</th><th style="text-align:right">USD</th></tr></thead>
+    <tbody>
+      <tr><td>12/01/2025</td><td>Compra 80 u.</td><td class="red" style="text-align:right">−830</td></tr>
+      <tr><td>03/06/2025</td><td>Compra 70 u.</td><td class="red" style="text-align:right">−790</td></tr>
+      <tr><td>18/02/2026</td><td>Venta parcial 20 u.</td><td class="grn" style="text-align:right">+260</td></tr>
+      <tr><td>22/05/2026</td><td>Compra 70 u.</td><td class="red" style="text-align:right">−860</td></tr>
+      <tr><td>03/10/2026</td><td>Valor hoy (200 u.)</td><td class="grn" style="text-align:right">+2.800</td></tr>
+    </tbody>
+  </table>
+  <div class="res"><span>Ganancia USD +580</span><span class="grn"><b>+19,6% anual</b></span></div>
+  <div style="margin-top:6px;font-size:.62rem;color:var(--text3)">Compras y ventas pasadas a USD con el CCL de cada fecha (MEP para bonos y ON). Valor de hoy al CCL de hoy.</div>
+</div>
+
+<h2>3 · Por qué cambia la lectura vs el Δ%</h2>
+<div class="cmp">
+  <div class="box"><b>AMZN:</b> Δ +38%, el más alto de la tabla. Pero lo tenés desde hace casi 2 años, así que rinde <b>19,6% anual</b>.</div>
+  <div class="box"><b>MSFT:</b> Δ +12%, bastante menos. Pero en solo 5 meses, o sea <b>28,1% anual</b>: rindió más rápido.</div>
+  <div class="box"><b>KO:</b> Δ +6% en casi 3 años. Con los dividendos cobrados queda en <b>4,3% anual</b> en USD, por debajo de un bono. Candidato a revisar.</div>
+  <div class="box"><b>PFE:</b> Δ −14%. Los dividendos amortiguan la pérdida y queda en <b>−5,1% anual</b>.</div>
+</div>
+
+<h2>4 · Detalles del cálculo</h2>
+<p class="n">· <b>Método:</b> TIR (XIRR) en USD, la misma lógica que ya usa la TIR de bonos con FLUJOS_BONOS, aplicada a tus movimientos reales.<br>
+· <b>Flujos:</b> cada compra (negativo), cada venta parcial (positivo), los dividendos o rentas cobrados del ticker (positivo, de la solapa Dividendos) y el valor de mercado de hoy (positivo).<br>
+· <b>Posiciones cerradas</b> (vendidas del todo) no aparecen, porque la tabla muestra solo posiciones abiertas.<br>
+· <b>Bonos y ON:</b> también se calcula para ellos, junto a su TIR de mercado. Una es "lo que rindió tu compra" y la otra "lo que rinde el bono hoy".<br>
+· <b>Datos incompletos:</b> si falta el CCL de alguna fecha, se usa el más cercano.</p>
+
+</div></body></html>

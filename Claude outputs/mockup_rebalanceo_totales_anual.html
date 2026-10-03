@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup — Rebalanceo, totales y % anual</title>
+<style>
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px 16px}
+.wrap{max-width:1000px;margin:0 auto}
+h2{font-size:.95rem;margin:26px 0 6px}
+p.n{font-size:.76rem;color:var(--text2);margin:0 0 10px;line-height:1.5}
+.toggles{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:.7rem;color:var(--text2);margin:0 0 10px}
+.toggles label{display:flex;gap:5px;align-items:center}
+.new{color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ch{display:flex;align-items:center;gap:10px;padding:.55rem .9rem;border-bottom:1px solid var(--border)}
+.ct{font-size:.85rem;font-weight:600}.tag{font-family:var(--mono);font-size:.66rem;color:var(--text2)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+th{font-family:var(--mono);font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:.35rem .6rem;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+td{font-family:var(--mono);padding:.4rem .6rem;border-bottom:1px solid var(--border);white-space:nowrap}
+th.hl,td.hl{background:rgba(0,230,118,.06)}
+.b{display:inline-block;border-radius:5px;padding:1px 7px;font-weight:700;font-size:.74rem}
+.g{color:var(--accent);background:rgba(126,232,162,.13);border:1px solid var(--accent)}
+.y{color:var(--amber);background:rgba(249,115,22,.13);border:1px solid var(--amber)}
+.r{color:var(--red);background:rgba(248,113,113,.13);border:1px solid var(--red)}
+.red{color:var(--red)}.yel{color:var(--amber)}.grn{color:var(--accent)}.mut{color:var(--text3)}.t2{color:var(--text2)}
+.sm{font-size:.64rem;color:var(--text3)}
+tfoot td{background:var(--surface2);font-weight:700;border-top:2px solid var(--border2);border-bottom:none}
+.tip{position:relative;display:inline-block;border-bottom:1px dotted var(--text3);cursor:help}
+.tipbox{display:block;margin-top:8px;max-width:360px;background:#0d1626;border:1px solid var(--border2);border-radius:6px;padding:.55rem .7rem;font-family:var(--mono);font-size:.68rem;color:var(--text2);line-height:1.55}
+.legend{font-size:.7rem;color:var(--text2);margin-top:8px;line-height:1.6}
+</style></head><body><div class="wrap">
+
+<p class="n" style="color:var(--text3)">Mockup con números inventados. Las tres cosas en la misma tabla de ejemplo (🇺🇸 USA), y en verde lo nuevo. Cada columna nueva tiene su checkbox, apagado por defecto, como P. Venta.</p>
+
+<div class="toggles">
+  <label><input type="checkbox"> Mostrar Cant.</label>
+  <label><input type="checkbox"> Mostrar P. Venta</label>
+  <label><input type="checkbox" checked> Mostrar % Tipo</label>
+  <label class="new"><input type="checkbox" checked> Mostrar Rebalanceo</label>
+  <label class="new"><input type="checkbox" checked> Mostrar % Anual</label>
+</div>
+
+<div class="card">
+  <div class="ch"><span class="ct">🇺🇸 USA</span><span class="tag">5 posiciones · $10.960.000</span></div>
+  <div class="tw"><table>
+    <thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th>% Tipo</th><th class="hl">Rebalanceo</th><th class="hl">% Anual</th></tr></thead>
+    <tbody>
+      <tr><td><b>AMZN</b></td><td><span class="b g">+38%</span></td><td class="red">$4.200.000</td><td>$21.000</td><td class="t2">$15.200</td><td class="red">3,4%</td><td class="hl red">vender $1.730.000 <span class="sm">· 82 u.</span></td><td class="hl grn">+19,6% <span class="sm">1a 9m</span></td></tr>
+      <tr><td><b>MSFT</b></td><td><span class="b g">+12%</span></td><td class="yel">$2.900.000</td><td>$18.500</td><td class="t2">$16.500</td><td class="yel">2,3%</td><td class="hl yel">vender $428.000 <span class="sm">· 23 u.</span></td><td class="hl grn">+28,1% <span class="sm">5m</span></td></tr>
+      <tr><td><b>KO</b></td><td><span class="b y">+6%</span></td><td>$2.100.000</td><td>$14.300</td><td class="t2">$13.500</td><td>1,7%</td><td class="hl mut">—</td><td class="hl t2">+2,1% <span class="sm">2a 10m</span></td></tr>
+      <tr><td><b>PFE</b></td><td><span class="b r">−14%</span></td><td>$1.360.000</td><td>$8.900</td><td class="t2">$10.350</td><td>1,1%</td><td class="hl mut">—</td><td class="hl red">−6,8% <span class="sm">2a 1m</span></td></tr>
+      <tr><td><b>NVDA</b></td><td><span class="b g">+9%</span></td><td>$400.000</td><td>$12.100</td><td class="t2">$11.100</td><td>0,3%</td><td class="hl grn">comprar $218.000 <span class="sm">· 18 u.</span></td><td class="hl mut">+9% <span class="sm">25 días</span></td></tr>
+    </tbody>
+    <tfoot><tr class="hl"><td>TOTAL</td><td><span class="b g">+15%</span></td><td>$10.960.000</td><td class="mut">—</td><td class="t2">$9.560.000</td><td>8,8%</td><td class="t2" colspan="2">USA = 8,8% de la RV</td></tr></tfoot>
+  </table></div>
+</div>
+
+<h2>1 · Rebalanceo</h2>
+<p class="n">Para los activos en rojo (más del 3%) o amarillo (más del 2%): cuánto vender para volver al 2% de su tipo, en pesos y en unidades (Cedears, acciones o nominales). Para los chicos, debajo del umbral de la card "inversiones chicas": cuánto comprar para llegar a ese umbral (en el ejemplo, 0,5%). El resto queda en "—". Al pasar el mouse se ve el cálculo:</p>
+<span class="tipbox">AMZN · 3,4% de la RV (total RV $123.600.000)<br>Objetivo 2% → $2.470.000<br>Vender $1.730.000 ≈ 82 Cedears a $21.000</span>
+
+<h2>2 · Fila de totales</h2>
+<p class="n">Al pie de cada recuadro (USA, Brasil, Bonos, ON…):</p>
+<p class="n">· <b>Inversión $:</b> suma de la tenencia a valor de mercado.<br>
+· <b>PPC $:</b> lo que te costó en total, en pesos de hoy.<br>
+· <b>Δ%:</b> el rendimiento ponderado del recuadro (mercado vs costo), no el promedio simple.<br>
+· <b>% Tipo:</b> la suma del recuadro.<br>
+· <b>Al final:</b> cuánto pesa el recuadro dentro de su tipo, por ejemplo "USA = 8,8% de la RV" o "Bonos = 70% de la RF".<br>
+La fila de totales siempre se ve, sin checkbox, y respeta el blur de montos.</p>
+
+<h2>3 · % Anual</h2>
+<p class="n">Rendimiento anualizado (TIR) de cada posición, en USD, usando las fechas reales de cada compra y venta parcial de movimientos y el valor de hoy, más los dividendos o rentas cobrados de ese ticker. Debajo va la antigüedad desde la primera compra.</p>
+<p class="n">· <b>Colores:</b> verde si supera el 10% anual, gris entre 0 y 10%, rojo si es negativo.<br>
+· <b>Menos de 3 meses:</b> se muestra el % sin anualizar y en gris, como NVDA en el ejemplo. Anualizar +9% en 25 días daría un número sin sentido (+250%).<br>
+· <b>Ejemplo:</b> AMZN tiene +38% pero en casi 2 años, unos +19,6% anual. MSFT tiene +12% en 5 meses, unos +28% anual: rindió mejor por unidad de tiempo, aunque su Δ% sea menor.</p>
+
+</div></body></html>
