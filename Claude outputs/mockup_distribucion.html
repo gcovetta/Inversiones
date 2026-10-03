@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup — Distribución de la cartera</title>
+<style>
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--orange:#ff9100;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px 16px}
+.note{max-width:860px;margin:0 auto 14px;font-size:.78rem;color:var(--text2)}
+.card{max-width:860px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;border-bottom:1px solid var(--border)}
+.ct{font-size:.85rem;font-weight:600}
+.tag{font-family:var(--mono);font-size:.68rem;color:var(--text2)}
+.btn{font-family:var(--mono);font-size:.68rem;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:5px;padding:3px 9px;cursor:pointer}
+.body{padding:.9rem 1rem 1rem}
+.lbl{font-family:var(--mono);font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:0 0 4px}
+.bar{display:flex;height:26px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surface2)}
+.bar.thin{height:10px;opacity:.75}
+.seg{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.68rem;font-weight:700;color:#0b1120;white-space:nowrap;overflow:hidden}
+.marker{position:relative}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:.78rem}
+th{font-family:var(--mono);font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;text-align:right;padding:.35rem .5rem;border-bottom:1px solid var(--border);font-weight:500}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);text-align:right;padding:.4rem .5rem;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:middle}
+.obj{width:44px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.74rem;text-align:right;padding:2px 4px}
+.pos{color:var(--accent)} .neg{color:var(--red)} .mut{color:var(--text3)}
+.foot{margin-top:10px;font-family:var(--mono);font-size:.66rem;color:var(--text2)}
+@media (max-width:600px){.hide-m{display:none}}
+</style></head><body>
+<p class="note">Mockup con números inventados. Iría arriba de las tablas en la solapa Portafolio, plegable como las otras cards.</p>
+<div class="card">
+  <div class="ch"><span class="ct">📊 Distribución de la cartera</span><span class="tag">Total USD 100.000 · a valor de mercado</span></div>
+  <div class="body">
+    <div class="lbl">Actual</div>
+    <div class="bar">
+      <div class="seg" style="width:58%;background:var(--accent)">RV 58%</div>
+      <div class="seg" style="width:27%;background:var(--blue)">RF 27%</div>
+      <div class="seg" style="width:5%;background:var(--orange)">5%</div>
+      <div class="seg" style="width:10%;background:#7a9cc5">Liq 10%</div>
+    </div>
+    <div class="lbl" style="margin-top:10px">Objetivo</div>
+    <div class="bar thin">
+      <div class="seg" style="width:60%;background:var(--accent)"></div>
+      <div class="seg" style="width:30%;background:var(--blue)"></div>
+      <div class="seg" style="width:5%;background:var(--orange)"></div>
+      <div class="seg" style="width:5%;background:#7a9cc5"></div>
+    </div>
+    <table>
+      <thead><tr><th>Tipo</th><th>USD</th><th>Actual</th><th>Objetivo</th><th>Diferencia</th><th class="hide-m">Para llegar</th></tr></thead>
+      <tbody>
+        <tr><td><span class="dot" style="background:var(--accent)"></span>Renta variable</td><td>58.000</td><td>58,0%</td><td><input class="obj" value="60">%</td><td>−2,0 pp</td><td class="hide-m pos">comprar USD 2.000</td></tr>
+        <tr><td><span class="dot" style="background:var(--blue)"></span>Renta fija (Bonos + ON)</td><td>27.000</td><td>27,0%</td><td><input class="obj" value="30">%</td><td>−3,0 pp</td><td class="hide-m pos">comprar USD 3.000</td></tr>
+        <tr><td><span class="dot" style="background:var(--orange)"></span>FCI</td><td>5.000</td><td>5,0%</td><td><input class="obj" value="5">%</td><td class="mut">0,0 pp</td><td class="hide-m mut">—</td></tr>
+        <tr><td><span class="dot" style="background:#7a9cc5"></span>Liquidez (ARS + USD)</td><td>10.000</td><td>10,0%</td><td><input class="obj" value="5">%</td><td>+5,0 pp</td><td class="hide-m" style="color:var(--amber)">sobran USD 5.000</td></tr>
+      </tbody>
+    </table>
+    <div class="foot">Objetivos suman 100% ✓ · se guardan en Supabase por portafolio · verde = falta comprar, amarillo = sobra</div>
+  </div>
+</div>
+</body></html>

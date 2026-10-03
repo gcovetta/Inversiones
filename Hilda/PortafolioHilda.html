@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 <!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
+v35 | 2026-10-03 | Feat: card "Distribución de la cartera" — los objetivos ahora salen de la solapa Recomendaciones (PERFIL_TARGETS[Agresivo|Moderado].composicion, rangos RV / RF / Liquidez); FCI se suma a Renta fija como en Recomendaciones. La tabla de detalle es colapsable y arranca colapsada. "Para llegar" se muestra en pesos: lo que falta (o sobra) para entrar en el rango, en USD × CCL para Renta variable y USD × MEP para Renta fija y Liquidez; si está dentro del rango, "en rango". (distRender)
+v34 | 2026-10-03 | Feat: card "Distribución de la cartera" arriba de las tablas de Portafolio — barra actual vs objetivo de Renta variable / Renta fija (Bonos+ON) / FCI / Liquidez (ARS+USD), todo a valor de mercado en USD, con tabla de diferencia en puntos y cuánto comprar o cuánto sobra para llegar al objetivo. Checkbox de perfil Moderado / Agresivo que cambia los objetivos (Agresivo: RV 75 / RF 15 / FCI 0 / Liq 10 — Moderado: RV 50 / RF 35 / FCI 5 / Liq 10; sin FCI en el portafolio, su % pasa a RF). Perfil por defecto: Moderado; se guarda en Supabase (config perfil_inversor) y en localStorage. (distRender / distSetPerfil, hook en renderPortfolio)
+v33 | 2026-10-03 | Fix: el portafolio escribía/leía dos claves de localStorage con el prefijo de GDC (ptNYSE_ratios y ptNYSE_siThreshold) — compartidas entre portafolios del mismo origen; pasan a ptHilda_*. Además, protección en la reconciliación de movimientos pendientes: un snapshot local que no comparte ningún movimiento con Supabase se descarta en vez de subirlo. (RATIOS_TABLE / siLoadPersist / initFromSupabase)
+v32 | 2026-10-03 | Feat: la columna "% Tipo" se colorea con la misma lógica que Inversión $ — más de 3% rojo, más de 2% amarillo, resto color normal (aplica tanto a renta variable como a renta fija). (renderPortfolio)
 v31 | 2026-10-03 | Feat: las tablas de Portafolio (USA, Brasil, Bonos, ON, etc.) se ordenan al hacer click en el título de la columna — 1er click mayor→menor (Ticker: A→Z), 2do invierte, 3ro vuelve al orden original; flecha ▲/▼ en el título; Δ%/ΔUP ordena por Δ%; los vacíos (—) van al final; el orden elegido se mantiene al refrescar cotizaciones. FCI ordena solo por Fondo/Δ%/Inversión/Mercado. (panelSortApply / panelSortClick, hook en renderPortfolio)
 v30 | 2026-10-03 | Fix: la card de inversiones chicas ahora toma como 100% de la renta variable el total a valor de mercado (igual que los colores 2%/3% y la columna % Tipo desde la versión anterior), en vez del costo invertido; el umbral y el % de cada ticker quedan sobre esa base. (renderSmallInv)
 v29 | 2026-10-03 | Feat: nueva columna "% Tipo" en las tablas de Portafolio (checkbox "Mostrar % Tipo", apagado por defecto y recordado como P. Venta): % que representa cada activo a valor de mercado sobre el total de su tipo — renta variable (USA+Argentina+Brasil+Europa+China+Cripto) o renta fija (Bonos+ON); FCI sin columna. Además, los colores amarillo/rojo (2%/3%) de la columna Inversión ahora se calculan sobre el total RV a valor de mercado en vez del costo invertido (sidebar: "Total RV a mercado"). (renderPortfolio / togglePTipoCol / initPTipoToggle)
@@ -413,7 +417,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: las tablas de Portafolio (USA, Brasil, Bonos, ON, etc.) se ordenan al hacer click en el título de la columna — 1er click mayor→menor (Ticker: A→Z), 2do invierte, 3ro vuelve al orden original; flecha ▲/▼ en el título; Δ%/ΔUP ordena por Δ%; los vacíos (—) van al final; el orden elegido se mantiene al refrescar cotizaciones. FCI ordena solo por Fondo/Δ%/Inversión/Mercado. (panelSortApply / panelSortClick, hook en renderPortfolio)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v31 · 03/10/2026</div>
+<div id="claude-version-badge" title="Feat: card &quot;Distribución de la cartera&quot; — los objetivos ahora salen de la solapa Recomendaciones (PERFIL_TARGETS[Agresivo|Moderado].composicion, rangos RV / RF / Liquidez); FCI se suma a Renta fija como en Recomendaciones. La tabla de detalle es colapsable y arranca colapsada. &quot;Para llegar&quot; se muestra en pesos: lo que falta (o sobra) para entrar en el rango, en USD × CCL para Renta variable y USD × MEP para Renta fija y Liquidez; si está dentro del rango, &quot;en rango&quot;. (distRender)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v35 · 03/10/2026</div>
 
 <div class="app">
 <div class="topbar">
@@ -687,7 +691,16 @@ tr:hover td{background:var(--surface2)}
           <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
         </div>
       </div>
-        <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
+        <div class="card" id="dist-card" style="display:none;margin-bottom:1rem">
+        <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="card-title">📊 Distribución de la cartera</span>
+          <label class="qty-toggle" title="Objetivos de perfil moderado"><input type="checkbox" id="dist-perfil-moderado" onchange="distSetPerfil('moderado')"> Moderado</label>
+          <label class="qty-toggle" title="Objetivos de perfil agresivo"><input type="checkbox" id="dist-perfil-agresivo" onchange="distSetPerfil('agresivo')"> Agresivo</label>
+          <span id="dist-meta" class="tag" style="margin-left:auto"></span>
+        </div>
+        <div id="dist-body" style="padding:.8rem 1rem 1rem"></div>
+      </div>
+      <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
             <div class="panels-grid hide-qty hide-pventa hide-ptipo" id="panels-grid" style="align-items:start">
         <div style="display:flex;flex-direction:column;gap:1rem">
           <div class="card" id="panel-nyse" style="display:none">
@@ -4347,7 +4360,8 @@ function renderPortfolio(){
     if(sector!=='fci'){
       var _ptDen=(sector==='bonos'||sector==='on')?rfMktARS:(rvSectors.indexOf(sector)!==-1?rvMktARS:0);
       var _ptPct=_ptDen>0&&inversionCedearARS!=null?inversionCedearARS/_ptDen*100:null;
-      ptipoCell='<td class="mono col-ptipo">'+(_ptPct!=null?_ptPct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'<span style="color:var(--text3)">—</span>')+'</td>';
+      var _ptCol=_ptPct==null?'var(--text)':_ptPct>3?'var(--red)':_ptPct>2?'#eab308':'var(--text)';
+      ptipoCell='<td class="mono col-ptipo">'+(_ptPct!=null?'<span style="color:'+_ptCol+'">'+_ptPct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%</span>':'<span style="color:var(--text3)">—</span>')+'</td>';
     }
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
@@ -4385,6 +4399,8 @@ function renderPortfolio(){
   var liqUSD=getRawNum('liq-usd');
   var liqTotalUSD=liqUSD+(CCL_HOY>0?liqARS/CCL_HOY:0);
   var valConLiq=totalVal+liqTotalUSD;
+  // Distribución de la cartera (card arriba de las tablas)
+  try{distRender({rv:['nyse','argentina','brasil','europa','china','cripto'].reduce(function(s,k){return s+(sectorVal[k]||0);},0),rf:(sectorVal.bonos||0)+(sectorVal.on||0),fci:sectorVal.fci||0,hasFci:('fci' in sectorVal),liq:liqTotalUSD});}catch(_e){console.warn('distRender',_e);}
 
   document.getElementById('m-val').textContent='$'+Math.round(valConLiq).toLocaleString('es-AR');
   document.getElementById('m-count').textContent=open.length;
@@ -4801,10 +4817,10 @@ function renderNearTarget(){
 
 // ─── Inversiones Pequeñas ───
 var SI_THRESHOLD=(function(){
-  try{var s=localStorage.getItem('ptNYSE_siThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>=0)return v;}}catch(e){}
+  try{var s=localStorage.getItem('ptHilda_siThreshold');if(s){var v=parseFloat(s);if(!isNaN(v)&&v>=0)return v;}}catch(e){}
   return 0.5;
 })();
-function siSavePersist(){try{localStorage.setItem('ptNYSE_siThreshold',String(SI_THRESHOLD));}catch(e){}}
+function siSavePersist(){try{localStorage.setItem('ptHilda_siThreshold',String(SI_THRESHOLD));}catch(e){}}
 function siOnSlider(v){
   var n=parseFloat(v);if(isNaN(n)||n<0)return;
   SI_THRESHOLD=n;siSavePersist();
@@ -5271,6 +5287,75 @@ document.addEventListener('click',function(e){
   var th=e.target&&e.target.closest?e.target.closest('#panels-grid .panel-table thead th'):null;
   if(th)panelSortClick(th);
 });
+
+// ─── Distribución de la cartera (RV / RF / Liquidez) vs rango objetivo del perfil (solapa Recomendaciones) ───
+var DIST_LS_KEY='ptHilda_distPerfil';
+var DIST_PERFIL=(function(){try{var s=localStorage.getItem(DIST_LS_KEY);if(s==='agresivo'||s==='moderado')return s;}catch(e){}return 'moderado';})();
+var DIST_LAST=null,DIST_SB_LOADED=false,DIST_OPEN=false;
+function distSetPerfil(p){
+  if(p!=='agresivo'&&p!=='moderado')return;
+  DIST_PERFIL=p;
+  try{localStorage.setItem(DIST_LS_KEY,p);}catch(e){}
+  try{if(typeof sbSetConfig==='function')sbSetConfig('perfil_inversor',p);}catch(e){}
+  distRender();
+}
+function distToggleDetalle(){DIST_OPEN=!DIST_OPEN;distRender();}
+function distRender(data){
+  if(data)DIST_LAST=data;
+  var d=DIST_LAST;
+  var card=document.getElementById('dist-card'),body=document.getElementById('dist-body'),meta=document.getElementById('dist-meta');
+  if(!card||!body||!d)return;
+  if(!DIST_SB_LOADED&&typeof sbGetConfig==='function'){
+    DIST_SB_LOADED=true;
+    sbGetConfig('perfil_inversor').then(function(v){if((v==='agresivo'||v==='moderado')&&v!==DIST_PERFIL){DIST_PERFIL=v;try{localStorage.setItem(DIST_LS_KEY,v);}catch(e){}distRender();}}).catch(function(){});
+  }
+  var cm=document.getElementById('dist-perfil-moderado'),ca=document.getElementById('dist-perfil-agresivo');
+  if(cm)cm.checked=DIST_PERFIL==='moderado';if(ca)ca.checked=DIST_PERFIL==='agresivo';
+  var vals={rv:d.rv||0,rf:(d.rf||0)+(d.fci||0),liq:d.liq||0};
+  var total=vals.rv+vals.rf+vals.liq;
+  if(!(total>0)){card.style.display='none';return;}
+  card.style.display='';
+  var pName=DIST_PERFIL==='agresivo'?'Agresivo':'Moderado';
+  var comp=(typeof PERFIL_TARGETS!=='undefined'&&PERFIL_TARGETS[pName]&&PERFIL_TARGETS[pName].composicion)||{};
+  var ccl=CCL_HOY||0,mep=(typeof MEP_HOY!=='undefined'&&MEP_HOY)||ccl;
+  var cats=[
+    {k:'rv',n:'Renta variable',c:'var(--accent)',s:'RV',r:comp['Renta Variable'],tc:ccl,tcN:'CCL'},
+    {k:'rf',n:'Renta fija (Bonos + ON + FCI)',c:'var(--blue)',s:'RF',r:comp['Renta Fija'],tc:mep,tcN:'MEP'},
+    {k:'liq',n:'Liquidez (ARS + USD)',c:'#7a9cc5',s:'Liq',r:comp['Liquidez'],tc:mep,tcN:'MEP'}
+  ];
+  function f1(n){return n.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1});}
+  function num(n){return Math.round(n).toLocaleString('es-AR');}
+  function seg(w,c,lbl){return '<div style="width:'+w+'%;background:'+c+';display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.66rem;font-weight:700;color:#0b1120;white-space:nowrap;overflow:hidden">'+(w>=7?lbl:'')+'</div>';}
+  // Barra objetivo: centro de cada rango, normalizado a 100%
+  var mids=cats.map(function(x){return x.r?(x.r[0]+x.r[1])/2:0;});
+  var midSum=mids.reduce(function(a,b){return a+b;},0)||1;
+  var barA=cats.map(function(x){var p=vals[x.k]/total*100;return p>0?seg(p,x.c,x.s+' '+Math.round(p)+'%'):'';}).join('');
+  var barO=cats.map(function(x,i){var p=mids[i]/midSum*100;return p>0?seg(p,x.c,x.s+' '+(x.r?x.r[0]+'–'+x.r[1]+'%':'')):'';}).join('');
+  var nFuera=0;
+  var rows=cats.map(function(x){
+    var v=vals[x.k],pa=v/total*100,acc,diff;
+    if(!x.r){diff=null;acc='<span style="color:var(--text3)">—</span>';}
+    else if(pa<x.r[0]){
+      nFuera++;diff=pa-x.r[0];var gU=x.r[0]/100*total-v;
+      acc='<span style="color:var(--accent)" title="USD '+num(gU)+' × '+x.tcN+' '+num(x.tc)+'">'+(x.k==='liq'?'faltan':'comprar')+' <span class="port-sensitive">$'+num(gU*x.tc)+'</span></span>';
+    } else if(pa>x.r[1]){
+      nFuera++;diff=pa-x.r[1];var sU=v-x.r[1]/100*total;
+      acc='<span style="color:#eab308" title="USD '+num(sU)+' × '+x.tcN+' '+num(x.tc)+'">sobran <span class="port-sensitive">$'+num(sU*x.tc)+'</span></span>';
+    } else {diff=0;acc='<span style="color:var(--text2)">en rango ✓</span>';}
+    return '<tr><td style="text-align:left"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+x.c+';margin-right:7px;vertical-align:middle"></span>'+x.n+'</td>'+
+      '<td class="mono port-sensitive">'+num(v)+'</td><td class="mono">'+f1(pa)+'%</td><td class="mono">'+(x.r?x.r[0]+'–'+x.r[1]+'%':'—')+'</td>'+
+      '<td class="mono" style="color:var(--text2)">'+(diff==null?'—':diff===0?'0 pp':(diff>0?'+':'')+f1(diff)+' pp')+'</td><td class="mono">'+acc+'</td></tr>';
+  }).join('');
+  var L='font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:0 0 4px';
+  body.innerHTML=
+    '<div style="'+L+'">Actual</div><div style="display:flex;height:24px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surface2)">'+barA+'</div>'+
+    '<div style="'+L+';margin-top:9px">Objetivo · perfil '+pName+' (rangos de Recomendaciones)</div><div style="display:flex;height:16px;border-radius:5px;overflow:hidden;gap:2px;background:var(--surface2);opacity:.75">'+barO+'</div>'+
+    '<div style="margin-top:10px;display:flex;align-items:center;gap:10px"><button class="btn btn-sm" onclick="distToggleDetalle()" style="font-size:.68rem">'+(DIST_OPEN?'▾ Ocultar detalle':'▸ Ver detalle')+'</button>'+
+      '<span style="font-family:var(--mono);font-size:.66rem;color:'+(nFuera?'#eab308':'var(--text2)')+'">'+(nFuera?nFuera+' tipo'+(nFuera>1?'s':'')+' fuera de rango':'Todo dentro del rango ✓')+'</span></div>'+
+    (DIST_OPEN?'<div class="tw" style="margin-top:10px"><table><thead><tr><th style="text-align:left">Tipo</th><th>USD</th><th>Actual</th><th>Objetivo</th><th>Diferencia</th><th>Para llegar ($)</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:6px">Pesos = USD × CCL ('+num(ccl)+') en renta variable · USD × MEP ('+num(mep)+') en renta fija y liquidez</div></div>':'');
+  if(meta)meta.innerHTML='Total USD <span class="port-sensitive">'+num(total)+'</span> · a valor de mercado';
+}
 
 function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');
@@ -5888,7 +5973,7 @@ function importRatiosXLSX(input){
         RATIOS_TABLE[ticker]=ratio_val;
         RATIOS_META[ticker]={nombre:nombre,mercado:mercado,pais:pais,rubro:rubro};
       });
-      try{localStorage.setItem(typeof WL_KEY!=='undefined'?'ptNYSE_ratios':'ptNYSE_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
+      try{localStorage.setItem(typeof WL_KEY!=='undefined'?'ptHilda_ratios':'ptHilda_ratios',JSON.stringify(RATIOS_TABLE));}catch(e){}
       sbSetConfig('ratios',RATIOS_TABLE);
       sbSetConfig('ratios_meta',RATIOS_META);
       renderRatios();
@@ -6781,6 +6866,10 @@ function trkCalcCCL(){
         var _pending=JSON.parse(_pendingRaw);
         var _cloudIds={};(sbMov||[]).forEach(function(m){if(m&&m.id!=null)_cloudIds[m.id]=true;});
         var _missing=_pending.filter(function(m){return m&&m.id!=null&&!_cloudIds[m.id];});
+        // Protección: si la nube ya tiene movimientos y el snapshot pendiente no comparte NINGUNO con ella,
+        // el snapshot no es de este portafolio (localStorage compartido entre portafolios del mismo origen) → se descarta.
+        var _overlap=_pending.some(function(m){return m&&m.id!=null&&_cloudIds[m.id];});
+        if(sbMov&&sbMov.length&&!_overlap){console.warn('[initFromSupabase] snapshot pendiente ajeno a este portafolio — descartado.');_missing=[];}
         if(_missing.length){
           console.warn('[initFromSupabase] '+_missing.length+' movimiento(s) local(es) no estaban en Supabase — reintentando guardarlos.');
           var _resynced=await sbSaveArrayRetry('movimientos',_pending);
