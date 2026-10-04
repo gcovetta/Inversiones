@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=89, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=90, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v90 | 2026-10-04 | Feat: aviso "Desde tu última visita" al abrir el portafolio (variación del total, activos que más subieron y bajaron, cobros cargados, posiciones nuevas o cerradas; se guarda por dispositivo). El resumen para Carteras administradas guarda la variación del día de cada posición (para "Lo que más se movió").',
   'v89 | 2026-10-04 | Feat: el resumen para Carteras administradas guarda el P. Venta y la distancia al P. Venta de cada posición (para el buscador de tickers del index).',
   'v88 | 2026-10-04 | Fix: si el CCL/MEP de hoy no estaba en la tabla (fin de semana o antes de traerlo) se usaba un valor fijo viejo (1487) y los Cedears quedaban valuados con ese dólar — en Juli MSFT daba −2% al P. Venta y en GDC +7%. Ahora se usa el último CCL/MEP cargado, se refresca al leer la tabla de Supabase y la cartera se recalcula cuando llega el dólar del día (también el real, para las acciones brasileñas).',
   'v87 | 2026-10-04 | Feat: informe — el perfil de inversor sale del mismo puntaje de Recomendaciones (composición, países y sectores, 0 a 100) y muestra el puntaje de los tres perfiles.',
@@ -3865,7 +3866,7 @@ function renderPortfolio(){
     sectorVal:sectorVal, dolzPct:dolzPct, liqUSD:liqUSD, liqARS:liqARS, liqTotalUSD:liqTotalUSD,
     totalVal:totalVal, rendPct:rendPct, invInicial:invInicial,
     totalCost:open.reduce(function(a,p){return a+(p._valueUSD!=null?(p.costUSDpuro||0):0);},0),
-    pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null,pv:p._pv!=null?p._pv:null,up:p._upside!=null?Math.round(p._upside*10)/10:null};}),
+    pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null,pv:p._pv!=null?p._pv:null,up:p._upside!=null?Math.round(p._upside*10)/10:null,ch:(quotes[p.ticker]&&quotes[p.ticker].changePct!=null&&isFinite(quotes[p.ticker].changePct))?Math.round(quotes[p.ticker].changePct*100)/100:null};}),
     cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
   });}catch(_e){console.warn('famQueueSnapshot',_e);}
 
@@ -5745,7 +5746,7 @@ function cargarPortafolioEnComparacion(){return cargarJuliEnComparacion();}
 // entrada por cartera.
 var _famPrev=null,_famTimer=null,_famLastSave=0,_famLastTotal=0,_famLoaded=false;
 function famQueueSnapshot(d){
-  if(d&&d.totalVal>0)INF_LAST=d;
+  if(d&&d.totalVal>0){INF_LAST=d;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){try{uvActualizar(d);}catch(e){console.warn('uv',e);}}}
   if(typeof _gdcInitDone==='undefined'||!_gdcInitDone)return;
   if(!d||!(d.totalVal>0)||!d.pos.length)return;
   clearTimeout(_famTimer);
@@ -10280,3 +10281,46 @@ function tcFechaMask(el){
   });}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
+
+// ─── "Desde tu última visita" ─────────────────────────────────────────────────
+// Al abrir un portafolio compara con cómo estaba la vez anterior que lo abriste en este dispositivo:
+// variación del total, los activos que más se movieron y los cobros cargados desde entonces.
+// Se guarda en este navegador (PFX+'uv_act' = la visita actual, PFX+'uv_prev' = la anterior); una
+// visita nueva empieza si pasaron más de 30 minutos desde la última vez que se vio la cartera.
+var _uvCerrado=false;
+function uvActualizar(d){
+  if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA!=='principal')return;
+  var now=Date.now(),tot=(d.totalVal||0)+(d.liqTotalUSD||0),pr={};
+  (d.pos||[]).forEach(function(p){if(p.q>0&&p.v>0)pr[p.t]=p.v/p.q;});
+  var act=null,prev=null;try{act=JSON.parse(localStorage.getItem(PFX+'uv_act')||'null');prev=JSON.parse(localStorage.getItem(PFX+'uv_prev')||'null');}catch(e){}
+  var nueva=false;try{nueva=!sessionStorage.getItem(PFX+'uv_ses');sessionStorage.setItem(PFX+'uv_ses','1');}catch(e){}
+  if(act&&nueva&&now-act.ts>30*60000){prev=act;try{localStorage.setItem(PFX+'uv_prev',JSON.stringify(prev));}catch(e){}}
+  try{localStorage.setItem(PFX+'uv_act',JSON.stringify({ts:now,tot:tot,pr:pr}));}catch(e){}
+  if(prev&&!_uvCerrado)uvMostrar(prev,tot,pr);
+}
+function uvMostrar(prev,tot,pr){
+  var ref=document.getElementById('pventa-alert')||document.getElementById('top-cards-row');if(!ref||!ref.parentNode)return;
+  var cuando=(function(){var s=(Date.now()-prev.ts)/1000;if(s<86400){var h=Math.round(s/3600);return h<=1?'hace un rato':'hace '+h+' horas';}var dd=Math.round(s/86400);
+    if(dd===1)return 'ayer';if(dd<7)return 'el '+['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][new Date(prev.ts).getDay()];return 'hace '+dd+' días';})();
+  var dv=prev.tot>0?(tot/prev.tot-1)*100:null,du=tot-prev.tot;
+  var mv=Object.keys(pr).filter(function(t){return prev.pr&&prev.pr[t]>0;}).map(function(t){return {t:t,c:(pr[t]/prev.pr[t]-1)*100};}).filter(function(x){return Math.abs(x.c)>=1;});
+  var up=mv.filter(function(x){return x.c>0;}).sort(function(a,b){return b.c-a.c;}).slice(0,3),dn=mv.filter(function(x){return x.c<0;}).sort(function(a,b){return a.c-b.c;}).slice(0,3);
+  var nuevos=Object.keys(pr).filter(function(t){return !prev.pr||!prev.pr[t];}),vend=Object.keys(prev.pr||{}).filter(function(t){return !pr[t];});
+  var desde=new Date(prev.ts).toISOString().slice(0,10),cob=0,ncob=0;
+  (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente')return;var f=String(x.fecha||'');if(f.indexOf('/')>0){var a=f.split('/');f=a[2]+'-'+a[1].padStart(2,'0')+'-'+a[0].padStart(2,'0');}
+    if(f>=desde&&(!x.cartera||x.cartera==='principal')){var u=x.montoUSD!=null?+x.montoUSD:(x.moneda==='USD'?+x.monto:0);if(u>0){cob+=u;ncob++;}}});
+  if(dv==null||(Math.abs(dv)<0.05&&!mv.length&&!ncob&&!nuevos.length&&!vend.length))return;
+  var pc=function(v){return (v>=0?'+':'−')+Math.abs(v).toFixed(1).replace('.',',')+'%';};
+  var ch=function(x){return '<b style="color:'+(x.c>=0?'var(--accent)':'var(--red)')+'">'+x.t+' '+pc(x.c)+'</b>';};
+  var partes=['<b style="color:'+(dv>=0?'var(--accent)':'var(--red)')+'">'+pc(dv)+'</b> <span class="port-sensitive">('+(du>=0?'+':'−')+'USD '+Math.round(Math.abs(du)).toLocaleString('es-AR')+')</span>'];
+  if(up.length)partes.push('subieron '+up.map(ch).join(', '));
+  if(dn.length)partes.push('bajaron '+dn.map(ch).join(', '));
+  if(ncob)partes.push('cobró <span class="port-sensitive">USD '+(Math.round(cob*100)/100).toLocaleString('es-AR')+'</span> ('+ncob+' cobro'+(ncob>1?'s':'')+')');
+  if(nuevos.length)partes.push('nuevas: '+nuevos.slice(0,4).join(', ')+(nuevos.length>4?'…':''));
+  if(vend.length)partes.push('ya no están: '+vend.slice(0,4).join(', ')+(vend.length>4?'…':''));
+  var el=document.getElementById('uv-banner');if(el)el.remove();
+  el=document.createElement('div');el.id='uv-banner';
+  el.style.cssText='margin-bottom:.7rem;padding:.5rem .8rem;border:1px solid var(--border2);border-radius:var(--rsm);background:var(--surface2);font-size:.76rem;color:var(--text2);font-family:var(--mono);display:flex;gap:10px;align-items:flex-start;max-width:1100px';
+  el.innerHTML='<span style="flex:1;line-height:1.6">🕑 <span style="color:var(--text)">Desde tu última visita ('+cuando+'):</span> '+partes.join(' · ')+'</span><span onclick="_uvCerrado=true;this.parentNode.remove()" style="cursor:pointer;color:var(--text3)" title="Cerrar">✕</span>';
+  ref.parentNode.insertBefore(el,ref);
+}
