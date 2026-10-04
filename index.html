@@ -33,6 +33,7 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;padding:2rem 2
 a.plink{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 5px;background:var(--surface);border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--text);font-size:.8rem;transition:border-color .15s,background .15s}
 a.plink:hover{border-color:var(--accent);background:var(--surface2)}
 a.plink img{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border2)}
+a.plink.tool{padding:5px 12px 5px 6px}a.plink .ti{width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:inline-flex;align-items:center;justify-content:center;font-size:.8rem}
 a.plink .pls{font-family:var(--mono);font-size:.66rem;color:var(--text3)}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;width:100%;max-width:none;margin-bottom:.5rem}
@@ -114,7 +115,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v15</span>
+  <span class="subtitle">Carteras administradas · v16</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -136,16 +137,16 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     <div class="section-label">📈 Resumen de las carteras</div>
     <div id="portal"><div class="sub">Cargando resúmenes…</div></div>
     <div class="section-label">🛠 Herramientas</div>
-    <div class="grid">
-      <a class="card" href="https://gcovetta.github.io/portafolio-tracker/Control_de_Obra.html"><div class="card-top"><div class="card-icon">🏠</div><div class="card-name">Control Obra</div></div><div class="card-path">Control_de_Obra.html</div><div class="card-arrow">→</div></a>
-      <a class="card" href="https://gcovetta.github.io/Task/pendientes.html"><div class="card-top"><div class="card-icon">✅</div><div class="card-name">Tareas Pendientes</div></div><div class="card-path">Task/pendientes.html</div><div class="card-arrow">→</div></a>
-      <a class="card" href="https://gcovetta.github.io/comparador-obra/"><div class="card-top"><div class="card-icon">🔨</div><div class="card-name">Comparador Materiales</div></div><div class="card-path">comparador-obra/</div><div class="card-arrow">→</div></a>
-      <a class="card" href="https://gcovetta.github.io/portafolio-tracker/GastoTrack_6.html"><div class="card-top"><div class="card-icon">💰</div><div class="card-name">Control de Gastos</div></div><div class="card-path">GastoTrack_6.html</div><div class="card-arrow">→</div></a>
+    <div class="plinks">
+      <a class="plink tool" href="https://gcovetta.github.io/portafolio-tracker/Control_de_Obra.html"><span class="ti">🏠</span><b>Control Obra</b></a>
+      <a class="plink tool" href="https://gcovetta.github.io/Task/pendientes.html"><span class="ti">✅</span><b>Tareas Pendientes</b></a>
+      <a class="plink tool" href="https://gcovetta.github.io/comparador-obra/"><span class="ti">🔨</span><b>Comparador Materiales</b></a>
+      <a class="plink tool" href="https://gcovetta.github.io/portafolio-tracker/GastoTrack_6.html"><span class="ti">💰</span><b>Control de Gastos</b></a>
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v15 · 04/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v15</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v16 · 04/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v16</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
