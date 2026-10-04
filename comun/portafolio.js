@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=90, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=91, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v91 | 2026-10-04 | Feat: control de ratios de Cedears — una vez por día compara el precio del Cedear con NYSE (Finnhub) y el CCL; si el ratio que surge del mercado difiere más de 25% del cargado, avisa arriba con el ratio sugerido (ignorar / verificar ahora). No cambia nada solo; se corrige en GDC → Ratios y Sync.',
   'v90 | 2026-10-04 | Feat: aviso "Desde tu última visita" al abrir el portafolio (variación del total, activos que más subieron y bajaron, cobros cargados, posiciones nuevas o cerradas; se guarda por dispositivo). El resumen para Carteras administradas guarda la variación del día de cada posición (para "Lo que más se movió").',
   'v89 | 2026-10-04 | Feat: el resumen para Carteras administradas guarda el P. Venta y la distancia al P. Venta de cada posición (para el buscador de tickers del index).',
   'v88 | 2026-10-04 | Fix: si el CCL/MEP de hoy no estaba en la tabla (fin de semana o antes de traerlo) se usaba un valor fijo viejo (1487) y los Cedears quedaban valuados con ese dólar — en Juli MSFT daba −2% al P. Venta y en GDC +7%. Ahora se usa el último CCL/MEP cargado, se refresca al leer la tabla de Supabase y la cartera se recalcula cuando llega el dólar del día (también el real, para las acciones brasileñas).',
@@ -5746,7 +5747,7 @@ function cargarPortafolioEnComparacion(){return cargarJuliEnComparacion();}
 // entrada por cartera.
 var _famPrev=null,_famTimer=null,_famLastSave=0,_famLastTotal=0,_famLoaded=false;
 function famQueueSnapshot(d){
-  if(d&&d.totalVal>0){INF_LAST=d;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){try{uvActualizar(d);}catch(e){console.warn('uv',e);}}}
+  if(d&&d.totalVal>0){INF_LAST=d;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){try{uvActualizar(d);}catch(e){console.warn('uv',e);}try{ratiosAuto();}catch(e){}}}
   if(typeof _gdcInitDone==='undefined'||!_gdcInitDone)return;
   if(!d||!(d.totalVal>0)||!d.pos.length)return;
   clearTimeout(_famTimer);
@@ -10323,4 +10324,62 @@ function uvMostrar(prev,tot,pr){
   el.style.cssText='margin-bottom:.7rem;padding:.5rem .8rem;border:1px solid var(--border2);border-radius:var(--rsm);background:var(--surface2);font-size:.76rem;color:var(--text2);font-family:var(--mono);display:flex;gap:10px;align-items:flex-start;max-width:1100px';
   el.innerHTML='<span style="flex:1;line-height:1.6">🕑 <span style="color:var(--text)">Desde tu última visita ('+cuando+'):</span> '+partes.join(' · ')+'</span><span onclick="_uvCerrado=true;this.parentNode.remove()" style="cursor:pointer;color:var(--text3)" title="Cerrar">✕</span>';
   ref.parentNode.insertBefore(el,ref);
+}
+
+// ─── Control de ratios de Cedears ─────────────────────────────────────────────
+// Si un Cedear cambia de ratio y la tabla no se actualiza, la app lo valúa mal sin avisar.
+// Una vez por día (y con el botón "verificar ahora") compara, para cada Cedear en cartera, el precio
+// del Cedear en pesos con el precio de la acción en NYSE (Finnhub) y el CCL de hoy:
+//   ratio que surge del mercado = precio NYSE × CCL / precio Cedear
+// Si difiere más de 25% del ratio cargado, avisa. No cambia nada solo.
+var RT_SOSP={},_rtCorriendo=false,_rtProgramado=false;
+try{var _rtS=JSON.parse(localStorage.getItem(PFX+'rt_sosp')||'null');if(_rtS&&_rtS.d)RT_SOSP=_rtS.s||{};}catch(e){}
+function _rtCedears(){
+  var out=[];try{getPositions().forEach(function(p){if(!(p.qty>0.000001))return;var s=getSector(p.ticker);
+    if(['nyse','brasil','europa','china','cripto'].indexOf(s)<0||BRL_TICKERS.has(p.ticker))return;
+    var q=quotes[p.ticker];if(q&&q.fromByma&&q.price>0)out.push(p.ticker);});}catch(e){}
+  return out;
+}
+function ratiosAuto(){
+  if(_rtProgramado)return;_rtProgramado=true;
+  var hoy=_hHoy?_hHoy():new Date().toISOString().slice(0,10),ult='';try{ult=localStorage.getItem(PFX+'rt_check')||'';}catch(e){}
+  rtBanner();
+  if(ult===hoy)return;
+  setTimeout(function(){ratiosVerificar(false);},20000); // después de que terminen de llegar las cotizaciones
+}
+async function ratiosVerificar(manual){
+  if(_rtCorriendo)return;_rtCorriendo=true;
+  var bt=document.getElementById('rt-btn');if(bt)bt.textContent='verificando…';
+  var tks=_rtCedears(),nuevo={},ok=0;
+  for(var i=0;i<tks.length;i++){
+    var t=tks[i];
+    try{
+      var f=await fetchFinnhub(getFinnhubTicker(t));var usd=f&&f.price,ars=quotes[t]&&quotes[t].price,r=getRatio(t);
+      if(usd>0&&ars>0&&CCL_HOY>0){ok++;var sug=usd*CCL_HOY/ars,dev=r/sug-1;
+        if(Math.abs(dev)>0.25)nuevo[t]={r:r,sug:sug,ars:ars,usd:usd,ccl:CCL_HOY};}
+    }catch(e){}
+    await new Promise(function(res){setTimeout(res,1100);}); // límite gratuito de Finnhub
+  }
+  if(ok){RT_SOSP=nuevo;try{localStorage.setItem(PFX+'rt_sosp',JSON.stringify({d:_hHoy(),s:RT_SOSP}));localStorage.setItem(PFX+'rt_check',_hHoy());}catch(e){}}
+  _rtCorriendo=false;rtBanner(manual?(ok?'Verificados '+ok+' Cedears':'No se pudo consultar NYSE'):null);
+}
+function rtIgnorar(t){try{var ig=JSON.parse(localStorage.getItem(PFX+'rt_ign')||'{}');ig[t]=getRatio(t);localStorage.setItem(PFX+'rt_ign',JSON.stringify(ig));}catch(e){}rtBanner();}
+function rtBanner(msg){
+  var ref=document.getElementById('pventa-alert');if(!ref||!ref.parentNode)return;
+  var ig={};try{ig=JSON.parse(localStorage.getItem(PFX+'rt_ign')||'{}');}catch(e){}
+  var L=Object.keys(RT_SOSP).filter(function(t){return ig[t]!==getRatio(t)&&RT_SOSP[t].r===getRatio(t);});
+  var el=document.getElementById('rt-alert');
+  if(!L.length&&!msg){if(el)el.remove();return;}
+  if(!el){el=document.createElement('div');el.id='rt-alert';ref.parentNode.insertBefore(el,ref);}
+  el.style.cssText='margin-bottom:.7rem;padding:.5rem .8rem;border:1px solid '+(L.length?'var(--amber,#eab308)':'var(--border2)')+';border-radius:var(--rsm);background:'+(L.length?'rgba(234,179,8,.08)':'var(--surface2)')+';font-size:.74rem;color:var(--text);font-family:var(--mono);max-width:1100px;line-height:1.7';
+  var nice=function(x){return x<2?(Math.round(x*2)/2):Math.round(x);};
+  var esGDC=CFG.id==='gdc';
+  el.innerHTML=(L.length?'⚠ <b>Posible ratio desactualizado</b> — el precio del Cedear no cierra con NYSE y el CCL:<br>'+
+    L.map(function(t){var x=RT_SOSP[t];return '<span style="display:inline-block;margin-right:14px"><b>'+t+'</b>: la app usa <b>'+x.r+'</b>, el mercado indica <b>≈'+nice(x.sug)+'</b> '+
+      '<span style="color:var(--text3)">(Cedear $'+Math.round(x.ars).toLocaleString('es-AR')+' · NYSE USD '+x.usd.toLocaleString('es-AR',{maximumFractionDigits:2})+' · CCL '+Math.round(x.ccl)+')</span> '+
+      '<span onclick="rtIgnorar(\''+t+'\')" style="cursor:pointer;color:var(--text3);text-decoration:underline dotted" title="El ratio está bien, no avisar más mientras no cambie">ignorar</span></span>';}).join('')+
+    '<br><span style="color:var(--text3)">'+(esGDC?'Corregilo en <span onclick="showPage(\'ratios\')" style="cursor:pointer;text-decoration:underline">Ratios</span> y después hacé Sync para los demás.':'Los ratios se corrigen en GDC (Ratios) y llegan acá con el Sync.')+'</span> ':'✓ Ratios de Cedears OK. ')+
+    (msg?'<span style="color:var(--text3)">'+msg+'</span> ':'')+
+    '<span id="rt-btn" onclick="ratiosVerificar(true)" style="cursor:pointer;color:var(--text3);text-decoration:underline dotted">verificar ahora</span>'+
+    (!L.length?' <span onclick="this.parentNode.remove()" style="cursor:pointer;color:var(--text3)">✕</span>':'');
 }
