@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=82, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=84, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v84 | 2026-10-04 | Fix: la liquidez en pesos se pasa a USD al MEP (como bonos y ON) en el total, la distribución, el resumen familiar, el historial y el informe; antes iba al CCL. También la liquidez en USD expresada en pesos usa el MEP.',
+  'v83 | 2026-10-04 | Feat: Dividendos — tarjeta "Importar cobros desde Cocos": se pega el listado de Movimientos (Dividendos / Rentas y Amortización) y los nuevos quedan en Pendientes de revisión (saltea montos 0, filas sin ticker y los ya cargados ±10 días). Botón "✓ Cargar todos" en Pendientes. Ana ahora tiene la tarjeta de Pendientes.',
   'v82 | 2026-10-04 | Feat: informe nuevo — valor total, ganancia del período (en curso, último año completo o último mes), ganancia total compuesta desde el inicio, estado del ciclo actual (rendimiento y cuánto falta para el cierre), cantidad de activos, movimientos de los últimos 3 meses, evolución desde el inicio con inversión inicial de cada período y cierres, distribución RF/RV/liquidez, posiciones más grandes, mapa por país (comun/mapa_mundo.js, se carga al generar) y las que más ganan.',
   'v81 | 2026-10-04 | Feat: botón 📄 Informe en la card Evolución (Ana, Hilda, Juli, Omar; no GDC): informe para el cliente del período anual, del período cerrado o del último mes, con valor, rendimiento, ganancia, cobros, gráfico, distribución, próximos cobros, movimientos y comentario. Se imprime o guarda como PDF; el envío queda a criterio de Garo.',
   'v80 | 2026-10-04 | Feat: app instalable en el celular (manifiesto + ícono + service worker sin caché en la raíz). Dentro de la app instalada aparece abajo a la izquierda el botón ⌂ para volver a Carteras administradas.',
@@ -3780,7 +3782,9 @@ function renderPortfolio(){
   // Liquidez del sidebar
   var liqARS=getRawNum('liq-ars');
   var liqUSD=getRawNum('liq-usd');
-  var liqTotalUSD=liqUSD+(CCL_HOY>0?liqARS/CCL_HOY:0);
+  // Liquidez en pesos → USD al MEP (como bonos y ON), no al CCL
+  var _tcLiq=(typeof MEP_HOY!=='undefined'&&MEP_HOY>0)?MEP_HOY:CCL_HOY;
+  var liqTotalUSD=liqUSD+(_tcLiq>0?liqARS/_tcLiq:0);
   var valConLiq=totalVal+liqTotalUSD;
   // Distribución de la cartera (card arriba de las tablas)
   try{distRender({rv:['nyse','argentina','brasil','europa','china','cripto'].reduce(function(s,k){return s+(sectorVal[k]||0);},0),rf:(sectorVal.bonos||0)+(sectorVal.on||0),fci:sectorVal.fci||0,hasFci:('fci' in sectorVal),liq:liqTotalUSD,plan:_rbPlan});}catch(_e){console.warn('distRender',_e);}
@@ -4904,7 +4908,7 @@ function computePerfilActual(){
 
   var liqARS=getRawNum('liq-ars');
   var liqUSD=getRawNum('liq-usd');
-  var liqTotalARS=liqARS+(liqUSD*(CCL_HOY||0));
+  var liqTotalARS=liqARS+(liqUSD*((typeof MEP_HOY!=='undefined'&&MEP_HOY>0)?MEP_HOY:(CCL_HOY||0)));
   var totalARS=rvARS+rfARS+liqTotalARS;
 
   return{
@@ -10137,3 +10141,81 @@ function infMostrar(html){
   document.body.appendChild(v);v.scrollTop=0;
 }
 function infImprimir(){var t=document.title;document.title='Informe '+CFG.nombre+' '+_hHoy();window.print();setTimeout(function(){document.title=t;},1500);}
+
+// ─── Importar cobros desde Cocos (texto pegado) ───────────────────────────────
+// En Cocos → Movimientos se copia el listado (Dividendos / Rentas y Amortización) y se pega acá.
+// Cada registro viene en líneas: [etiqueta "2 de oct"], fecha ejecución, fecha liquidación, operación,
+// especie, estado, nominales, total ("US$6,05" o "$14.523,28"). Las filas nuevas quedan en
+// "Pendientes de revisión" (no impactan hasta confirmarlas). Se saltean montos 0 (bajas de nominales),
+// filas sin ticker (ARS, USD, EXT) y las que ya están cargadas (mismo ticker, moneda y monto ±10 días).
+function cocosParseCobros(texto){
+  var L=String(texto||'').split(/\r?\n/).map(function(s){return s.trim();}).filter(Boolean);
+  var reF=/^(\d{2})\/(\d{2})\/(\d{4})$/,out=[],sk={cero:0,sinTicker:[],otro:0,noLiq:0};
+  var num=function(s){s=String(s).replace(/[^\d,.\-]/g,'');if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');return parseFloat(s);};
+  for(var i=0;i+6<L.length;i++){
+    if(!reF.test(L[i])||!reF.test(L[i+1]))continue;
+    var op=L[i+2],esp=L[i+3].toUpperCase(),est=L[i+4],tot=L[i+6];
+    var esDiv=/^dividendo/i.test(op),esRen=/renta|amortiz/i.test(op);
+    if(!esDiv&&!esRen){sk.otro++;i+=6;continue;}
+    if(!/liquidad/i.test(est)){sk.noLiq++;i+=6;continue;}
+    var mon=/US\$/i.test(tot)?'USD':'ARS',monto=num(tot);
+    var m=L[i+1].match(reF),fecha=m[3]+'-'+m[2]+'-'+m[1];
+    i+=6;
+    if(!(monto>0)){sk.cero++;continue;}
+    if(esp==='ARS'||esp==='USD'||esp==='EXT'){sk.sinTicker.push({fecha:fecha,ticker:esp,moneda:mon,monto:monto});continue;}
+    out.push({fecha:fecha,ticker:esp,tipo:esRen?'RENTA':'DIV',moneda:mon,monto:Math.round(monto*100)/100,acciones:null,descr:esp+' — Cocos: '+op});
+  }
+  // bonos/ON que Cocos a veces informa como "Dividendos": si el ticker tiene alguna renta, todo es RENTA
+  var ren={};out.forEach(function(r){if(r.tipo==='RENTA')ren[r.ticker]=1;});
+  out.forEach(function(r){if(ren[r.ticker])r.tipo='RENTA';});
+  return {rows:out,skip:sk};
+}
+function _cocosYaCargado(r){
+  var t=new Date(r.fecha).getTime();
+  return (TRK.divs||[]).some(function(d){
+    if(d.ticker!==r.ticker||d.moneda!==r.moneda||Math.abs((+d.monto||0)-r.monto)>0.005)return false;
+    var f=_infISO?_infISO(d.fecha):d.fecha;return Math.abs(new Date(f).getTime()-t)<=10*86400000;});
+}
+function cocosImportar(){
+  var ta=document.getElementById('cocos-txt'),st=document.getElementById('cocos-status');
+  var res=cocosParseCobros(ta&&ta.value);
+  if(!res.rows.length&&!res.skip.cero&&!res.skip.sinTicker.length){st.className='emsg';st.textContent='No encontré cobros en el texto. Copiá el listado de Movimientos de Cocos (Dividendos / Rentas y Amortización) y pegalo entero.';return;}
+  var nuevos=res.rows.filter(function(r){return !_cocosYaCargado(r);}),ya=res.rows.length-nuevos.length;
+  var q=trkQueuePendingRows(nuevos);
+  var st2=[q.added+' nuevo(s) a "Pendientes de revisión"'];
+  if(ya+q.dup)st2.push((ya+q.dup)+' ya estaban cargados');
+  if(res.skip.cero)st2.push(res.skip.cero+' con monto 0 (bajas de nominales)');
+  if(res.skip.sinTicker.length)st2.push(res.skip.sinTicker.length+' sin ticker (ARS/USD/EXT) no se cargan');
+  st.className='smsg';st.textContent=st2.join(' · ');
+  if(q.added&&ta)ta.value='';
+}
+function trkPendingConfirmAll(){
+  var pend=TRK.divs.filter(function(d){return d.estado==='pendiente';});
+  if(!pend.length)return;
+  if(!confirm('¿Cargar los '+pend.length+' pendientes?\n\nLos que no tengan CCL para su fecha quedan pendientes.'))return;
+  var ok=0,no=0;
+  pend.forEach(function(d){var conv=_trkImpMontoUSD(d);if(!conv.ok){no++;return;}var pv=_trkImpPPCPreview(d);
+    d.montoUSD=conv.montoUSD;d.cclUsado=conv.cclUsado;d.pncApplied=pv.target==='ppc'||pv.target==='venta';d.pncTarget=pv.target;delete d.estado;ok++;});
+  trkSave();trkRender();renderPortfolio();
+  if(no)alert(ok+' cargados. '+no+' quedaron pendientes porque falta el CCL de su fecha.');
+}
+// UI: tarjeta "Importar desde Cocos" y, si el portafolio no la tiene, la de "Pendientes de revisión"
+function cocosUISetup(){
+  var tb=document.getElementById('trk-tbody');if(!tb)return;
+  var tabla=tb.closest('.card');if(!tabla||!tabla.parentNode)return;
+  var pc=document.getElementById('trk-pending-card');
+  if(!pc){pc=document.createElement('div');pc.className='card';pc.id='trk-pending-card';pc.style.display='none';
+    pc.innerHTML='<div class="card-header"><span class="card-title">⏳ Pendientes de revisión</span><span id="trk-pending-badge" class="smsg"></span></div>'+
+      '<div class="card-body" style="padding-top:0"><div class="tw" style="max-height:340px;overflow-y:auto"><table><thead><tr><th>Ticker</th><th>Fecha</th><th>Tipo</th><th>Mon.</th><th style="text-align:right">Monto</th><th>Impacto PPC</th><th style="text-align:center">Acción</th></tr></thead><tbody id="trk-pending-tbody"></tbody></table></div></div>';
+    tabla.parentNode.insertBefore(pc,tabla);}
+  var hd=pc.querySelector('.card-header');
+  if(hd&&!document.getElementById('trk-pend-all')){var b=document.createElement('button');b.id='trk-pend-all';b.className='btn btn-a btn-sm';b.style.marginLeft='auto';b.textContent='✓ Cargar todos';b.setAttribute('onclick','trkPendingConfirmAll()');hd.appendChild(b);}
+  if(!document.getElementById('cocos-card')){var c=document.createElement('div');c.className='card';c.id='cocos-card';
+    c.innerHTML='<div class="card-header"><span class="card-title">📋 Importar cobros desde Cocos</span><button class="card-toggle" onclick="cardToggle(this)">▾</button></div>'+
+      '<div class="card-body"><div style="font-size:.7rem;color:var(--text3);font-family:var(--mono);margin-bottom:6px">En Cocos → Movimientos, filtrá Dividendos y Rentas y Amortización, copiá el listado y pegalo acá. Los nuevos quedan en "Pendientes de revisión" para que los confirmes.</div>'+
+      '<textarea id="cocos-txt" rows="4" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.5rem;font-family:var(--mono);font-size:.72rem" placeholder="2 de oct&#10;02/10/2026&#10;02/10/2026&#10;Dividendos&#10;NKE&#10;Liquidado&#10;0,13&#10;US$0,13"></textarea>'+
+      '<div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap"><button class="btn btn-a btn-sm" onclick="cocosImportar()">Procesar</button><span id="cocos-status" class="smsg"></span></div></div>';
+    pc.parentNode.insertBefore(c,pc);}
+  if(typeof trkRenderPending==='function')trkRenderPending();
+}
+(function(){var go=function(){try{cocosUISetup();}catch(e){console.warn('cocosUISetup',e);}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
