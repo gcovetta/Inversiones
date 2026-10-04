@@ -73,7 +73,7 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
 th:first-child,td:first-child{text-align:left}
 #portal td{font-family:var(--mono);text-align:right;padding:.38rem .45rem;border-bottom:1px solid var(--border);white-space:nowrap}
 tr:last-child td{border-bottom:none}
-#portal .busq{margin-bottom:12px}#portal .busq .cb{padding:.6rem .8rem}#busq{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:.55rem .75rem;outline:none}#busq:focus{border-color:var(--accent)}
+#portal .busq{margin-bottom:12px}#portal .movers{margin:12px 0}.mvg{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.mvg{grid-template-columns:1fr}}#portal .movers .ch{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}#portal .busq .cb{padding:.6rem .8rem}#busq{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:.55rem .75rem;outline:none}#busq:focus{border-color:var(--accent)}
 .bchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bchips .chip{cursor:pointer}.bchips .chip.on{border-color:var(--accent);color:var(--accent)}.bhead{margin:10px 2px 6px;font-size:.85rem}
 #portal .busq tfoot td{border-top:1px solid var(--border2);font-weight:700}
 tr.det td{background:var(--surface2);font-size:.7rem;color:var(--text2)}
@@ -108,7 +108,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v12</span>
+  <span class="subtitle">Carteras administradas · v14</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -138,8 +138,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v12 · 04/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v12</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v14 · 04/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v14</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -176,7 +176,7 @@ function agg(doc,solo,principal){
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
     Object.keys(c.sectorVal||{}).forEach(function(s){o.sect[s]=(o.sect[s]||0)+(c.sectorVal[s]||0);});
     if(c.dolzPct!=null)o.dolz+=c.dolzPct/100*(c.totalVal||0);
-    (c.pos||[]).forEach(function(p){var x=o.pos[p.t]||(o.pos[p.t]={t:p.t,s:p.s,q:0,v:0,c:0,an:p.an,pnl:p.pnl,pv:p.pv,up:p.up});x.q+=p.q;x.v+=p.v;x.c+=p.c;if(x!==o.pos[p.t])return;});
+    (c.pos||[]).forEach(function(p){var x=o.pos[p.t]||(o.pos[p.t]={t:p.t,s:p.s,q:0,v:0,c:0,an:p.an,pnl:p.pnl,pv:p.pv,up:p.up,ch:p.ch});x.q+=p.q;x.v+=p.v;x.c+=p.c;if(x!==o.pos[p.t])return;});
   });
   Object.values(o.pos).forEach(function(x){x.pnl=x.c>0?(x.v/x.c-1)*100:x.pnl;});
   o.total=o.val+o.liq;
@@ -264,6 +264,7 @@ function render(){
   // cobros
   h+='<div class="card"><div class="ch">Próximos cobros de todos <span class="sub">30 días · bonos/ON con flujo cargado</span></div><div class="cb tw">'+(cobs.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th>Quién</th><th>Monto</th></tr></thead><tbody>'+
     cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
+  h+=moversCard();
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
 }
@@ -288,6 +289,24 @@ async function bkAll(){
   render();
 }
 function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
+// ── Lo que más se movió en la última rueda (variación del día guardada en cada resumen) ──
+function moversCard(){
+  var vs=VIEW.filter(function(c){return !OFF[c.id]&&DATA[c.id]&&DATA[c.id].o;});if(!vs.length)return '';
+  var dia=function(ts){var d=new Date(ts);return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
+  var ult=Math.max.apply(null,vs.map(function(c){return dia(DATA[c.id].o.ts);}));
+  var T={},tot=0,imp=0,fuera=[];
+  vs.forEach(function(c){var o=DATA[c.id].o;if(dia(o.ts)!==ult){fuera.push(c.nombre);return;}
+    Object.keys(o.pos).forEach(function(t){var p=o.pos[t];tot+=p.v;if(p.ch==null||!isFinite(p.ch))return;var im=p.v-p.v/(1+p.ch/100);imp+=im;
+      var x=T[t]||(T[t]={t:t,s:p.s,ch:p.ch,v:0,im:0,who:[]});x.v+=p.v;x.im+=im;x.who.push(c.nombre);});});
+  var L=Object.values(T);if(!L.length)return '';
+  var up=L.filter(function(x){return x.ch>0;}).sort(function(a,b){return b.ch-a.ch;}).slice(0,6),dn=L.filter(function(x){return x.ch<0;}).sort(function(a,b){return a.ch-b.ch;}).slice(0,6);
+  var fd=String(ult),fecha=fd.slice(6,8)+'/'+fd.slice(4,6);
+  var tb=function(arr,tit){return '<div><div class="lbl" style="margin-bottom:4px">'+tit+'</div>'+(arr.length?'<table><tbody>'+arr.map(function(x){return '<tr><td><b>'+esc(x.t)+'</b> <span class="mut">'+(SECT[x.s]?SECT[x.s][0]:'')+'</span></td><td class="'+(x.ch>=0?'grn':'red')+'">'+pct(x.ch)+'</td><td style="text-align:left;white-space:normal" class="mut">'+x.who.map(esc).join(' · ')+'</td><td class="'+(x.im>=0?'grn':'red')+'" title="Impacto en USD sumando todas las carteras">'+(x.im>=0?'+':'−')+n0(Math.abs(x.im))+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">—</div>')+'</div>';};
+  var base=tot-imp;
+  return '<div class="card movers"><div class="ch">Lo que más se movió <span class="sub">rueda del '+fecha+' · variación del día · impacto en USD</span><span class="'+(imp>=0?'grn':'red')+'" style="margin-left:auto;font-family:var(--mono);font-size:.78rem">'+(imp>=0?'+':'−')+'USD '+n0(Math.abs(imp))+(base>0?' ('+pct(imp/base*100)+')':'')+'</span></div>'+
+    '<div class="cb"><div class="mvg">'+tb(up,'▲ Subieron')+tb(dn,'▼ Bajaron')+'</div>'+
+    (fuera.length?'<div class="sub" style="margin-top:6px">Sin datos de ese día: '+fuera.map(esc).join(', ')+' (se actualiza al abrir cada portafolio).</div>':'')+'</div></div>';
+}
 // ── Buscador de tickers en todas las carteras ──
 var BQ='';
 function busqCard(){
