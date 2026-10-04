@@ -29,6 +29,12 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;padding:2rem 2
 @media(max-width:600px){header{padding:.8rem 1rem}main{padding:1.5rem 1rem}}
 .section-label{font-size:.58rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.85rem;margin-top:1.8rem;text-align:left;width:100%;max-width:none;padding-left:2px}
 .section-label:first-of-type{margin-top:0}
+.plinks{display:flex;flex-wrap:wrap;gap:8px;width:100%;margin-bottom:.4rem}
+a.plink{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 5px;background:var(--surface);border:1px solid var(--border);border-radius:999px;text-decoration:none;color:var(--text);font-size:.8rem;transition:border-color .15s,background .15s}
+a.plink:hover{border-color:var(--accent);background:var(--surface2)}
+a.plink img{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border2)}
+a.plink .pls{font-family:var(--mono);font-size:.66rem;color:var(--text3)}
+
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1rem;width:100%;max-width:none;margin-bottom:.5rem}
 a.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem 1.4rem;text-decoration:none;color:var(--text);display:flex;flex-direction:column;gap:.5rem;transition:border-color .15s,background .15s,box-shadow .15s}
 a.card:hover{border-color:var(--accent);background:var(--surface2);box-shadow:0 0 0 1px rgba(0,230,118,0.12),0 4px 20px rgba(0,0,0,0.4)}
@@ -108,7 +114,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v14</span>
+  <span class="subtitle">Carteras administradas · v15</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -120,12 +126,12 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
   </div>
   <div id="main-content" style="display:none;width:100%;flex-direction:column;align-items:center">
     <div class="section-label">📊 Portafolios</div>
-    <div class="grid">
-      <a class="card" href="GDC/PortafolioGDC.html"><div class="card-top"><img class="card-avatar" src="GDC/PerfilGaston.png" alt="GDC"><div class="card-name">GDC</div></div><div class="card-path">GDC/PortafolioGDC.html</div><div class="card-arrow">→</div></a>
-      <a class="card" href="Omar/PortafolioOmar2.html"><div class="card-top"><img class="card-avatar" src="Omar/perfilOmar.png" alt="Omar"><div class="card-name">Omar</div></div><div class="card-path">Omar/PortafolioOmar2.html</div><div class="card-arrow">→</div></a>
-      <a class="card" href="Hilda/PortafolioHilda.html"><div class="card-top"><img class="card-avatar" src="Hilda/PerfilHilda.png" alt="Hilda"><div class="card-name">Hilda</div></div><div class="card-path">Hilda/PortafolioHilda.html</div><div class="card-arrow">→</div></a>
-      <a class="card" href="Ana/PortafolioAna2.html"><div class="card-top"><img class="card-avatar" src="Ana/PerfilAna.png" alt="Ana"><div class="card-name">Ana</div></div><div class="card-path">Ana/PortafolioAna2.html</div><div class="card-arrow">→</div></a>
-      <a class="card" href="Juli/PortafolioJuli.html"><div class="card-top"><img class="card-avatar" src="Juli/Juli.png" alt="Juli"><div class="card-name">Juli</div></div><div class="card-path">Juli/PortafolioJuli.html</div><div class="card-arrow">→</div></a>
+    <div class="plinks">
+      <a class="plink" href="GDC/PortafolioGDC.html"><img src="GDC/PerfilGaston.png" alt="GDC"><b>GDC</b><span class="pls" id="pl-gdc"></span></a>
+      <a class="plink" href="Omar/PortafolioOmar2.html"><img src="Omar/perfilOmar.png" alt="Omar"><b>Omar</b><span class="pls" id="pl-omar"></span></a>
+      <a class="plink" href="Hilda/PortafolioHilda.html"><img src="Hilda/PerfilHilda.png" alt="Hilda"><b>Hilda</b><span class="pls" id="pl-hilda"></span></a>
+      <a class="plink" href="Ana/PortafolioAna2.html"><img src="Ana/PerfilAna.png" alt="Ana"><b>Ana</b><span class="pls" id="pl-ana"></span></a>
+      <a class="plink" href="Juli/PortafolioJuli.html"><img src="Juli/Juli.png" alt="Juli"><b>Juli</b><span class="pls" id="pl-juli"></span></a>
     </div>
     <div class="section-label">📈 Resumen de las carteras</div>
     <div id="portal"><div class="sub">Cargando resúmenes…</div></div>
@@ -138,8 +144,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v14 · 04/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v14</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v15 · 04/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v15</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -267,6 +273,8 @@ function render(){
   h+=moversCard();
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
+  CFG.forEach(function(c){var el=document.getElementById('pl-'+c.id),d=DATA[c.id];if(!el)return;if(!d||!d.o){el.textContent='';return;}var o=d.o,r=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);
+    el.innerHTML='USD '+k(o.total)+(r!=null?' · <span class="'+(r>=0?'grn':'red')+'">'+pct(r)+'</span>':'');});
 }
 async function bkAll(){
   var btn=document.getElementById('bk-all-btn');if(btn){btn.disabled=true;btn.textContent='Descargando…';}
