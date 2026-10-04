@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=80, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=81, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v81 | 2026-10-04 | Feat: botón 📄 Informe en la card Evolución (Ana, Hilda, Juli, Omar; no GDC): informe para el cliente del período anual, del período cerrado o del último mes, con valor, rendimiento, ganancia, cobros, gráfico, distribución, próximos cobros, movimientos y comentario. Se imprime o guarda como PDF; el envío queda a criterio de Garo.',
   'v80 | 2026-10-04 | Feat: app instalable en el celular (manifiesto + ícono + service worker sin caché en la raíz). Dentro de la app instalada aparece abajo a la izquierda el botón ⌂ para volver a Carteras administradas.',
   'v79 | 2026-10-04 | Feat: Evolución de Omar suma solo la cartera principal (Portafolio2/Cocos y Portafolio3/VetaJeep quedan afuera, también en los puntos ya guardados). En Carteras administradas (index v7) Cocos aparece como "Cristian" y VetaJeep como "Jeep", como dos carteras más.',
   'v78 | 2026-10-04 | Feat: Evolución activada en Hilda desde el período en curso (07/12/25→), sin años anteriores.',
@@ -5722,6 +5723,7 @@ function cargarPortafolioEnComparacion(){return cargarJuliEnComparacion();}
 // entrada por cartera.
 var _famPrev=null,_famTimer=null,_famLastSave=0,_famLastTotal=0,_famLoaded=false;
 function famQueueSnapshot(d){
+  if(d&&d.totalVal>0)INF_LAST=d;
   if(typeof _gdcInitDone==='undefined'||!_gdcInitDone)return;
   if(!d||!(d.totalVal>0)||!d.pos.length)return;
   clearTimeout(_famTimer);
@@ -5917,7 +5919,7 @@ function histRender(){
   var card=document.getElementById('hist-card');
   if(!card){var row=topCardsRow();if(!row)return;
     card=document.createElement('div');card.className='card';card.id='hist-card';
-    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">📈 Evolución</span><span id="hist-rangos" style="display:flex;gap:4px;flex-wrap:wrap"></span><span id="hist-meta" class="tag" style="margin-left:auto"></span></div><div id="hist-cierre"></div><div style="padding:.6rem 1rem 1rem"><div style="position:relative;height:220px"><canvas id="hist-canvas"></canvas></div><div id="hist-nota" style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:6px"></div></div>';
+    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">📈 Evolución</span><span id="hist-rangos" style="display:flex;gap:4px;flex-wrap:wrap"></span><span id="hist-meta" class="tag" style="margin-left:auto"></span>'+(CFG.informe?'<button class="btn btn-sm" onclick="infAbrir()" title="Informe para mandarle a '+CFG.nombre+'" style="font-size:.66rem;padding:2px 8px">📄 Informe</button>':'')+'</div><div id="hist-cierre"></div><div style="padding:.6rem 1rem 1rem"><div style="position:relative;height:220px"><canvas id="hist-canvas"></canvas></div><div id="hist-nota" style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:6px"></div></div>';
     row.appendChild(card);topCardPrep(card,'1 1 420px');
     var ca=document.createElement('div');ca.className='card';ca.id='hist-anual-card';
     ca.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px"><span class="card-title">📅 Rendimiento por período</span><span style="margin-left:auto"></span></div><div id="hist-anual" style="padding:.7rem 1rem 1rem"></div>';
@@ -9895,3 +9897,174 @@ async function dolzToggleTicker(ticker){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
   if('serviceWorker' in navigator){navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(function(){});}
 })();
+
+// ─── Informe para el cliente (CFG.informe) ────────────────────────────────────
+// Botón "📄 Informe" en la card Evolución: arma un informe del período con los datos ya calculados
+// (último render), el historial, movimientos y cobros. Se ve en pantalla, se imprime o se guarda como
+// PDF y el envío lo decide Garo. Solo con CFG.informe (Ana, Hilda, Juli, Omar; no GDC).
+var INF_LAST=null;
+function _infISO(f){if(!f)return '';f=String(f);if(/^\d{4}-\d{2}-\d{2}/.test(f))return f.slice(0,10);var p=f.split('/');return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):'';}
+function _infDMY(iso,corto){var p=iso.split('-');return p[2]+'/'+p[1]+'/'+(corto?p[0].slice(2):p[0]);}
+function _infN(v,d){return (v||0).toLocaleString('es-AR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
+function _infPct(v){return (v>=0?'+':'−')+_infN(Math.abs(v),1)+'%';}
+function _infEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var _INF_MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+// Inicio del período anual de la inversión inicial actual: si ya pasó el corte pero todavía no se cerró
+// (hasta 45 días), el período que se está terminando empezó un año antes.
+function infInicioAnual(){
+  var corte=histUltimoCorte();if(!corte)return null;
+  var cerrado=(HIST&&HIST.cierres||[]).some(function(c){return c.d===corte;});
+  var dias=(new Date(_hHoy())-new Date(corte))/86400000;
+  if(!cerrado&&dias<=45)return (parseInt(corte.slice(0,4),10)-1)+corte.slice(4);
+  return corte;
+}
+function infAbrir(){
+  if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA!=='principal'){alert('El informe es de la cartera principal: pasá a esa cartera y volvé a tocar 📄 Informe.');return;}
+  if(!INF_LAST){alert('Esperá a que terminen de cargar las cotizaciones y volvé a intentar.');return;}
+  var hoy=_hHoy(),ini=infInicioAnual();
+  var cz=(HIST&&HIST.cierres||[]).slice().sort(function(a,b){return a.d<b.d?-1:1;}).pop();
+  var mes=new Date(hoy);mes.setMonth(mes.getMonth()-1);mes=mes.toISOString().slice(0,10);
+  var com='';try{com=localStorage.getItem(PFX+'inf_coment')||'';}catch(e){}
+  var opts=[];
+  if(ini)opts.push(['anual','Período anual · '+_infDMY(ini,true)+' → hoy','Rendimiento del Resumen. Es el que usás al cierre de cada ciclo.']);
+  if(cz){var czIni=(parseInt(cz.d.slice(0,4),10)-1)+cz.d.slice(4);opts.push(['cerrado','Período cerrado · '+_infDMY(czIni,true)+' → '+_infDMY(cz.d,true),'Con los valores guardados al cerrar el período.']);}
+  opts.push(['mes','Último mes · '+_infDMY(mes,true)+' → hoy','Variación del valor total según el historial (incluye aportes o retiros).']);
+  var ov=document.getElementById('inf-dlg');if(ov)ov.remove();
+  ov=document.createElement('div');ov.id='inf-dlg';
+  ov.style.cssText='position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;max-width:520px;width:100%;padding:1rem 1.1rem;font-family:var(--sans);color:var(--text);max-height:92vh;overflow:auto">'+
+    '<div style="font-weight:700;font-size:.95rem;margin-bottom:.7rem">📄 Informe para '+_infEsc(CFG.nombre)+'</div>'+
+    opts.map(function(o,i){return '<label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:.55rem;cursor:pointer"><input type="radio" name="inf-modo" value="'+o[0]+'"'+(i===0?' checked':'')+' style="margin-top:3px"><span><span style="font-size:.84rem">'+o[1]+'</span><br><span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+o[2]+'</span></span></label>';}).join('')+
+    '<div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:.8rem 0 .3rem">Comentario (lo escribís vos)</div>'+
+    '<textarea id="inf-com" rows="6" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.5rem;font-family:var(--sans);font-size:.84rem;resize:vertical" placeholder="Qué pasó en el período, qué compraste o vendiste y por qué… (un párrafo por línea en blanco)">'+_infEsc(com)+'</textarea>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.8rem"><button class="btn btn-sm" onclick="document.getElementById(\'inf-dlg\').remove()">Cancelar</button><button class="btn btn-a btn-sm" onclick="infGenerar()">Generar informe</button></div></div>';
+  document.body.appendChild(ov);
+}
+function _infUSDMov(m){
+  if(m.tipo==='aporte'||m.tipo==='dividendo')return m.precioUSD||0;
+  if(isBonoUSDDirecto(m.ticker))return (m.precioARS||0)*(m.qty||0);
+  var esRF=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
+  var tc=esRF?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
+  return tc>0&&(m.precioARS||0)>0?(m.precioARS*m.qty/tc):(m.precioUSD||0)*(m.qty||0);
+}
+function infGenerar(){
+  var modo=(document.querySelector('input[name="inf-modo"]:checked')||{}).value||'anual';
+  var com=(document.getElementById('inf-com')||{}).value||'';
+  try{localStorage.setItem(PFX+'inf_coment',com);}catch(e){}
+  var dlg=document.getElementById('inf-dlg');if(dlg)dlg.remove();
+  var d=INF_LAST,hoy=_hHoy(),serie=histSerie();
+  var total=(d.totalVal||0)+(d.liqTotalUSD||0);
+  var desde,hasta=hoy,valor=total,rend=null,gan=null,base=null,tit,cierreTxt='';
+  if(modo==='cerrado'){
+    var cz=HIST.cierres.slice().sort(function(a,b){return a.d<b.d?-1:1;}).pop();
+    desde=(parseInt(cz.d.slice(0,4),10)-1)+cz.d.slice(4);hasta=cz.d;valor=cz.valor;rend=cz.rendFinal;base=cz.invAnterior||null;
+    gan=base?valor-base:null;tit='Informe del período '+_infDMY(desde)+' → '+_infDMY(hasta);
+  } else if(modo==='mes'){
+    var m=new Date(hoy);m.setMonth(m.getMonth()-1);desde=m.toISOString().slice(0,10);
+    var p0=serie.filter(function(x){return x.d<=desde;}).pop()||serie.filter(function(x){return x.d>=desde;})[0];
+    if(p0&&p0.d<hoy){base=p0.v;gan=total-p0.v;rend=gan/p0.v*100;}
+    var mh=new Date(hoy);tit='Informe mensual · '+_INF_MESES[mh.getMonth()].replace(/^./,function(c){return c.toUpperCase();})+' '+mh.getFullYear();
+  } else {
+    desde=infInicioAnual()||hoy;rend=d.rendPct!=null?d.rendPct:null;base=d.invInicial||null;
+    gan=(base&&rend!=null)?base*rend/100:null;tit='Informe del período anual';
+    var prox=new Date(desde);prox.setFullYear(prox.getFullYear()+1);var px=prox.toISOString().slice(0,10);
+    cierreTxt=px<=hoy?'El período cerró el '+_infDMY(px)+'.':'El período cierra el '+_infDMY(px)+'.';
+  }
+  // cobros (Dividendos/Rentas) y movimientos del rango
+  var td=TRK.divs||[];try{var ls=localStorage.getItem(TRK.DKEY);if(ls){var lp=JSON.parse(ls);if(lp.length>td.length)td=lp;}}catch(e){}
+  var enRango=function(iso){return iso&&iso>=desde&&iso<=hasta;};
+  var princ=function(x){return !x||!x.cartera||x.cartera==='principal';};
+  var rows=[],cobrado=0;
+  td.forEach(function(x){var iso=_infISO(x.fecha);if(!enRango(iso)||!princ(x))return;
+    var u=x.montoUSD!=null&&x.montoUSD!==''?+x.montoUSD:(x.moneda==='USD'?+x.monto:(+x.monto)/((x.cclUsado||CCL_HOY)||1));
+    if(!(u>0))return;cobrado+=u;rows.push({d:iso,t:'cobro',a:x.ticker,u:u});});
+  (typeof movimientos!=='undefined'?movimientos:[]).forEach(function(m){
+    if(!m||m.owner==='cristian'||!princ(m))return;var iso=_infISO(m.fecha);if(!enRango(iso))return;
+    if(['compra','venta','aporte','dividendo'].indexOf(m.tipo)<0)return;
+    var u=_infUSDMov(m);if(m.tipo==='dividendo'){cobrado+=u;rows.push({d:iso,t:'cobro',a:m.ticker,u:u});return;}
+    rows.push({d:iso,t:m.tipo,a:m.tipo==='aporte'?'Aporte de capital':m.ticker,u:u,q:m.qty});});
+  rows.sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0;});
+  // distribución
+  var sv=d.sectorVal||{},rv=['nyse','argentina','brasil','europa','china','cripto'].reduce(function(a,k){return a+(sv[k]||0);},0);
+  var rf=(sv.bonos||0)+(sv.on||0)+(sv.fci||0),lq=d.liqTotalUSD||0,tt=rv+rf+lq||1;
+  var dolz=total>0?Math.min(100,((d.dolzPct||0)/100*(d.totalVal||0)+(d.liqUSD||0))/total*100):null;
+  // gráfico
+  var pts=serie.filter(function(x){return x.d>=desde&&x.d<=hasta;});
+  var svg='';
+  if(pts.length>=2){
+    var vs=pts.map(function(x){return x.v;});if(modo==='anual'&&base)vs.push(base);
+    var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs),pad=(mx-mn)*0.12||mx*0.02;mn-=pad;mx+=pad;
+    var t0=new Date(pts[0].d).getTime(),t1=new Date(pts[pts.length-1].d).getTime();
+    var X=function(dd){return 52+(new Date(dd).getTime()-t0)/((t1-t0)||1)*620;},Y=function(v){return 160-(v-mn)/(mx-mn)*140;};
+    var pl=pts.map(function(x){return X(x.d).toFixed(1)+','+Y(x.v).toFixed(1);}).join(' ');
+    var grid=[0,1,2].map(function(i){var v=mn+(mx-mn)*(0.15+i*0.35);return '<line x1="52" y1="'+Y(v).toFixed(1)+'" x2="690" y2="'+Y(v).toFixed(1)+'" stroke="#eef1f6"/><text x="46" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end">'+_infN(v/1000,1)+'k</text>';}).join('');
+    var bl=(modo==='anual'&&base)?'<line x1="52" y1="'+Y(base).toFixed(1)+'" x2="690" y2="'+Y(base).toFixed(1)+'" stroke="#2f6fde" stroke-dasharray="4 4" opacity=".6"/><text x="688" y="'+(Y(base)+14).toFixed(1)+'" text-anchor="end" fill="#2f6fde">inicio del período US$ '+_infN(base)+'</text>':'';
+    var lx=pts[pts.length-1];
+    svg='<div class="inf-chart"><svg viewBox="0 0 700 186" width="100%"><g font-family="Inter,system-ui,sans-serif" font-size="11" fill="#8a97ad">'+grid+bl+
+      '<text x="52" y="180">'+_infDMY(pts[0].d,true)+'</text><text x="690" y="180" text-anchor="end">'+_infDMY(lx.d,true)+'</text></g>'+
+      '<polyline points="'+pl+'" fill="none" stroke="#0f9d58" stroke-width="2.5" stroke-linejoin="round"/>'+
+      '<circle cx="'+X(lx.d).toFixed(1)+'" cy="'+Y(lx.v).toFixed(1)+'" r="4.5" fill="#0f9d58"/></svg></div>';
+  }
+  var tag={compra:['Compra','t-c'],venta:['Venta','t-v'],aporte:['Aporte','t-r'],cobro:['Cobro','t-r']};
+  var MAXR=40,rr=rows.length>MAXR?rows.slice(-MAXR):rows;
+  var cob=(d.cobros||[]);
+  var kpi=function(l,v,s,c){return '<div class="k"><div class="kl">'+l+'</div><div class="kv'+(c?' '+c:'')+'">'+v+'</div><div class="ks">'+(s||'')+'</div></div>';};
+  var paras=com.trim()?com.trim().split(/\n\s*\n/).map(function(p){return '<p>'+_infEsc(p).replace(/\n/g,'<br>')+'</p>';}).join(''):'';
+  var tc=(typeof MEP_HOY!=='undefined'&&MEP_HOY)||CCL_HOY;
+  var html='<div class="inf-page">'+
+    '<header><div class="av">'+_infEsc(CFG.nombre.charAt(0))+'</div><div><h1>Tu cartera de inversiones</h1><div class="sub">'+tit+'</div></div>'+
+    '<div class="right">'+_infEsc(CFG.nombre)+'<br>Datos al '+_infDMY(hasta)+'<br>Período: '+_infDMY(desde)+' → '+(hasta===hoy?'hoy':_infDMY(hasta))+'</div></header>'+
+    '<p class="hello">Hola '+_infEsc(CFG.nombre)+', este es el resumen de cómo estuvo tu cartera'+(modo==='mes'?' en el último mes':' en el período')+'.'+(cierreTxt?' '+cierreTxt:'')+'</p>'+
+    '<div class="kpis">'+
+      kpi(modo==='cerrado'?'Valor al cierre':'Valor total','US$ '+_infN(valor),(modo!=='cerrado'&&tc?'≈ $ '+_infN(valor*tc/1e6,1)+' M al dólar MEP':''))+
+      kpi(modo==='mes'?'En el mes':'Rendimiento del período',rend!=null?_infPct(rend):'—',(modo==='anual'?'desde el '+_infDMY(desde):modo==='mes'?'incluye aportes o retiros':''),rend==null?'':rend>=0?'grn':'red')+
+      kpi('Ganancia',gan!=null?(gan>=0?'+':'−')+'US$ '+_infN(Math.abs(gan)):'—',base?'sobre US$ '+_infN(base)+(modo==='mes'?'':' de inversión inicial'):'',gan==null?'':gan>=0?'grn':'red')+
+      kpi('Cobraste','US$ '+_infN(cobrado),'intereses, dividendos y amortizaciones')+
+    '</div>'+
+    (svg?'<h2>Cómo fue evolucionando <small>valor total en dólares</small></h2>'+svg:'')+
+    '<div class="cols"><div><h2>En qué está invertida <small>hoy</small></h2>'+
+      '<div class="bar">'+[[rf,'Renta fija','var(--rf)'],[rv,'Acciones','var(--rv)'],[lq,'','var(--liq)']].filter(function(x){return x[0]>0;}).map(function(x){var w=x[0]/tt*100;return '<div class="seg" style="width:'+w+'%;background:'+x[2]+'">'+(w>=14?(x[1]?x[1]+' ':'')+Math.round(w)+'%':'')+'</div>';}).join('')+'</div>'+
+      '<div class="legend"><span><i style="background:var(--rf)"></i>Bonos, ON y FCI '+Math.round(rf/tt*100)+'%</span><span><i style="background:var(--rv)"></i>Acciones y Cedears '+Math.round(rv/tt*100)+'%</span><span><i style="background:var(--liq)"></i>Efectivo '+Math.round(lq/tt*100)+'%</span></div>'+
+      (dolz!=null?'<p class="mini">El '+Math.round(dolz)+'% está en dólares o atado al dólar'+(dolz<99.5?'; el '+Math.round(100-dolz)+'% restante en pesos.':'.')+'</p>':'')+
+    '</div><div><h2>Próximos cobros <small>30 días</small></h2>'+
+      (cob.length?'<table><thead><tr><th>Fecha</th><th>Qué</th><th class="n">Monto</th></tr></thead><tbody>'+cob.map(function(c){return '<tr><td>'+_infDMY(c.f,true).slice(0,5)+'</td><td>'+_infEsc(c.t)+'</td><td class="n">'+(c.m==='USD'?'US$ ':'$ ')+_infN(c.x)+'</td></tr>';}).join('')+'</tbody></table>':'<p class="mini">No hay cobros en los próximos 30 días.</p>')+
+    '</div></div>'+
+    '<h2>Movimientos del período'+(rows.length>MAXR?' <small>últimos '+MAXR+' de '+rows.length+'</small>':'')+'</h2>'+
+    (rr.length?'<table><thead><tr><th>Fecha</th><th>Operación</th><th>Activo</th><th class="n">Monto</th></tr></thead><tbody>'+rr.map(function(r){var g=tag[r.t];return '<tr><td>'+_infDMY(r.d,true)+'</td><td><span class="tag '+g[1]+'">'+g[0]+'</span></td><td>'+_infEsc(r.a)+'</td><td class="n">US$ '+_infN(r.u)+'</td></tr>';}).join('')+'</tbody></table>':'<p class="mini">No hubo movimientos en el período.</p>')+
+    (paras?'<h2>Comentario</h2><div class="note">'+paras+'</div>':'')+
+    '<footer>Valores en dólares a precio de mercado'+(modo==='cerrado'?' al cierre del período':' del '+_infDMY(hoy))+'. Los activos en pesos se pasan a dólares al tipo de cambio del día. '+
+      (modo==='anual'?'El rendimiento del período se mide contra la inversión inicial del '+_infDMY(desde)+'. ':'')+
+      'Los montos de movimientos y cobros son aproximados en dólares. Las rentabilidades pasadas no garantizan resultados futuros. Ante cualquier duda, escribime.</footer></div>';
+  infMostrar(html);
+}
+function infMostrar(html){
+  if(!document.getElementById('inf-css')){var st=document.createElement('style');st.id='inf-css';st.textContent=
+    '#inf-view{position:fixed;inset:0;z-index:100001;overflow:auto;background:#f5f7fb;--ink:#14213d;--ink2:#4a5a78;--ink3:#8a97ad;--line:#e3e8f0;--grn:#0f9d58;--red:#d93025;--blue:#2f6fde;--rf:#2f6fde;--rv:#0f9d58;--liq:#9aa8c0;color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45;padding:16px}'+
+    '#inf-bar{max-width:760px;margin:0 auto 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}#inf-bar button{font:inherit;font-size:.82rem;border-radius:8px;padding:.45rem .9rem;cursor:pointer;border:1px solid #c9d3e3;background:#fff;color:#14213d}#inf-bar .pri{background:#14213d;color:#fff;border-color:#14213d}#inf-bar span{font-size:.72rem;color:#8a97ad;margin-left:auto}'+
+    '#inf-view .inf-page{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:30px 34px}'+
+    '#inf-view header{display:flex;align-items:flex-start;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:20px;background:none;position:static}'+
+    '#inf-view .av{width:46px;height:46px;border-radius:50%;background:#e8eefb;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--blue);font-size:1.2rem;flex-shrink:0}'+
+    '#inf-view h1{font-size:1.35rem;margin:0;color:var(--ink)}#inf-view .sub{color:var(--ink2);font-size:.82rem;margin-top:2px}#inf-view .right{margin-left:auto;text-align:right;font-size:.75rem;color:var(--ink3)}'+
+    '#inf-view .hello{font-size:.92rem;margin:0 0 18px}#inf-view .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}'+
+    '#inf-view .k{border:1px solid var(--line);border-radius:10px;padding:.7rem .8rem}#inf-view .kl{font-size:.64rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}'+
+    '#inf-view .kv{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:1.2rem;font-weight:700;margin-top:4px;color:var(--ink)}#inf-view .ks{font-size:.7rem;color:var(--ink2);margin-top:2px}'+
+    '#inf-view .kv.grn{color:var(--grn)}#inf-view .kv.red{color:var(--red)}#inf-view h2{font-size:.95rem;margin:24px 0 8px;color:var(--ink)}#inf-view h2 small{font-weight:400;color:var(--ink3);font-size:.74rem;margin-left:6px}'+
+    '#inf-view .inf-chart{border:1px solid var(--line);border-radius:10px;padding:10px 12px 4px}#inf-view .bar{display:flex;height:26px;border-radius:6px;overflow:hidden;gap:2px}'+
+    '#inf-view .seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:700;white-space:nowrap;overflow:hidden}'+
+    '#inf-view .legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:.76rem;color:var(--ink2);margin-top:8px}#inf-view .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}'+
+    '#inf-view .mini{font-size:.78rem;color:var(--ink2);margin:10px 0 0}#inf-view table{width:100%;border-collapse:collapse;font-size:.8rem}'+
+    '#inf-view th{font-size:.64rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:.35rem .5rem;border-bottom:1px solid var(--line);font-weight:600;background:none;position:static}'+
+    '#inf-view td{padding:.45rem .5rem;border-bottom:1px solid var(--line);color:var(--ink);background:none;font-family:inherit}#inf-view td.n,#inf-view th.n{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace}#inf-view tr:last-child td{border-bottom:none}'+
+    '#inf-view .tag{display:inline-block;font-size:.66rem;font-weight:600;border-radius:5px;padding:1px 7px}#inf-view .t-c{background:#e7f6ee;color:var(--grn)}#inf-view .t-v{background:#fdecea;color:var(--red)}#inf-view .t-r{background:#e8eefb;color:var(--blue)}'+
+    '#inf-view .note{background:#f7f9fc;border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:.75rem .95rem;font-size:.86rem}#inf-view .note p{margin:0 0 .5rem}#inf-view .note p:last-child{margin:0}'+
+    '#inf-view footer{margin-top:24px;padding-top:12px;border-top:1px solid var(--line);font-size:.68rem;color:var(--ink3);line-height:1.55;background:none;position:static}'+
+    '#inf-view .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}'+
+    '@media(max-width:640px){#inf-view .kpis{grid-template-columns:1fr 1fr}#inf-view .inf-page{padding:22px 18px}#inf-view .cols{grid-template-columns:1fr}#inf-view .right{display:none}}'+
+    '@media print{body>*:not(#inf-view){display:none!important}#inf-view{position:static;overflow:visible;background:#fff;padding:0}#inf-bar{display:none!important}#inf-view .inf-page{border:none;padding:0}#inf-view .k,#inf-view .inf-chart,#inf-view tr{break-inside:avoid}@page{margin:14mm}}';
+    document.head.appendChild(st);}
+  var v=document.getElementById('inf-view');if(v)v.remove();
+  v=document.createElement('div');v.id='inf-view';
+  v.innerHTML='<div id="inf-bar"><button class="pri" onclick="infImprimir()">🖨 Imprimir / Guardar PDF</button><button onclick="infAbrir()">✎ Cambiar</button><button onclick="document.getElementById(\'inf-view\').remove()">✕ Cerrar</button><span>Revisalo y mandalo vos cuando quieras</span></div>'+html;
+  document.body.appendChild(v);v.scrollTop=0;
+}
+function infImprimir(){var t=document.title;document.title='Informe '+CFG.nombre+' '+_hHoy();window.print();setTimeout(function(){document.title=t;},1500);}
