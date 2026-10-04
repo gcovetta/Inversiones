@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=94, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=95, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v95 | 2026-10-04 | UI: atajo C lleva al recuadro 🛒 Comprar del Portafolio con el cursor en Ticker; V lleva al recuadro 💸 Vender con el foco en el combo de tickers (los despliega si estaban plegados y los resalta un instante).',
   'v94 | 2026-10-04 | UI: botón ? arriba a la derecha (barra superior) que abre la lista de atajos de teclado.',
   'v93 | 2026-10-04 | Feat: atajos C (cargar compra) y V (cargar venta): van a Movimientos con el tipo ya elegido y el cursor en Ticker.',
   'v92 | 2026-10-04 | Feat: atajos de teclado — P portafolio, M cargar movimiento, D dividendos, T tipo de cambio, R refrescar cotizaciones, / buscar ticker, I informe, H inicio, Esc cerrar, ? ayuda. No actúan mientras se escribe en un campo.',
@@ -10397,9 +10398,24 @@ function _kbIr(ids){
   return false;
 }
 function _kbFoco(id){setTimeout(function(){var e=document.getElementById(id);if(e){e.focus();if(e.select)e.select();}},60);}
+// C / V: van al recuadro Comprar / Vender del Portafolio (más abajo), lo despliegan si estaba
+// plegado, lo centran en pantalla y dejan el cursor en el ticker (en Vender, el combo de tickers).
+function kbOperar(id){
+  _kbIr(['portafolio']);
+  setTimeout(function(){
+    var el=document.getElementById(id);if(!el)return;
+    if(id==='vsell-ticker'&&typeof vsellPopulateSelect==='function'){try{vsellPopulateSelect();}catch(e){}}
+    var card=el.closest('.card');
+    if(card&&card.classList.contains('card-collapsed')){var tg=card.querySelector('.card-toggle');if(tg)cardToggle(tg);else card.classList.remove('card-collapsed');}
+    var p=el.parentNode;while(p&&p!==document.body){if(p.style&&p.style.display==='none')p.style.display='';p=p.parentNode;}
+    (card||el).scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(function(){el.focus({preventScroll:true});if(el.select)el.select();
+      if(card){card.style.transition='box-shadow .3s';card.style.boxShadow='0 0 0 2px var(--accent)';setTimeout(function(){card.style.boxShadow='';},1200);}},350);
+  },80);
+}
 function kbAyuda(){
   var ov=document.getElementById('kb-help');if(ov){ov.remove();return;}
-  var L=[['P','Portafolio'],['C','Cargar una compra'],['V','Cargar una venta'],['M','Cargar un movimiento (otro tipo)'],['D','Dividendos'],['T','Tipo de cambio (CCL / MEP)'],['R','Refrescar cotizaciones'],['/','Buscar un ticker en la cartera']]
+  var L=[['P','Portafolio'],['C','Comprar (recuadro Comprar, en el ticker)'],['V','Vender (recuadro Vender, en el combo de ticker)'],['M','Cargar un movimiento (otro tipo)'],['D','Dividendos'],['T','Tipo de cambio (CCL / MEP)'],['R','Refrescar cotizaciones'],['/','Buscar un ticker en la cartera']]
     .concat(CFG.informe?[['I','Informe para '+CFG.nombre]]:[]).concat([['H','Volver a Carteras administradas'],['Esc','Cerrar / limpiar búsqueda'],['?','Esta ayuda']]);
   ov=document.createElement('div');ov.id='kb-help';ov.onclick=function(e){if(e.target===ov)ov.remove();};
   ov.style.cssText='position:fixed;inset:0;z-index:100003;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
@@ -10425,9 +10441,8 @@ document.addEventListener('keydown',function(e){
   if(k==='?'){kbAyuda();}
   else if(k==='p'||k==='P'){_kbIr(['portafolio']);}
   else if(k==='m'||k==='M'){if(_kbIr(['movimientos']))_kbFoco('m-ticker');}
-  else if(k==='c'||k==='C'||k==='v'||k==='V'){if(_kbIr(['movimientos'])){var sel=document.getElementById('m-tipo');
-    if(sel){sel.value=(k==='c'||k==='C')?'compra':'venta';try{if(typeof onTipo==='function')onTipo();else sel.dispatchEvent(new Event('change'));}catch(_e){}}
-    _kbFoco('m-ticker');}}
+  else if(k==='c'||k==='C'){kbOperar('vbuy-ticker');}
+  else if(k==='v'||k==='V'){kbOperar('vsell-ticker');}
   else if(k==='d'||k==='D'){_kbIr(['dividendos','tracker']);}
   else if(k==='t'||k==='T'){if(_kbIr(['tipocambio']))_kbFoco('tc-ccl-fecha');}
   else if(k==='r'||k==='R'){if(typeof fetchAllQuotes==='function')fetchAllQuotes();}
