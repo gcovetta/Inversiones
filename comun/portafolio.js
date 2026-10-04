@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=81, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=82, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v82 | 2026-10-04 | Feat: informe nuevo — valor total, ganancia del período (en curso, último año completo o último mes), ganancia total compuesta desde el inicio, estado del ciclo actual (rendimiento y cuánto falta para el cierre), cantidad de activos, movimientos de los últimos 3 meses, evolución desde el inicio con inversión inicial de cada período y cierres, distribución RF/RV/liquidez, posiciones más grandes, mapa por país (comun/mapa_mundo.js, se carga al generar) y las que más ganan.',
   'v81 | 2026-10-04 | Feat: botón 📄 Informe en la card Evolución (Ana, Hilda, Juli, Omar; no GDC): informe para el cliente del período anual, del período cerrado o del último mes, con valor, rendimiento, ganancia, cobros, gráfico, distribución, próximos cobros, movimientos y comentario. Se imprime o guarda como PDF; el envío queda a criterio de Garo.',
   'v80 | 2026-10-04 | Feat: app instalable en el celular (manifiesto + ícono + service worker sin caché en la raíz). Dentro de la app instalada aparece abajo a la izquierda el botón ⌂ para volver a Carteras administradas.',
   'v79 | 2026-10-04 | Feat: Evolución de Omar suma solo la cartera principal (Portafolio2/Cocos y Portafolio3/VetaJeep quedan afuera, también en los puntos ya guardados). En Carteras administradas (index v7) Cocos aparece como "Cristian" y VetaJeep como "Jeep", como dos carteras más.',
@@ -9899,16 +9900,21 @@ async function dolzToggleTicker(ticker){
 })();
 
 // ─── Informe para el cliente (CFG.informe) ────────────────────────────────────
-// Botón "📄 Informe" en la card Evolución: arma un informe del período con los datos ya calculados
-// (último render), el historial, movimientos y cobros. Se ve en pantalla, se imprime o se guarda como
-// PDF y el envío lo decide Garo. Solo con CFG.informe (Ana, Hilda, Juli, Omar; no GDC).
+// Botón "📄 Informe" en la card Evolución: arma un informe con los datos ya calculados (último render),
+// el historial (con años anteriores), las posiciones y los movimientos. Se ve en pantalla, se imprime o
+// se guarda como PDF y el envío lo decide Garo. Solo con CFG.informe (Ana, Hilda, Juli, Omar; no GDC).
+// El mapa se carga aparte (comun/mapa_mundo.js) recién al generar el informe.
 var INF_LAST=null;
 function _infISO(f){if(!f)return '';f=String(f);if(/^\d{4}-\d{2}-\d{2}/.test(f))return f.slice(0,10);var p=f.split('/');return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):'';}
 function _infDMY(iso,corto){var p=iso.split('-');return p[2]+'/'+p[1]+'/'+(corto?p[0].slice(2):p[0]);}
+function _infMY(iso){var p=iso.split('-');return p[1]+'/'+p[0].slice(2);}
 function _infN(v,d){return (v||0).toLocaleString('es-AR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});}
 function _infPct(v){return (v>=0?'+':'−')+_infN(Math.abs(v),1)+'%';}
 function _infEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-var _INF_MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function _infAddDays(iso,n){var d=new Date(iso+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function _infAntig(iso){if(!iso)return '—';var m=Math.round((new Date(_hHoy())-new Date(iso))/86400000/30.44);if(m<1)return 'menos de 1 mes';var a=Math.floor(m/12),r=m%12;return (a?a+'a ':'')+(r?r+'m':'').trim();}
+var _INF_SECT={nyse:'Acción / Cedear EE.UU.',argentina:'Acción argentina',brasil:'Cedear Brasil',europa:'Cedear Europa',china:'Cedear China',cripto:'Cripto',bonos:'Bono',on:'Obligación negociable',fci:'Fondo común de inversión'};
+var _INF_RF=['bonos','on','fci'];
 // Inicio del período anual de la inversión inicial actual: si ya pasó el corte pero todavía no se cerró
 // (hasta 45 días), el período que se está terminando empezó un año antes.
 function infInicioAnual(){
@@ -9918,149 +9924,212 @@ function infInicioAnual(){
   if(!cerrado&&dias<=45)return (parseInt(corte.slice(0,4),10)-1)+corte.slice(4);
   return corte;
 }
+// Períodos con rendimiento (años anteriores cargados o leídos de Rendimiento anual + cierres), clave = año de inicio
+function infPeriodos(){
+  var per={},pi=CFG.periodoInicio||'01-01';
+  Object.keys(CFG.rendAnual||{}).forEach(function(y){per[y]={r:+CFG.rendAnual[y],src:'cargado'};});
+  (HIST&&HIST.cierres||[]).forEach(function(cz){if(cz.rendFinal!=null){per[String(parseInt(cz.d.slice(0,4),10)-1)]={r:cz.rendFinal,src:'cierre',cz:cz};}});
+  Object.keys(per).forEach(function(y){per[y].ini=y+'-'+pi;per[y].fin=(parseInt(y,10)+1)+'-'+pi;});
+  return per;
+}
+// Valores de inicio y cierre de un período cerrado (del cierre registrado o de los puntos de años anteriores)
+function infValoresPeriodo(p){
+  if(p.cz)return {valor:p.cz.valor,base:p.cz.invAnterior||null};
+  var hp=(CFG.histPrevio||[]),fin=null,ini=null;
+  hp.forEach(function(x){if(x[0]<=p.fin&&x[0]>=_infAddDays(p.fin,-5))fin=x;if(x[0]>=p.ini&&x[0]<=_infAddDays(p.ini,5)&&!ini)ini=x;});
+  return {valor:fin?fin[1]:null,base:fin&&fin[2]?fin[2]:(ini?ini[1]:null)};
+}
 function infAbrir(){
   if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA!=='principal'){alert('El informe es de la cartera principal: pasá a esa cartera y volvé a tocar 📄 Informe.');return;}
   if(!INF_LAST){alert('Esperá a que terminen de cargar las cotizaciones y volvé a intentar.');return;}
-  var hoy=_hHoy(),ini=infInicioAnual();
-  var cz=(HIST&&HIST.cierres||[]).slice().sort(function(a,b){return a.d<b.d?-1:1;}).pop();
-  var mes=new Date(hoy);mes.setMonth(mes.getMonth()-1);mes=mes.toISOString().slice(0,10);
+  var hoy=_hHoy(),ini=infInicioAnual(),per=infPeriodos();
+  var ys=Object.keys(per).sort(),ult=ys.length?per[ys[ys.length-1]]:null;
   var com='';try{com=localStorage.getItem(PFX+'inf_coment')||'';}catch(e){}
   var opts=[];
-  if(ini)opts.push(['anual','Período anual · '+_infDMY(ini,true)+' → hoy','Rendimiento del Resumen. Es el que usás al cierre de cada ciclo.']);
-  if(cz){var czIni=(parseInt(cz.d.slice(0,4),10)-1)+cz.d.slice(4);opts.push(['cerrado','Período cerrado · '+_infDMY(czIni,true)+' → '+_infDMY(cz.d,true),'Con los valores guardados al cerrar el período.']);}
-  opts.push(['mes','Último mes · '+_infDMY(mes,true)+' → hoy','Variación del valor total según el historial (incluye aportes o retiros).']);
+  if(ini)opts.push(['anual','Período en curso · '+_infDMY(ini,true)+' → hoy','Rendimiento del Resumen. Usalo al cierre de cada ciclo, antes de cerrar el período.']);
+  if(ult)opts.push(['ultimo','Último año completo · '+_infDMY(ult.ini,true)+' → '+_infDMY(ult.fin,true)+' ('+_infPct(ult.r)+')','El período anual ya cerrado, con el valor de hoy de la cartera.']);
+  opts.push(['mes','Último mes · '+_infDMY(_infAddDays(hoy,-30),true)+' → hoy','Variación del valor total según el historial (incluye aportes o retiros).']);
   var ov=document.getElementById('inf-dlg');if(ov)ov.remove();
   ov=document.createElement('div');ov.id='inf-dlg';
   ov.style.cssText='position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
-  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;max-width:520px;width:100%;padding:1rem 1.1rem;font-family:var(--sans);color:var(--text);max-height:92vh;overflow:auto">'+
-    '<div style="font-weight:700;font-size:.95rem;margin-bottom:.7rem">📄 Informe para '+_infEsc(CFG.nombre)+'</div>'+
+  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;max-width:540px;width:100%;padding:1rem 1.1rem;font-family:var(--sans);color:var(--text);max-height:92vh;overflow:auto">'+
+    '<div style="font-weight:700;font-size:.95rem;margin-bottom:.3rem">📄 Informe para '+_infEsc(CFG.nombre)+'</div>'+
+    '<div style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-bottom:.7rem">¿Qué período mostrás como "Ganancia del período"? El resto del informe es igual.</div>'+
     opts.map(function(o,i){return '<label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:.55rem;cursor:pointer"><input type="radio" name="inf-modo" value="'+o[0]+'"'+(i===0?' checked':'')+' style="margin-top:3px"><span><span style="font-size:.84rem">'+o[1]+'</span><br><span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+o[2]+'</span></span></label>';}).join('')+
-    '<div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:.8rem 0 .3rem">Comentario (lo escribís vos)</div>'+
-    '<textarea id="inf-com" rows="6" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.5rem;font-family:var(--sans);font-size:.84rem;resize:vertical" placeholder="Qué pasó en el período, qué compraste o vendiste y por qué… (un párrafo por línea en blanco)">'+_infEsc(com)+'</textarea>'+
-    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.8rem"><button class="btn btn-sm" onclick="document.getElementById(\'inf-dlg\').remove()">Cancelar</button><button class="btn btn-a btn-sm" onclick="infGenerar()">Generar informe</button></div></div>';
+    '<div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:.8rem 0 .3rem">Comentario (opcional, lo escribís vos)</div>'+
+    '<textarea id="inf-com" rows="5" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.5rem;font-family:var(--sans);font-size:.84rem;resize:vertical" placeholder="Qué pasó en el período y qué pensás hacer… (un párrafo por línea en blanco)">'+_infEsc(com)+'</textarea>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.8rem"><button class="btn btn-sm" onclick="document.getElementById(\'inf-dlg\').remove()">Cancelar</button><button class="btn btn-a btn-sm" id="inf-go" onclick="infGenerar()">Generar informe</button></div></div>';
   document.body.appendChild(ov);
 }
-function _infUSDMov(m){
-  if(m.tipo==='aporte'||m.tipo==='dividendo')return m.precioUSD||0;
-  if(isBonoUSDDirecto(m.ticker))return (m.precioARS||0)*(m.qty||0);
-  var esRF=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
-  var tc=esRF?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
-  return tc>0&&(m.precioARS||0)>0?(m.precioARS*m.qty/tc):(m.precioUSD||0)*(m.qty||0);
+function infMapaCargar(){
+  if(window.MAPA_MUNDO)return Promise.resolve(true);
+  return new Promise(function(res){var s=document.createElement('script');s.src='../comun/mapa_mundo.js?v=1';s.onload=function(){res(!!window.MAPA_MUNDO);};s.onerror=function(){res(false);};document.head.appendChild(s);});
 }
-function infGenerar(){
+async function infGenerar(){
+  var bt=document.getElementById('inf-go');if(bt){bt.disabled=true;bt.textContent='Armando…';}
   var modo=(document.querySelector('input[name="inf-modo"]:checked')||{}).value||'anual';
   var com=(document.getElementById('inf-com')||{}).value||'';
   try{localStorage.setItem(PFX+'inf_coment',com);}catch(e){}
+  var hayMapa=await infMapaCargar();
   var dlg=document.getElementById('inf-dlg');if(dlg)dlg.remove();
-  var d=INF_LAST,hoy=_hHoy(),serie=histSerie();
+  var d=INF_LAST,hoy=_hHoy(),serie=histSerie(),per=infPeriodos();
   var total=(d.totalVal||0)+(d.liqTotalUSD||0);
-  var desde,hasta=hoy,valor=total,rend=null,gan=null,base=null,tit,cierreTxt='';
-  if(modo==='cerrado'){
-    var cz=HIST.cierres.slice().sort(function(a,b){return a.d<b.d?-1:1;}).pop();
-    desde=(parseInt(cz.d.slice(0,4),10)-1)+cz.d.slice(4);hasta=cz.d;valor=cz.valor;rend=cz.rendFinal;base=cz.invAnterior||null;
-    gan=base?valor-base:null;tit='Informe del período '+_infDMY(desde)+' → '+_infDMY(hasta);
+  var iniAct=infInicioAnual();
+  // ── período en curso + ganancia total compuesta
+  var yAct=iniAct?iniAct.slice(0,4):null;
+  if(yAct&&d.rendPct!=null&&!per[yAct])per[yAct]={r:d.rendPct,src:'curso',ini:iniAct,fin:null};
+  var ys=Object.keys(per).sort();
+  var acc=1;ys.forEach(function(y){acc*=1+per[y].r/100;});
+  var compTxt=ys.length?ys.map(function(y){return _infPct(per[y].r);}).join(' · '):'';
+  var desdeIni=ys.length?per[ys[0]].ini:(serie.length?serie[0].d:hoy);
+  // ── KPI del período
+  var rend=null,gan=null,base=null,perLbl='',sub='';
+  if(modo==='ultimo'){
+    var yU=ys.filter(function(y){return per[y].src!=='curso';}).pop();var pu=per[yU];var vv=infValoresPeriodo(pu);
+    rend=pu.r;base=vv.base;gan=(vv.valor!=null&&vv.base!=null)?vv.valor-vv.base:null;
+    perLbl='Ganancia del año';sub=_infDMY(pu.ini,true)+' → '+_infDMY(pu.fin,true);
   } else if(modo==='mes'){
-    var m=new Date(hoy);m.setMonth(m.getMonth()-1);desde=m.toISOString().slice(0,10);
-    var p0=serie.filter(function(x){return x.d<=desde;}).pop()||serie.filter(function(x){return x.d>=desde;})[0];
+    var m0=_infAddDays(hoy,-30);var p0=serie.filter(function(x){return x.d<=m0;}).pop()||serie.filter(function(x){return x.d>=m0;})[0];
     if(p0&&p0.d<hoy){base=p0.v;gan=total-p0.v;rend=gan/p0.v*100;}
-    var mh=new Date(hoy);tit='Informe mensual · '+_INF_MESES[mh.getMonth()].replace(/^./,function(c){return c.toUpperCase();})+' '+mh.getFullYear();
+    perLbl='Último mes';sub='incluye aportes o retiros';
   } else {
-    desde=infInicioAnual()||hoy;rend=d.rendPct!=null?d.rendPct:null;base=d.invInicial||null;
-    gan=(base&&rend!=null)?base*rend/100:null;tit='Informe del período anual';
-    var prox=new Date(desde);prox.setFullYear(prox.getFullYear()+1);var px=prox.toISOString().slice(0,10);
-    cierreTxt=px<=hoy?'El período cerró el '+_infDMY(px)+'.':'El período cierra el '+_infDMY(px)+'.';
+    rend=d.rendPct!=null?d.rendPct:null;base=d.invInicial||null;gan=(base&&rend!=null)?base*rend/100:null;
+    perLbl='Ganancia del período';sub=iniAct?'desde el '+_infDMY(iniAct):'';
   }
-  // cobros (Dividendos/Rentas) y movimientos del rango
-  var td=TRK.divs||[];try{var ls=localStorage.getItem(TRK.DKEY);if(ls){var lp=JSON.parse(ls);if(lp.length>td.length)td=lp;}}catch(e){}
-  var enRango=function(iso){return iso&&iso>=desde&&iso<=hasta;};
+  // ── posiciones
+  var pos=(d.pos||[]).filter(function(p){return p.v>0;});
+  var nRF=pos.filter(function(p){return _INF_RF.indexOf(p.s)>=0;}).length,nRV=pos.length-nRF;
   var princ=function(x){return !x||!x.cartera||x.cartera==='principal';};
-  var rows=[],cobrado=0;
-  td.forEach(function(x){var iso=_infISO(x.fecha);if(!enRango(iso)||!princ(x))return;
-    var u=x.montoUSD!=null&&x.montoUSD!==''?+x.montoUSD:(x.moneda==='USD'?+x.monto:(+x.monto)/((x.cclUsado||CCL_HOY)||1));
-    if(!(u>0))return;cobrado+=u;rows.push({d:iso,t:'cobro',a:x.ticker,u:u});});
-  (typeof movimientos!=='undefined'?movimientos:[]).forEach(function(m){
-    if(!m||m.owner==='cristian'||!princ(m))return;var iso=_infISO(m.fecha);if(!enRango(iso))return;
-    if(['compra','venta','aporte','dividendo'].indexOf(m.tipo)<0)return;
-    var u=_infUSDMov(m);if(m.tipo==='dividendo'){cobrado+=u;rows.push({d:iso,t:'cobro',a:m.ticker,u:u});return;}
-    rows.push({d:iso,t:m.tipo,a:m.tipo==='aporte'?'Aporte de capital':m.ticker,u:u,q:m.qty});});
-  rows.sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0;});
-  // distribución
+  var movs=(typeof movimientos!=='undefined'?movimientos:[]).filter(function(m){return m&&m.owner!=='cristian'&&princ(m);});
+  var primera={};movs.forEach(function(m){if(m.tipo!=='compra')return;var iso=_infISO(m.fecha);if(iso&&(!primera[m.ticker]||iso<primera[m.ticker]))primera[m.ticker]=iso;});
+  var d90=_infAddDays(hoy,-91),m3=movs.filter(function(m){var iso=_infISO(m.fecha);return iso>=d90&&(m.tipo==='compra'||m.tipo==='venta');});
+  var nC=m3.filter(function(m){return m.tipo==='compra';}).length,nV=m3.length-nC;
+  // ── distribución
   var sv=d.sectorVal||{},rv=['nyse','argentina','brasil','europa','china','cripto'].reduce(function(a,k){return a+(sv[k]||0);},0);
   var rf=(sv.bonos||0)+(sv.on||0)+(sv.fci||0),lq=d.liqTotalUSD||0,tt=rv+rf+lq||1;
   var dolz=total>0?Math.min(100,((d.dolzPct||0)/100*(d.totalVal||0)+(d.liqUSD||0))/total*100):null;
-  // gráfico
-  var pts=serie.filter(function(x){return x.d>=desde&&x.d<=hasta;});
-  var svg='';
+  var parts=[['Renta fija','Bonos, ON y FCI',rf,'#2f6fde'],['Acciones','Acciones y Cedears',rv,'#0f9d58'],['Liquidez','Efectivo en pesos y dólares',lq,'#8b5cf6']];
+  var a0=-Math.PI/2,segs='';
+  parts.forEach(function(p){if(!(p[2]>0))return;var b=a0+p[2]/tt*2*Math.PI,g=p[2]/tt>0.99?0:0.025,a1=a0+g,b1=b-g,lg=(b1-a1)>Math.PI?1:0,R=70,r=46,cx=80,cy=80;
+    if(p[2]/tt>0.995){segs+='<circle cx="80" cy="80" r="58" fill="none" stroke="'+p[3]+'" stroke-width="24"/>';a0=b;return;}
+    var P=function(an,ra){return (cx+ra*Math.cos(an)).toFixed(1)+' '+(cy+ra*Math.sin(an)).toFixed(1);};
+    segs+='<path d="M'+P(a1,R)+' A'+R+' '+R+' 0 '+lg+' 1 '+P(b1,R)+' L'+P(b1,r)+' A'+r+' '+r+' 0 '+lg+' 0 '+P(a1,r)+' Z" fill="'+p[3]+'"/>';a0=b;});
+  var donut='<svg viewBox="0 0 160 160" width="150" height="150" role="img" aria-label="Distribución">'+segs+'<text x="80" y="76" text-anchor="middle" font-family="Inter,system-ui" font-size="10" fill="#8a97ad">Total</text><text x="80" y="93" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" font-weight="700" fill="#14213d">'+_infN(total/1000,1)+'k</text></svg>';
+  var dleg=parts.map(function(p){return '<div class="dl"><i style="background:'+p[3]+'"></i><span>'+p[0]+'</span><b>'+Math.round(p[2]/tt*100)+'%</b><em>US$ '+_infN(p[2])+' · '+p[1]+'</em></div>';}).join('');
+  // ── gráfico de evolución desde el inicio
+  var pts=serie.filter(function(x){return x.v>0;}),evo='';
   if(pts.length>=2){
-    var vs=pts.map(function(x){return x.v;});if(modo==='anual'&&base)vs.push(base);
-    var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs),pad=(mx-mn)*0.12||mx*0.02;mn-=pad;mx+=pad;
+    var W0=58,W1=688,Y0=26,Y1=196;
+    var vs=[];pts.forEach(function(x){vs.push(x.v);if(x.inv)vs.push(x.inv);});
+    var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs),pad=(mx-mn)*0.1||mx*0.05;mn=Math.max(0,mn-pad);mx+=pad;
     var t0=new Date(pts[0].d).getTime(),t1=new Date(pts[pts.length-1].d).getTime();
-    var X=function(dd){return 52+(new Date(dd).getTime()-t0)/((t1-t0)||1)*620;},Y=function(v){return 160-(v-mn)/(mx-mn)*140;};
-    var pl=pts.map(function(x){return X(x.d).toFixed(1)+','+Y(x.v).toFixed(1);}).join(' ');
-    var grid=[0,1,2].map(function(i){var v=mn+(mx-mn)*(0.15+i*0.35);return '<line x1="52" y1="'+Y(v).toFixed(1)+'" x2="690" y2="'+Y(v).toFixed(1)+'" stroke="#eef1f6"/><text x="46" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end">'+_infN(v/1000,1)+'k</text>';}).join('');
-    var bl=(modo==='anual'&&base)?'<line x1="52" y1="'+Y(base).toFixed(1)+'" x2="690" y2="'+Y(base).toFixed(1)+'" stroke="#2f6fde" stroke-dasharray="4 4" opacity=".6"/><text x="688" y="'+(Y(base)+14).toFixed(1)+'" text-anchor="end" fill="#2f6fde">inicio del período US$ '+_infN(base)+'</text>':'';
+    var X=function(dd){return W0+(new Date(dd).getTime()-t0)/((t1-t0)||1)*(W1-W0);},Y=function(v){return Y1-(v-mn)/(mx-mn)*(Y1-Y0);};
+    var kf=function(v){return mx<20000?_infN(v/1000,1)+'k':_infN(v/1000)+'k';};
+    var grid=[0,1,2,3].map(function(i){var v=mn+(mx-mn)*(i/3);return '<line x1="'+W0+'" y1="'+Y(v).toFixed(1)+'" x2="'+W1+'" y2="'+Y(v).toFixed(1)+'" stroke="#eef1f6"/><text x="'+(W0-6)+'" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end">'+kf(v)+'</text>';}).join('');
+    var line=pts.map(function(x){return X(x.d).toFixed(1)+','+Y(x.v).toFixed(1);}).join(' ');
+    var area='M'+X(pts[0].d).toFixed(1)+' '+Y1+' L'+line.split(' ').join(' L')+' L'+X(pts[pts.length-1].d).toFixed(1)+' '+Y1+' Z';
+    var step='',lastInv=null;pts.forEach(function(x){if(!x.inv)return;var xx=X(x.d).toFixed(1);if(lastInv===null)step+='M'+xx+' '+Y(x.inv).toFixed(1)+' ';else if(x.inv!==lastInv)step+='L'+xx+' '+Y(lastInv).toFixed(1)+' L'+xx+' '+Y(x.inv).toFixed(1)+' ';else step+='L'+xx+' '+Y(x.inv).toFixed(1)+' ';lastInv=x.inv;});
+    var cortes='',etis='',xl='<text x="'+W0+'" y="216" font-weight="600" fill="#14213d">'+_infMY(pts[0].d)+'</text><text x="'+W1+'" y="216" text-anchor="end" font-weight="600" fill="#14213d">'+_infMY(pts[pts.length-1].d)+'</text>';
+    ys.forEach(function(y,i){var p=per[y],xa=Math.max(W0,X(p.ini)),xb=p.fin?Math.min(W1,X(p.fin)):W1;
+      if(i>0&&p.ini>pts[0].d&&p.ini<pts[pts.length-1].d){cortes+='<line x1="'+X(p.ini).toFixed(1)+'" y1="'+(Y0-4)+'" x2="'+X(p.ini).toFixed(1)+'" y2="'+Y1+'" stroke="#8a97ad" stroke-dasharray="2 3"/>';
+        if(X(p.ini)-W0>40&&W1-X(p.ini)>40)xl+='<text x="'+X(p.ini).toFixed(1)+'" y="216" text-anchor="middle">'+_infMY(p.ini)+'</text>';}
+      if(xb-xa>70)etis+='<text x="'+((xa+xb)/2).toFixed(1)+'" y="'+(Y0+2)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+(p.r>=0?'#0f9d58':'#d93025')+'">'+(p.src==='curso'?'En curso · ':'')+_infPct(p.r)+'</text>';});
     var lx=pts[pts.length-1];
-    svg='<div class="inf-chart"><svg viewBox="0 0 700 186" width="100%"><g font-family="Inter,system-ui,sans-serif" font-size="11" fill="#8a97ad">'+grid+bl+
-      '<text x="52" y="180">'+_infDMY(pts[0].d,true)+'</text><text x="690" y="180" text-anchor="end">'+_infDMY(lx.d,true)+'</text></g>'+
-      '<polyline points="'+pl+'" fill="none" stroke="#0f9d58" stroke-width="2.5" stroke-linejoin="round"/>'+
-      '<circle cx="'+X(lx.d).toFixed(1)+'" cy="'+Y(lx.v).toFixed(1)+'" r="4.5" fill="#0f9d58"/></svg></div>';
+    evo='<div class="box"><div class="lg"><span><i style="border-color:#0f9d58"></i>Valor de la cartera</span><span><i style="border-color:#8a97ad;border-top-style:dashed"></i>Inversión inicial de cada período</span></div>'+
+      '<svg viewBox="0 0 700 226" width="100%" role="img" aria-label="Evolución del valor total"><g font-family="Inter,system-ui,sans-serif" font-size="11" fill="#8a97ad">'+grid+xl+cortes+etis+'</g>'+
+      '<path d="'+area+'" fill="#0f9d58" opacity=".07"/>'+(step?'<path d="'+step+'" fill="none" stroke="#8a97ad" stroke-width="2" stroke-dasharray="5 4"/>':'')+
+      '<polyline points="'+line+'" fill="none" stroke="#0f9d58" stroke-width="2.5" stroke-linejoin="round"/>'+
+      '<circle cx="'+X(lx.d).toFixed(1)+'" cy="'+Y(lx.v).toFixed(1)+'" r="5" fill="#0f9d58" stroke="#fff" stroke-width="2"/>'+
+      '<text x="'+(X(lx.d)-8).toFixed(1)+'" y="'+(Y(lx.v)-10).toFixed(1)+'" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="#14213d">'+_infN(lx.v)+'</text></svg></div>'+
+      '<p class="mini">La distancia entre las dos líneas es lo que ganó la cartera en cada período. Las líneas punteadas verticales marcan los cierres anuales.</p>';
+  } else evo='<p class="mini">El historial empezó hace poco: el gráfico se va completando a medida que pasan los días.</p>';
+  // ── posiciones más grandes y las que más ganan
+  var big=pos.slice().sort(function(a,b){return b.v-a.v;}).slice(0,5),bmax=big.length?big[0].v:1;
+  var bigtb=big.map(function(p){return '<tr><td><b>'+_infEsc(p.t)+'</b><span class="nm">'+(_INF_SECT[p.s]||'')+'</span></td><td class="n">US$ '+_infN(p.v)+'</td><td class="bc"><div class="hb"><i style="width:'+(p.v/bmax*100).toFixed(0)+'%;background:'+(_INF_RF.indexOf(p.s)>=0?'#2f6fde':'#0f9d58')+'"></i></div><span>'+_infN(p.v/total*100,1)+'%</span></td></tr>';}).join('');
+  var gana=pos.filter(function(p){return p.pnl!=null&&p.pnl>0;}).sort(function(a,b){return b.pnl-a.pnl;}).slice(0,5);
+  var ganatb=gana.map(function(p){return '<tr><td><b>'+_infEsc(p.t)+'</b><span class="nm">'+(_INF_SECT[p.s]||'')+'</span></td><td class="n grn">'+_infPct(p.pnl)+'</td><td class="n">US$ '+_infN(p.v)+'</td><td class="n mut">'+_infAntig(primera[p.t])+'</td></tr>';}).join('');
+  // ── mapa por país (sobre lo invertido, sin liquidez)
+  var reg={usa:sv.nyse||0,arg:(sv.argentina||0)+(sv.bonos||0)+(sv.on||0)+(sv.fci||0),bra:sv.brasil||0,eur:sv.europa||0,chn:sv.china||0},cri=sv.cripto||0;
+  var inv=reg.usa+reg.arg+reg.bra+reg.eur+reg.chn+cri||1,mapa='';
+  if(hayMapa){
+    var ramp=['#dbe6fa','#b3cbf3','#7fa7ea','#4f84de','#2a5fc2','#1a3f8c'];
+    var col=function(p){return p<=0?'#e9edf3':ramp[p<2?0:p<5?1:p<15?2:p<30?3:p<50?4:5];};
+    var M=window.MAPA_MUNDO,sp='<path d="'+M.otro+'" fill="#e9edf3" stroke="#fff" stroke-width=".5"/>',lb='';
+    var L={usa:[173,108,'EE.UU.'],arg:[233,282,'Argentina'],bra:[262,214,'Brasil'],eur:[372,80,'Europa'],chn:[539,117,'China']};
+    ['usa','arg','bra','eur','chn'].forEach(function(k){var p=reg[k]/inv*100;sp+='<path d="'+M[k]+'" fill="'+col(p)+'" stroke="#fff" stroke-width=".6"/>';
+      if(p>0)lb+='<g font-family="Inter,system-ui,sans-serif" text-anchor="middle"><text x="'+L[k][0]+'" y="'+L[k][1]+'" font-size="13" font-weight="700" fill="#14213d" stroke="#fff" stroke-width="3" paint-order="stroke">'+(p<1?'<1':Math.round(p))+'%</text><text x="'+L[k][0]+'" y="'+(L[k][1]+12)+'" font-size="10" fill="#4a5a78" stroke="#fff" stroke-width="3" paint-order="stroke">'+L[k][2]+'</text></g>';});
+    mapa='<h2>Dónde está invertida <small>% de lo invertido por país, sin contar la liquidez</small></h2><div class="box"><svg viewBox="0 0 700 340" width="100%" role="img" aria-label="Porcentaje invertido por país">'+sp+lb+'</svg>'+
+      '<div class="ramp">menos '+ramp.map(function(c){return '<i style="background:'+c+'"></i>';}).join('')+' más</div></div>'+
+      '<p class="mini">Argentina incluye bonos, obligaciones negociables, fondos y acciones locales. Los Cedears cuentan en el país de la empresa'+(cri>0?'. Cripto ('+_infN(cri/inv*100,1)+'%) no tiene país.':'.')+'</p>';
   }
-  var tag={compra:['Compra','t-c'],venta:['Venta','t-v'],aporte:['Aporte','t-r'],cobro:['Cobro','t-r']};
-  var MAXR=40,rr=rows.length>MAXR?rows.slice(-MAXR):rows;
-  var cob=(d.cobros||[]);
-  var kpi=function(l,v,s,c){return '<div class="k"><div class="kl">'+l+'</div><div class="kv'+(c?' '+c:'')+'">'+v+'</div><div class="ks">'+(s||'')+'</div></div>';};
+  // ── estado del ciclo actual: rendimiento en curso y tiempo que falta para el cierre
+  var cicloHtml='';
+  if(iniAct){
+    var finAct=(parseInt(iniAct.slice(0,4),10)+1)+iniAct.slice(4);
+    var dTot=(new Date(finAct)-new Date(iniAct))/86400000,dPas=Math.max(0,(new Date(hoy)-new Date(iniAct))/86400000),dRes=Math.max(0,Math.round(dTot-dPas));
+    var fr=Math.min(1,dPas/dTot),mRes=dRes/30.44;
+    var resTxt=dRes===0?'cierra hoy':dRes<31?'faltan '+dRes+' día'+(dRes!==1?'s':''):'faltan '+_infN(mRes,1).replace(/,0$/,'')+' meses';
+    var rc=d.rendPct;
+    cicloHtml='<div class="ciclo"><div class="ct"><span class="kl">Ciclo actual</span><b class="'+(rc==null?'':rc>=0?'grn':'red')+'">'+(rc!=null?_infPct(rc):'—')+'</b><span class="cs">de rendimiento hasta hoy</span>'+
+      '<span class="cr">'+resTxt+'<br><span class="mut">cierra el '+_infDMY(finAct)+'</span></span></div>'+
+      '<div class="pb"><i style="width:'+(fr*100).toFixed(1)+'%"></i></div>'+
+      '<div class="pl"><span>'+_infDMY(iniAct)+' · inicio</span><span>'+Math.round(fr*100)+'% del ciclo transcurrido</span><span>'+_infDMY(finAct)+' · cierre</span></div></div>';
+  }
   var paras=com.trim()?com.trim().split(/\n\s*\n/).map(function(p){return '<p>'+_infEsc(p).replace(/\n/g,'<br>')+'</p>';}).join(''):'';
   var tc=(typeof MEP_HOY!=='undefined'&&MEP_HOY)||CCL_HOY;
+  var kpi=function(l,v,s,c,h){return '<div class="k'+(h?' hero':'')+'"><div class="kl">'+l+'</div><div class="kv'+(c?' '+c:'')+'">'+v+'</div><div class="ks">'+(s||'')+'</div></div>';};
   var html='<div class="inf-page">'+
-    '<header><div class="av">'+_infEsc(CFG.nombre.charAt(0))+'</div><div><h1>Tu cartera de inversiones</h1><div class="sub">'+tit+'</div></div>'+
-    '<div class="right">'+_infEsc(CFG.nombre)+'<br>Datos al '+_infDMY(hasta)+'<br>Período: '+_infDMY(desde)+' → '+(hasta===hoy?'hoy':_infDMY(hasta))+'</div></header>'+
-    '<p class="hello">Hola '+_infEsc(CFG.nombre)+', este es el resumen de cómo estuvo tu cartera'+(modo==='mes'?' en el último mes':' en el período')+'.'+(cierreTxt?' '+cierreTxt:'')+'</p>'+
+    '<header><div class="av">'+_infEsc(CFG.nombre.charAt(0))+'</div><div><h1>Tu cartera de inversiones</h1><div class="sub">'+(modo==='ultimo'?'Informe anual · '+sub:modo==='mes'?'Informe del último mes':'Informe del período '+(iniAct?_infDMY(iniAct)+' → hoy':''))+'</div></div>'+
+    '<div class="right">'+_infEsc(CFG.nombre)+'<br>Datos al '+_infDMY(hoy)+'<br>Inversiones desde '+_infMY(desdeIni)+'</div></header>'+
+    '<p class="hello">Hola '+_infEsc(CFG.nombre)+', este es el resumen de cómo viene tu cartera.</p>'+
     '<div class="kpis">'+
-      kpi(modo==='cerrado'?'Valor al cierre':'Valor total','US$ '+_infN(valor),(modo!=='cerrado'&&tc?'≈ $ '+_infN(valor*tc/1e6,1)+' M al dólar MEP':''))+
-      kpi(modo==='mes'?'En el mes':'Rendimiento del período',rend!=null?_infPct(rend):'—',(modo==='anual'?'desde el '+_infDMY(desde):modo==='mes'?'incluye aportes o retiros':''),rend==null?'':rend>=0?'grn':'red')+
-      kpi('Ganancia',gan!=null?(gan>=0?'+':'−')+'US$ '+_infN(Math.abs(gan)):'—',base?'sobre US$ '+_infN(base)+(modo==='mes'?'':' de inversión inicial'):'',gan==null?'':gan>=0?'grn':'red')+
-      kpi('Cobraste','US$ '+_infN(cobrado),'intereses, dividendos y amortizaciones')+
-    '</div>'+
-    (svg?'<h2>Cómo fue evolucionando <small>valor total en dólares</small></h2>'+svg:'')+
-    '<div class="cols"><div><h2>En qué está invertida <small>hoy</small></h2>'+
-      '<div class="bar">'+[[rf,'Renta fija','var(--rf)'],[rv,'Acciones','var(--rv)'],[lq,'','var(--liq)']].filter(function(x){return x[0]>0;}).map(function(x){var w=x[0]/tt*100;return '<div class="seg" style="width:'+w+'%;background:'+x[2]+'">'+(w>=14?(x[1]?x[1]+' ':'')+Math.round(w)+'%':'')+'</div>';}).join('')+'</div>'+
-      '<div class="legend"><span><i style="background:var(--rf)"></i>Bonos, ON y FCI '+Math.round(rf/tt*100)+'%</span><span><i style="background:var(--rv)"></i>Acciones y Cedears '+Math.round(rv/tt*100)+'%</span><span><i style="background:var(--liq)"></i>Efectivo '+Math.round(lq/tt*100)+'%</span></div>'+
-      (dolz!=null?'<p class="mini">El '+Math.round(dolz)+'% está en dólares o atado al dólar'+(dolz<99.5?'; el '+Math.round(100-dolz)+'% restante en pesos.':'.')+'</p>':'')+
-    '</div><div><h2>Próximos cobros <small>30 días</small></h2>'+
-      (cob.length?'<table><thead><tr><th>Fecha</th><th>Qué</th><th class="n">Monto</th></tr></thead><tbody>'+cob.map(function(c){return '<tr><td>'+_infDMY(c.f,true).slice(0,5)+'</td><td>'+_infEsc(c.t)+'</td><td class="n">'+(c.m==='USD'?'US$ ':'$ ')+_infN(c.x)+'</td></tr>';}).join('')+'</tbody></table>':'<p class="mini">No hay cobros en los próximos 30 días.</p>')+
-    '</div></div>'+
-    '<h2>Movimientos del período'+(rows.length>MAXR?' <small>últimos '+MAXR+' de '+rows.length+'</small>':'')+'</h2>'+
-    (rr.length?'<table><thead><tr><th>Fecha</th><th>Operación</th><th>Activo</th><th class="n">Monto</th></tr></thead><tbody>'+rr.map(function(r){var g=tag[r.t];return '<tr><td>'+_infDMY(r.d,true)+'</td><td><span class="tag '+g[1]+'">'+g[0]+'</span></td><td>'+_infEsc(r.a)+'</td><td class="n">US$ '+_infN(r.u)+'</td></tr>';}).join('')+'</tbody></table>':'<p class="mini">No hubo movimientos en el período.</p>')+
+      kpi('Valor total de la cartera','US$ '+_infN(total),tc?'≈ $ '+_infN(total*tc/1e6,1)+' M al dólar MEP':'','',true)+
+      kpi(perLbl,rend!=null?_infPct(rend):'—',(gan!=null?(gan>=0?'+':'−')+'US$ '+_infN(Math.abs(gan))+' · ':'')+sub,rend==null?'':rend>=0?'grn':'red')+
+      kpi('Ganancia total',ys.length?_infPct((acc-1)*100):'—',ys.length?'compuesta desde '+_infMY(desdeIni)+'<br>('+compTxt+')':'',acc>=1?'grn':'red')+
+      kpi('Activos en cartera',String(pos.length),nRF+' de renta fija · '+nRV+' acciones')+
+      kpi('Movimientos',String(m3.length),'en los últimos 3 meses<br>'+nC+' compra'+(nC!==1?'s':'')+' · '+nV+' venta'+(nV!==1?'s':''))+
+    '</div>'+cicloHtml+
+    '<h2>Cómo fue evolucionando <small>desde el inicio de las inversiones, en dólares</small></h2>'+evo+
+    '<div class="cols"><div><h2>En qué está invertida</h2><div class="dist">'+donut+'<div style="flex:1">'+dleg+'</div></div>'+
+      (dolz!=null?'<p class="mini">El '+Math.round(dolz)+'% está en dólares o atado al dólar.</p>':'')+'</div>'+
+      '<div><h2>Posiciones más grandes</h2>'+(bigtb?'<table><thead><tr><th>Activo</th><th class="n">Valor</th><th class="n">% cartera</th></tr></thead><tbody>'+bigtb+'</tbody></table>':'<p class="mini">Sin posiciones.</p>')+'</div></div>'+
+    mapa+
+    (ganatb?'<h2>Las que más están ganando <small>en %, en dólares</small></h2><table><thead><tr><th>Activo</th><th class="n">Ganancia</th><th class="n">Valor</th><th class="n">Desde hace</th></tr></thead><tbody>'+ganatb+'</tbody></table>':'')+
     (paras?'<h2>Comentario</h2><div class="note">'+paras+'</div>':'')+
-    '<footer>Valores en dólares a precio de mercado'+(modo==='cerrado'?' al cierre del período':' del '+_infDMY(hoy))+'. Los activos en pesos se pasan a dólares al tipo de cambio del día. '+
-      (modo==='anual'?'El rendimiento del período se mide contra la inversión inicial del '+_infDMY(desde)+'. ':'')+
-      'Los montos de movimientos y cobros son aproximados en dólares. Las rentabilidades pasadas no garantizan resultados futuros. Ante cualquier duda, escribime.</footer></div>';
+    '<footer>Valores en dólares a precio de mercado del '+_infDMY(hoy)+'; los activos en pesos se pasan a dólares al tipo de cambio del día. '+
+      'La ganancia de cada período se mide contra la inversión inicial de ese período y la ganancia total compone los rendimientos de todos los períodos. '+
+      'Las rentabilidades pasadas no garantizan resultados futuros. Ante cualquier duda, escribime.</footer></div>';
   infMostrar(html);
 }
 function infMostrar(html){
   if(!document.getElementById('inf-css')){var st=document.createElement('style');st.id='inf-css';st.textContent=
-    '#inf-view{position:fixed;inset:0;z-index:100001;overflow:auto;background:#f5f7fb;--ink:#14213d;--ink2:#4a5a78;--ink3:#8a97ad;--line:#e3e8f0;--grn:#0f9d58;--red:#d93025;--blue:#2f6fde;--rf:#2f6fde;--rv:#0f9d58;--liq:#9aa8c0;color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45;padding:16px}'+
-    '#inf-bar{max-width:760px;margin:0 auto 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}#inf-bar button{font:inherit;font-size:.82rem;border-radius:8px;padding:.45rem .9rem;cursor:pointer;border:1px solid #c9d3e3;background:#fff;color:#14213d}#inf-bar .pri{background:#14213d;color:#fff;border-color:#14213d}#inf-bar span{font-size:.72rem;color:#8a97ad;margin-left:auto}'+
-    '#inf-view .inf-page{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:30px 34px}'+
+    '#inf-view{position:fixed;inset:0;z-index:100001;overflow:auto;background:#f5f7fb;--ink:#14213d;--ink2:#4a5a78;--ink3:#8a97ad;--line:#e3e8f0;--grn:#0f9d58;--red:#d93025;--blue:#2f6fde;color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45;padding:16px}'+
+    '#inf-bar{max-width:780px;margin:0 auto 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}#inf-bar button{font:inherit;font-size:.82rem;border-radius:8px;padding:.45rem .9rem;cursor:pointer;border:1px solid #c9d3e3;background:#fff;color:#14213d}#inf-bar .pri{background:#14213d;color:#fff;border-color:#14213d}#inf-bar span{font-size:.72rem;color:#8a97ad;margin-left:auto}'+
+    '#inf-view .inf-page{max-width:780px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:30px 34px}'+
     '#inf-view header{display:flex;align-items:flex-start;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:20px;background:none;position:static}'+
     '#inf-view .av{width:46px;height:46px;border-radius:50%;background:#e8eefb;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--blue);font-size:1.2rem;flex-shrink:0}'+
     '#inf-view h1{font-size:1.35rem;margin:0;color:var(--ink)}#inf-view .sub{color:var(--ink2);font-size:.82rem;margin-top:2px}#inf-view .right{margin-left:auto;text-align:right;font-size:.75rem;color:var(--ink3)}'+
-    '#inf-view .hello{font-size:.92rem;margin:0 0 18px}#inf-view .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}'+
-    '#inf-view .k{border:1px solid var(--line);border-radius:10px;padding:.7rem .8rem}#inf-view .kl{font-size:.64rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}'+
-    '#inf-view .kv{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:1.2rem;font-weight:700;margin-top:4px;color:var(--ink)}#inf-view .ks{font-size:.7rem;color:var(--ink2);margin-top:2px}'+
-    '#inf-view .kv.grn{color:var(--grn)}#inf-view .kv.red{color:var(--red)}#inf-view h2{font-size:.95rem;margin:24px 0 8px;color:var(--ink)}#inf-view h2 small{font-weight:400;color:var(--ink3);font-size:.74rem;margin-left:6px}'+
-    '#inf-view .inf-chart{border:1px solid var(--line);border-radius:10px;padding:10px 12px 4px}#inf-view .bar{display:flex;height:26px;border-radius:6px;overflow:hidden;gap:2px}'+
-    '#inf-view .seg{display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:700;white-space:nowrap;overflow:hidden}'+
-    '#inf-view .legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:.76rem;color:var(--ink2);margin-top:8px}#inf-view .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}'+
-    '#inf-view .mini{font-size:.78rem;color:var(--ink2);margin:10px 0 0}#inf-view table{width:100%;border-collapse:collapse;font-size:.8rem}'+
-    '#inf-view th{font-size:.64rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:.35rem .5rem;border-bottom:1px solid var(--line);font-weight:600;background:none;position:static}'+
-    '#inf-view td{padding:.45rem .5rem;border-bottom:1px solid var(--line);color:var(--ink);background:none;font-family:inherit}#inf-view td.n,#inf-view th.n{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace}#inf-view tr:last-child td{border-bottom:none}'+
-    '#inf-view .tag{display:inline-block;font-size:.66rem;font-weight:600;border-radius:5px;padding:1px 7px}#inf-view .t-c{background:#e7f6ee;color:var(--grn)}#inf-view .t-v{background:#fdecea;color:var(--red)}#inf-view .t-r{background:#e8eefb;color:var(--blue)}'+
+    '#inf-view .hello{font-size:.92rem;margin:0 0 18px}#inf-view .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:8px}'+
+    '#inf-view .k{border:1px solid var(--line);border-radius:10px;padding:.7rem .75rem}#inf-view .k.hero{background:#14213d;border-color:#14213d}#inf-view .k.hero .kl,#inf-view .k.hero .ks{color:#b9c4d8}#inf-view .k.hero .kv{color:#fff}'+
+    '#inf-view .kl{font-size:.6rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}'+
+    '#inf-view .kv{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:1.15rem;font-weight:700;margin-top:4px;color:var(--ink)}#inf-view .ks{font-size:.66rem;color:var(--ink2);margin-top:3px}'+
+    '#inf-view .grn{color:var(--grn)}#inf-view .red{color:var(--red)}#inf-view .mut{color:var(--ink3)}#inf-view .kv.grn{color:var(--grn)}#inf-view .kv.red{color:var(--red)}'+
+    '#inf-view h2{font-size:.98rem;margin:26px 0 8px;color:var(--ink)}#inf-view h2 small{font-weight:400;color:var(--ink3);font-size:.74rem;margin-left:6px}'+
+    '#inf-view .box{border:1px solid var(--line);border-radius:10px;padding:10px 12px}#inf-view .lg{display:flex;gap:18px;flex-wrap:wrap;font-size:.74rem;color:var(--ink2);margin:2px 4px 6px}#inf-view .lg i{display:inline-block;width:16px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:6px}'+
+    '#inf-view .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}#inf-view .dist{display:flex;align-items:center;gap:14px}'+
+    '#inf-view .dl{display:grid;grid-template-columns:12px 1fr auto;column-gap:8px;align-items:baseline;font-size:.82rem;margin:6px 0}#inf-view .dl i{width:10px;height:10px;border-radius:2px;display:inline-block}#inf-view .dl b{font-family:"JetBrains Mono",monospace}#inf-view .dl em{grid-column:2/4;font-style:normal;font-size:.68rem;color:var(--ink3)}'+
+    '#inf-view .mini{font-size:.74rem;color:var(--ink2);margin:6px 2px 0}#inf-view table{width:100%;border-collapse:collapse;font-size:.8rem}'+
+    '#inf-view th{font-size:.62rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:.3rem .45rem;border-bottom:1px solid var(--line);font-weight:600;background:none;position:static}'+
+    '#inf-view td{padding:.42rem .45rem;border-bottom:1px solid var(--line);color:var(--ink);background:none;font-family:inherit;vertical-align:middle}#inf-view td.n,#inf-view th.n{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace;white-space:nowrap}#inf-view tr:last-child td{border-bottom:none}'+
+    '#inf-view td.grn{color:var(--grn)}#inf-view td.mut{color:var(--ink3)}#inf-view .nm{display:block;font-size:.68rem;color:var(--ink3)}'+
+    '#inf-view .bc{width:36%}#inf-view .bc .hb{display:inline-block;width:calc(100% - 46px);height:8px;background:#f0f3f8;border-radius:4px;vertical-align:middle;overflow:hidden}#inf-view .hb i{display:block;height:100%;border-radius:4px}#inf-view .bc span{display:inline-block;width:42px;text-align:right;font-family:"JetBrains Mono",monospace;font-size:.74rem}'+
+    '#inf-view .ramp{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--ink3);margin:4px 6px 2px}#inf-view .ramp i{width:26px;height:8px;display:inline-block}'+
+    '#inf-view .ciclo{border:1px solid var(--line);border-radius:10px;padding:.7rem .85rem;margin-top:9px}#inf-view .ct{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}#inf-view .ct b{font-family:"JetBrains Mono",monospace;font-size:1.15rem}#inf-view .cs{font-size:.74rem;color:var(--ink2)}#inf-view .cr{margin-left:auto;text-align:right;font-size:.8rem;font-weight:600;line-height:1.3}#inf-view .cr .mut{font-weight:400;font-size:.68rem}'+
+    '#inf-view .pb{height:8px;background:#f0f3f8;border-radius:4px;overflow:hidden;margin:8px 0 4px}#inf-view .pb i{display:block;height:100%;background:#14213d;border-radius:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}#inf-view .pl{display:flex;justify-content:space-between;gap:8px;font-size:.66rem;color:var(--ink3)}'+
     '#inf-view .note{background:#f7f9fc;border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:.75rem .95rem;font-size:.86rem}#inf-view .note p{margin:0 0 .5rem}#inf-view .note p:last-child{margin:0}'+
     '#inf-view footer{margin-top:24px;padding-top:12px;border-top:1px solid var(--line);font-size:.68rem;color:var(--ink3);line-height:1.55;background:none;position:static}'+
-    '#inf-view .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}'+
-    '@media(max-width:640px){#inf-view .kpis{grid-template-columns:1fr 1fr}#inf-view .inf-page{padding:22px 18px}#inf-view .cols{grid-template-columns:1fr}#inf-view .right{display:none}}'+
-    '@media print{body>*:not(#inf-view){display:none!important}#inf-view{position:static;overflow:visible;background:#fff;padding:0}#inf-bar{display:none!important}#inf-view .inf-page{border:none;padding:0}#inf-view .k,#inf-view .inf-chart,#inf-view tr{break-inside:avoid}@page{margin:14mm}}';
+    '@media(max-width:700px){#inf-view .kpis{grid-template-columns:1fr 1fr}#inf-view .k.hero{grid-column:1/3}#inf-view .inf-page{padding:22px 16px}#inf-view .cols{grid-template-columns:1fr}#inf-view .right{display:none}}'+
+    '@media print{body>*:not(#inf-view){display:none!important}#inf-view{position:static;overflow:visible;background:#fff;padding:0}#inf-bar{display:none!important}#inf-view .inf-page{border:none;padding:0;max-width:none}#inf-view .k.hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}#inf-view .box,#inf-view tr,#inf-view .k{break-inside:avoid}@page{margin:12mm}}';
     document.head.appendChild(st);}
   var v=document.getElementById('inf-view');if(v)v.remove();
   v=document.createElement('div');v.id='inf-view';
