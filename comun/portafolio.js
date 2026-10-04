@@ -9,8 +9,11 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=91, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=94, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v94 | 2026-10-04 | UI: botón ? arriba a la derecha (barra superior) que abre la lista de atajos de teclado.',
+  'v93 | 2026-10-04 | Feat: atajos C (cargar compra) y V (cargar venta): van a Movimientos con el tipo ya elegido y el cursor en Ticker.',
+  'v92 | 2026-10-04 | Feat: atajos de teclado — P portafolio, M cargar movimiento, D dividendos, T tipo de cambio, R refrescar cotizaciones, / buscar ticker, I informe, H inicio, Esc cerrar, ? ayuda. No actúan mientras se escribe en un campo.',
   'v91 | 2026-10-04 | Feat: control de ratios de Cedears — una vez por día compara el precio del Cedear con NYSE (Finnhub) y el CCL; si el ratio que surge del mercado difiere más de 25% del cargado, avisa arriba con el ratio sugerido (ignorar / verificar ahora). No cambia nada solo; se corrige en GDC → Ratios y Sync.',
   'v90 | 2026-10-04 | Feat: aviso "Desde tu última visita" al abrir el portafolio (variación del total, activos que más subieron y bajaron, cobros cargados, posiciones nuevas o cerradas; se guarda por dispositivo). El resumen para Carteras administradas guarda la variación del día de cada posición (para "Lo que más se movió").',
   'v89 | 2026-10-04 | Feat: el resumen para Carteras administradas guarda el P. Venta y la distancia al P. Venta de cada posición (para el buscador de tickers del index).',
@@ -10383,3 +10386,62 @@ function rtBanner(msg){
     '<span id="rt-btn" onclick="ratiosVerificar(true)" style="cursor:pointer;color:var(--text3);text-decoration:underline dotted">verificar ahora</span>'+
     (!L.length?' <span onclick="this.parentNode.remove()" style="cursor:pointer;color:var(--text3)">✕</span>':'');
 }
+
+// ─── Atajos de teclado ────────────────────────────────────────────────────────
+// P portafolio · C compra · V venta · M movimiento · D dividendos · T tipo de cambio · R refrescar cotizaciones ·
+// / buscar ticker · I informe · H inicio · Esc cerrar · ? ayuda. No actúan mientras se escribe en un campo.
+function _kbIr(ids){
+  for(var i=0;i<ids.length;i++){var id=ids[i];if(!document.getElementById('page-'+id))continue;
+    var nav=Array.prototype.find.call(document.querySelectorAll('.nav-item'),function(n){return (n.getAttribute('onclick')||'').indexOf("'"+id+"'")>=0;});
+    if(nav)nav.click();else if(typeof showPage==='function')showPage(id,null);return true;}
+  return false;
+}
+function _kbFoco(id){setTimeout(function(){var e=document.getElementById(id);if(e){e.focus();if(e.select)e.select();}},60);}
+function kbAyuda(){
+  var ov=document.getElementById('kb-help');if(ov){ov.remove();return;}
+  var L=[['P','Portafolio'],['C','Cargar una compra'],['V','Cargar una venta'],['M','Cargar un movimiento (otro tipo)'],['D','Dividendos'],['T','Tipo de cambio (CCL / MEP)'],['R','Refrescar cotizaciones'],['/','Buscar un ticker en la cartera']]
+    .concat(CFG.informe?[['I','Informe para '+CFG.nombre]]:[]).concat([['H','Volver a Carteras administradas'],['Esc','Cerrar / limpiar búsqueda'],['?','Esta ayuda']]);
+  ov=document.createElement('div');ov.id='kb-help';ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  ov.style.cssText='position:fixed;inset:0;z-index:100003;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:1rem 1.2rem;min-width:300px;font-family:var(--sans);color:var(--text)">'+
+    '<div style="font-weight:700;margin-bottom:.6rem">⌨️ Atajos de teclado</div>'+
+    L.map(function(x){return '<div style="display:flex;gap:12px;align-items:center;margin:.35rem 0;font-size:.84rem"><kbd style="min-width:34px;text-align:center;font-family:var(--mono);font-size:.78rem;background:var(--surface2);border:1px solid var(--border2);border-bottom-width:2px;border-radius:5px;padding:2px 6px">'+x[0]+'</kbd><span>'+x[1]+'</span></div>';}).join('')+
+    '<div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:.6rem">No funcionan mientras estás escribiendo en un campo.</div></div>';
+  document.body.appendChild(ov);
+}
+document.addEventListener('keydown',function(e){
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  var a=document.activeElement,tag=a&&a.tagName;
+  if(e.key==='Escape'){
+    var c=document.getElementById('kb-help')||document.getElementById('inf-dlg')||document.getElementById('inf-view');if(c){c.remove();return;}
+    if(a&&a.id==='port-ticker-filter'&&a.value){a.value='';a.dispatchEvent(new Event('input'));a.blur();return;}
+    if(a&&(tag==='INPUT'||tag==='TEXTAREA'))a.blur();return;
+  }
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(a&&a.isContentEditable))return;
+  if(document.getElementById('inf-view')||document.getElementById('inf-dlg'))return;
+  var k=e.key;
+  if(k!=='?'&&k!=='h'&&k!=='H'&&(typeof _gdcInitDone==='undefined'||!_gdcInitDone))return; // todavía sin login / cargando
+  var hecho=true;
+  if(k==='?'){kbAyuda();}
+  else if(k==='p'||k==='P'){_kbIr(['portafolio']);}
+  else if(k==='m'||k==='M'){if(_kbIr(['movimientos']))_kbFoco('m-ticker');}
+  else if(k==='c'||k==='C'||k==='v'||k==='V'){if(_kbIr(['movimientos'])){var sel=document.getElementById('m-tipo');
+    if(sel){sel.value=(k==='c'||k==='C')?'compra':'venta';try{if(typeof onTipo==='function')onTipo();else sel.dispatchEvent(new Event('change'));}catch(_e){}}
+    _kbFoco('m-ticker');}}
+  else if(k==='d'||k==='D'){_kbIr(['dividendos','tracker']);}
+  else if(k==='t'||k==='T'){if(_kbIr(['tipocambio']))_kbFoco('tc-ccl-fecha');}
+  else if(k==='r'||k==='R'){if(typeof fetchAllQuotes==='function')fetchAllQuotes();}
+  else if(k==='/'){if(_kbIr(['portafolio']))_kbFoco('port-ticker-filter');}
+  else if((k==='i'||k==='I')&&CFG.informe&&typeof infAbrir==='function'){infAbrir();}
+  else if(k==='h'||k==='H'){location.href='../index.html';}
+  else hecho=false;
+  if(hecho)e.preventDefault();
+});
+
+// Botón "?" arriba a la derecha (en la barra superior) que abre la lista de atajos
+(function(){function add(){var tb=document.querySelector('.topbar');if(!tb||document.getElementById('kb-btn'))return;
+  var b=document.createElement('button');b.id='kb-btn';b.type='button';b.textContent='?';b.title='Atajos de teclado (tecla ?)';b.onclick=function(){kbAyuda();};
+  b.style.cssText='margin-left:auto;width:24px;height:24px;flex-shrink:0;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:.78rem;font-weight:700;cursor:pointer;line-height:1;padding:0';
+  b.onmouseenter=function(){b.style.borderColor='var(--accent)';b.style.color='var(--accent)';};b.onmouseleave=function(){b.style.borderColor='var(--border2)';b.style.color='var(--text2)';};
+  tb.appendChild(b);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();})();
