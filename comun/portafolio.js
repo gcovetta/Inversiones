@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=87, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=88, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v88 | 2026-10-04 | Fix: si el CCL/MEP de hoy no estaba en la tabla (fin de semana o antes de traerlo) se usaba un valor fijo viejo (1487) y los Cedears quedaban valuados con ese dólar — en Juli MSFT daba −2% al P. Venta y en GDC +7%. Ahora se usa el último CCL/MEP cargado, se refresca al leer la tabla de Supabase y la cartera se recalcula cuando llega el dólar del día (también el real, para las acciones brasileñas).',
   'v87 | 2026-10-04 | Feat: informe — el perfil de inversor sale del mismo puntaje de Recomendaciones (composición, países y sectores, 0 a 100) y muestra el puntaje de los tres perfiles.',
   'v86 | 2026-10-04 | UI: Tipo de cambio — al cargar CCL o MEP las barras de la fecha se ponen solas (se escribe 03102026 y queda 03/10/2026), Enter en la fecha pasa al valor y Enter en el valor guarda. La fecha se normaliza a dd/mm/aaaa y se avisa si está incompleta.',
   'v85 | 2026-10-04 | Feat: informe — perfil de inversor al que más se parece la cartera (Conservador, Moderado o Agresivo, por cercanía a los rangos de renta variable, renta fija y liquidez), con la comparación hoy vs. perfil.',
@@ -461,8 +462,16 @@ function getTC(fecha, mercado){
   return esBonoON ? (getMEP(fecha)||getCCL(fecha)||MEP_HOY||CCL_HOY) : (getCCL(fecha)||CCL_HOY);
 }
 var _HOY_KEY=(function(){var d=new Date();return(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();})();
-var CCL_HOY=CCL_TABLE[_HOY_KEY]||1487;
-var MEP_HOY=MEP_TABLE[_HOY_KEY]||CCL_HOY;
+// Si hoy no está en la tabla (fin de semana, feriado o todavía no se trajo), se usa el último valor
+// cargado — nunca un número fijo viejo, que distorsiona precios de Cedears y el % al P. Venta.
+function _tcUltimoValor(T){var hoy=_HOY_KEY.split('/').reverse().join(''),best=null,bk='';
+  Object.keys(T||{}).forEach(function(k){var p=k.split('/');if(p.length!==3)return;var kk=p[2]+p[1].padStart(2,'0')+p[0].padStart(2,'0');if(kk<=hoy&&kk>bk&&T[k]>0){bk=kk;best=T[k];}});return best;}
+var CCL_HOY=CCL_TABLE[_HOY_KEY]||_tcUltimoValor(CCL_TABLE)||1487;
+var MEP_HOY=MEP_TABLE[_HOY_KEY]||_tcUltimoValor(MEP_TABLE)||CCL_HOY;
+function tcRefrescarHoy(){
+  CCL_HOY=CCL_TABLE[_HOY_KEY]||_tcUltimoValor(CCL_TABLE)||CCL_HOY;
+  MEP_HOY=MEP_TABLE[_HOY_KEY]||_tcUltimoValor(MEP_TABLE)||MEP_HOY||CCL_HOY;
+}
 var BRL_HOY=5.80; // BRL por USD — se actualiza con fetchTopbarRates()
 var BRL_TICKERS=new Set([]); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR). BBAS3/PETR3 sacados 2026-09-13: Garo confirmó que los compra en pesos como CEDEAR, no tenencia directa en Brasil.
 
@@ -1136,6 +1145,7 @@ function tcLoadPersist(){
     var sm=localStorage.getItem((PFX+'mep_override'));
     if(sm) Object.assign(MEP_TABLE,JSON.parse(sm));
   }catch(e){}
+  tcRefrescarHoy();
 }
 function cardToggle(btn){
   var card=btn.closest('.card');
@@ -7323,6 +7333,13 @@ function arbAddRow(pi){
 }
 
 async function fetchTopbarRates(){
+  var _cclAntes=CCL_HOY,_mepAntes=MEP_HOY,_brlAntes=BRL_HOY;
+  try{await _fetchTopbarRates();}finally{
+    // si cambió el dólar de hoy, recalcular la cartera (precios de Cedears, P. Venta, totales)
+    if((Math.abs(CCL_HOY-_cclAntes)>0.5||Math.abs(MEP_HOY-_mepAntes)>0.5||Math.abs(BRL_HOY-_brlAntes)>0.01)&&typeof _gdcInitDone!=='undefined'&&_gdcInitDone&&typeof renderPortfolio==='function'){try{renderPortfolio();}catch(e){}}
+  }
+}
+async function _fetchTopbarRates(){
   // Update RC CCL tag
   var rcTag=document.getElementById('rc-ccl-tag');
   if(rcTag&&typeof CCL_HOY!=='undefined') rcTag.textContent='CCL: $'+Math.round(CCL_HOY).toLocaleString('es-AR');
@@ -8452,6 +8469,7 @@ function trkCalcCCL(){
     var sbMepOvr = await sbGetConfig('mep_override');
     if(sbMepOvr){Object.assign(MEP_TABLE, sbMepOvr);}
     else{try{var sm=localStorage.getItem((PFX+'mep_override'));if(sm)Object.assign(MEP_TABLE,JSON.parse(sm));}catch(e){}}
+    tcRefrescarHoy();
 
     // 7. Liquidez
     var sbLiq = await sbGetConfig('liquidez');
