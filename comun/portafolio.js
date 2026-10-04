@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=96, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=97, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v97 | 2026-10-04 | UI: vista celular — en pantallas angostas cada posición de la cartera se muestra como tarjeta (ticker y Δ arriba; inversión, mercado, PPC, % anual, P. Venta y cantidad con su etiqueta) en vez de la tabla ancha.',
   'v96 | 2026-10-04 | UI: el aviso de ratio desactualizado va al final de la página Portafolio. Ratios menores a 1 se muestran como "0,33 (1 Cedear = 3 acciones)" en vez de redondear a 0,5.',
   'v95 | 2026-10-04 | UI: atajo C lleva al recuadro 🛒 Comprar del Portafolio con el cursor en Ticker; V lleva al recuadro 💸 Vender con el foco en el combo de tickers (los despliega si estaban plegados y los resalta un instante).',
   'v94 | 2026-10-04 | UI: botón ? arriba a la derecha (barra superior) que abre la lista de atajos de teclado.',
@@ -3757,7 +3758,7 @@ function renderPortfolio(){
       ptipoCell+
       rebalCell+
       (CFG.rsi?'<td class="mono col-rsi">'+rsiCell+'</td>':'')+
-      '<td class="mono port-sensitive">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
+      '<td class="mono port-sensitive col-qty">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
     '</tr>';
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
     // pueden clasificar en verde/amarillo/rojo, y ocultarlos los hacía desaparecer de la
@@ -10462,3 +10463,22 @@ document.addEventListener('keydown',function(e){
   b.onmouseenter=function(){b.style.borderColor='var(--accent)';b.style.color='var(--accent)';};b.onmouseleave=function(){b.style.borderColor='var(--border2)';b.style.color='var(--text2)';};
   tb.appendChild(b);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();})();
+
+// ─── Vista celular: en pantallas angostas cada posición se ve como tarjeta ───────────────────
+(function(){if(document.getElementById('mob-cards-css'))return;var st=document.createElement('style');st.id='mob-cards-css';
+  var P='#panels-grid .panel-table ';
+  st.textContent='@media (max-width:640px){'+
+    P+'thead{display:none}'+P+'table,'+P+'tbody,'+P+'tfoot{display:block;width:100%}'+
+    P+'tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 10px;padding:.6rem .7rem;border-bottom:1px solid var(--border)}'+
+    P+'tbody tr:last-child{border-bottom:none}'+
+    P+'td{border:none!important;padding:0!important;text-align:left!important;white-space:normal;min-width:0}'+
+    P+'td:nth-child(1){grid-column:1/3;font-size:.92rem;align-self:center}'+
+    P+'td:nth-child(2){grid-column:3;justify-self:end;text-align:right!important;align-self:center}'+
+    P+'td:nth-child(n+3)::before{display:block;font-size:.54rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono);font-weight:400;margin-bottom:1px}'+
+    P+'td:nth-child(4)::before{content:"Inversión $"}'+P+'td:nth-child(5)::before{content:"Mercado $"}'+P+'td:nth-child(6)::before{content:"PPC $"}'+
+    P+'td.col-panual::before{content:"% anual"}'+P+'td.col-pventa::before{content:"P. Venta"}'+P+'td.col-ptipo::before{content:"% tipo"}'+
+    P+'td.col-rebal::before{content:"Rebalanceo"}'+P+'td.col-rsi::before{content:"RSI"}'+P+'td.col-qty::before{content:"Cant."}'+
+    P+'td.col-rebal{grid-column:1/-1}'+P+'tfoot tr{background:var(--surface2)}'+
+    P+'td:empty{display:none}'+
+  '}';
+  document.head.appendChild(st);})();
