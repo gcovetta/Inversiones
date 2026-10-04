@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=74, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=76, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v76 | 2026-10-03 | UI: Distribución, Evolución y Rendimiento por período en una misma fila (se acomodan hacia abajo en pantallas chicas), las tres plegables con ▾ y el estado plegado se recuerda.',
+  'v75 | 2026-10-03 | Feat: Evolución — con histDesdeRA los años anteriores salen de la solapa Rendimiento anual (columna TOTAL, sin el 20%), valores de inicio y cierre de cada período incluidos. Activado en Ana.',
   'v74 | 2026-10-03 | Feat: Evolución — valores en USD de años anteriores (inicio y cierre de cada período, cargados en la configuración) se suman al gráfico en "Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%.',
   'v73 | 2026-10-03 | Feat: card Evolución — rendimiento por período (años anteriores cargados en la configuración + cierres futuros + período en curso) y acumulado; con menos de 2 puntos de historial muestra el valor actual en vez de un gráfico vacío. GDC: 2023 +300%, 2024 +70%, 2025 +23%.',
   'v72 | 2026-10-03 | Feat: historial diario del portafolio (config historial: valor por cartera, liquidez, inversión inicial y rendimiento del período, un punto por día) para ver la evolución real. En GDC: card "Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen.',
@@ -1126,6 +1128,29 @@ function cardToggle(btn){
   var card=btn.closest('.card');
   var collapsed=card.classList.toggle('card-collapsed');
   btn.textContent=collapsed?'▸':'▾';
+  if(card.getAttribute('data-persist')){try{localStorage.setItem(PFX+'col_'+card.id,collapsed?'1':'0');}catch(e){}}
+  if(!collapsed&&card.id==='hist-card'&&typeof _histChart!=='undefined'&&_histChart){try{_histChart.resize();}catch(e){}}
+}
+// Fila superior: Distribución · Evolución · Rendimiento por período, lado a lado y plegables
+// (el estado plegado se recuerda por portafolio).
+function topCardPrep(card,flex){
+  if(!card||card.getAttribute('data-persist'))return;
+  card.setAttribute('data-persist','1');card.style.maxWidth='';card.style.marginBottom='0';card.style.flex=flex;card.style.minWidth='0';
+  var h=card.querySelector('.card-header');
+  if(h&&!h.querySelector('.card-toggle')){var b=document.createElement('button');b.className='card-toggle';b.textContent='▾';b.setAttribute('onclick','cardToggle(this)');h.appendChild(b);}
+  var col=false;try{col=localStorage.getItem(PFX+'col_'+card.id)==='1';}catch(e){}
+  if(col){card.classList.add('card-collapsed');var t=h&&h.querySelector('.card-toggle');if(t)t.textContent='▸';}
+}
+function topCardsRow(){
+  var dc=document.getElementById('dist-card');if(!dc||!dc.parentNode)return null;
+  var row=document.getElementById('top-cards-row');
+  if(!row){row=document.createElement('div');row.id='top-cards-row';
+    row.style.cssText='display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start;margin-bottom:1rem';
+    if(!document.getElementById('top-cards-css')){var st=document.createElement('style');st.id='top-cards-css';
+      st.textContent='#top-cards-row>.card.card-collapsed{flex:0 1 auto!important}';document.head.appendChild(st);}
+    dc.parentNode.insertBefore(row,dc);row.appendChild(dc);}
+  topCardPrep(dc,'1 1 380px');
+  return row;
 }
 // ─────────────────────────────────────────────────────────────────────────
 function showPage(id,btn){
@@ -5142,6 +5167,7 @@ function distToggleDetalle(){DIST_OPEN=!DIST_OPEN;distRender();}
 function distRender(data){
   if(data)DIST_LAST=data;
   var d=DIST_LAST;
+  topCardsRow();
   var card=document.getElementById('dist-card'),body=document.getElementById('dist-body'),meta=document.getElementById('dist-meta');
   if(!card||!body||!d)return;
   if(!DIST_SB_LOADED&&typeof sbGetConfig==='function'){
@@ -5821,6 +5847,7 @@ async function histLoad(){
     var h=d[0]?d[0].value:null;if(typeof h==='string'){try{h=JSON.parse(h);}catch(e){h=null;}}
     HIST=(h&&typeof h==='object'&&Array.isArray(h.puntos))?h:{v:1,puntos:[],cierres:[]};
     if(!HIST.cierres)HIST.cierres=[];
+    if(CFG.histDesdeRA)await histCargarRA();
     _histLoaded=true;return HIST;
   }catch(e){return null;}
 }
@@ -5847,6 +5874,32 @@ function histSerie(){
   return out;
 }
 // Fecha del último corte anual <= hoy (AAAA-MM-DD) según CFG.periodoInicio ('MM-DD')
+// Años anteriores tomados de la solapa "Rendimiento anual" (config rendanual_periodos), columna TOTAL:
+// % = (tenés − pusiste) / pusiste, sin descontar el 20%. El último período es el que está en curso
+// (su "pusiste" es la inversión inicial actual), así que se usan los anteriores. Cada período se ubica
+// contando hacia atrás desde el último corte (CFG.periodoInicio).
+function _raNum(x){var t=String(x==null?'':x).replace(/[^0-9.,\-]/g,'');
+  if(/^-?\d{1,3}([.,]\d{3})+$/.test(t))t=t.replace(/[.,]/g,'');else t=t.replace(',','.');
+  return parseFloat(t);}
+async function histCargarRA(){
+  try{
+    var d=await sbGetConfig('rendanual_periodos');if(typeof d==='string')d=JSON.parse(d);
+    if(!Array.isArray(d)||d.length<2)return;
+    var corte=histUltimoCorte();if(!corte)return;
+    var yC=parseInt(corte.slice(0,4),10),md=corte.slice(5);
+    var ra={},prev=[],n=d.length;
+    d.slice(0,n-1).forEach(function(p,i){
+      var pu=_raNum(p.pusiste),te=_raNum(p.tenes);if(!(pu>0)||isNaN(te))return;
+      var y0=yC-(n-1-i),fin=new Date(Date.UTC(y0+1,parseInt(md.slice(0,2),10)-1,parseInt(md.slice(3),10)-1));
+      var ini=y0+'-'+md,mes=parseInt(p.meses,10);
+      if(mes>0&&mes<12){var di=new Date(fin);di.setUTCMonth(di.getUTCMonth()-mes);ini=di.toISOString().slice(0,10);}
+      ra[String(y0)]=Math.round((te-pu)/pu*10000)/100;
+      prev.push([ini,pu,pu],[fin.toISOString().slice(0,10),te,pu]);
+    });
+    CFG.rendAnual=Object.assign(ra,CFG.rendAnual||{});
+    CFG.histPrevio=(CFG.histPrevio||[]).concat(prev);
+  }catch(e){}
+}
 function histUltimoCorte(){
   if(!CFG.periodoInicio)return null;
   var hoy=_hHoy(),y=parseInt(hoy.slice(0,4),10),c=y+'-'+CFG.periodoInicio;
@@ -5856,10 +5909,13 @@ function histSetRango(r){HIST_RANGO=r;try{localStorage.setItem(PFX+'hist_rango',
 function histRender(){
   if(!CFG.historial)return;
   var card=document.getElementById('hist-card');
-  if(!card){var dc=document.getElementById('dist-card');if(!dc||!dc.parentNode)return;
-    card=document.createElement('div');card.className='card';card.id='hist-card';card.style.cssText='margin-bottom:1rem;max-width:720px';
-    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">📈 Evolución</span><span id="hist-rangos" style="display:flex;gap:4px;flex-wrap:wrap"></span><span id="hist-meta" class="tag" style="margin-left:auto"></span></div><div id="hist-cierre"></div><div style="padding:.6rem 1rem 1rem"><div style="position:relative;height:220px"><canvas id="hist-canvas"></canvas></div><div id="hist-nota" style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:6px"></div><div id="hist-anual" style="margin-top:10px"></div></div>';
-    dc.parentNode.insertBefore(card,dc.nextSibling);}
+  if(!card){var row=topCardsRow();if(!row)return;
+    card=document.createElement('div');card.className='card';card.id='hist-card';
+    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">📈 Evolución</span><span id="hist-rangos" style="display:flex;gap:4px;flex-wrap:wrap"></span><span id="hist-meta" class="tag" style="margin-left:auto"></span></div><div id="hist-cierre"></div><div style="padding:.6rem 1rem 1rem"><div style="position:relative;height:220px"><canvas id="hist-canvas"></canvas></div><div id="hist-nota" style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:6px"></div></div>';
+    row.appendChild(card);topCardPrep(card,'1 1 420px');
+    var ca=document.createElement('div');ca.className='card';ca.id='hist-anual-card';
+    ca.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px"><span class="card-title">📅 Rendimiento por período</span><span style="margin-left:auto"></span></div><div id="hist-anual" style="padding:.7rem 1rem 1rem"></div>';
+    row.appendChild(ca);topCardPrep(ca,'1 1 300px');}
   if(!HIST)return;
   var serie=histSerie();var corte=histUltimoCorte();
   if(!HIST_RANGO){try{HIST_RANGO=localStorage.getItem(PFX+'hist_rango');}catch(e){}HIST_RANGO=HIST_RANGO||(corte?'periodo':'todo');}
@@ -5921,7 +5977,7 @@ function histRenderAnual(ult){
   var acc=1;ys.forEach(function(y){acc*=1+per[y].r/100;});
   var lbl=function(y){if(CFG.periodoInicio==='01-01'||!CFG.periodoInicio)return y;var p=CFG.periodoInicio.split('-');return p[1]+'/'+p[0]+'/'+y.slice(2)+'→';};
   var max=Math.max.apply(null,ys.map(function(y){return Math.abs(per[y].r);}))||1;
-  el.innerHTML='<div style="font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Rendimiento por período</div>'+
+  el.innerHTML=
     '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'+ys.map(function(y){var r=per[y].r,h=Math.max(4,Math.round(Math.sqrt(Math.abs(r)/max)*56));var col=r>=0?(per[y].src==='curso'?'rgba(0,230,118,.45)':'var(--accent)'):'var(--red)';
       return '<div style="text-align:center;min-width:54px;font-family:var(--mono)"><div style="font-size:.7rem;font-weight:700;color:'+(r>=0?'var(--accent)':'var(--red)')+'">'+(r>=0?'+':'')+(Math.abs(r)>=100?Math.round(r):r.toFixed(1).replace('.',','))+'%</div><div style="height:56px;display:flex;align-items:flex-end;justify-content:center"><div style="width:26px;height:'+h+'px;background:'+col+';border-radius:3px 3px 0 0"></div></div><div style="font-size:.62rem;color:var(--text2);margin-top:3px">'+lbl(y)+(per[y].src==='curso'?' <span style="color:var(--text3)">(en curso)</span>':'')+'</div></div>';}).join('')+
     '<div style="margin-left:auto;text-align:right;font-family:var(--mono)"><div style="font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Acumulado desde '+lbl(ys[0])+'</div><div style="font-size:1.15rem;font-weight:700;color:'+(acc>=1?'var(--accent)':'var(--red)')+'">'+(acc>=1?'+':'')+Math.round((acc-1)*100).toLocaleString('es-AR')+'%</div><div style="font-size:.62rem;color:var(--text2)">×'+acc.toFixed(2).replace('.',',')+' lo invertido</div></div></div>'+
