@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=71, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=72, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v72 | 2026-10-03 | Feat: historial diario del portafolio (config historial: valor por cartera, liquidez, inversión inicial y rendimiento del período, un punto por día) para ver la evolución real. En GDC: card "Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen.',
   'v71 | 2026-10-03 | Feat: backup diario automático — al abrir cada portafolio (una vez por día) se guarda en su Supabase una copia completa de movimientos, dividendos y configuración (config backup_AAAA-MM-DD); se conservan los últimos 14 días. Botón "Backups" en el encabezado: lista las copias y permite descargarlas o restaurarlas (antes de restaurar guarda una copia del estado actual). (bkDaily / bkOpen / bkRestore)',
   'v70 | 2026-10-03 | Chore: el botón Sync queda solo en GDC (el principal, que empuja ratios, targets, rubros y CCL/MEP a los demás); se quita del HTML de Ana, Hilda, Juli y Omar (ya estaba oculto y desactivado).',
   'v69 | 2026-10-03 | Seguridad: Ana, Hilda, Juli y Omar piden iniciar sesión con Google (solo gcovetta@gmail.com), igual que GDC. Las lecturas y escrituras a Supabase usan el token de la sesión.',
@@ -40,7 +41,9 @@ var CFG=Object.assign({
   rsi:true,                      // columna RSI/TIR en las tablas
   broker:'veta',                 // comparación de posiciones: 'veta' (GDC) o 'bull'
   brokerNombre:'Veta',
-  wlKey:'wl_gdc_v1'
+  wlKey:'wl_gdc_v1',
+  periodoInicio:'01-01',          // corte anual (MM-DD); null = sin corte
+  historial:true                  // muestra la card Evolución
 }, window.PORTFOLIO_CONFIG||{});
 var PFX=CFG.lsPrefix;
 
@@ -3806,7 +3809,7 @@ function renderPortfolio(){
   // Resumen para la vista familiar (Familia/): se guarda en el Supabase de este portafolio
   try{famQueueSnapshot({
     sectorVal:sectorVal, dolzPct:dolzPct, liqUSD:liqUSD, liqARS:liqARS, liqTotalUSD:liqTotalUSD,
-    totalVal:totalVal,
+    totalVal:totalVal, rendPct:rendPct, invInicial:invInicial,
     totalCost:open.reduce(function(a,p){return a+(p._valueUSD!=null?(p.costUSDpuro||0):0);},0),
     pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null};}),
     cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
@@ -5703,10 +5706,13 @@ async function famSaveSnapshot(d){
     doc.ccl=CCL_HOY;doc.mep=MEP_HOY;
     doc.liq={usd:d.liqUSD||0,ars:d.liqARS||0,totalUSD:d.liqTotalUSD||0};
     if(cart==='principal'||!doc.cobros)doc.cobros=d.cobros;
-    doc.carteras[cart]={ts:now,totalVal:d.totalVal,totalCost:d.totalCost,sectorVal:d.sectorVal,dolzPct:d.dolzPct,pos:d.pos};
+    doc.carteras[cart]={ts:now,totalVal:d.totalVal,totalCost:d.totalCost,sectorVal:d.sectorVal,dolzPct:d.dolzPct,pos:d.pos,rend:d.rendPct};
+    if(cart==='principal'||doc.rend==null){doc.rend=d.rendPct;doc.invInicial=d.invInicial||null;}
+    doc.periodoInicio=CFG.periodoInicio||null;
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
     if(ok){_famLastSave=now;_famLastTotal=tot;}
+    try{await histRecord(d,cart);}catch(e){console.warn('histRecord',e);}
   }catch(e){console.warn('famSaveSnapshot',e);}
 }
 
@@ -5797,6 +5803,106 @@ document.addEventListener('DOMContentLoaded',function(){
   var b=document.createElement('button');b.id='bk-btn';b.className='btn-sidebar-toggle';b.title='Backups diarios: descargar o restaurar';b.textContent='💾';
   b.style.cssText='width:auto;padding:0 8px;font-size:.72rem';b.onclick=bkOpen;ref.parentNode.insertBefore(b,ref.nextSibling);
 });
+
+// ─── Historial diario y corte anual ───────────────────────────────────────────
+// config 'historial' = {v:1, puntos:[{d:'AAAA-MM-DD', c:{cartera:{v,cost}}, liq, inv, rend}], cierres:[{d, valor, invAnterior}]}
+var HIST=null,_histLoaded=false,HIST_RANGO=null,_histChart=null;
+function _hHoy(){return _bkHoy();}
+async function histLoad(){
+  // Sólo se da por cargado si Supabase respondió bien: si falla, no se crea un historial vacío
+  // (que después pisaría el guardado).
+  if(_histLoaded)return HIST;
+  try{
+    var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.historial&select=value',{headers:sbHeaders()});
+    if(!r.ok)return null;
+    var d=await r.json();if(!Array.isArray(d))return null;
+    var h=d[0]?d[0].value:null;if(typeof h==='string'){try{h=JSON.parse(h);}catch(e){h=null;}}
+    HIST=(h&&typeof h==='object'&&Array.isArray(h.puntos))?h:{v:1,puntos:[],cierres:[]};
+    if(!HIST.cierres)HIST.cierres=[];
+    _histLoaded=true;return HIST;
+  }catch(e){return null;}
+}
+async function histRecord(d,cart){
+  if(!(await histLoad()))return;
+  var hoy=_hHoy(),pts=HIST.puntos,p=pts.length&&pts[pts.length-1].d===hoy?pts[pts.length-1]:null;
+  if(!p){p={d:hoy,c:{}};pts.push(p);}
+  p.c[cart]={v:Math.round(d.totalVal*100)/100,cost:Math.round(d.totalCost*100)/100};
+  p.liq=Math.round((d.liqTotalUSD||0)*100)/100;
+  if(cart==='principal'||p.rend==null){p.rend=d.rendPct!=null?Math.round(d.rendPct*100)/100:null;p.inv=d.invInicial||null;}
+  await sbSetConfig('historial',HIST);
+  histRender();
+}
+// Serie de valor total por día (con carteras que no se abrieron ese día arrastrando su último valor)
+function histSerie(){
+  if(!HIST)return [];
+  var last={},out=[];
+  HIST.puntos.forEach(function(p){Object.keys(p.c||{}).forEach(function(k){last[k]=p.c[k];});
+    var v=0,cost=0;Object.keys(last).forEach(function(k){v+=last[k].v;cost+=last[k].cost;});
+    out.push({d:p.d,v:v+(p.liq||0),pos:v,cost:cost,inv:p.inv,rend:p.rend});});
+  return out;
+}
+// Fecha del último corte anual <= hoy (AAAA-MM-DD) según CFG.periodoInicio ('MM-DD')
+function histUltimoCorte(){
+  if(!CFG.periodoInicio)return null;
+  var hoy=_hHoy(),y=parseInt(hoy.slice(0,4),10),c=y+'-'+CFG.periodoInicio;
+  return c<=hoy?c:(y-1)+'-'+CFG.periodoInicio;
+}
+function histSetRango(r){HIST_RANGO=r;try{localStorage.setItem(PFX+'hist_rango',r);}catch(e){}histRender();}
+function histRender(){
+  if(!CFG.historial)return;
+  var card=document.getElementById('hist-card');
+  if(!card){var dc=document.getElementById('dist-card');if(!dc||!dc.parentNode)return;
+    card=document.createElement('div');card.className='card';card.id='hist-card';card.style.cssText='margin-bottom:1rem;max-width:720px';
+    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">📈 Evolución</span><span id="hist-rangos" style="display:flex;gap:4px;flex-wrap:wrap"></span><span id="hist-meta" class="tag" style="margin-left:auto"></span></div><div id="hist-cierre"></div><div style="padding:.6rem 1rem 1rem"><div style="position:relative;height:220px"><canvas id="hist-canvas"></canvas></div><div id="hist-nota" style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:6px"></div></div>';
+    dc.parentNode.insertBefore(card,dc.nextSibling);}
+  if(!HIST)return;
+  var serie=histSerie();var corte=histUltimoCorte();
+  if(!HIST_RANGO){try{HIST_RANGO=localStorage.getItem(PFX+'hist_rango');}catch(e){}HIST_RANGO=HIST_RANGO||(corte?'periodo':'todo');}
+  var rangos=(corte?[['periodo','Período actual']]:[]).concat([['1m','1M'],['3m','3M'],['6m','6M'],['1a','1A'],['todo','Todo']]);
+  document.getElementById('hist-rangos').innerHTML=rangos.map(function(r){var on=HIST_RANGO===r[0];return '<button class="btn btn-sm" onclick="histSetRango(\''+r[0]+'\')" style="font-size:.64rem;padding:2px 8px;'+(on?'border-color:var(--accent);color:var(--accent)':'')+'">'+r[1]+'</button>';}).join('');
+  var desde=null,hoy=new Date();
+  if(HIST_RANGO==='periodo')desde=corte;
+  else if(HIST_RANGO!=='todo'){var m={'1m':1,'3m':3,'6m':6,'1a':12}[HIST_RANGO]||0;var dd=new Date(hoy);dd.setMonth(dd.getMonth()-m);desde=dd.toISOString().slice(0,10);}
+  var s=serie.filter(function(x){return !desde||x.d>=desde;});
+  var meta=document.getElementById('hist-meta'),nota=document.getElementById('hist-nota');
+  var ult=serie.length?serie[serie.length-1]:null;
+  if(HIST_RANGO==='periodo'&&ult&&ult.rend!=null){meta.innerHTML='Rendimiento del período <b style="color:'+(ult.rend>=0?'var(--accent)':'var(--red)')+'">'+(ult.rend>=0?'+':'')+ult.rend.toFixed(1).replace('.',',')+'%</b> · desde '+corte.split('-').reverse().join('/');}
+  else if(s.length>1){var r0=(s[s.length-1].v/s[0].v-1)*100;meta.innerHTML='Variación <b style="color:'+(r0>=0?'var(--accent)':'var(--red)')+'">'+(r0>=0?'+':'')+r0.toFixed(1).replace('.',',')+'%</b> · incluye aportes/retiros';}
+  else meta.textContent='';
+  var primero=HIST.puntos.length?HIST.puntos[0].d.split('-').reverse().join('/'):null;
+  nota.textContent=serie.length<2?('El historial empieza '+(primero?'el '+primero:'hoy')+': se agrega un punto por día cada vez que abrís el portafolio.'):'Valor total = posiciones a mercado + liquidez, en USD. Línea punteada = inversión inicial del período. Marcas verticales = cortes anuales.';
+  // aviso de cierre de período
+  var ci=document.getElementById('hist-cierre');
+  var pend=corte&&!HIST.cierres.some(function(x){return x.d===corte;})&&(new Date(_hHoy())-new Date(corte))/86400000<=20&&ult;
+  ci.innerHTML=pend?'<div style="margin:.6rem 1rem 0;padding:.5rem .7rem;border:1px solid var(--amber);border-radius:var(--rsm);background:rgba(234,179,8,.08);font-family:var(--mono);font-size:.72rem">📅 Se cumplió el corte anual ('+corte.split('-').reverse().join('/')+'). <button class="btn btn-sm" onclick="histCerrarPeriodo()" style="margin-left:6px">Cerrar período</button> <span style="color:var(--text3)">nueva inversión inicial = valor total de hoy</span></div>':'';
+  // cortes dentro del rango
+  var cortes=[];if(CFG.periodoInicio&&s.length){var y0=parseInt(s[0].d.slice(0,4),10),y1=parseInt(s[s.length-1].d.slice(0,4),10);for(var y=y0;y<=y1;y++){var cd=y+'-'+CFG.periodoInicio;if(cd>=s[0].d&&cd<=s[s.length-1].d)cortes.push(cd);}}
+  if(typeof Chart==='undefined')return;
+  var lab=s.map(function(x){return x.d.slice(8,10)+'/'+x.d.slice(5,7)+(HIST_RANGO==='todo'||HIST_RANGO==='1a'?'/'+x.d.slice(2,4):'');});
+  var cortesIdx=cortes.map(function(cd){return s.findIndex(function(x){return x.d>=cd;});});
+  var plug={id:'histCortes',afterDraw:function(ch){var xs=ch.scales.x,ys=ch.scales.y,ctx=ch.ctx;cortesIdx.forEach(function(i){if(i<0)return;var x=xs.getPixelForValue(i);ctx.save();ctx.strokeStyle='rgba(234,179,8,.6)';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,ys.top);ctx.lineTo(x,ys.bottom);ctx.stroke();ctx.restore();});}};
+  if(_histChart){try{_histChart.destroy();}catch(e){}}
+  _histChart=new Chart(document.getElementById('hist-canvas').getContext('2d'),{type:'line',
+    data:{labels:lab,datasets:[
+      {label:'Valor total',data:s.map(function(x){return Math.round(x.v);}),borderColor:'#00e676',backgroundColor:'rgba(0,230,118,.08)',fill:true,tension:.25,pointRadius:s.length<40?3:0,borderWidth:2},
+      {label:'Inversión inicial',data:s.map(function(x){return x.inv||null;}),borderColor:'#7a9cc5',borderDash:[5,4],pointRadius:0,borderWidth:1.5,stepped:true,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#7a9cc5',font:{family:'JetBrains Mono',size:10},boxWidth:10}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': USD '+Math.round(c.parsed.y).toLocaleString('es-AR');}}}},
+      scales:{x:{ticks:{color:'#3d5a80',font:{size:9},maxTicksLimit:8},grid:{color:'rgba(30,48,80,.4)'}},y:{ticks:{color:'#3d5a80',font:{size:9},callback:function(v){return Math.round(v/1000)+'k';}},grid:{color:'rgba(30,48,80,.4)'}}}},
+    plugins:[plug]});
+}
+async function histCerrarPeriodo(){
+  var corte=histUltimoCorte();var serie=histSerie();var ult=serie[serie.length-1];
+  if(!corte||!ult)return;
+  var nueva=Math.round(ult.v);var ant=getRawNum('inv-sidebar-usd');
+  if(!confirm('Cerrar el período al '+corte.split('-').reverse().join('/')+'?\n\nInversión inicial actual: USD '+Math.round(ant).toLocaleString('es-AR')+'\nNueva inversión inicial: USD '+nueva.toLocaleString('es-AR')+' (valor total de hoy)\n\nEl rendimiento empieza a contarse de nuevo desde acá.'))return;
+  HIST.cierres.push({d:corte,valor:nueva,invAnterior:ant,rendFinal:ult.rend,fechaCierre:_hHoy()});
+  await sbSetConfig('historial',HIST);
+  setFmtNum('inv-sidebar-usd',nueva,0);saveInvInicial(nueva);
+  var di=document.getElementById('inv-inicial-usd-display');if(di)di.textContent='$'+nueva.toLocaleString('es-AR');
+  renderPortfolio();histRender();
+}
+(function _histBoot(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){if(CFG.historial)histLoad().then(function(h){if(h)histRender();});}else if(n<30)_histBoot(n+1);},2000);})(0);
 
 function togglePVentaCol(show){
   var grid=document.getElementById('panels-grid');

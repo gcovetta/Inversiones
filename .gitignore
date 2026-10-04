@@ -1,3 +1,4 @@
 *.bak_*.html
 .DS_Store
 .claude/
+backup_*.json

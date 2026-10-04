@@ -428,7 +428,7 @@ tr:hover td{background:var(--surface2)}
 </style>
 </head>
 <body>
-<div id="claude-version-badge" title="Feat: backup diario automático — al abrir cada portafolio (una vez por día) se guarda en su Supabase una copia completa de movimientos, dividendos y configuración (config backup_AAAA-MM-DD); se conservan los últimos 14 días. Botón &quot;Backups&quot; en el encabezado: lista las copias y permite descargarlas o restaurarlas (antes de restaurar guarda una copia del estado actual). (bkDaily / bkOpen / bkRestore)" style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v71 · 03/10/2026</div>
+<div id="claude-version-badge" title="Feat: historial diario del portafolio (config historial: valor por cartera, liquidez, inversión inicial y rendimiento del período, un punto por día) para ver la evolución real. En GDC: card "Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v72 · 03/10/2026</div>
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
   <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;font-family:var(--mono)">Juli</div>
@@ -1573,7 +1573,7 @@ tr:hover td{background:var(--surface2)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script>
-window.PORTFOLIO_CONFIG={
+window.PORTFOLIO_CONFIG={"periodoInicio": "05-11", "historial": false, 
   id:'juli', nombre:'Juli', lsPrefix:'ptJuli_', trkSuffix:'_juli',
   supabaseUrl:'https://ujgkiuqvehidcnbtwrqn.supabase.co',
   supabaseKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk',
@@ -1581,7 +1581,7 @@ window.PORTFOLIO_CONFIG={
   sync:false, rsi:false, broker:'bull', brokerNombre:'Bull', wlKey:'wl_juli_v1'
 };
 </script>
-<script src="../comun/portafolio.js?v=71"></script>
+<script src="../comun/portafolio.js?v=72"></script>
 
 
 
