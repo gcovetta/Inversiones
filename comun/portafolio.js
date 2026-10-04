@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=78, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=79, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v79 | 2026-10-04 | Feat: Evolución de Omar suma solo la cartera principal (Portafolio2/Cocos y Portafolio3/VetaJeep quedan afuera, también en los puntos ya guardados). En Carteras administradas (index v7) Cocos aparece como "Cristian" y VetaJeep como "Jeep", como dos carteras más.',
   'v78 | 2026-10-04 | Feat: Evolución activada en Hilda desde el período en curso (07/12/25→), sin años anteriores.',
   'v77 | 2026-10-03 | Feat: Evolución activada en Juli y Omar (primer período en curso, sin años anteriores; el historial arranca a registrarse desde hoy).',
   'v76 | 2026-10-03 | UI: Distribución, Evolución y Rendimiento por período en una misma fila (se acomodan hacia abajo en pantallas chicas), las tres plegables con ▾ y el estado plegado se recuerda.',
@@ -5870,7 +5871,9 @@ function histSerie(){
   // Puntos de años anteriores cargados a mano (CFG.histPrevio: [[fecha, valorTotal, inversionInicial], ...])
   var primero=HIST.puntos.length?HIST.puntos[0].d:'9999';
   (CFG.histPrevio||[]).slice().sort(function(a,b){return a[0]<b[0]?-1:1;}).forEach(function(x){if(x[0]<primero)out.push({d:x[0],v:x[1],pos:x[1],cost:null,inv:x[2]||null,rend:null,previo:true});});
-  HIST.puntos.forEach(function(p){Object.keys(p.c||{}).forEach(function(k){last[k]=p.c[k];});
+  // CFG.histCarteras: qué carteras suman al gráfico (Omar: solo 'principal'; Cocos y VetaJeep no)
+  var incl=CFG.histCarteras||null;
+  HIST.puntos.forEach(function(p){Object.keys(p.c||{}).forEach(function(k){if(!incl||incl.indexOf(k)>=0)last[k]=p.c[k];});
     var v=0,cost=0;Object.keys(last).forEach(function(k){v+=last[k].v;cost+=last[k].cost;});
     out.push({d:p.d,v:v+(p.liq||0),pos:v,cost:cost,inv:p.inv,rend:p.rend});});
   return out;
