@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=76, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=78, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v78 | 2026-10-04 | Feat: Evolución activada en Hilda desde el período en curso (07/12/25→), sin años anteriores.',
+  'v77 | 2026-10-03 | Feat: Evolución activada en Juli y Omar (primer período en curso, sin años anteriores; el historial arranca a registrarse desde hoy).',
   'v76 | 2026-10-03 | UI: Distribución, Evolución y Rendimiento por período en una misma fila (se acomodan hacia abajo en pantallas chicas), las tres plegables con ▾ y el estado plegado se recuerda.',
   'v75 | 2026-10-03 | Feat: Evolución — con histDesdeRA los años anteriores salen de la solapa Rendimiento anual (columna TOTAL, sin el 20%), valores de inicio y cierre de cada período incluidos. Activado en Ana.',
   'v74 | 2026-10-03 | Feat: Evolución — valores en USD de años anteriores (inicio y cierre de cada período, cargados en la configuración) se suman al gráfico en "Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%.',
