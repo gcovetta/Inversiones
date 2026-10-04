@@ -9,8 +9,11 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=84, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=87, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v87 | 2026-10-04 | Feat: informe — el perfil de inversor sale del mismo puntaje de Recomendaciones (composición, países y sectores, 0 a 100) y muestra el puntaje de los tres perfiles.',
+  'v86 | 2026-10-04 | UI: Tipo de cambio — al cargar CCL o MEP las barras de la fecha se ponen solas (se escribe 03102026 y queda 03/10/2026), Enter en la fecha pasa al valor y Enter en el valor guarda. La fecha se normaliza a dd/mm/aaaa y se avisa si está incompleta.',
+  'v85 | 2026-10-04 | Feat: informe — perfil de inversor al que más se parece la cartera (Conservador, Moderado o Agresivo, por cercanía a los rangos de renta variable, renta fija y liquidez), con la comparación hoy vs. perfil.',
   'v84 | 2026-10-04 | Fix: la liquidez en pesos se pasa a USD al MEP (como bonos y ON) en el total, la distribución, el resumen familiar, el historial y el informe; antes iba al CCL. También la liquidez en USD expresada en pesos usa el MEP.',
   'v83 | 2026-10-04 | Feat: Dividendos — tarjeta "Importar cobros desde Cocos": se pega el listado de Movimientos (Dividendos / Rentas y Amortización) y los nuevos quedan en Pendientes de revisión (saltea montos 0, filas sin ticker y los ya cargados ±10 días). Botón "✓ Cargar todos" en Pendientes. Ana ahora tiene la tarjeta de Pendientes.',
   'v82 | 2026-10-04 | Feat: informe nuevo — valor total, ganancia del período (en curso, último año completo o último mes), ganancia total compuesta desde el inicio, estado del ciclo actual (rendimiento y cuánto falta para el cierre), cantidad de activos, movimientos de los últimos 3 meses, evolución desde el inicio con inversión inicial de cada período y cierres, distribución RF/RV/liquidez, posiciones más grandes, mapa por país (comun/mapa_mundo.js, se carga al generar) y las que más ganan.',
@@ -1095,6 +1098,8 @@ function tcSave(tipo){
   if(!fecha||!valor) return;
   // Normalizar fecha a dd/mm/aaaa
   if(fecha.indexOf('-')>0){var p=fecha.split('-');fecha=p[2]+'/'+p[1]+'/'+p[0];}
+  if(!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(fecha)){alert('Fecha incompleta: usá dd/mm/aaaa');return;}
+  fecha=fmtKey(fecha);
   if(tipo==='ccl') CCL_TABLE[fecha]=valor;
   else MEP_TABLE[fecha]=valor;
   tcSavePersist();
@@ -10012,6 +10017,21 @@ async function infGenerar(){
   var sv=d.sectorVal||{},rv=['nyse','argentina','brasil','europa','china','cripto'].reduce(function(a,k){return a+(sv[k]||0);},0);
   var rf=(sv.bonos||0)+(sv.on||0)+(sv.fci||0),lq=d.liqTotalUSD||0,tt=rv+rf+lq||1;
   var dolz=total>0?Math.min(100,((d.dolzPct||0)/100*(d.totalVal||0)+(d.liqUSD||0))/total*100):null;
+  // perfil de inversor según la cartera: el mismo puntaje que Recomendaciones (composición, geografía y sectores)
+  var perfHtml='';
+  try{if(typeof PERFIL_TARGETS!=='undefined'&&typeof computePerfilActual==='function'){
+    var pd=computePerfilActual();
+    if(pd&&pd.totalARS>0){
+      var sc=['Conservador','Moderado','Agresivo'].filter(function(n){return PERFIL_TARGETS[n];}).map(function(n){return {n:n,s:computePerfilScore(PERFIL_TARGETS[n],pd).total||0};});
+      var best=sc.slice().sort(function(a,b){return b.s-a.s;})[0],cm=PERFIL_TARGETS[best.n].composicion;
+      var act={'Renta Variable':pd.rvARS/pd.totalARS*100,'Renta Fija':pd.rfARS/pd.totalARS*100,'Liquidez':pd.liqARS/pd.totalARS*100};
+      perfHtml='<div class="perf"><div class="kl">Perfil de inversor según la cartera</div><div class="pn">'+best.n+' <span class="psc">'+Math.round(best.s)+'/100</span></div>'+
+        '<div class="pbars">'+sc.map(function(x){var on=x.n===best.n;return '<div class="pbr'+(on?' on':'')+'"><span>'+x.n+'</span><div class="pbt"><i style="width:'+Math.round(x.s)+'%"></i></div><b>'+Math.round(x.s)+'</b></div>';}).join('')+'</div>'+
+        '<table><thead><tr><th></th><th class="n">Hoy</th><th class="n">Perfil '+best.n.toLowerCase()+'</th></tr></thead><tbody>'+
+        [['Acciones','Renta Variable'],['Renta fija','Renta Fija'],['Liquidez','Liquidez']].map(function(x){var v=act[x[1]],r=cm[x[1]],ok=v>=r[0]-0.5&&v<=r[1]+0.5;
+          return '<tr><td>'+x[0]+'</td><td class="n'+(ok?'':' warn')+'">'+Math.round(v)+'%</td><td class="n mut">'+r[0]+'–'+r[1]+'%</td></tr>';}).join('')+'</tbody></table>'+
+        '<div class="ps">Puntaje de 0 a 100 según qué tan cerca está la cartera de cada perfil en composición, países y sectores.</div></div>';
+    }}}catch(e){console.warn('perfil informe',e);}
   var parts=[['Renta fija','Bonos, ON y FCI',rf,'#2f6fde'],['Acciones','Acciones y Cedears',rv,'#0f9d58'],['Liquidez','Efectivo en pesos y dólares',lq,'#8b5cf6']];
   var a0=-Math.PI/2,segs='';
   parts.forEach(function(p){if(!(p[2]>0))return;var b=a0+p[2]/tt*2*Math.PI,g=p[2]/tt>0.99?0:0.025,a1=a0+g,b1=b-g,lg=(b1-a1)>Math.PI?1:0,R=70,r=46,cx=80,cy=80;
@@ -10095,7 +10115,7 @@ async function infGenerar(){
     '</div>'+cicloHtml+
     '<h2>Cómo fue evolucionando <small>desde el inicio de las inversiones, en dólares</small></h2>'+evo+
     '<div class="cols"><div><h2>En qué está invertida</h2><div class="dist">'+donut+'<div style="flex:1">'+dleg+'</div></div>'+
-      (dolz!=null?'<p class="mini">El '+Math.round(dolz)+'% está en dólares o atado al dólar.</p>':'')+'</div>'+
+      (dolz!=null?'<p class="mini">El '+Math.round(dolz)+'% está en dólares o atado al dólar.</p>':'')+perfHtml+'</div>'+
       '<div><h2>Posiciones más grandes</h2>'+(bigtb?'<table><thead><tr><th>Activo</th><th class="n">Valor</th><th class="n">% cartera</th></tr></thead><tbody>'+bigtb+'</tbody></table>':'<p class="mini">Sin posiciones.</p>')+'</div></div>'+
     mapa+
     (ganatb?'<h2>Las que más están ganando <small>en %, en dólares</small></h2><table><thead><tr><th>Activo</th><th class="n">Ganancia</th><th class="n">Valor</th><th class="n">Desde hace</th></tr></thead><tbody>'+ganatb+'</tbody></table>':'')+
@@ -10130,6 +10150,7 @@ function infMostrar(html){
     '#inf-view .ramp{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--ink3);margin:4px 6px 2px}#inf-view .ramp i{width:26px;height:8px;display:inline-block}'+
     '#inf-view .ciclo{border:1px solid var(--line);border-radius:10px;padding:.7rem .85rem;margin-top:9px}#inf-view .ct{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}#inf-view .ct b{font-family:"JetBrains Mono",monospace;font-size:1.15rem}#inf-view .cs{font-size:.74rem;color:var(--ink2)}#inf-view .cr{margin-left:auto;text-align:right;font-size:.8rem;font-weight:600;line-height:1.3}#inf-view .cr .mut{font-weight:400;font-size:.68rem}'+
     '#inf-view .pb{height:8px;background:#f0f3f8;border-radius:4px;overflow:hidden;margin:8px 0 4px}#inf-view .pb i{display:block;height:100%;background:#14213d;border-radius:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}#inf-view .pl{display:flex;justify-content:space-between;gap:8px;font-size:.66rem;color:var(--ink3)}'+
+    '#inf-view .perf{border:1px solid var(--line);border-radius:10px;padding:.65rem .8rem;margin-top:12px}#inf-view .perf .pn{font-size:1.1rem;font-weight:700;margin-top:2px}#inf-view .perf .ps{font-size:.66rem;color:var(--ink3);margin-top:6px}#inf-view .perf .psc{font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--ink3);font-weight:600}#inf-view .pbars{margin:6px 0 4px}#inf-view .pbr{display:grid;grid-template-columns:86px 1fr 26px;gap:8px;align-items:center;font-size:.72rem;color:var(--ink3);margin:3px 0}#inf-view .pbr b{font-family:"JetBrains Mono",monospace;text-align:right;font-weight:600}#inf-view .pbt{height:6px;background:#f0f3f8;border-radius:3px;overflow:hidden}#inf-view .pbt i{display:block;height:100%;background:#b9c4d8;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}#inf-view .pbr.on{color:var(--ink);font-weight:600}#inf-view .pbr.on .pbt i{background:#14213d}#inf-view .perf td,#inf-view .perf th{padding:.25rem .4rem}#inf-view td.warn{color:#b7791f;font-weight:700}'+
     '#inf-view .note{background:#f7f9fc;border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:.75rem .95rem;font-size:.86rem}#inf-view .note p{margin:0 0 .5rem}#inf-view .note p:last-child{margin:0}'+
     '#inf-view footer{margin-top:24px;padding-top:12px;border-top:1px solid var(--line);font-size:.68rem;color:var(--ink3);line-height:1.55;background:none;position:static}'+
     '@media(max-width:700px){#inf-view .kpis{grid-template-columns:1fr 1fr}#inf-view .k.hero{grid-column:1/3}#inf-view .inf-page{padding:22px 16px}#inf-view .cols{grid-template-columns:1fr}#inf-view .right{display:none}}'+
@@ -10219,3 +10240,23 @@ function cocosUISetup(){
   if(typeof trkRenderPending==='function')trkRenderPending();
 }
 (function(){var go=function(){try{cocosUISetup();}catch(e){console.warn('cocosUISetup',e);}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+
+// ─── Fechas de Tipo de cambio: las barras se ponen solas ─────────────────────
+// Se escriben solo los números (03102026) y queda 03/10/2026. Enter en la fecha pasa al valor;
+// Enter en el valor guarda.
+function tcFechaMask(el){
+  var d=el.value.replace(/\D/g,'').slice(0,8),o=d.slice(0,2);
+  if(d.length>2)o+='/'+d.slice(2,4);if(d.length>4)o+='/'+d.slice(4);
+  if((d.length===2||d.length===4)&&el.value.length>(el._prevLen||0))o+='/';
+  el.value=o;el._prevLen=o.length;
+}
+(function(){
+  function setup(){['ccl','mep'].forEach(function(t){
+    var f=document.getElementById('tc-'+t+'-fecha'),v=document.getElementById('tc-'+t+'-valor');if(!f||f._mask)return;f._mask=1;
+    f.setAttribute('inputmode','numeric');f.setAttribute('maxlength','10');f.setAttribute('autocomplete','off');
+    f.addEventListener('input',function(){tcFechaMask(f);});
+    f.addEventListener('keydown',function(e){if(e.key==='Enter'&&v){e.preventDefault();v.focus();}});
+    if(v)v.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();tcSave(t);f.focus();}});
+  });}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+})();
