@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=79, APP_VERSION_FECHA='03/10/2026';
+var APP_VERSION=80, APP_VERSION_FECHA='03/10/2026';
 var APP_CHANGELOG=[
+  'v80 | 2026-10-04 | Feat: app instalable en el celular (manifiesto + ícono + service worker sin caché en la raíz). Dentro de la app instalada aparece abajo a la izquierda el botón ⌂ para volver a Carteras administradas.',
   'v79 | 2026-10-04 | Feat: Evolución de Omar suma solo la cartera principal (Portafolio2/Cocos y Portafolio3/VetaJeep quedan afuera, también en los puntos ya guardados). En Carteras administradas (index v7) Cocos aparece como "Cristian" y VetaJeep como "Jeep", como dos carteras más.',
   'v78 | 2026-10-04 | Feat: Evolución activada en Hilda desde el período en curso (07/12/25→), sin años anteriores.',
   'v77 | 2026-10-03 | Feat: Evolución activada en Juli y Omar (primer período en curso, sin años anteriores; el historial arranca a registrarse desde hoy).',
@@ -9880,3 +9881,17 @@ async function dolzToggleTicker(ticker){
   renderPortfolio();
 }
 
+
+// ─── App instalada (PWA) ──────────────────────────────────────────────────────
+// En la app instalada no hay botón "atrás" del navegador: se agrega ⌂ para volver a Carteras administradas.
+(function(){
+  function standalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
+  function add(){
+    if(!standalone()||document.getElementById('pwa-home'))return;
+    var a=document.createElement('a');a.id='pwa-home';a.href='../index.html';a.textContent='⌂';a.title='Carteras administradas';
+    a.style.cssText='position:fixed;left:8px;bottom:6px;z-index:99999;font-size:1.15rem;line-height:1;text-decoration:none;color:var(--text2,#7a9cc5);background:var(--surface2,#172035);border:1px solid var(--border2,#264070);border-radius:6px;padding:6px 10px;opacity:.92';
+    document.body.appendChild(a);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(function(){});}
+})();
