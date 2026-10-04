@@ -73,6 +73,9 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
 th:first-child,td:first-child{text-align:left}
 #portal td{font-family:var(--mono);text-align:right;padding:.38rem .45rem;border-bottom:1px solid var(--border);white-space:nowrap}
 tr:last-child td{border-bottom:none}
+#portal .busq{margin-bottom:12px}#portal .busq .cb{padding:.6rem .8rem}#busq{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:.55rem .75rem;outline:none}#busq:focus{border-color:var(--accent)}
+.bchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bchips .chip{cursor:pointer}.bchips .chip.on{border-color:var(--accent);color:var(--accent)}.bhead{margin:10px 2px 6px;font-size:.85rem}
+#portal .busq tfoot td{border-top:1px solid var(--border2);font-weight:700}
 tr.det td{background:var(--surface2);font-size:.7rem;color:var(--text2)}
 tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 .bar{display:flex;height:20px;border-radius:6px;overflow:hidden;gap:2px;background:var(--surface2)}
@@ -105,7 +108,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v11</span>
+  <span class="subtitle">Carteras administradas · v12</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -135,8 +138,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v11 · 04/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v11</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono);font-size:.62rem;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;opacity:.8">index v12 · 04/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v12</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -173,7 +176,7 @@ function agg(doc,solo,principal){
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
     Object.keys(c.sectorVal||{}).forEach(function(s){o.sect[s]=(o.sect[s]||0)+(c.sectorVal[s]||0);});
     if(c.dolzPct!=null)o.dolz+=c.dolzPct/100*(c.totalVal||0);
-    (c.pos||[]).forEach(function(p){var x=o.pos[p.t]||(o.pos[p.t]={t:p.t,s:p.s,q:0,v:0,c:0,an:p.an,pnl:p.pnl});x.q+=p.q;x.v+=p.v;x.c+=p.c;if(x!==o.pos[p.t])return;});
+    (c.pos||[]).forEach(function(p){var x=o.pos[p.t]||(o.pos[p.t]={t:p.t,s:p.s,q:0,v:0,c:0,an:p.an,pnl:p.pnl,pv:p.pv,up:p.up});x.q+=p.q;x.v+=p.v;x.c+=p.c;if(x!==o.pos[p.t])return;});
   });
   Object.values(o.pos).forEach(function(x){x.pnl=x.c>0?(x.v/x.c-1)*100:x.pnl;});
   o.total=o.val+o.liq;
@@ -237,6 +240,7 @@ function render(){
     '<div class="k"><div class="kl">Total administrado (USD)</div><div class="kv">'+n0(F.total+EXTRA)+'</div><div class="ks">'+(ccl?'≈ $'+n0((F.total+EXTRA)*ccl)+' al CCL':'')+(EXTRA?'<br>incl. '+sv.map(function(c){return esc(c.nombre)+' '+k(DATA[c.id].o.total);}).join(' · '):'')+'</div></div>'+
     '<div class="k"><div class="kl">Cobros próximos 30 días</div><div class="kv">USD '+n0(cU)+'</div><div class="ks">'+(cA?'+ ARS '+n0(cA)+' · ':'')+cobs.length+' pago'+(cobs.length!==1?'s':'')+'</div></div>'+
     '<div class="k"><div class="kl">Liquidez total</div><div class="kv">USD '+n0(F.liq)+'</div><div class="ks">'+(F.total>0?n1(F.liq/F.total*100)+'% del total':'')+'</div></div></div>';
+  h+=busqCard();
   // por persona
   h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table><thead><tr><th>Portafolio</th><th>USD</th><th>% del total</th><th title="Rendimiento del período (el del Resumen de cada portafolio)">Rend.</th><th title="Tiempo que falta para el próximo corte anual (cierre del período)">Cierre de ciclo</th><th>Actualizado</th></tr></thead><tbody>'+
     on.slice().sort(function(a,b){return DATA[b.id].o.total-DATA[a.id].o.total;}).map(function(c){var o=DATA[c.id].o;var d=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);var old=Date.now()-o.ts>7*86400000;
@@ -284,6 +288,38 @@ async function bkAll(){
   render();
 }
 function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
+// ── Buscador de tickers en todas las carteras ──
+var BQ='';
+function busqCard(){
+  var all={};VIEW.forEach(function(c){var d=DATA[c.id];if(d&&d.o)Object.keys(d.o.pos).forEach(function(t){all[t]=1;});});
+  return '<div class="card busq"><div class="cb"><input id="busq" type="search" autocomplete="off" spellcheck="false" placeholder="🔎 Buscar un ticker en todas las carteras (ej. MSFT, AL30) — tecla /" value="'+esc(BQ)+'" oninput="busqSet(this.value)" list="busq-dl">'+
+    '<datalist id="busq-dl">'+Object.keys(all).sort().map(function(t){return '<option value="'+esc(t)+'">';}).join('')+'</datalist><div id="busq-res">'+busqRes()+'</div></div></div>';
+}
+function busqSet(v){BQ=String(v||'').toUpperCase().trim();var el=document.getElementById('busq-res');if(el)el.innerHTML=busqRes();var i=document.getElementById('busq');if(i&&i.value.toUpperCase().trim()!==BQ)i.value=BQ;}
+function busqRes(){
+  if(!BQ)return '';
+  var tk={};VIEW.forEach(function(c){var d=DATA[c.id];if(d&&d.o)Object.keys(d.o.pos).forEach(function(t){if(t.indexOf(BQ)>=0)tk[t]=(tk[t]||0)+d.o.pos[t].v;});});
+  var ts=Object.keys(tk).sort(function(a,b){var ea=a.indexOf(BQ)===0?0:1,eb=b.indexOf(BQ)===0?0:1;return ea-eb||tk[b]-tk[a];});
+  if(!ts.length)return '<div class="sub" style="margin-top:8px">Ninguna cartera tiene un ticker con "'+esc(BQ)+'".</div>';
+  var sel=tk[BQ]!=null?BQ:(ts.length===1?ts[0]:null),h='';
+  if(!sel||ts.length>1)h+='<div class="bchips">'+ts.slice(0,16).map(function(t){return '<span class="chip'+(t===sel?' on':'')+'" onclick="busqSet(\''+esc(t)+'\')">'+esc(t)+' <span class="mut">'+k(tk[t])+'</span></span>';}).join('')+(ts.length>16?'<span class="mut"> +'+(ts.length-16)+' más</span>':'')+'</div>';
+  if(!sel)return h;
+  var rows=[],Q=0,V=0,C=0;
+  VIEW.forEach(function(c){var d=DATA[c.id];if(!d||!d.o||!d.o.pos[sel])return;var p=d.o.pos[sel];rows.push({c:c,p:p});Q+=p.q;V+=p.v;C+=p.c;});
+  rows.sort(function(a,b){return b.p.v-a.p.v;});
+  var s0=rows[0].p.s,pv=null;rows.forEach(function(r){if(r.p.pv!=null)pv=r.p.pv;});
+  var col=function(v){return v==null?'mut':v>=0?'grn':'red';};
+  h+='<div class="bhead"><b>'+esc(sel)+'</b> <span class="mut">'+(SECT[s0]?SECT[s0][0]:'')+' · en '+rows.length+' cartera'+(rows.length!==1?'s':'')+' · USD '+n0(V)+(pv!=null?' · P. Venta USD '+pv.toLocaleString('es-AR',{maximumFractionDigits:2}):'')+'</span></div>'+
+    '<div class="tw"><table><thead><tr><th>Cartera</th><th>Cantidad</th><th>PPC USD</th><th>Valor USD</th><th>Ganancia</th><th>% anual</th><th>Al P. Venta</th></tr></thead><tbody>'+
+    rows.map(function(r){var p=r.p,ppc=p.q>0?p.c/p.q:null,g=p.c>0?(p.v/p.c-1)*100:p.pnl;
+      return '<tr><td><a href="'+r.c.link+'">'+av(r.c)+'<b>'+esc(r.c.nombre)+'</b></a></td><td>'+p.q.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td><td>'+(ppc?ppc.toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td><td>'+n0(p.v)+'</td>'+
+        '<td class="'+col(g)+'">'+(g==null?'—':pct(g))+'</td><td class="'+col(p.an)+'">'+(p.an==null?'—':pct(p.an))+'</td>'+
+        '<td class="'+(p.up==null?'mut':p.up<=0?'grn':'')+'" title="Cuánto falta para llegar al P. Venta">'+(p.up==null?'—':(p.up<=0?'🎯 ':'')+pct(p.up))+'</td></tr>';}).join('')+
+    '</tbody><tfoot><tr><td><b>Total</b></td><td>'+Q.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td><td>'+(Q>0?(C/Q).toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td><td>'+n0(V)+'</td><td class="'+col(C>0?V/C-1:null)+'">'+(C>0?pct((V/C-1)*100):'—')+'</td><td></td><td></td></tr></tfoot></table></div>'+
+    '<div class="sub" style="margin-top:6px">Datos al último ingreso a cada portafolio. "Al P. Venta" es cuánto tiene que subir para llegar al precio de venta (🎯 = ya llegó).</div>';
+  return h;
+}
+document.addEventListener('keydown',function(e){if(e.key==='/'&&document.activeElement&&['INPUT','TEXTAREA'].indexOf(document.activeElement.tagName)<0){var i=document.getElementById('busq');if(i){e.preventDefault();i.focus();i.select();}}});
 function toggleT(t){OPEN[t]=!OPEN[t];render();}
 var SB=null;
 function authLogin(){SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}});}

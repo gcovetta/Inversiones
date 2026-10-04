@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=88, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=89, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v89 | 2026-10-04 | Feat: el resumen para Carteras administradas guarda el P. Venta y la distancia al P. Venta de cada posición (para el buscador de tickers del index).',
   'v88 | 2026-10-04 | Fix: si el CCL/MEP de hoy no estaba en la tabla (fin de semana o antes de traerlo) se usaba un valor fijo viejo (1487) y los Cedears quedaban valuados con ese dólar — en Juli MSFT daba −2% al P. Venta y en GDC +7%. Ahora se usa el último CCL/MEP cargado, se refresca al leer la tabla de Supabase y la cartera se recalcula cuando llega el dólar del día (también el real, para las acciones brasileñas).',
   'v87 | 2026-10-04 | Feat: informe — el perfil de inversor sale del mismo puntaje de Recomendaciones (composición, países y sectores, 0 a 100) y muestra el puntaje de los tres perfiles.',
   'v86 | 2026-10-04 | UI: Tipo de cambio — al cargar CCL o MEP las barras de la fecha se ponen solas (se escribe 03102026 y queda 03/10/2026), Enter en la fecha pasa al valor y Enter en el valor guarda. La fecha se normaliza a dd/mm/aaaa y se avisa si está incompleta.',
@@ -3648,6 +3649,7 @@ function renderPortfolio(){
     ):null;
     var upside=targetUSD!=null&&priceUSD!=null&&priceUSD>0?(targetUSD-priceUSD)/priceUSD*100:null;
     var _pvHit=upside!=null&&upside<=0;if(_pvHit)_pvAlerts.push(p.ticker);
+    p._pv=targetUSD;p._upside=upside; // para el resumen (buscador de Carteras administradas)
 
     // Recuadro combinado Δ% / ΔUP (mismo badge, colores internos independientes)
     var deltaCell=deltaUpCellFn(pnlPct,upside);
@@ -3863,7 +3865,7 @@ function renderPortfolio(){
     sectorVal:sectorVal, dolzPct:dolzPct, liqUSD:liqUSD, liqARS:liqARS, liqTotalUSD:liqTotalUSD,
     totalVal:totalVal, rendPct:rendPct, invInicial:invInicial,
     totalCost:open.reduce(function(a,p){return a+(p._valueUSD!=null?(p.costUSDpuro||0):0);},0),
-    pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null};}),
+    pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null,pv:p._pv!=null?p._pv:null,up:p._upside!=null?Math.round(p._upside*10)/10:null};}),
     cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
   });}catch(_e){console.warn('famQueueSnapshot',_e);}
 
