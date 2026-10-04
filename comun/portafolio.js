@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=95, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=96, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v96 | 2026-10-04 | UI: el aviso de ratio desactualizado va al final de la página Portafolio. Ratios menores a 1 se muestran como "0,33 (1 Cedear = 3 acciones)" en vez de redondear a 0,5.',
   'v95 | 2026-10-04 | UI: atajo C lleva al recuadro 🛒 Comprar del Portafolio con el cursor en Ticker; V lleva al recuadro 💸 Vender con el foco en el combo de tickers (los despliega si estaban plegados y los resalta un instante).',
   'v94 | 2026-10-04 | UI: botón ? arriba a la derecha (barra superior) que abre la lista de atajos de teclado.',
   'v93 | 2026-10-04 | Feat: atajos C (cargar compra) y V (cargar venta): van a Movimientos con el tipo ya elegido y el cursor en Ticker.',
@@ -10369,14 +10370,15 @@ async function ratiosVerificar(manual){
 }
 function rtIgnorar(t){try{var ig=JSON.parse(localStorage.getItem(PFX+'rt_ign')||'{}');ig[t]=getRatio(t);localStorage.setItem(PFX+'rt_ign',JSON.stringify(ig));}catch(e){}rtBanner();}
 function rtBanner(msg){
-  var ref=document.getElementById('pventa-alert');if(!ref||!ref.parentNode)return;
+  var pg=document.getElementById('page-portafolio');if(!pg)return; // va al final de la página Portafolio
   var ig={};try{ig=JSON.parse(localStorage.getItem(PFX+'rt_ign')||'{}');}catch(e){}
   var L=Object.keys(RT_SOSP).filter(function(t){return ig[t]!==getRatio(t)&&RT_SOSP[t].r===getRatio(t);});
   var el=document.getElementById('rt-alert');
   if(!L.length&&!msg){if(el)el.remove();return;}
-  if(!el){el=document.createElement('div');el.id='rt-alert';ref.parentNode.insertBefore(el,ref);}
-  el.style.cssText='margin-bottom:.7rem;padding:.5rem .8rem;border:1px solid '+(L.length?'var(--amber,#eab308)':'var(--border2)')+';border-radius:var(--rsm);background:'+(L.length?'rgba(234,179,8,.08)':'var(--surface2)')+';font-size:.74rem;color:var(--text);font-family:var(--mono);max-width:1100px;line-height:1.7';
-  var nice=function(x){return x<2?(Math.round(x*2)/2):Math.round(x);};
+  if(!el){el=document.createElement('div');el.id='rt-alert';}
+  if(el.parentNode!==pg||pg.lastElementChild!==el)pg.appendChild(el);
+  el.style.cssText='margin:1rem 0 .7rem;padding:.5rem .8rem;border:1px solid '+(L.length?'var(--amber,#eab308)':'var(--border2)')+';border-radius:var(--rsm);background:'+(L.length?'rgba(234,179,8,.08)':'var(--surface2)')+';font-size:.74rem;color:var(--text);font-family:var(--mono);max-width:1100px;line-height:1.7';
+  var nice=function(x){if(x<1){var n=Math.round(1/x);return (Math.round(x*100)/100).toString().replace('.',',')+' (1 Cedear = '+n+' acciones)';}return x<2?(Math.round(x*10)/10).toString().replace('.',','):Math.round(x);};
   var esGDC=CFG.id==='gdc';
   el.innerHTML=(L.length?'⚠ <b>Posible ratio desactualizado</b> — el precio del Cedear no cierra con NYSE y el CCL:<br>'+
     L.map(function(t){var x=RT_SOSP[t];return '<span style="display:inline-block;margin-right:14px"><b>'+t+'</b>: la app usa <b>'+x.r+'</b>, el mercado indica <b>≈'+nice(x.sug)+'</b> '+
