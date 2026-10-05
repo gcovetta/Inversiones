@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=121, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=122, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v122 | 2026-10-05 | Feat: aportes y retiros activados en Omar (cartera principal; Cocos y VetaJeep no los usan y el cuadro se oculta al verlas). Período desde el último corte (25/04).',
   'v121 | 2026-10-05 | Evolución (CFG.aportes): la línea punteada de capital del período actual se recalcula con Inv. Inicial + aportes − retiros a cada fecha, también en los días ya guardados.',
   'v120 | 2026-10-05 | Fix: carga masiva de aportes/retiros leía montos con punto de miles y sin decimales ("600.000") como 600; ahora 600.000 = seiscientos mil.',
   'v119 | 2026-10-05 | Fix: la carga masiva de aportes/retiros rechazaba como duplicado el segundo movimiento igual del mismo día dentro de la misma lista (ej. dos retiros de $1.000.000 el 23/02); ahora solo compara contra lo ya guardado.',
@@ -5973,7 +5974,7 @@ async function histRecord(d,cart){
   if(!p){p={d:hoy,c:{}};pts.push(p);}
   p.c[cart]={v:Math.round(d.totalVal*100)/100,cost:Math.round(d.totalCost*100)/100};
   p.liq=Math.round((d.liqTotalUSD||0)*100)/100;
-  if(cart==='principal'||p.rend==null){p.rend=d.rendPct!=null?Math.round(d.rendPct*100)/100:null;p.inv=d.invInicial?Math.round(d.invInicial+(CFG.aportes&&typeof aporNeto==='function'?aporNeto():0)):null;}
+  if(cart==='principal'||p.rend==null){p.rend=d.rendPct!=null?Math.round(d.rendPct*100)/100:null;p.inv=d.invInicial?Math.round(d.invInicial+(CFG.aportes&&typeof aporNeto==='function'&&cart==='principal'?aporNeto():0)):null;}
   await sbSetConfig('historial',HIST);
   histRender();
 }
@@ -11126,15 +11127,16 @@ function _aporDias(a,b){var p=a.split('-'),q=b.split('-');return Math.round((new
 function aporIni(){var c=(typeof histUltimoCorte==='function')?histUltimoCorte():null;return c||(_hHoy().slice(0,4)+'-01-01');}
 function aporDelPeriodo(){var ini=aporIni(),hoy=_hHoy();return (APOR||[]).filter(function(x){return x.fecha>=ini&&x.fecha<=hoy;});}
 // Resultado del período para un valor actual y una inversión inicial
+function _aporCartOk(){return typeof CARTERA_ACTIVA==='undefined'||!CARTERA_ACTIVA||CARTERA_ACTIVA==='principal';}
 function aporCalc(val,inv){
-  if(!CFG.aportes||!_aporLoaded||!(inv>0))return null;
+  if(!CFG.aportes||!_aporLoaded||!(inv>0)||!_aporCartOk())return null; // los aportes son de la cartera principal
   var ini=aporIni(),hoy=_hHoy(),T=Math.max(1,_aporDias(ini,hoy)),ap=0,re=0,pond=0;
   aporDelPeriodo().forEach(function(x){var u=+x.usd||0,w=Math.max(0,Math.min(1,_aporDias(x.fecha,hoy)/T));
     if(x.tipo==='retiro'){re+=u;pond-=u*w;}else{ap+=u;pond+=u*w;}});
   var neto=ap-re,gan=val-inv-neto,base=inv+pond;
   return {ini:ini,ap:ap,re:re,neto:neto,gan:gan,base:base,rend:base>0?gan/base*100:null,rendSimple:(inv+neto)>0?gan/(inv+neto)*100:null,n:aporDelPeriodo().length};
 }
-function aporNeto(){var c=aporCalc(1,1);return c?c.neto:0;}
+function aporNeto(){var c=_aporCartOk()?aporCalc(1,1):null;if(!c&&CFG.aportes&&_aporLoaded){var ini=aporIni(),hoy=_hHoy(),n=0;(APOR||[]).forEach(function(a){if(a.fecha>=ini&&a.fecha<=hoy)n+=(a.tipo==='retiro'?-1:1)*(+a.usd||0);});return n;}return c?c.neto:0;}
 function _aporTC(iso){var dmy=iso.split('-').reverse().join('/');return getMEP(dmy)||(iso===_hHoy()&&MEP_HOY>0?MEP_HOY:null);}
 function aporAgregar(fecha,tipo,moneda,monto,nota){
   if(!_aporLoaded){alert('Todavía no se cargaron los aportes guardados. Esperá unos segundos y probá de nuevo.');return false;}
@@ -11190,6 +11192,7 @@ function aporSumHTML(){
 function aporSumRender(){var e=document.getElementById('apor-sum');if(e)e.innerHTML=aporSumHTML();else aporRender();}
 function aporRender(){
   if(!CFG.aportes)return;
+  var _ac=document.getElementById('apor-card');if(!_aporCartOk()){if(_ac)_ac.style.display='none';return;}else if(_ac)_ac.style.display='';
   var card=document.getElementById('apor-card');
   if(!card){var row=(typeof topCardsRow==='function')?topCardsRow():null;if(!row)return;
     card=document.createElement('div');card.className='card';card.id='apor-card';
