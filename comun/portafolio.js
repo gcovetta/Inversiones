@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=106, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=107, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v107 | 2026-10-04 | UI: se saca el chip con foto y nombre de arriba a la derecha (el encabezado fijo ya muestra la foto y el nombre de la cartera). Quedan el marco de color, la marca de agua, la pestaña y la confirmación de compra/venta.',
   'v106 | 2026-10-04 | UI: Inv. Inicial pasa al lado de la Liquidez en la barra superior (el chip de la cartera la tapaba) y la barra queda en una sola línea, con scroll horizontal si no entra.',
   'v105 | 2026-10-04 | UI: identidad de cada cartera — marco y color propios (GDC verde, Ana violeta, Hilda naranja, Juli celeste, Omar amarillo), chip fijo arriba a la derecha con foto y nombre, nombre en marca de agua, pestaña "Nombre · Inversiones" con ícono de color, y confirmación grande de compras y ventas que dice en qué cartera se opera (Enter confirma, Esc cancela).',
   'v104 | 2026-10-04 | Feat: botón 💼 Honorario en Evolución (Ana y Juli): se carga el valor final según el broker, calcula ganancia y el 20% (sin ganancia, 0), y registra lo cobrado en config honorarios; viaja en el resumen para el acumulado de Carteras administradas.',
@@ -10909,10 +10910,9 @@ function cartIdentidad(){
     var tb0=document.querySelector('.topbar');
     if(tb0){if(getComputedStyle(tb0).position==='static')tb0.style.position='relative';
       var box=document.createElement('div');box.id='tb-right';box.style.cssText='position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;background:var(--bg);padding-left:10px;z-index:5';
-      box.appendChild(ch);var kb=document.getElementById('kb-btn');if(kb){kb.style.marginLeft='0';box.appendChild(kb);}tb0.appendChild(box);}
+      var kb=document.getElementById('kb-btn');if(kb){kb.style.marginLeft='0';box.appendChild(kb);}tb0.appendChild(box);}
     else{ch.style.position='fixed';ch.style.top='8px';ch.style.right='12px';ch.style.zIndex='99991';document.body.appendChild(ch);}
   }
-  var chip=document.getElementById('cart-chip');chip.innerHTML=_cartAv(22)+'<span id="cart-chip-n">'+cartNombre()+'</span>';
   // Inv. Inicial al lado de la Liquidez (antes iba al final de la barra con margin-left:auto y quedaba
   // tapada por el chip o en una segunda línea oculta). La barra queda en una sola línea con scroll.
   try{var inv=document.getElementById('inv-sidebar-usd'),lu=document.getElementById('liq-usd');
