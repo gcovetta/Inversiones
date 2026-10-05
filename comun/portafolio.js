@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=98, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=99, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v99 | 2026-10-04 | Feat: control de precio al cargar compras y ventas (si se aleja más de 10% del mercado pide confirmación, con pista de cero de más/menos). Papelera: movimientos y cobros borrados o editados quedan 30 días (config papelera, en Supabase) con "↶ Deshacer" al momento y tarjeta 🗑 Papelera en Movimientos para restaurar.',
   'v98 | 2026-10-04 | Feat (GDC): Ratios → "Auditar tabla completa": compara cada Cedear de la tabla con NYSE y el CCL, lista los que no cierran (primero los que están en cartera 📌) con "Usar" / "Usar todos" y "Sync a las demás carteras". Marca datos dudosos y tickers sin precio NYSE.',
   'v97 | 2026-10-04 | UI: vista celular — en pantallas angostas cada posición de la cartera se muestra como tarjeta (ticker y Δ arriba; inversión, mercado, PPC, % anual, P. Venta y cantidad con su etiqueta) en vez de la tabla ancha.',
   'v96 | 2026-10-04 | UI: el aviso de ratio desactualizado va al final de la página Portafolio. Ratios menores a 1 se muestran como "0,33 (1 Cedear = 3 acciones)" en vez de redondear a 0,5.',
@@ -1309,6 +1310,7 @@ function addMov(){
   if(isNaN(qty)||qty===0){flash(sel,'Cantidad invalida',true);return;}
   if(isNaN(precioARSInput)||precioARSInput<0){flash(sel,'Precio invalido',true);return;}
   if(!cclVal||cclVal<=0){flash(sel,'⚠️ Sin CCL/MEP — revisá el tipo de cambio',true);return;}
+  if((tipo==='compra'||tipo==='venta')&&!precioGuard(ticker,precioARSInput,fecha))return;
   var ratio=getRatio(ticker);
   var precioUSD=cclVal?precioARS*ratio/cclVal:null;
   // Calcular comisión absoluta: (qty * precioARS * % / 100)
@@ -1453,7 +1455,8 @@ function deleteMov(id){
   var m=movimientos.find(function(x){return x.id==id;});
   if(!m)return;
   var label=m.ticker+(m.qty?' ('+m.qty+' u.)':'');
-  if(!confirm('Borrar movimiento: '+m.tipo.toUpperCase()+' '+label+'?'))return;
+  if(!confirm('Borrar movimiento: '+m.tipo.toUpperCase()+' '+label+'?\n\nQueda 30 días en la Papelera (Movimientos) por si lo querés recuperar.'))return;
+  papAgregar({k:'mov',acc:'borrado',d:m,desc:'Borrado: '+m.tipo+' '+label+' del '+m.fecha});
   movimientos=movimientos.filter(function(x){return x.id!=id;});
   saveAndRender();
 }
@@ -1466,7 +1469,8 @@ function purgarTicker(){
   if(!afectados.length){alert('No hay movimientos para '+ticker+'.');return;}
   var resumen=afectados.reduce(function(acc,m){acc[m.tipo]=(acc[m.tipo]||0)+1;return acc;},{});
   var detalle=Object.keys(resumen).map(function(t){return resumen[t]+' '+t+'(s)';}).join(', ');
-  if(!confirm('⚠️ Borrar TODOS los movimientos de '+ticker+'?\n\n'+detalle+' — '+afectados.length+' total\n\nEsta acción no se puede deshacer.'))return;
+  if(!confirm('⚠️ Borrar TODOS los movimientos de '+ticker+'?\n\n'+detalle+' — '+afectados.length+' total\n\nQuedan 30 días en la Papelera (Movimientos) por si los querés recuperar.'))return;
+  papAgregar({k:'movs',acc:'borrado',d:afectados,desc:'Borrados todos los movimientos de '+ticker+' ('+afectados.length+')'});
   movimientos=movimientos.filter(function(m){return (m.ticker||'').toUpperCase()!==ticker;});
   saveAndRender();
 }
@@ -1965,6 +1969,7 @@ function movModalSave(){
   var notas=document.getElementById('me-notas').value||'';
   var tipo=document.getElementById('me-tipo').value;
   if(!fechaVal){flash(sel,'Ingresá la fecha',true);return;}
+  var _antes=JSON.parse(JSON.stringify(m));
   m.fecha=fechaVal.split('-').reverse().join('/');
   m.tipo=tipo;
   var mkt=document.getElementById('me-mkt');
@@ -1993,6 +1998,7 @@ function movModalSave(){
   m.notas=notas;
   var meFinish=document.getElementById('me-finish');
   if(meFinish)m.finish=meFinish.checked;
+  if(JSON.stringify(_antes)!==JSON.stringify(m))papAgregar({k:'mov',acc:'editado',d:_antes,desc:'Editado: '+_antes.tipo+' '+_antes.ticker+' del '+_antes.fecha});
   saveAndRender();
   flash(sel,'Guardado',false);
   setTimeout(movModalClose,800);
@@ -2066,6 +2072,7 @@ function vbuyConfirmar(){
   if(mkt==='FCI')qty=qty/1000;
   var cclVal=getTC(fecha,mkt);
   if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP para esa fecha',true);return;}
+  if(!precioGuard(ticker,precioARSInput,fecha))return;
   var ratio=getRatio(ticker);
   var precioUSD=isBonoUSDDirecto(ticker)?precioARS:(cclVal?precioARS*ratio/cclVal:null);
 
@@ -2199,6 +2206,7 @@ function vsellConfirmar(){
   if(isNaN(qty)||qty<=0){flash(statusEl,'Cantidad inválida',true);return;}
   if(!fecha){flash(statusEl,'Falta la fecha',true);return;}
   if(isNaN(precioARSInput)||precioARSInput<=0){flash(statusEl,'Precio inválido',true);return;}
+  if(!precioGuard(ticker,precioARSInput,fecha))return;
 
   var mkt=vsellGetLastMercado(ticker);
   var sector=getSector(ticker);
@@ -7453,6 +7461,7 @@ function trkResetAll(){
 function trkDeleteDiv(id){
   var idx=TRK.divs.findIndex(function(d){return d.id===id;});
   if(idx<0) return;
+  var _d=TRK.divs[idx];papAgregar({k:'div',acc:'borrado',d:_d,desc:'Borrado cobro: '+_d.ticker+' '+(_d.moneda||'')+' '+_d.monto+' del '+_d.fecha});
   TRK.divs.splice(idx,1);
   trkSave();
   trkRender();
@@ -8308,6 +8317,7 @@ function trkPendingConfirm(id){
 function trkPendingDiscard(id){
   var idx=TRK.divs.findIndex(function(x){return x.id===id && x.estado==='pendiente';});
   if(idx<0) return;
+  var _d=TRK.divs[idx];papAgregar({k:'div',acc:'borrado',d:_d,desc:'Descartado pendiente: '+_d.ticker+' '+(_d.moneda||'')+' '+_d.monto+' del '+_d.fecha});
   TRK.divs.splice(idx,1);
   trkSave();
   trkRender();
@@ -10558,3 +10568,82 @@ async function raAudSync(){
   catch(e){if(el)el.textContent='Error: '+e.message;}
 }
 (function(){var go=function(){try{raAudUI();}catch(e){}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+
+// ─── Control de precio al cargar compras y ventas ─────────────────────────────
+// Si la operación es de los últimos 7 días y el precio cargado se aleja más de 10% del de mercado,
+// pide confirmación (típico: un cero de más o de menos). Se compara en la misma unidad que se carga
+// (pesos por Cedear/acción, o por 100 nominales en bonos y ON).
+function _precioMercadoARS(t){
+  var q=quotes[t];if(!q||!(q.price>0))return null;
+  if(isBonoUSDDirecto(t))return null;
+  var s=getSector(t);
+  if(q.fromByma||['argentina','bonos','on','fci'].indexOf(s)>=0||BRL_TICKERS.has(t))return q.price;
+  return CCL_HOY>0?q.price*CCL_HOY/getRatio(t):null; // cotización en USD de la acción → precio del Cedear
+}
+function precioGuard(t,precio,fecha){
+  try{
+    if(!t||!(precio>0))return true;
+    var p=String(fecha||'').split('/');if(p.length===3){var f=new Date(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'));if((Date.now()-f)/86400000>7)return true;}
+    var m=_precioMercadoARS(t);if(!(m>0))return true;
+    var r=precio/m;if(r>=0.9&&r<=1.1)return true;
+    var f2=function(x){return '$'+x.toLocaleString('es-AR',{maximumFractionDigits:2});};
+    var pista=(r>7&&r<13)||(r>70&&r<130)?'\n\n¿Te sobró un cero?':(r>0.07&&r<0.13)||(r>0.007&&r<0.013)?'\n\n¿Te faltó un cero?':'';
+    return confirm('⚠ Revisá el precio de '+t+'\n\nCargaste '+f2(precio)+' y el mercado está en '+f2(m)+' ('+(r>1?'+':'')+Math.round((r-1)*100)+'%).'+pista+'\n\n¿Guardar igual?');
+  }catch(e){return true;}
+}
+
+// ─── Papelera y deshacer ──────────────────────────────────────────────────────
+// Lo que se borra o edita (movimientos y cobros) queda 30 días en config 'papelera' (Supabase, se ve
+// desde cualquier dispositivo). Después de cada borrado/edición aparece "↶ Deshacer" unos segundos,
+// y en Movimientos está la tarjeta 🗑 Papelera para restaurar cualquier cosa de la lista.
+var PAP=null,_papCargando=null;
+function _papCargar(){
+  if(PAP)return Promise.resolve(PAP);
+  if(!_papCargando)_papCargando=(typeof sbGetConfig==='function'?sbGetConfig('papelera'):Promise.resolve(null)).then(function(v){
+    if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){v=null;}}PAP=Array.isArray(v)?v:[];return PAP;}).catch(function(){PAP=[];return PAP;});
+  return _papCargando;
+}
+function _papPodar(){var lim=Date.now()-30*86400000;PAP=PAP.filter(function(x){return x.ts>=lim;}).slice(0,300);}
+function papAgregar(e){
+  e=JSON.parse(JSON.stringify(e));e.ts=Date.now();e.id=e.ts+'_'+Math.floor(Math.random()*1e6);
+  if(typeof CARTERA_ACTIVA!=='undefined')e.cartera=CARTERA_ACTIVA;
+  _papCargar().then(function(){PAP.unshift(e);_papPodar();sbSetConfig('papelera',PAP);papRender();});
+  papToast(e);
+}
+function papRestaurar(id){
+  _papCargar().then(function(){
+    var i=PAP.findIndex(function(x){return x.id===id;});if(i<0)return;var e=PAP[i];
+    if(e.k==='mov'&&e.acc==='editado'){var j=movimientos.findIndex(function(m){return m.id==e.d.id;});
+      if(j>=0){var actual=JSON.parse(JSON.stringify(movimientos[j]));movimientos[j]=e.d;PAP.splice(i,1);
+        PAP.unshift({k:'mov',acc:'editado',d:actual,desc:'Antes de deshacer: '+actual.tipo+' '+actual.ticker+' del '+actual.fecha,ts:Date.now(),id:Date.now()+'_r'});}
+      else{movimientos.push(e.d);PAP.splice(i,1);}
+      saveAndRender();}
+    else if(e.k==='mov'){if(!movimientos.some(function(m){return m.id==e.d.id;}))movimientos.push(e.d);PAP.splice(i,1);saveAndRender();}
+    else if(e.k==='movs'){e.d.forEach(function(x){if(!movimientos.some(function(m){return m.id==x.id;}))movimientos.push(x);});PAP.splice(i,1);saveAndRender();}
+    else if(e.k==='div'){if(!TRK.divs.some(function(d){return d.id===e.d.id;}))TRK.divs.push(e.d);TRK.divs.sort(function(a,b){return String(b.fecha).localeCompare(String(a.fecha));});PAP.splice(i,1);
+      trkSave();try{trkRender();}catch(_e){}try{renderDivsCard();}catch(_e){}try{renderPortfolio();}catch(_e){}}
+    sbSetConfig('papelera',PAP);papRender();
+    var t=document.getElementById('pap-toast');if(t)t.remove();
+  });
+}
+function papToast(e){
+  var t=document.getElementById('pap-toast');if(t)t.remove();
+  t=document.createElement('div');t.id='pap-toast';
+  t.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:100004;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:.55rem .8rem;font-family:var(--mono);font-size:.74rem;color:var(--text);box-shadow:0 6px 24px rgba(0,0,0,.45);display:flex;gap:12px;align-items:center;max-width:92vw';
+  t.innerHTML='<span>'+String(e.desc||'Cambio guardado').replace(/</g,'&lt;')+'</span><button class="btn btn-a btn-sm" onclick="papRestaurar(\''+e.id+'\')">↶ Deshacer</button>';
+  document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.remove();},10000);
+}
+function papRender(){
+  var pg=document.getElementById('page-movimientos');if(!pg)return;
+  var c=document.getElementById('pap-card');
+  if(!c){c=document.createElement('div');c.className='card card-collapsed';c.id='pap-card';c.style.marginTop='1rem';pg.appendChild(c);}
+  var L=(PAP||[]);
+  var ag=function(ts){var s=(Date.now()-ts)/1000;return s<3600?'hace '+Math.max(1,Math.round(s/60))+' min':s<86400?'hace '+Math.round(s/3600)+' h':'hace '+Math.round(s/86400)+' d';};
+  var col=c.classList.contains('card-collapsed');
+  c.innerHTML='<div class="card-header"><span class="card-title">🗑 Papelera</span><span class="smsg">'+L.length+' elemento'+(L.length!==1?'s':'')+' · se guardan 30 días</span><button class="card-toggle" onclick="cardToggle(this)">'+(col?'▸':'▾')+'</button></div>'+
+    '<div class="card-body" style="padding-top:0">'+(L.length?'<div class="tw" style="max-height:300px;overflow-y:auto"><table><tbody>'+
+      L.map(function(x){return '<tr><td style="font-size:.74rem">'+String(x.desc||'').replace(/</g,'&lt;')+(x.cartera&&x.cartera!=='principal'?' <span class="muted">('+x.cartera+')</span>':'')+'</td><td class="muted" style="white-space:nowrap;font-size:.68rem">'+ag(x.ts)+'</td><td style="text-align:right"><button class="btn btn-sm" onclick="papRestaurar(\''+x.id+'\')">Restaurar</button></td></tr>';}).join('')+
+      '</tbody></table></div>':'<div class="empty-state" style="padding:1rem">No hay nada en la papelera.</div>')+'</div>';
+}
+(function(){var go=function(){var tr=function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){_papCargar().then(papRender);}else setTimeout(tr,1500);};tr();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
