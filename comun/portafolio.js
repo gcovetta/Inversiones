@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=111, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=112, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v112 | 2026-10-05 | Feat: cada cobro tiene tipo — dividendo, renta o amortización (click en la etiqueta de la tabla de Dividendos; punteada = estimado: bonos/ON → renta, último cobro de un título que ya no está → amortización) y el resumen lo separa para "Tus ingresos". La tabla de Dividendos muestra el MEP usado. Ana y Juli valúan acciones y Cedears al MEP, como el broker (CFG.valuarMEP).',
   'v111 | 2026-10-05 | Fix: los cobros en pesos (dividendos, rentas, amortizaciones) se pasan a USD al MEP de su fecha, no al CCL — al cargarlos, al importarlos y en los totales (Tus ingresos, informe, "desde tu última visita"). Los ajustes de PPC ya aplicados no se tocan.',
   'v110 | 2026-10-05 | Fix: algunos cobros en pesos importados tenían el monto en USD igual al de pesos (ej. CUAP $424.494 figuraba como USD 424.494) y el tablero "Tus ingresos" mostraba USD 2,2 millones. Se corrigen solos al abrir la cartera (pesos ÷ CCL de la fecha) y los totales usan siempre la conversión correcta. El ajuste de PPC no cambia.',
   'v109 | 2026-10-04 | UI: la foto del encabezado de cada portafolio lleva el borde del color de su cartera.',
@@ -3570,7 +3571,9 @@ function renderPortfolio(){
     var fromByma=q&&q.fromByma;
     var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=isBonoUSDDirecto(p.ticker)?p.costUSDpuro*100:(mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS);
-    var valueUSD=price!=null?(sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/CCL_HOY)*p.qty):_isBRL?(price/CCL_HOY)*p.qty:fromByma?(price/CCL_HOY)*p.qty:(price/ratio)*p.qty):null;
+    // CFG.valuarMEP (Ana, Juli): las acciones y Cedears se pasan a USD al MEP, como lo muestra el broker
+    var _tcVal=(CFG.valuarMEP&&MEP_HOY>0)?MEP_HOY:CCL_HOY;
+    var valueUSD=price!=null?(sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/_tcVal)*p.qty):_isBRL?(price/_tcVal)*p.qty:fromByma?(price/_tcVal)*p.qty:(price/ratio)*p.qty*(CCL_HOY/_tcVal)):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
     sectorCost[sector]=(sectorCost[sector]||0)+p.costUSDpuro;
@@ -5816,9 +5819,9 @@ async function famSaveSnapshot(d){
     doc.periodoInicio=CFG.periodoInicio||null;
     if(CFG.honorario){try{await honCargar();doc.honorarios=HON_LIST||[];}catch(e){}}
     // cobros (dividendos, rentas, amortizaciones) confirmados por mes, en USD — para "Tus ingresos" del index
-    try{var _cm={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart))return;var f=_infISO(x.fecha);if(!f)return;
-      var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;});
-      if(cart==='principal')doc.cobradosMes=_cm;}catch(e){}
+    try{var _cm={},_ct={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart))return;var f=_infISO(x.fecha);if(!f)return;
+      var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;var tp=divTipo(x),b=_ct[k]||(_ct[k]={div:0,renta:0,amort:0});b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']=Math.round((b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']+u)*100)/100;});
+      if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
     if(ok){_famLastSave=now;_famLastTotal=tot;}
@@ -7541,14 +7544,15 @@ function trkRender(){
       var tr=document.createElement('tr');
       var mOrig=d.moneda==='USD'?'USD '+trkFmt2(d.monto):'$ '+trkFmt2(d.monto);
       var _cclHist=null;
-      if(d.moneda==='ARS'&&d.fecha){var _fp=d.fecha.split('-');if(_fp.length===3){var _fk=_fp[2]+'/'+_fp[1]+'/'+_fp[0];_cclHist=CCL_TABLE[_fk]||null;if(!_cclHist){var _ddt=new Date(d.fecha+'T12:00:00');for(var _di=1;_di<=7&&!_cclHist;_di++){for(var _sg=-1;_sg<=1;_sg+=2){var _dd2=new Date(_ddt);_dd2.setDate(_dd2.getDate()+_sg*_di);var _fk2=String(_dd2.getDate()).padStart(2,'0')+'/'+String(_dd2.getMonth()+1).padStart(2,'0')+'/'+_dd2.getFullYear();if(CCL_TABLE[_fk2]){_cclHist=CCL_TABLE[_fk2];break;}}}}}}
+      if(d.moneda==='ARS'&&d.fecha){var _fp=d.fecha.split('-');if(_fp.length===3){var _fk=_fp[2]+'/'+_fp[1]+'/'+_fp[0];_cclHist=MEP_TABLE[_fk]||null;if(!_cclHist){var _ddt=new Date(d.fecha+'T12:00:00');for(var _di=1;_di<=7&&!_cclHist;_di++){for(var _sg=-1;_sg<=1;_sg+=2){var _dd2=new Date(_ddt);_dd2.setDate(_dd2.getDate()+_sg*_di);var _fk2=String(_dd2.getDate()).padStart(2,'0')+'/'+String(_dd2.getMonth()+1).padStart(2,'0')+'/'+_dd2.getFullYear();if(MEP_TABLE[_fk2]){_cclHist=MEP_TABLE[_fk2];break;}}}}}}
       var _cclEf=d.moneda==='ARS'?(_cclHist||d.cclUsado):null;
       var _mUSD=d.moneda==='USD'?d.monto:(_cclEf?d.monto/_cclEf:d.montoUSD);
       var mUSD='USD '+trkFmt2(_mUSD);
       var cclF=_cclEf?'$'+Math.round(_cclEf).toLocaleString('es-AR'):'—';
       var accF=d.acciones?d.acciones.toLocaleString('es-AR'):'—';
       var fechaF=d.fecha.split('-').reverse().join('/');
-      tr.innerHTML='<td style="font-weight:700">'+d.ticker+'</td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" onclick="trkDeleteDiv('+d.id+')">x</button></td>';
+      var _tp=divTipo(d),_tpC={DIV:'#38bdf8',RENTA:'#00e676',AMORT:'#94a3b8'}[_tp];
+      tr.innerHTML='<td style="font-weight:700">'+d.ticker+' <span onclick="divTipoCambiar('+d.id+')" title="Tipo de cobro (click para cambiar): dividendo, renta o amortización (devolución de capital)'+(d.tipo?'':' — estimado')+'" style="cursor:pointer;font-size:.55rem;font-weight:700;border:1px solid '+_tpC+';color:'+_tpC+';border-radius:4px;padding:0 4px;vertical-align:middle;'+(d.tipo?'':'border-style:dashed')+'">'+({DIV:'DIV',RENTA:'RENTA',AMORT:'AMORT'}[_tp])+'</span></td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" onclick="trkDeleteDiv('+d.id+')">x</button></td>';
       tbody.appendChild(tr);
     });
     // Footer con totales
@@ -11014,4 +11018,27 @@ function divsReparar(){
     if(!mal&&(ajustaPPC||Math.abs((+x.montoUSD||0)-nuevo)<=Math.max(0.01,nuevo*0.005)))return;
     x._montoUSDantes=x.montoUSD;x.montoUSD=nuevo;x.cclUsado=tc;n++;});
   if(n){console.warn('[divsReparar] '+n+' cobros en pesos recalculados en USD al MEP de su fecha');trkSave();try{trkRender();}catch(e){}try{renderDivsCard();}catch(e){}_famLastSave=0;try{renderPortfolio();}catch(e){}}
+}
+
+// ─── Tipo de cada cobro: dividendo, renta o amortización ──────────────────────
+// Si el cobro tiene tipo guardado (DIV / RENTA / AMORT) se usa ese; si no se estima: acciones y Cedears
+// → dividendo; bonos, ON y letras → renta, salvo el último cobro de un título que ya no está en cartera
+// (vencimiento) → amortización. En Dividendos se cambia con un click en la etiqueta (punteada = estimado).
+var _divTipoCache=null;
+function _divTipoUltimos(){
+  if(_divTipoCache&&_divTipoCache.n===TRK.divs.length)return _divTipoCache;
+  var ult={},abiertos={};try{getPositions().forEach(function(p){if(p.qty>0.000001)abiertos[p.ticker]=1;});}catch(e){}
+  (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente')return;var f=_infISO(x.fecha);if(!ult[x.ticker]||f>ult[x.ticker].f)ult[x.ticker]={f:f,id:x.id};});
+  _divTipoCache={n:TRK.divs.length,ult:ult,ab:abiertos};return _divTipoCache;
+}
+function divTipo(x){
+  if(x.tipo==='DIV'||x.tipo==='RENTA'||x.tipo==='AMORT')return x.tipo;
+  var s=getSector(x.ticker);if(['bonos','on'].indexOf(s)<0&&!/^(S|X|LE|T)\d|^[A-Z]{2,4}\d{2}[A-Z]?$/.test(x.ticker)&&s!=='bonos')return 'DIV';
+  var c=_divTipoUltimos();if(!c.ab[x.ticker]&&c.ult[x.ticker]&&c.ult[x.ticker].id===x.id)return 'AMORT';
+  return 'RENTA';
+}
+function divTipoCambiar(id){
+  var x=(TRK.divs||[]).find(function(d){return d.id===id;});if(!x)return;
+  var sig={DIV:'RENTA',RENTA:'AMORT',AMORT:'DIV'}[divTipo(x)];x.tipo=sig;_divTipoCache=null;
+  trkSave();try{trkRender();}catch(e){}_famLastSave=0;try{renderPortfolio();}catch(e){}
 }
