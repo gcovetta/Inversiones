@@ -115,7 +115,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v23</span>
+  <span class="subtitle">Carteras administradas · v25</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -145,8 +145,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v23 · 04/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v23</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v25 · 04/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v25</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -278,6 +278,7 @@ function render(){
         (cob?'<br><span title="'+det.join(' · ')+'">Ya cobrado: <b>USD '+n0(cob)+'</b> ('+det.join(' · ')+')</span><br>Acumulado con el período actual: <b class="grn">USD '+n0(cob+H)+'</b>':'')+'</div></div>':'';})()+
     '<div class="k"><div class="kl">Liquidez total</div><div class="kv">USD '+n0(F.liq)+'</div><div class="ks">'+(F.total>0?n1(F.liq/F.total*100)+'% del total':'')+'</div></div></div>';
   h+=busqCard();
+  h+=pvCard();
   // por persona
   h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table><thead><tr><th>Portafolio</th><th>USD</th><th>% del total</th><th title="Rendimiento del período (el del Resumen de cada portafolio)">Rend.</th><th title="Tiempo que falta para el próximo corte anual (cierre del período)">Cierre de ciclo</th><th title="Tu honorario: 20% de (valor actual − inversión inicial del período). Sin ganancia, 0">Honorario</th><th>Actualizado</th></tr></thead><tbody>'+
     on.slice().sort(function(a,b){return DATA[b.id].o.total-DATA[a.id].o.total;}).map(function(c){var o=DATA[c.id].o;var d=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);var old=Date.now()-o.ts>7*86400000;
@@ -291,19 +292,22 @@ function render(){
   h+='<div class="card full"><div class="ch">Distribución por portafolio</div><div class="cb"><div class="pp" style="margin-top:0">'+
     on.map(function(c){var o=DATA[c.id].o;return '<div class="pbox"><h4>'+av(c)+''+esc(c.nombre)+' <span class="mut" style="font-family:var(--mono);font-size:.62rem;font-weight:400;margin-left:auto">USD '+n0(o.total)+'</span></h4>'+distBlocks(o,true)+'</div>';}).join('')+
     '</div></div></div>';
+  h+='</div>'; // cierra la grilla de arriba
+  // Mayores posiciones y Próximos cobros van al final de la página
+  var tail='<div class="grid" style="margin-top:12px">';
   // mayores posiciones
   var top=Object.values(F.pos).sort(function(a,b){return b.v-a.v;}).slice(0,20);
-  h+='<div class="card"><div class="ch">Mayores posiciones <span class="sub">click = detalle</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th>USD</th><th>% del total</th><th>Quién la tiene</th></tr></thead><tbody>'+
+  tail+='<div class="card"><div class="ch">Mayores posiciones <span class="sub">click = detalle</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th>USD</th><th>% del total</th><th>Quién la tiene</th></tr></thead><tbody>'+
     top.map(function(x){var pf=x.v/F.total*100;var col=pf>3?'red':pf>2?'yel':'';
       var r='<tr class="clk" onclick="toggleT(\''+esc(x.t)+'\')"><td><b>'+esc(x.t)+'</b> <span class="mut">'+(SECT[x.s]?SECT[x.s][0]:'')+'</span></td><td>'+n0(x.v)+'</td><td class="'+col+'">'+n1(pf)+'%</td><td style="text-align:left;white-space:normal">'+x.by.sort(function(a,b){return b.p.v-a.p.v;}).map(function(b){return esc(b.c.nombre)+' '+k(b.p.v);}).join(' · ')+'</td></tr>';
       if(OPEN[x.t])r+=x.by.map(function(b){var ppc=b.p.q>0?b.p.c/b.p.q:null;return '<tr class="det"><td>&nbsp;&nbsp;'+esc(b.c.nombre)+'</td><td>'+n0(b.p.v)+'</td><td>cant. '+b.p.q.toLocaleString('es-AR')+'</td><td style="text-align:left">'+(ppc?'PPC USD '+ppc.toLocaleString('es-AR',{maximumFractionDigits:2})+' · ':'')+'Δ '+(b.p.pnl!=null?pct(b.p.pnl):'—')+(b.p.an!=null?' · '+pct(b.p.an)+' anual':'')+'</td></tr>';}).join('');
       return r;}).join('')+'</tbody></table></div></div>';
   // cobros
-  h+='<div class="card"><div class="ch">Próximos cobros de todos <span class="sub">30 días · bonos/ON con flujo cargado</span></div><div class="cb tw">'+(cobs.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th>Quién</th><th>Monto</th></tr></thead><tbody>'+
+  tail+='<div class="card"><div class="ch">Próximos cobros de todos <span class="sub">30 días · bonos/ON con flujo cargado</span></div><div class="cb tw">'+(cobs.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th>Quién</th><th>Monto</th></tr></thead><tbody>'+
     cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
-  h+=pvCard();
   h+=ingresosCard();
   h+=moversCard();
+  h+=tail;
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
   CFG.forEach(function(c){var el=document.getElementById('pl-'+c.id),d=DATA[c.id];if(!el)return;var a0=el.closest('a');if(a0){a0.style.borderColor=ccol(c);var im=a0.querySelector('img');if(im)im.style.borderColor=ccol(c);}if(!d||!d.o){el.textContent='';return;}var o=d.o,r=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);
@@ -332,16 +336,19 @@ async function bkAll(){
 function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
 // ── 🎯 Posiciones que alcanzaron su P. Venta (y las que están a menos de 3%) en todas las carteras ──
 function pvCard(){
-  var hit=[],cerca=[];
-  VIEW.forEach(function(c){var d=DATA[c.id];if(!d||!d.o||OFF[c.id])return;Object.keys(d.o.pos).forEach(function(t){var p=d.o.pos[t];if(p.up==null||p.pv==null)return;
-    var r={t:t,s:p.s,c:c,up:p.up,pv:p.pv,v:p.v,q:p.q,pnl:p.c>0?(p.v/p.c-1)*100:p.pnl};if(p.up<=0)hit.push(r);else if(p.up<=3)cerca.push(r);});});
-  if(!hit.length&&!cerca.length)return '';
+  var hit=[],cerca=[],resto=[],sinDatos=[];
+  VIEW.forEach(function(c){var d=DATA[c.id];if(!d||!d.o||OFF[c.id])return;var alguno=false;Object.keys(d.o.pos).forEach(function(t){var p=d.o.pos[t];if(p.up==null||p.pv==null)return;alguno=true;
+    var r={t:t,s:p.s,c:c,up:p.up,pv:p.pv,v:p.v,q:p.q,pnl:p.c>0?(p.v/p.c-1)*100:p.pnl};if(p.up<=0)hit.push(r);else if(p.up<=3)cerca.push(r);else resto.push(r);});
+    if(!alguno&&!c.soloValor)sinDatos.push(c.nombre);});
+  // si nadie llegó ni está cerca, mostrar igual las 5 más próximas
+  if(!hit.length&&!cerca.length){resto.sort(function(a,b){return a.up-b.up;});cerca=resto.slice(0,5);}
+  if(!hit.length&&!cerca.length)return '<div class="card pvc"><div class="ch">🎯 Precio de venta</div><div class="cb"><div class="sub">Todavía no hay datos de P. Venta'+(sinDatos.length?' de '+sinDatos.map(esc).join(', '):'')+': se completan al abrir cada portafolio.</div></div></div>';
   hit.sort(function(a,b){return a.up-b.up;});cerca.sort(function(a,b){return a.up-b.up;});
   var row=function(r,h){return '<tr><td><b>'+esc(r.t)+'</b> <span class="mut">'+(SECT[r.s]?SECT[r.s][0]:'')+'</span></td><td style="text-align:left"><a href="'+r.c.link+'">'+av(r.c)+esc(r.c.nombre)+'</a></td><td>USD '+r.pv.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td>'+
-    '<td class="'+(h?'grn':'yel')+'">'+(h?'superó '+pct(-r.up):'falta '+pct(r.up).replace('+',''))+'</td><td class="'+(r.pnl>=0?'grn':'red')+'">'+(r.pnl==null?'—':pct(r.pnl))+'</td><td>'+n0(r.v)+'</td></tr>';};
-  return '<div class="card pvc"><div class="ch">🎯 Precio de venta <span class="sub">'+hit.length+' alcanzado'+(hit.length!==1?'s':'')+(cerca.length?' · '+cerca.length+' a menos de 3%':'')+'</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th style="text-align:left">Cartera</th><th>P. Venta</th><th>Estado</th><th>Ganancia</th><th>Valor USD</th></tr></thead><tbody>'+
+    '<td class="'+(h?'grn':r.up<=3?'yel':'mut')+'">'+(h?'superó '+pct(-r.up):'falta '+pct(r.up).replace('+',''))+'</td><td class="'+(r.pnl>=0?'grn':'red')+'">'+(r.pnl==null?'—':pct(r.pnl))+'</td><td>'+n0(r.v)+'</td></tr>';};
+  return '<div class="card pvc"><div class="ch">🎯 Precio de venta <span class="sub">'+hit.length+' alcanzado'+(hit.length!==1?'s':'')+(cerca.length&&cerca[0].up<=3?' · '+cerca.filter(function(r){return r.up<=3;}).length+' a menos de 3%':'')+'</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th style="text-align:left">Cartera</th><th>P. Venta</th><th>Estado</th><th>Ganancia</th><th>Valor USD</th></tr></thead><tbody>'+
     hit.map(function(r){return row(r,true);}).join('')+cerca.map(function(r){return row(r,false);}).join('')+'</tbody></table>'+
-    '<div class="sub" style="margin-top:6px">Datos al último ingreso a cada portafolio. "Ganancia" es la de la posición (mercado vs. costo).</div></div></div>';
+    '<div class="sub" style="margin-top:6px">'+(!hit.length&&cerca.length&&cerca[0].up>3?'Ninguna llegó ni está a menos de 3%: estas son las 5 más cerca. ':'')+'Datos al último ingreso a cada portafolio. "Ganancia" es la de la posición (mercado vs. costo).'+(sinDatos.length?' Sin datos todavía de '+sinDatos.map(esc).join(', ')+' (abrí esos portafolios).':'')+'</div></div></div>';
 }
 // ── 💰 Tus ingresos: rentas y dividendos de GDC + honorarios (cobrados y proyectados) ──
 function ingresosCard(){
