@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=108, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=109, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v109 | 2026-10-04 | UI: la foto del encabezado de cada portafolio lleva el borde del color de su cartera.',
   'v108 | 2026-10-04 | Feat: el resumen para Carteras administradas guarda los cobros confirmados por mes en USD (para el tablero "Tus ingresos").',
   'v107 | 2026-10-04 | UI: se saca el chip con foto y nombre de arriba a la derecha (el encabezado fijo ya muestra la foto y el nombre de la cartera). Quedan el marco de color, la marca de agua, la pestaña y la confirmación de compra/venta.',
   'v106 | 2026-10-04 | UI: Inv. Inicial pasa al lado de la Liquidez en la barra superior (el chip de la cartera la tapaba) y la barra queda en una sola línea, con scroll horizontal si no entra.',
@@ -10918,6 +10919,8 @@ function cartIdentidad(){
       var kb=document.getElementById('kb-btn');if(kb){kb.style.marginLeft='0';box.appendChild(kb);}tb0.appendChild(box);}
     else{ch.style.position='fixed';ch.style.top='8px';ch.style.right='12px';ch.style.zIndex='99991';document.body.appendChild(ch);}
   }
+  // la foto del encabezado con el borde del color de la cartera
+  try{var hi=document.querySelector('header img');if(hi){hi.style.borderColor=c;hi.style.boxShadow='0 0 0 3px '+c+'33';}}catch(e){}
   // Inv. Inicial al lado de la Liquidez (antes iba al final de la barra con margin-left:auto y quedaba
   // tapada por el chip o en una segunda línea oculta). La barra queda en una sola línea con scroll.
   try{var inv=document.getElementById('inv-sidebar-usd'),lu=document.getElementById('liq-usd');
