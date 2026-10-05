@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=116, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=117, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v117 | 2026-10-05 | UI: se saca la nota de abajo de Rendimiento por período (escala √ / año en curso) para ganar lugar.',
   'v116 | 2026-10-05 | Cambio: Evolución ignora fines de semana y feriados (no hay mercado): no se registran puntos esos días y los ya guardados no se grafican. Feriados en FERIADOS_AR (2025-2026), editable.',
   'v115 | 2026-10-05 | Feat: AO29C (y AO29D) usan el flujo de AO29 en Próximos cobros y TIR real (FLUJOS_ALIAS + flujoDe). En general, cualquier bono en especie C/D toma el flujo del bono base si está cargado.',
   'v114 | 2026-10-05 | Feat: el resumen guarda un chequeo de salud (cobros pendientes de confirmar, fechas sin CCL/MEP cargado, posiciones negativas o sin precio, último backup) para la tarjeta "🩺 Chequeo" del index.',
@@ -6090,8 +6091,7 @@ function histRenderAnual(ult){
   el.innerHTML=
     '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'+ys.map(function(y){var r=per[y].r,h=Math.max(4,Math.round(Math.sqrt(Math.abs(r)/max)*56));var col=r>=0?(per[y].src==='curso'?'rgba(0,230,118,.45)':'var(--accent)'):'var(--red)';
       return '<div style="text-align:center;min-width:54px;font-family:var(--mono)"><div style="font-size:.7rem;font-weight:700;color:'+(r>=0?'var(--accent)':'var(--red)')+'">'+(r>=0?'+':'')+(Math.abs(r)>=100?Math.round(r):r.toFixed(1).replace('.',','))+'%</div><div style="height:56px;display:flex;align-items:flex-end;justify-content:center"><div style="width:26px;height:'+h+'px;background:'+col+';border-radius:3px 3px 0 0"></div></div><div style="font-size:.62rem;color:var(--text2);margin-top:3px">'+lbl(y)+(per[y].src==='curso'?' <span style="color:var(--text3)">(en curso)</span>':'')+'</div></div>';}).join('')+
-    '<div style="margin-left:auto;text-align:right;font-family:var(--mono)"><div style="font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Acumulado desde '+lbl(ys[0])+'</div><div style="font-size:1.15rem;font-weight:700;color:'+(acc>=1?'var(--accent)':'var(--red)')+'">'+(acc>=1?'+':'')+Math.round((acc-1)*100).toLocaleString('es-AR')+'%</div><div style="font-size:.62rem;color:var(--text2)">×'+acc.toFixed(2).replace('.',',')+' lo invertido</div></div></div>'+
-    '<div style="font-family:var(--mono);font-size:.6rem;color:var(--text3);margin-top:6px">Barras en escala √ para que se vean los años chicos al lado de los grandes. El año en curso usa el Rendimiento del Resumen.</div>';
+    '<div style="margin-left:auto;text-align:right;font-family:var(--mono)"><div style="font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Acumulado desde '+lbl(ys[0])+'</div><div style="font-size:1.15rem;font-weight:700;color:'+(acc>=1?'var(--accent)':'var(--red)')+'">'+(acc>=1?'+':'')+Math.round((acc-1)*100).toLocaleString('es-AR')+'%</div><div style="font-size:.62rem;color:var(--text2)">×'+acc.toFixed(2).replace('.',',')+' lo invertido</div></div></div>';
 }
 async function histCerrarPeriodo(){
   var corte=histUltimoCorte();var serie=histSerie();var ult=serie[serie.length-1];
