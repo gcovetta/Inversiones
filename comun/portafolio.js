@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=120, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=121, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v121 | 2026-10-05 | Evolución (CFG.aportes): la línea punteada de capital del período actual se recalcula con Inv. Inicial + aportes − retiros a cada fecha, también en los días ya guardados.',
   'v120 | 2026-10-05 | Fix: carga masiva de aportes/retiros leía montos con punto de miles y sin decimales ("600.000") como 600; ahora 600.000 = seiscientos mil.',
   'v119 | 2026-10-05 | Fix: la carga masiva de aportes/retiros rechazaba como duplicado el segundo movimiento igual del mismo día dentro de la misma lista (ej. dos retiros de $1.000.000 el 23/02); ahora solo compara contra lo ya guardado.',
   'v118 | 2026-10-05 | Feat (GDC, CFG.aportes): card 💵 Aportes y retiros (fecha, USD o ARS al MEP del día, carga masiva). La Inv. Inicial queda como valor al inicio del período; ganancia = valor − inicial − aportes + retiros y rendimiento ponderado por días (Dietz modificado). Evolución: la línea de capital sube con cada aporte. Se guarda en config flujos_capital.',
@@ -5989,6 +5990,10 @@ function histSerie(){
     if(!esDiaHabil(p.d))return; // fines de semana y feriados (puntos viejos) no se grafican
     var v=0,cost=0;Object.keys(last).forEach(function(k){v+=last[k].v;cost+=last[k].cost;});
     out.push({d:p.d,v:v+(p.liq||0),pos:v,cost:cost,inv:p.inv,rend:p.rend});});
+  // CFG.aportes: la línea de capital del período actual se recalcula = Inv. Inicial + aportes − retiros hasta cada día
+  // (los puntos viejos tenían guardada la Inv. Inicial que se ajustaba a mano)
+  try{if(CFG.aportes&&_aporLoaded){var inv0=getRawNum('inv-sidebar-usd'),ini=aporIni();
+    if(inv0>0)out.forEach(function(x){if(x.previo||x.d<ini)return;var n=0;(APOR||[]).forEach(function(a){if(a.fecha>=ini&&a.fecha<=x.d)n+=(a.tipo==='retiro'?-1:1)*(+a.usd||0);});x.inv=Math.round(inv0+n);});}}catch(e){}
   return out;
 }
 // Fecha del último corte anual <= hoy (AAAA-MM-DD) según CFG.periodoInicio ('MM-DD')
@@ -11172,7 +11177,7 @@ function aporAjustarInv(){
   if(!confirm('Si ya habías sumado estos aportes a mano en la Inv. Inicial:\n\nInv. Inicial USD '+Math.round(inv).toLocaleString('es-AR')+' − aportes netos USD '+Math.round(c.neto).toLocaleString('es-AR')+' = USD '+nueva.toLocaleString('es-AR')+'\n\n¿La cambio?'))return;
   setFmtNum('inv-sidebar-usd',nueva,0);if(typeof saveInvInicial==='function')saveInvInicial(nueva);aporRefrescar();
 }
-function aporRefrescar(){try{renderPortfolio();}catch(e){}aporRender();}
+function aporRefrescar(){try{renderPortfolio();}catch(e){}aporRender();try{histRender();}catch(e){}}
 var _aporUlt=null;
 function aporSumHTML(){
   var c=_aporUlt,ini=aporIni(),fd=function(i){return i.split('-').reverse().join('/');},n0=function(v){return Math.round(v).toLocaleString('es-AR');};
@@ -11217,4 +11222,4 @@ function aporRender(){
   b.innerHTML=h;
   Object.keys(keep).forEach(function(id){var e=document.getElementById(id);if(e&&keep[id]!=null&&keep[id]!=='')e.value=keep[id];});if(foc&&document.getElementById(foc))document.getElementById(foc).focus();
 }
-(function _aporBoot(n){setTimeout(function(){if(!CFG.aportes)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){aporLoad().then(function(a){if(a){try{renderPortfolio();}catch(e){}aporRender();}else if(n<40)_aporBoot(n+1);});}else if(n<40)_aporBoot(n+1);},1500);})(0);
+(function _aporBoot(n){setTimeout(function(){if(!CFG.aportes)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){aporLoad().then(function(a){if(a){try{renderPortfolio();}catch(e){}aporRender();try{histRender();}catch(e){}}else if(n<40)_aporBoot(n+1);});}else if(n<40)_aporBoot(n+1);},1500);})(0);
