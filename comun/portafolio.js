@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=112, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=113, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v113 | 2026-10-05 | Cambio: todas las carteras valúan acciones y Cedears al MEP (antes solo Ana y Juli): si se venden en pesos, los dólares se recompran al MEP. Con CFG.valuarMEP:false se vuelve al CCL. El día del cambio el valor sube aprox. la brecha CCL/MEP sobre la parte en acciones y Cedears.',
   'v112 | 2026-10-05 | Feat: cada cobro tiene tipo — dividendo, renta o amortización (click en la etiqueta de la tabla de Dividendos; punteada = estimado: bonos/ON → renta, último cobro de un título que ya no está → amortización) y el resumen lo separa para "Tus ingresos". La tabla de Dividendos muestra el MEP usado. Ana y Juli valúan acciones y Cedears al MEP, como el broker (CFG.valuarMEP).',
   'v111 | 2026-10-05 | Fix: los cobros en pesos (dividendos, rentas, amortizaciones) se pasan a USD al MEP de su fecha, no al CCL — al cargarlos, al importarlos y en los totales (Tus ingresos, informe, "desde tu última visita"). Los ajustes de PPC ya aplicados no se tocan.',
   'v110 | 2026-10-05 | Fix: algunos cobros en pesos importados tenían el monto en USD igual al de pesos (ej. CUAP $424.494 figuraba como USD 424.494) y el tablero "Tus ingresos" mostraba USD 2,2 millones. Se corrigen solos al abrir la cartera (pesos ÷ CCL de la fecha) y los totales usan siempre la conversión correcta. El ajuste de PPC no cambia.',
@@ -3571,8 +3572,9 @@ function renderPortfolio(){
     var fromByma=q&&q.fromByma;
     var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=isBonoUSDDirecto(p.ticker)?p.costUSDpuro*100:(mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS);
-    // CFG.valuarMEP (Ana, Juli): las acciones y Cedears se pasan a USD al MEP, como lo muestra el broker
-    var _tcVal=(CFG.valuarMEP&&MEP_HOY>0)?MEP_HOY:CCL_HOY;
+    // Acciones y Cedears se pasan a USD al MEP (si vendo en pesos, recompro dólares al MEP; así lo muestra el broker).
+    // CFG.valuarMEP:false vuelve a valuar al CCL.
+    var _tcVal=(CFG.valuarMEP!==false&&MEP_HOY>0)?MEP_HOY:CCL_HOY;
     var valueUSD=price!=null?(sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/_tcVal)*p.qty):_isBRL?(price/_tcVal)*p.qty:fromByma?(price/_tcVal)*p.qty:(price/ratio)*p.qty*(CCL_HOY/_tcVal)):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
