@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=119, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=120, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v120 | 2026-10-05 | Fix: carga masiva de aportes/retiros leía montos con punto de miles y sin decimales ("600.000") como 600; ahora 600.000 = seiscientos mil.',
   'v119 | 2026-10-05 | Fix: la carga masiva de aportes/retiros rechazaba como duplicado el segundo movimiento igual del mismo día dentro de la misma lista (ej. dos retiros de $1.000.000 el 23/02); ahora solo compara contra lo ya guardado.',
   'v118 | 2026-10-05 | Feat (GDC, CFG.aportes): card 💵 Aportes y retiros (fecha, USD o ARS al MEP del día, carga masiva). La Inv. Inicial queda como valor al inicio del período; ganancia = valor − inicial − aportes + retiros y rendimiento ponderado por días (Dietz modificado). Evolución: la línea de capital sube con cada aporte. Se guarda en config flujos_capital.',
   'v117 | 2026-10-05 | UI: se saca la nota de abajo de Rendimiento por período (escala √ / año en curso) para ganar lugar.',
@@ -11153,7 +11154,7 @@ async function aporPegar(){
   L.forEach(function(l,i){var c=l.split(/[;\t]/).map(function(x){return x.trim();});
     var m=(c[0]||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(!m){err.push('línea '+(i+1)+': fecha');return;}
     var f=m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2),t=/^r/i.test(c[1]||'')?'retiro':'aporte',mo=/ars|\$|peso/i.test(c[2]||'')&&!/us/i.test(c[2]||'')?'ARS':'USD';
-    var s=String(c[3]||'').replace(/[^\d,.\-]/g,'');if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');var n=parseFloat(s);
+    var s=String(c[3]||'').replace(/[^\d,.\-]/g,'');if(s.indexOf(',')>=0||/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'').replace(',','.');var n=parseFloat(s); // 600.000 = seiscientos mil
     if(prev.some(function(x){return x.fecha===f&&x.tipo===t&&x.moneda===mo&&Math.abs(x.monto-n)<0.005;})){err.push('línea '+(i+1)+': ya estaba');return;}
     var a0=window.alert;window.alert=function(msg){err.push('línea '+(i+1)+': '+msg);};
     try{if(aporAgregar(f,t,mo,n,c[4]||''))ok++;}finally{window.alert=a0;}});
