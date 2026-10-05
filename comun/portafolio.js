@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=104, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=105, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v105 | 2026-10-04 | UI: identidad de cada cartera — marco y color propios (GDC verde, Ana violeta, Hilda naranja, Juli celeste, Omar amarillo), chip fijo arriba a la derecha con foto y nombre, nombre en marca de agua, pestaña "Nombre · Inversiones" con ícono de color, y confirmación grande de compras y ventas que dice en qué cartera se opera (Enter confirma, Esc cancela).',
   'v104 | 2026-10-04 | Feat: botón 💼 Honorario en Evolución (Ana y Juli): se carga el valor final según el broker, calcula ganancia y el 20% (sin ganancia, 0), y registra lo cobrado en config honorarios; viaja en el resumen para el acumulado de Carteras administradas.',
   'v103 | 2026-10-04 | Fix: los dividendos no tenían la protección de los movimientos — se guardaban sin reintentos ni aviso y podían escribirse antes de terminar de leer la nube (pisándola con una lista vacía). Ahora: reintentos, snapshot pendiente que se sube al volver a abrir, no se escribe antes del init y barra roja fija "No se guardó en la nube" con Reintentar (también para movimientos).',
   'v102 | 2026-10-04 | UI: orden de campos — Comprar: Ticker, Precio, Cantidad, Fecha, Mercado (automático); Vender: Ticker, Precio, Cantidad, Fecha. Se saca el campo CCL de Vender: el tipo de cambio sale siempre de la tabla (CCL o MEP según el activo).',
@@ -10877,3 +10878,87 @@ function honLista(){
     L.map(function(x,i){return '<tr><td>'+(x.ini?x.ini.split('-').reverse().join('/').slice(0,10)+' → ':'')+x.fin.split('-').reverse().join('/')+'</td><td class="mono">'+(x.ganancia>=0?'+':'')+Math.round(x.ganancia).toLocaleString('es-AR')+'</td><td class="mono" style="color:var(--accent)">USD '+(x.cobrado||0).toLocaleString('es-AR')+'</td><td style="text-align:right"><span onclick="honBorrar('+i+')" style="cursor:pointer;color:var(--text3)" title="Borrar">✕</span></td></tr>';}).join('')+
     '</tbody><tfoot><tr><td><b>Total</b></td><td></td><td class="mono" style="color:var(--accent)"><b>USD '+tot.toLocaleString('es-AR')+'</b></td><td></td></tr></tfoot></table>';
 }
+
+// ─── Identidad de cada cartera (para no cargar en la equivocada) ──────────────
+// Marco del color de la cartera, chip fijo arriba a la derecha con foto y nombre, nombre en marca
+// de agua, título de la pestaña "Nombre · Inversiones" con ícono de color, y confirmación grande de
+// compras y ventas que dice en qué cartera se opera.
+var CART_COLOR={gdc:'#22c55e',ana:'#e879f9',hilda:'#fb923c',juli:'#38bdf8',omar:'#facc15'};
+var CART_FOTO={gdc:'PerfilGaston.png',ana:'PerfilAna.png',hilda:'PerfilHilda.png',juli:'Juli.png',omar:'perfilOmar.png'};
+function cartColor(){return CFG.color||CART_COLOR[CFG.id]||'#7a9cc5';}
+function cartNombre(){var n=CFG.nombre;if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA&&CARTERA_ACTIVA!=='principal'){n+=' · '+({cocos:'Cristian (Cocos)',vetajeep:'Jeep'}[CARTERA_ACTIVA]||CARTERA_ACTIVA);}return n;}
+function _cartAv(sz){var c=cartColor(),f=CFG.foto||CART_FOTO[CFG.id];
+  return '<span style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+c+';display:inline-flex;align-items:center;justify-content:center;font-weight:800;color:#0b1120;font-size:'+Math.round(sz*.45)+'px;overflow:hidden;flex-shrink:0;border:2px solid '+c+'">'+
+    (f?'<img src="'+f+'" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.replaceWith(document.createTextNode(\''+CFG.nombre.charAt(0)+'\'))">':CFG.nombre.charAt(0))+'</span>';}
+function cartIdentidad(){
+  var c=cartColor();
+  document.title=CFG.nombre+' · Inversiones';
+  // ícono de la pestaña: círculo del color con la inicial
+  try{var cv=document.createElement('canvas');cv.width=cv.height=64;var x=cv.getContext('2d');x.fillStyle=c;x.beginPath();x.arc(32,32,30,0,Math.PI*2);x.fill();
+    x.fillStyle='#0b1120';x.font='bold 36px Inter,system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(CFG.nombre.charAt(0),32,35);
+    var l=document.querySelector('link[rel="icon"]');if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.type='image/png';l.href=cv.toDataURL('image/png');}catch(e){}
+  if(!document.getElementById('cart-frame')){
+    var fr=document.createElement('div');fr.id='cart-frame';fr.style.cssText='position:fixed;inset:0;border:2px solid '+c+';pointer-events:none;z-index:99990;box-shadow:inset 0 0 0 1px '+c+'26';document.body.appendChild(fr);
+    var wm=document.createElement('div');wm.id='cart-wm';wm.textContent=CFG.nombre.toUpperCase();
+    wm.style.cssText='position:fixed;right:24px;bottom:40px;font-family:Inter,system-ui,sans-serif;font-size:7rem;font-weight:900;letter-spacing:-.04em;color:'+c+';opacity:.05;pointer-events:none;z-index:-1;user-select:none';document.body.appendChild(wm);
+    var ch=document.createElement('div');ch.id='cart-chip';ch.title='Estás en la cartera de '+CFG.nombre;
+    ch.style.cssText='display:flex;align-items:center;gap:7px;background:'+c+'1f;border:1px solid '+c+';border-radius:999px;padding:1px 11px 1px 1px;font-family:Inter,system-ui,sans-serif;font-weight:700;font-size:.8rem;color:'+c+';white-space:nowrap';
+    // va en la barra superior (siempre visible), anclado a la derecha junto al botón ? (la barra tiene
+    // altura fija y, si se agregaba al final, quedaba en una segunda línea oculta)
+    var tb0=document.querySelector('.topbar');
+    if(tb0){if(getComputedStyle(tb0).position==='static')tb0.style.position='relative';
+      var box=document.createElement('div');box.id='tb-right';box.style.cssText='position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;background:var(--bg);padding-left:10px;z-index:5';
+      box.appendChild(ch);var kb=document.getElementById('kb-btn');if(kb){kb.style.marginLeft='0';box.appendChild(kb);}tb0.appendChild(box);}
+    else{ch.style.position='fixed';ch.style.top='8px';ch.style.right='12px';ch.style.zIndex='99991';document.body.appendChild(ch);}
+  }
+  var chip=document.getElementById('cart-chip');chip.innerHTML=_cartAv(22)+'<span id="cart-chip-n">'+cartNombre()+'</span>';
+}
+// Confirmación grande de compra / venta
+function opModal(o){
+  return new Promise(function(res){
+    var c=cartColor(),v=o.tipo==='venta',col=v?'var(--red,#ff5252)':'var(--accent,#00e676)';
+    var ov=document.createElement('div');ov.id='op-dlg';ov.style.cssText='position:fixed;inset:0;z-index:100006;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    var f2=function(x){return (+x).toLocaleString('es-AR',{maximumFractionDigits:2});};
+    ov.innerHTML='<div style="background:var(--surface,#111927);border:2px solid '+c+';border-radius:12px;padding:14px 16px;width:360px;max-width:100%;font-family:Inter,system-ui,sans-serif;color:var(--text,#e8f0ff)">'+
+      '<div style="background:'+c+';color:#0b1120;font-weight:800;border-radius:7px;padding:7px 10px;margin:-4px -6px 12px;display:flex;align-items:center;gap:8px;font-size:.88rem">'+_cartAv(26)+(v?'💸 VENTA':'🛒 COMPRA')+' EN LA CARTERA DE '+cartNombre().toUpperCase()+'</div>'+
+      '<div style="font-size:1rem">'+(v?'Vender':'Comprar')+' <b>'+f2(o.qty)+' '+o.ticker+'</b> a $'+f2(o.precio)+(o.unidad?' <span style="font-size:.75rem;color:var(--text3)">'+o.unidad+'</span>':'')+'</div>'+
+      '<div style="font-family:var(--mono);font-size:.7rem;color:var(--text2,#7a9cc5);line-height:1.7;margin-top:6px">'+(o.total?'Total $'+f2(o.total)+' · ':'')+o.fecha+(o.mkt?' · '+o.mkt:'')+(o.extra?'<br>'+o.extra:'')+'</div>'+
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button id="op-no" class="btn">Cancelar</button><button id="op-si" class="btn" style="background:'+col+';border-color:'+col+';color:'+(v?'#fff':'#0b1120')+';font-weight:700">'+(v?'Vender':'Comprar')+' en '+CFG.nombre+'</button></div></div>';
+    var fin=function(r){document.removeEventListener('keydown',kd,true);ov.remove();res(r);};
+    var kd=function(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();fin(false);}else if(e.key==='Enter'){e.preventDefault();e.stopPropagation();fin(true);}};
+    document.addEventListener('keydown',kd,true);
+    document.body.appendChild(ov);
+    ov.querySelector('#op-no').onclick=function(){fin(false);};ov.querySelector('#op-si').onclick=function(){fin(true);};
+    ov.onclick=function(e){if(e.target===ov)fin(false);};
+    setTimeout(function(){var b=ov.querySelector('#op-si');if(b)b.focus();},30);
+  });
+}
+var _opBypass=false;
+function _opEnvolver(nombre,leer){
+  var orig=window[nombre];if(typeof orig!=='function'||orig._op)return;
+  var w=function(){var self=this,args=arguments;if(_opBypass)return orig.apply(self,args);
+    var o=null;try{o=leer();}catch(e){}
+    if(!o||!o.ticker||!(o.qty>0)||!(o.precio>0))return orig.apply(self,args); // datos incompletos: que valide el original
+    opModal(o).then(function(ok){if(!ok)return;_opBypass=true;try{orig.apply(self,args);}finally{_opBypass=false;}});};
+  w._op=1;window[nombre]=w;
+}
+function _opVal(id){var e=document.getElementById(id);return e?e.value:'';}
+function _opFecha(id){var v=_opVal(id);return v?v.split('-').reverse().join('/'):'';}
+function _opMktNom(id){var e=document.getElementById(id);return e&&e.selectedIndex>=0?e.options[e.selectedIndex].text:'';}
+(function(){
+  function setup(){
+    try{cartIdentidad();}catch(e){console.warn('cartIdentidad',e);}
+    _opEnvolver('vbuyConfirmar',function(){var mk=_opVal('vbuy-mkt'),bo=(mk==='BONOS'||mk==='ON'),q=parseFloat(_opVal('vbuy-qty')),p=parseFloat(_opVal('vbuy-precio-ars'));
+      return {tipo:'compra',ticker:_opVal('vbuy-ticker').trim().toUpperCase(),qty:q,precio:p,unidad:bo?'c/100 nominales':'',total:bo?q*p/100:q*p,fecha:_opFecha('vbuy-fecha'),mkt:_opMktNom('vbuy-mkt')};});
+    _opEnvolver('vsellConfirmar',function(){var t=_opVal('vsell-ticker').trim().toUpperCase(),q=parseFloat(_opVal('vsell-qty')),p=parseFloat(_opVal('vsell-precio-ars'));
+      var pos=null;try{pos=getPositions().find(function(x){return x.ticker===t;});}catch(e){}
+      var s=getSector(t),bo=(s==='bonos'||s==='on');var pv=document.getElementById('vsell-preview');
+      var ext=(pos?'Te quedan '+Math.max(0,Math.round((pos.qty-q)*100)/100).toLocaleString('es-AR')+' '+t:'')+(pv&&pv.innerText&&pv.innerText.length<260?'<br><span style="color:var(--text3)">'+pv.innerText.replace(/</g,'&lt;').replace(/\n+/g,' · ')+'</span>':'');
+      return {tipo:'venta',ticker:t,qty:q,precio:p,unidad:bo?'c/100 nominales':'',total:bo?q*p/100:q*p,fecha:_opFecha('vsell-fecha'),extra:ext};});
+    _opEnvolver('addMov',function(){var tp=_opVal('m-tipo');if(tp!=='compra'&&tp!=='venta')return null;var mk=_opVal('m-mkt'),bo=(mk==='BONOS'||mk==='ON'),q=Math.abs(parseFloat(_opVal('m-qty'))),p=parseFloat(_opVal('m-precio-ars'));
+      return {tipo:tp,ticker:_opVal('m-ticker').trim().toUpperCase(),qty:q,precio:p,unidad:bo?'c/100 nominales':'',total:bo?q*p/100:q*p,fecha:_opFecha('m-fecha'),mkt:_opMktNom('m-mkt')};});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+  // Omar: al cambiar de cartera (Cocos / Jeep) se actualiza el nombre del chip
+  setInterval(function(){var n=document.getElementById('cart-chip-n');if(n&&n.textContent!==cartNombre())n.textContent=cartNombre();},1500);
+})();
