@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=114, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=115, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v115 | 2026-10-05 | Feat: AO29C (y AO29D) usan el flujo de AO29 en Próximos cobros y TIR real (FLUJOS_ALIAS + flujoDe). En general, cualquier bono en especie C/D toma el flujo del bono base si está cargado.',
   'v114 | 2026-10-05 | Feat: el resumen guarda un chequeo de salud (cobros pendientes de confirmar, fechas sin CCL/MEP cargado, posiciones negativas o sin precio, último backup) para la tarjeta "🩺 Chequeo" del index.',
   'v113 | 2026-10-05 | Cambio: todas las carteras valúan acciones y Cedears al MEP (antes solo Ana y Juli): si se venden en pesos, los dólares se recompran al MEP. Con CFG.valuarMEP:false se vuelve al CCL. El día del cambio el valor sube aprox. la brecha CCL/MEP sobre la parte en acciones y Cedears.',
   'v112 | 2026-10-05 | Feat: cada cobro tiene tipo — dividendo, renta o amortización (click en la etiqueta de la tabla de Dividendos; punteada = estimado: bonos/ON → renta, último cobro de un título que ya no está → amortización) y el resumen lo separa para "Tus ingresos". La tabla de Dividendos muestra el MEP usado. Ana y Juli valúan acciones y Cedears al MEP, como el broker (CFG.valuarMEP).',
@@ -884,14 +885,23 @@ function _xirrCalc(precio,flujos){
 // compara el precio ARS directo contra el flujo ARS, sin conversión — el
 // resultado queda en términos nominales de pesos, igual que la calculan la
 // mayoría de las planillas/calculadoras para bonos peso.
+// Mismo bono en otra especie (C = dólar cable, D = dólares): usa el flujo del bono base.
+// FLUJOS_ALIAS para los explícitos; además cualquier bono USD directo (isBonoUSDDirecto) cuyo base tenga flujo.
+var FLUJOS_ALIAS={'AO29C':'AO29','AO29D':'AO29'};
+function flujoBase(t){if(FLUJOS_BONOS[t])return t;var b=FLUJOS_ALIAS[t]||(isBonoUSDDirecto(t)?t.slice(0,-1):null);return b&&FLUJOS_BONOS[b]?b:null;}
+function flujoDe(t){var b=flujoBase(t);return b?FLUJOS_BONOS[b]:null;}
 function calcularTIRReal(ticker){
-  var tabla=FLUJOS_BONOS[ticker];
+  var tabla=flujoDe(ticker);
   if(!tabla) return null;
+  var _b=flujoBase(ticker);
+  if(_b!==ticker&&quotes[_b]&&quotes[_b].price!=null) return calcularTIRReal(_b); // misma TIR que el bono base
   var q=quotes[ticker];
   if(!q||q.price==null) return null;
   var ratio=getRatio(ticker)||1;
   var precio;
-  if(tabla.moneda==='USD'){
+  if(tabla.moneda==='USD'&&isBonoUSDDirecto(ticker)){
+    precio=q.price*ratio; // la especie C/D ya cotiza en dólares
+  } else if(tabla.moneda==='USD'){
     var tc=MEP_HOY||CCL_HOY;
     if(!tc) return null;
     precio=q.price*ratio/tc;
@@ -913,7 +923,7 @@ function calcularCalendarioCobros(){
   var pos=(typeof getPositionsPrincipal==='function'?getPositionsPrincipal():getPositions()).filter(function(p){return p.qty>0.000001;});
   var items=[],sinFlujo=[];
   pos.forEach(function(p){
-    var tabla=FLUJOS_BONOS[p.ticker];
+    var tabla=flujoDe(p.ticker);
     var sector=getSector(p.ticker);
     if(!tabla){
       if(sector==='bonos'||sector==='on') sinFlujo.push(p.ticker);
@@ -3739,7 +3749,7 @@ function renderPortfolio(){
     // fallback a TIR de EcoValores (solo Bonos, cobertura parcial). Sin ninguna de las dos: '—'.
     var rsiCell;
     if(_isBonoON){
-      var _tirReal=(typeof FLUJOS_BONOS!=='undefined'&&FLUJOS_BONOS[p.ticker])?calcularTIRReal(p.ticker):null;
+      var _tirReal=(typeof FLUJOS_BONOS!=='undefined'&&flujoDe(p.ticker))?calcularTIRReal(p.ticker):null;
       if(_tirReal){
         var _tirTip='TIR real: XIRR (act/365) del flujo exacto de FLUJOS_BONOS contra el precio de mercado de hoy, en '+_tirReal.moneda;
         rsiCell='<span style="color:var(--text);font-weight:600" title="'+_tirTip+'">'+_tirReal.tir.toFixed(2)+'%</span>';
