@@ -80,7 +80,7 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
 th:first-child,td:first-child{text-align:left}
 #portal td{font-family:var(--mono);text-align:right;padding:.38rem .45rem;border-bottom:1px solid var(--border);white-space:nowrap}
 tr:last-child td{border-bottom:none}
-#portal .busq{margin-bottom:12px}#portal .movers{margin:12px 0}.mvg{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.mvg{grid-template-columns:1fr}}#portal .movers .ch{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}#portal .busq .cb{padding:.6rem .8rem}#busq{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:.55rem .75rem;outline:none}#busq:focus{border-color:var(--accent)}
+#portal .busq{margin-bottom:12px}#portal .movers,#portal .pvc,#portal .ing{margin:12px 0}.mvg{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.mvg{grid-template-columns:1fr}}#portal .movers .ch{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}#portal .busq .cb{padding:.6rem .8rem}#busq{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:.55rem .75rem;outline:none}#busq:focus{border-color:var(--accent)}
 .bchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.bchips .chip{cursor:pointer}.bchips .chip.on{border-color:var(--accent);color:var(--accent)}.bhead{margin:10px 2px 6px;font-size:.85rem}
 #portal .busq tfoot td{border-top:1px solid var(--border2);font-weight:700}
 tr.det td{background:var(--surface2);font-size:.7rem;color:var(--text2)}
@@ -115,7 +115,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v21</span>
+  <span class="subtitle">Carteras administradas · v22</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -145,8 +145,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v21 · 04/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v21</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v22 · 04/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v22</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -177,7 +177,7 @@ async function loadOne(c,tok){
 function agg(doc,solo,principal){
   if(principal===undefined)principal=true;
   var ks=Object.keys(doc.carteras).filter(function(k){return !solo||solo.indexOf(k)>=0;});
-  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
+  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
   if(solo&&ks.length===1&&doc.carteras[ks[0]].ts)o.ts=doc.carteras[ks[0]].ts;
   ks.forEach(function(cn){var c=doc.carteras[cn];
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
@@ -298,6 +298,8 @@ function render(){
   // cobros
   h+='<div class="card"><div class="ch">Próximos cobros de todos <span class="sub">30 días · bonos/ON con flujo cargado</span></div><div class="cb tw">'+(cobs.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th>Quién</th><th>Monto</th></tr></thead><tbody>'+
     cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
+  h+=pvCard();
+  h+=ingresosCard();
   h+=moversCard();
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
@@ -325,6 +327,49 @@ async function bkAll(){
   render();
 }
 function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
+// ── 🎯 Posiciones que alcanzaron su P. Venta (y las que están a menos de 3%) en todas las carteras ──
+function pvCard(){
+  var hit=[],cerca=[];
+  VIEW.forEach(function(c){var d=DATA[c.id];if(!d||!d.o||OFF[c.id])return;Object.keys(d.o.pos).forEach(function(t){var p=d.o.pos[t];if(p.up==null||p.pv==null)return;
+    var r={t:t,s:p.s,c:c,up:p.up,pv:p.pv,v:p.v,q:p.q,pnl:p.c>0?(p.v/p.c-1)*100:p.pnl};if(p.up<=0)hit.push(r);else if(p.up<=3)cerca.push(r);});});
+  if(!hit.length&&!cerca.length)return '';
+  hit.sort(function(a,b){return a.up-b.up;});cerca.sort(function(a,b){return a.up-b.up;});
+  var row=function(r,h){return '<tr><td><b>'+esc(r.t)+'</b> <span class="mut">'+(SECT[r.s]?SECT[r.s][0]:'')+'</span></td><td style="text-align:left"><a href="'+r.c.link+'">'+av(r.c)+esc(r.c.nombre)+'</a></td><td>USD '+r.pv.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td>'+
+    '<td class="'+(h?'grn':'yel')+'">'+(h?'superó '+pct(-r.up):'falta '+pct(r.up).replace('+',''))+'</td><td class="'+(r.pnl>=0?'grn':'red')+'">'+(r.pnl==null?'—':pct(r.pnl))+'</td><td>'+n0(r.v)+'</td></tr>';};
+  return '<div class="card pvc"><div class="ch">🎯 Precio de venta <span class="sub">'+hit.length+' alcanzado'+(hit.length!==1?'s':'')+(cerca.length?' · '+cerca.length+' a menos de 3%':'')+'</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th style="text-align:left">Cartera</th><th>P. Venta</th><th>Estado</th><th>Ganancia</th><th>Valor USD</th></tr></thead><tbody>'+
+    hit.map(function(r){return row(r,true);}).join('')+cerca.map(function(r){return row(r,false);}).join('')+'</tbody></table>'+
+    '<div class="sub" style="margin-top:6px">Datos al último ingreso a cada portafolio. "Ganancia" es la de la posición (mercado vs. costo).</div></div></div>';
+}
+// ── 💰 Tus ingresos: rentas y dividendos de GDC + honorarios (cobrados y proyectados) ──
+function ingresosCard(){
+  var g=DATA.gdc&&DATA.gdc.o,cm=(g&&g.cm)||{};
+  var hoy=new Date(),meses=[];for(var i=11;i>=0;i--){var d=new Date(hoy.getFullYear(),hoy.getMonth()-i,1);meses.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2));}
+  var hon={};var detHon=[];
+  CFG.forEach(function(c){if(!c.honorario)return;var d=DATA[c.id],L=d&&d.o&&d.o.hon,pi=(d&&d.o&&d.o.pi)||PI_DEF[c.id]||'01-01',regY={};
+    if(Array.isArray(L))L.forEach(function(x){var f=x.fechaCobro||x.fin;if(!f)return;var k=f.slice(0,7);hon[k]=(hon[k]||0)+(+x.cobrado||0);regY[(x.anio||String(x.fin).slice(0,4))]=1;});
+    var hc=c.honCobrados||{};Object.keys(hc).forEach(function(y){if(regY[y])return;var k=y+'-'+pi.slice(0,2);hon[k]=(hon[k]||0)+hc[y];});});
+  var R=meses.map(function(k){return {k:k,r:cm[k]||0,h:hon[k]||0};});
+  var tR=R.reduce(function(a,x){return a+x.r;},0),tH=R.reduce(function(a,x){return a+x.h;},0),tot=tR+tH;
+  if(!tot&&!g)return '';
+  var mx=Math.max.apply(null,R.map(function(x){return x.r+x.h;}))||1;
+  var W=640,H=120,bw=W/12;
+  var bars=R.map(function(x,i){var hr=x.r/mx*H,hh=x.h/mx*H,X=i*bw+6,w=bw-12,y=H+4;
+    var t=x.k.split('-').reverse().join('/')+': rentas USD '+n0(x.r)+(x.h?' · honorarios USD '+n0(x.h):'');
+    return '<g><title>'+t+'</title>'+(hr>0?'<rect x="'+X+'" y="'+(y-hr)+'" width="'+w+'" height="'+hr+'" rx="2" fill="#38bdf8"/>':'')+(hh>0?'<rect x="'+X+'" y="'+(y-hr-hh-(hr>0?2:0))+'" width="'+w+'" height="'+hh+'" rx="2" fill="#00e676"/>':'')+
+      '<text x="'+(X+w/2)+'" y="'+(H+18)+'" text-anchor="middle" font-size="10" fill="#7a9cc5">'+['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(x.k.slice(5),10)-1]+'</text></g>';}).join('');
+  // proyectados
+  var pr=[],tP=0;VIEW.forEach(function(c){var d=DATA[c.id];if(!c.honorario||!d||!d.o)return;var p=honProy(c,d.o);if(p&&!p.pronto){tP+=p.monto;pr.push(esc(c.nombre)+' ≈ USD '+n0(p.monto)+' ('+_fd(p.fin)+')');}});
+  return '<div class="card ing"><div class="ch">💰 Tus ingresos <span class="sub">últimos 12 meses · USD</span></div><div class="cb">'+
+    '<div class="kpis" style="margin-bottom:10px">'+
+      '<div class="k"><div class="kl">Total 12 meses</div><div class="kv grn">USD '+n0(tot)+'</div><div class="ks">≈ USD '+n0(tot/12)+' por mes</div></div>'+
+      '<div class="k"><div class="kl">Rentas y dividendos (GDC)</div><div class="kv">USD '+n0(tR)+'</div><div class="ks">'+(g?'≈ USD '+n0(tR/12)+' por mes':'abrí GDC para cargarlas')+'</div></div>'+
+      '<div class="k"><div class="kl">Honorarios cobrados</div><div class="kv">USD '+n0(tH)+'</div><div class="ks">Ana y Juli, en los últimos 12 meses</div></div>'+
+      '<div class="k"><div class="kl">Honorarios proyectados</div><div class="kv">USD '+n0(tP)+'</div><div class="ks">'+(pr.length?pr.join(' · '):'—')+'</div></div>'+
+    '</div>'+
+    '<svg viewBox="0 0 '+W+' '+(H+24)+'" width="100%" style="max-height:170px">'+bars+'</svg>'+
+    '<div class="legend"><span><i style="background:#38bdf8"></i>Rentas y dividendos GDC</span><span><i style="background:#00e676"></i>Honorarios</span></div>'+
+    '<div class="sub" style="margin-top:4px">Rentas: cobros confirmados en la solapa Dividendos de GDC (se actualiza al abrir GDC). Honorarios: los registrados con 💼 en Ana y Juli y los cargados a mano (en el mes de cierre de cada período).</div></div></div>';
+}
 // ── Lo que más se movió en la última rueda (variación del día guardada en cada resumen) ──
 function moversCard(){
   var vs=VIEW.filter(function(c){return !OFF[c.id]&&DATA[c.id]&&DATA[c.id].o;});if(!vs.length)return '';

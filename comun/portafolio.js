@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=107, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=108, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v108 | 2026-10-04 | Feat: el resumen para Carteras administradas guarda los cobros confirmados por mes en USD (para el tablero "Tus ingresos").',
   'v107 | 2026-10-04 | UI: se saca el chip con foto y nombre de arriba a la derecha (el encabezado fijo ya muestra la foto y el nombre de la cartera). Quedan el marco de color, la marca de agua, la pestaña y la confirmación de compra/venta.',
   'v106 | 2026-10-04 | UI: Inv. Inicial pasa al lado de la Liquidez en la barra superior (el chip de la cartera la tapaba) y la barra queda en una sola línea, con scroll horizontal si no entra.',
   'v105 | 2026-10-04 | UI: identidad de cada cartera — marco y color propios (GDC verde, Ana violeta, Hilda naranja, Juli celeste, Omar amarillo), chip fijo arriba a la derecha con foto y nombre, nombre en marca de agua, pestaña "Nombre · Inversiones" con ícono de color, y confirmación grande de compras y ventas que dice en qué cartera se opera (Enter confirma, Esc cancela).',
@@ -5811,6 +5812,10 @@ async function famSaveSnapshot(d){
     if(cart==='principal'||doc.rend==null){doc.rend=d.rendPct;doc.invInicial=d.invInicial||null;}
     doc.periodoInicio=CFG.periodoInicio||null;
     if(CFG.honorario){try{await honCargar();doc.honorarios=HON_LIST||[];}catch(e){}}
+    // cobros (dividendos, rentas, amortizaciones) confirmados por mes, en USD — para "Tus ingresos" del index
+    try{var _cm={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart))return;var f=_infISO(x.fecha);if(!f)return;
+      var u=x.montoUSD!=null&&x.montoUSD!==''?+x.montoUSD:(x.moneda==='USD'?+x.monto:(+x.monto)/((x.cclUsado||CCL_HOY)||1));if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;});
+      if(cart==='principal')doc.cobradosMes=_cm;}catch(e){}
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
     if(ok){_famLastSave=now;_famLastTotal=tot;}
