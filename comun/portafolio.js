@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=113, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=114, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v114 | 2026-10-05 | Feat: el resumen guarda un chequeo de salud (cobros pendientes de confirmar, fechas sin CCL/MEP cargado, posiciones negativas o sin precio, último backup) para la tarjeta "🩺 Chequeo" del index.',
   'v113 | 2026-10-05 | Cambio: todas las carteras valúan acciones y Cedears al MEP (antes solo Ana y Juli): si se venden en pesos, los dólares se recompran al MEP. Con CFG.valuarMEP:false se vuelve al CCL. El día del cambio el valor sube aprox. la brecha CCL/MEP sobre la parte en acciones y Cedears.',
   'v112 | 2026-10-05 | Feat: cada cobro tiene tipo — dividendo, renta o amortización (click en la etiqueta de la tabla de Dividendos; punteada = estimado: bonos/ON → renta, último cobro de un título que ya no está → amortización) y el resumen lo separa para "Tus ingresos". La tabla de Dividendos muestra el MEP usado. Ana y Juli valúan acciones y Cedears al MEP, como el broker (CFG.valuarMEP).',
   'v111 | 2026-10-05 | Fix: los cobros en pesos (dividendos, rentas, amortizaciones) se pasan a USD al MEP de su fecha, no al CCL — al cargarlos, al importarlos y en los totales (Tus ingresos, informe, "desde tu última visita"). Los ajustes de PPC ya aplicados no se tocan.',
@@ -3920,6 +3921,7 @@ function renderPortfolio(){
     totalVal:totalVal, rendPct:rendPct, invInicial:invInicial,
     totalCost:open.reduce(function(a,p){return a+(p._valueUSD!=null?(p.costUSDpuro||0):0);},0),
     pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null,pv:p._pv!=null?p._pv:null,up:p._upside!=null?Math.round(p._upside*10)/10:null,ch:(quotes[p.ticker]&&quotes[p.ticker].changePct!=null&&isFinite(quotes[p.ticker].changePct))?Math.round(quotes[p.ticker].changePct*100)/100:null};}),
+    sinPrecio:open.filter(function(p){return p._valueUSD==null;}).map(function(p){return p.ticker;}),
     cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
   });}catch(_e){console.warn('famQueueSnapshot',_e);}
 
@@ -5824,6 +5826,7 @@ async function famSaveSnapshot(d){
     try{var _cm={},_ct={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart))return;var f=_infISO(x.fecha);if(!f)return;
       var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;var tp=divTipo(x),b=_ct[k]||(_ct[k]={div:0,renta:0,amort:0});b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']=Math.round((b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']+u)*100)/100;});
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
+    try{doc.salud=saludCalc(d);}catch(e){}
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
     if(ok){_famLastSave=now;_famLastTotal=tot;}
@@ -11043,4 +11046,24 @@ function divTipoCambiar(id){
   var x=(TRK.divs||[]).find(function(d){return d.id===id;});if(!x)return;
   var sig={DIV:'RENTA',RENTA:'AMORT',AMORT:'DIV'}[divTipo(x)];x.tipo=sig;_divTipoCache=null;
   trkSave();try{trkRender();}catch(e){}_famLastSave=0;try{renderPortfolio();}catch(e){}
+}
+
+// ─── Chequeo de salud (lo lee el index en "🩺 Chequeo") ───────────────────────
+// Cobros sin confirmar, fechas sin CCL/MEP cargado, posiciones negativas o sin precio y último backup.
+function saludCalc(d){
+  var out={ts:Date.now(),pend:0,faltaTC:[],neg:[],sinPrecio:(d&&d.sinPrecio)||[],bk:null};
+  var lim=Date.now()-400*86400000,falta={};
+  var _t=function(dmy){var p=String(dmy||'').split('/');return p.length===3?new Date(+p[2],+p[1]-1,+p[0]).getTime():0;};
+  (TRK.divs||[]).forEach(function(x){
+    if(x.estado==='pendiente'){out.pend++;return;}
+    if(x.moneda!=='ARS')return;var f=_infISO(x.fecha);if(!f)return;var dmy=f.split('-').reverse().join('/');
+    if(_t(dmy)>=lim&&!MEP_TABLE[dmy])falta[dmy]='MEP';});
+  (movimientos||[]).forEach(function(m){
+    if((m.tipo!=='compra'&&m.tipo!=='venta')||!(+m.precioARS>0)||m.ccl)return;
+    try{if(_t(m.fecha)>=lim&&!getCCL(m.fecha))falta[fmtKey(m.fecha)]=(falta[fmtKey(m.fecha)]?'CCL y MEP':'CCL');}catch(e){}});
+  out.faltaTC=Object.keys(falta).sort(function(a,b){return _t(b)-_t(a);}).slice(0,10).map(function(k){return k+' ('+falta[k]+')';});
+  out.faltaN=Object.keys(falta).length;
+  try{getPositions().forEach(function(p){if(p.qty<-0.000001)out.neg.push(p.ticker);});}catch(e){}
+  try{out.bk=localStorage.getItem(PFX+'bk_last')||null;}catch(e){}
+  return out;
 }
