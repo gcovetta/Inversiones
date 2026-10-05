@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=109, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=111, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v111 | 2026-10-05 | Fix: los cobros en pesos (dividendos, rentas, amortizaciones) se pasan a USD al MEP de su fecha, no al CCL — al cargarlos, al importarlos y en los totales (Tus ingresos, informe, "desde tu última visita"). Los ajustes de PPC ya aplicados no se tocan.',
+  'v110 | 2026-10-05 | Fix: algunos cobros en pesos importados tenían el monto en USD igual al de pesos (ej. CUAP $424.494 figuraba como USD 424.494) y el tablero "Tus ingresos" mostraba USD 2,2 millones. Se corrigen solos al abrir la cartera (pesos ÷ CCL de la fecha) y los totales usan siempre la conversión correcta. El ajuste de PPC no cambia.',
   'v109 | 2026-10-04 | UI: la foto del encabezado de cada portafolio lleva el borde del color de su cartera.',
   'v108 | 2026-10-04 | Feat: el resumen para Carteras administradas guarda los cobros confirmados por mes en USD (para el tablero "Tus ingresos").',
   'v107 | 2026-10-04 | UI: se saca el chip con foto y nombre de arriba a la derecha (el encabezado fijo ya muestra la foto y el nombre de la cartera). Quedan el marco de color, la marca de agua, la pestaña y la confirmación de compra/venta.',
@@ -3871,7 +3873,7 @@ function renderPortfolio(){
   // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
   var trkDivsTotal=0;
   try{var td=TRK.divs||[];try{var _lsTrkP=localStorage.getItem(TRK.DKEY);if(_lsTrkP){var _lsTrkPD=JSON.parse(_lsTrkP);if(_lsTrkPD.length>td.length)td=_lsTrkPD;}}catch(_e){}
-  if(true){td.forEach(function(d){var u=d.moneda==='USD'?(d.montoUSD||d.monto||0):(d.monto||0)/(CCL_TABLE[d.fecha]||CCL_HOY);trkDivsTotal+=u||0;});}}catch(e){}
+  if(true){td.forEach(function(d){if(d.estado==='pendiente')return;trkDivsTotal+=divUSD(d)||0;});}}catch(e){}
   var movDivsTotal=movimientos.filter(function(m){return m.tipo==='dividendo';}).reduce(function(a,m){return a+(m.precioUSD||0);},0);
   var regDivsTotal=(dividendos||[]).reduce(function(a,d){return a+(d.usd||0);},0);
   var allDivs=trkDivsTotal+movDivsTotal+regDivsTotal;
@@ -5815,7 +5817,7 @@ async function famSaveSnapshot(d){
     if(CFG.honorario){try{await honCargar();doc.honorarios=HON_LIST||[];}catch(e){}}
     // cobros (dividendos, rentas, amortizaciones) confirmados por mes, en USD — para "Tus ingresos" del index
     try{var _cm={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart))return;var f=_infISO(x.fecha);if(!f)return;
-      var u=x.montoUSD!=null&&x.montoUSD!==''?+x.montoUSD:(x.moneda==='USD'?+x.monto:(+x.monto)/((x.cclUsado||CCL_HOY)||1));if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;});
+      var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;});
       if(cart==='principal')doc.cobradosMes=_cm;}catch(e){}
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
@@ -7740,8 +7742,9 @@ function trkAddDiv(){
   if(!ticker){flash(sel,'Ingresá el ticker',true);return;}
   if(!fecha){flash(sel,'Seleccioná la fecha',true);return;}
   if(!monto||monto<=0){flash(sel,'Ingresá el monto',true);return;}
-  var cclFecha=(moneda==='ARS')?(CCL_TABLE[fecha.split('-').reverse().join('/')]||TRK.ccl||null):null;
-  if(moneda==='ARS'&&!cclFecha){flash(sel,'Necesitás el CCL para convertir (no hay CCL cargado para esa fecha ni CCL del día)',true);return;}
+  // cobros en pesos → USD al MEP de la fecha (como la liquidez y los bonos)
+  var cclFecha=(moneda==='ARS')?(MEP_TABLE[fecha.split('-').reverse().join('/')]||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||null):null;
+  if(moneda==='ARS'&&!cclFecha){flash(sel,'Necesitás el MEP para convertir (no hay MEP cargado para esa fecha ni del día)',true);return;}
   var cclUsado=cclFecha;
   var montoUSD=moneda==='USD'?monto:monto/cclFecha;
 
@@ -8178,7 +8181,7 @@ function trkImpParseVetaMovimientos(wb){
 // dividendo en CCL_TABLE, y si no está, el CCL de referencia (TRK.ccl).
 function _trkImpMontoUSD(row){
   if(row.moneda==='USD') return {montoUSD:row.monto,cclUsado:null,ok:true};
-  var cclFecha=CCL_TABLE[(row.fecha||'').split('-').reverse().join('/')]||TRK.ccl||null;
+  var cclFecha=MEP_TABLE[(row.fecha||'').split('-').reverse().join('/')]||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||null; // pesos → USD al MEP
   if(!cclFecha) return {montoUSD:null,cclUsado:null,ok:false};
   return {montoUSD:row.monto/cclFecha,cclUsado:cclFecha,ok:true};
 }
@@ -8484,6 +8487,7 @@ function trkCalcCCL(){
 
     // 3. Tracker divs CCL
     var sbTrkDivs = await sbLoadArray('trk_divs');
+    setTimeout(divsReparar,4000);
     // Cobros cargados que no llegaron a subirse (falló la red o se cerró la pestaña): tienen prioridad
     var _trkPend=null;try{_trkPend=JSON.parse(localStorage.getItem((PFX+'trk_pending'))||'null');}catch(e){}
     if(Array.isArray(_trkPend)&&sbTrkDivs!==null){
@@ -10373,7 +10377,7 @@ function uvMostrar(prev,tot,pr){
   var nuevos=Object.keys(pr).filter(function(t){return !prev.pr||!prev.pr[t];}),vend=Object.keys(prev.pr||{}).filter(function(t){return !pr[t];});
   var desde=new Date(prev.ts).toISOString().slice(0,10),cob=0,ncob=0;
   (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente')return;var f=String(x.fecha||'');if(f.indexOf('/')>0){var a=f.split('/');f=a[2]+'-'+a[1].padStart(2,'0')+'-'+a[0].padStart(2,'0');}
-    if(f>=desde&&(!x.cartera||x.cartera==='principal')){var u=x.montoUSD!=null?+x.montoUSD:(x.moneda==='USD'?+x.monto:0);if(u>0){cob+=u;ncob++;}}});
+    if(f>=desde&&(!x.cartera||x.cartera==='principal')){var u=divUSD(x);if(u>0){cob+=u;ncob++;}}});
   if(dv==null||(Math.abs(dv)<0.05&&!mv.length&&!ncob&&!nuevos.length&&!vend.length))return;
   var pc=function(v){return (v>=0?'+':'−')+Math.abs(v).toFixed(1).replace('.',',')+'%';};
   var ch=function(x){return '<b style="color:'+(x.c>=0?'var(--accent)':'var(--red)')+'">'+x.t+' '+pc(x.c)+'</b>';};
@@ -10986,3 +10990,28 @@ function _opMktNom(id){var e=document.getElementById(id);return e&&e.selectedInd
   // Omar: al cambiar de cartera (Cocos / Jeep) se actualiza el nombre del chip
   setInterval(function(){var n=document.getElementById('cart-chip-n');if(n&&n.textContent!==cartNombre())n.textContent=cartNombre();},1500);
 })();
+
+// ─── Monto en USD de un cobro ─────────────────────────────────────────────────
+// Algunos cobros en pesos importados quedaron con montoUSD = monto en pesos (ej. CUAP $424.494 → "USD
+// 424.494"). Si un cobro en ARS tiene un montoUSD que no puede ser (más de la mitad del monto en pesos),
+// se recalcula con el CCL usado, el de la fecha o el de hoy.
+// cobros en pesos → USD al MEP de la fecha (si no hay, el MEP de hoy)
+function _divTC(x){var f=String(x.fecha||''),dmy=f.indexOf('-')>0?f.split('-').reverse().join('/'):f;return getMEP(dmy)||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||+x.cclUsado||CCL_HOY||0;}
+function _divUSDMal(x){return x&&x.moneda==='ARS'&&x.montoUSD!=null&&x.montoUSD!==''&&(+x.montoUSD)>0.5*(+x.monto||0)&&(+x.monto)>0;}
+function divUSD(x){
+  if(!x)return 0;if(x.moneda==='USD')return +(x.montoUSD!=null&&x.montoUSD!==''?x.montoUSD:x.monto)||0;
+  var tc=_divTC(x);return tc>0?(+x.monto||0)/tc:0;
+}
+// Corrige esos registros en la base (una sola vez, cuando terminó de cargar). No toca montoPPC (lo que
+// ajusta el PPC), solo el monto en USD que se muestra y se suma.
+function divsReparar(){
+  if(typeof _gdcInitDone==='undefined'||!_gdcInitDone){setTimeout(divsReparar,3000);return;}
+  // además pasa al MEP los cobros en pesos que se habían convertido al CCL, salvo los que ajustan el
+  // PPC sin montoPPC propio (para no mover el PPC sin avisar)
+  var n=0;(TRK.divs||[]).forEach(function(x){if(!x||x.moneda!=='ARS'||!(+x.monto>0))return;var tc=_divTC(x);if(!(tc>0))return;
+    var nuevo=Math.round((+x.monto)/tc*100)/100;
+    var mal=_divUSDMal(x),ajustaPPC=x.pncApplied&&x.pncTarget==='ppc'&&x.montoPPC==null;
+    if(!mal&&(ajustaPPC||Math.abs((+x.montoUSD||0)-nuevo)<=Math.max(0.01,nuevo*0.005)))return;
+    x._montoUSDantes=x.montoUSD;x.montoUSD=nuevo;x.cclUsado=tc;n++;});
+  if(n){console.warn('[divsReparar] '+n+' cobros en pesos recalculados en USD al MEP de su fecha');trkSave();try{trkRender();}catch(e){}try{renderDivsCard();}catch(e){}_famLastSave=0;try{renderPortfolio();}catch(e){}}
+}
