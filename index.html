@@ -115,7 +115,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v19</span>
+  <span class="subtitle">Carteras administradas · v20</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -145,8 +145,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v19 · 04/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v19</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v20 · 04/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v20</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -177,7 +177,7 @@ async function loadOne(c,tok){
 function agg(doc,solo,principal){
   if(principal===undefined)principal=true;
   var ks=Object.keys(doc.carteras).filter(function(k){return !solo||solo.indexOf(k)>=0;});
-  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
+  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
   if(solo&&ks.length===1&&doc.carteras[ks[0]].ts)o.ts=doc.carteras[ks[0]].ts;
   ks.forEach(function(cn){var c=doc.carteras[cn];
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
@@ -217,9 +217,14 @@ function cicloTd(o){var pi=o.pi;if(!pi)return '<td class="mut">—</td>';
   var txt=dias<31?dias+' día'+(dias!==1?'s':''):n1(m).replace(/,0$/,'')+' meses';
   return '<td class="'+(dias<=30?'yel':'')+'" title="Próximo corte: '+c.toLocaleDateString('es-AR')+'">'+txt+'</td>';}
 // Honorario (Ana y Juli): 20% de (valor actual − inversión inicial del período); si no hay ganancia, 0
+// Honorarios cobrados por año: los registrados en el portafolio (💼 Honorario) y, para años sin
+// registro, los cargados acá a mano (CFG.honCobrados).
+function honCobrados(c){var r={},hc=c.honCobrados||{};Object.keys(hc).forEach(function(y){r[y]=hc[y];});
+  var d=DATA[c.id],L=d&&d.o&&d.o.hon;if(Array.isArray(L)&&L.length){var por={};L.forEach(function(x){var y=x.anio||String(x.fin||'').slice(0,4);if(y)por[y]=(por[y]||0)+(+x.cobrado||0);});Object.keys(por).forEach(function(y){r[y]=Math.round(por[y]*100)/100;});}
+  return r;}
 function honorario(c,o){if(!c.honorario||!o||!(o.inv>0))return null;return Math.max(0,(o.total-o.inv)*c.honorario);}
 function honTd(c,o){var h=honorario(c,o);if(h==null)return '<td class="mut">—</td>';var g=o.total-o.inv;
-  var hc=c.honCobrados||{},cob=Object.keys(hc).reduce(function(a,y){return a+hc[y];},0);
+  var hc=honCobrados(c),cob=Object.keys(hc).reduce(function(a,y){return a+hc[y];},0);
   return '<td class="'+(h>0?'grn':'mut')+'" title="'+Math.round(c.honorario*100)+'% de la ganancia del período: valor USD '+n0(o.total)+' − inversión inicial USD '+n0(o.inv)+' = '+(g>=0?'+':'−')+'USD '+n0(Math.abs(g))+(cob?' · Ya cobrado: '+Object.keys(hc).sort().map(function(y){return y+' USD '+n0(hc[y]);}).join(', '):'')+'"><b>'+(h>0?'USD '+n0(h):'USD 0')+'</b>'+(cob?'<div class="mut" style="font-size:.66rem">+ '+n0(cob)+' cobrado</div>':'')+'</td>';}
 function render(){
   var app=document.getElementById('portal');
@@ -253,7 +258,7 @@ function render(){
     '<div class="k"><div class="kl">Cobros próximos 30 días</div><div class="kv">USD '+n0(cU)+'</div><div class="ks">'+(cA?'+ ARS '+n0(cA)+' · ':'')+cobs.length+' pago'+(cobs.length!==1?'s':'')+'</div></div>'+
     (function(){var H=0,hay=false;VIEW.forEach(function(c){var d=DATA[c.id];if(!c.honorario||!d||!d.o||OFF[c.id])return;var x=honorario(c,d.o);if(x!=null){H+=x;hay=true;}});
       // honorarios ya cobrados de períodos anteriores (CFG.honCobrados {año: USD})
-      var cob=0,det=[];CFG.forEach(function(c){var hc=c.honCobrados||{};Object.keys(hc).sort().forEach(function(y){cob+=hc[y];det.push(esc(c.nombre)+' '+y+': '+n0(hc[y]));});});
+      var cob=0,det=[];CFG.forEach(function(c){var hc=honCobrados(c);Object.keys(hc).sort().forEach(function(y){cob+=hc[y];det.push(esc(c.nombre)+' '+y+': '+n0(hc[y]));});});
       return hay?'<div class="k"><div class="kl">Tus honorarios hoy</div><div class="kv grn">USD '+n0(H)+'</div><div class="ks">20% de la ganancia del período · '+VIEW.filter(function(c){return c.honorario;}).map(function(c){return esc(c.nombre);}).join(' y ')+
         (cob?'<br><span title="'+det.join(' · ')+'">Ya cobrado: <b>USD '+n0(cob)+'</b> ('+det.join(' · ')+')</span><br>Acumulado con el período actual: <b class="grn">USD '+n0(cob+H)+'</b>':'')+'</div></div>':'';})()+
     '<div class="k"><div class="kl">Liquidez total</div><div class="kv">USD '+n0(F.liq)+'</div><div class="ks">'+(F.total>0?n1(F.liq/F.total*100)+'% del total':'')+'</div></div></div>';

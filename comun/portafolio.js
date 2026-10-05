@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=103, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=104, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v104 | 2026-10-04 | Feat: botón 💼 Honorario en Evolución (Ana y Juli): se carga el valor final según el broker, calcula ganancia y el 20% (sin ganancia, 0), y registra lo cobrado en config honorarios; viaja en el resumen para el acumulado de Carteras administradas.',
   'v103 | 2026-10-04 | Fix: los dividendos no tenían la protección de los movimientos — se guardaban sin reintentos ni aviso y podían escribirse antes de terminar de leer la nube (pisándola con una lista vacía). Ahora: reintentos, snapshot pendiente que se sube al volver a abrir, no se escribe antes del init y barra roja fija "No se guardó en la nube" con Reintentar (también para movimientos).',
   'v102 | 2026-10-04 | UI: orden de campos — Comprar: Ticker, Precio, Cantidad, Fecha, Mercado (automático); Vender: Ticker, Precio, Cantidad, Fecha. Se saca el campo CCL de Vender: el tipo de cambio sale siempre de la tabla (CCL o MEP según el activo).',
   'v101 | 2026-10-04 | Feat: al escribir el ticker en 🛒 Comprar y en Movimientos se elige solo el mercado (el de la última operación de ese ticker, la tabla de sectores o las listas de BYMA: bonos, ON, acciones, Cedears con su país) y se muestra de dónde salió; en Comprar también se precarga el precio de mercado. Sugerencias con los tickers ya operados. Se puede cambiar a mano.',
@@ -5806,6 +5807,7 @@ async function famSaveSnapshot(d){
     doc.carteras[cart]={ts:now,totalVal:d.totalVal,totalCost:d.totalCost,sectorVal:d.sectorVal,dolzPct:d.dolzPct,pos:d.pos,rend:d.rendPct};
     if(cart==='principal'||doc.rend==null){doc.rend=d.rendPct;doc.invInicial=d.invInicial||null;}
     doc.periodoInicio=CFG.periodoInicio||null;
+    if(CFG.honorario){try{await honCargar();doc.honorarios=HON_LIST||[];}catch(e){}}
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
     if(ok){_famLastSave=now;_famLastTotal=tot;}
@@ -5982,7 +5984,7 @@ function histRender(){
   var card=document.getElementById('hist-card');
   if(!card){var row=topCardsRow();if(!row)return;
     card=document.createElement('div');card.className='card';card.id='hist-card';
-    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">📈 Evolución</span><span id="hist-rangos" style="display:flex;gap:4px;flex-wrap:wrap"></span><span id="hist-meta" class="tag" style="margin-left:auto"></span>'+(CFG.informe?'<button class="btn btn-sm" onclick="infAbrir()" title="Informe para mandarle a '+CFG.nombre+'" style="font-size:.66rem;padding:2px 8px">📄 Informe</button>':'')+'</div><div id="hist-cierre"></div><div style="padding:.6rem 1rem 1rem"><div style="position:relative;height:220px"><canvas id="hist-canvas"></canvas></div><div id="hist-nota" style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:6px"></div></div>';
+    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">📈 Evolución</span><span id="hist-rangos" style="display:flex;gap:4px;flex-wrap:wrap"></span><span id="hist-meta" class="tag" style="margin-left:auto"></span>'+(CFG.informe?'<button class="btn btn-sm" onclick="infAbrir()" title="Informe para mandarle a '+CFG.nombre+'" style="font-size:.66rem;padding:2px 8px">📄 Informe</button>':'')+(CFG.honorario?'<button class="btn btn-sm" onclick="honAbrir()" title="Registrar el honorario cobrado al cierre del período" style="font-size:.66rem;padding:2px 8px">💼 Honorario</button>':'')+'</div><div id="hist-cierre"></div><div style="padding:.6rem 1rem 1rem"><div style="position:relative;height:220px"><canvas id="hist-canvas"></canvas></div><div id="hist-nota" style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:6px"></div></div>';
     row.appendChild(card);topCardPrep(card,'1 1 420px');
     var ca=document.createElement('div');ca.className='card';ca.id='hist-anual-card';
     ca.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px"><span class="card-title">📅 Rendimiento por período</span><span style="margin-left:auto"></span></div><div id="hist-anual" style="padding:.7rem 1rem 1rem"></div>';
@@ -10799,3 +10801,79 @@ function mktEnlazar(tkId,mktId,precioId,onMkt){
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
+
+// ─── Honorarios (CFG.honorario, ej. 0.2 en Ana y Juli) ────────────────────────
+// Al cierre de cada período: honorario = % × (valor final según el broker − inversión inicial del
+// período); sin ganancia, 0. Se registra lo cobrado en config 'honorarios' y viaja en el resumen
+// para que Carteras administradas muestre el acumulado.
+var HON_LIST=null;
+async function honCargar(){if(HON_LIST)return HON_LIST;var v=null;try{v=await sbGetConfig('honorarios');}catch(e){}if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){v=null;}}HON_LIST=Array.isArray(v)?v:[];return HON_LIST;}
+function _honPeriodoDefault(){
+  // el último período cerrado (si ya pasó el corte) o el que está en curso
+  var corte=histUltimoCorte();if(!corte)return {ini:'',fin:''};
+  var ini=(parseInt(corte.slice(0,4),10)-1)+corte.slice(4);return {ini:ini,fin:corte};
+}
+async function honAbrir(){
+  await honCargar();
+  var pd=_honPeriodoDefault(),inv=getRawNum('inv-sidebar-usd')||'';
+  var ov=document.getElementById('hon-dlg');if(ov)ov.remove();
+  ov=document.createElement('div');ov.id='hon-dlg';ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  ov.style.cssText='position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  var inp='width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.4rem .5rem;font-family:var(--mono);font-size:.84rem';
+  var lb='font-family:var(--mono);font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:.55rem 0 .2rem';
+  var pct=Math.round(CFG.honorario*100);
+  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;max-width:480px;width:100%;padding:1rem 1.1rem;font-family:var(--sans);color:var(--text);max-height:92vh;overflow:auto">'+
+    '<div style="font-weight:700;font-size:.95rem">💼 Honorario de '+CFG.nombre+'</div>'+
+    '<div style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:2px">'+pct+'% de (valor final según el broker − inversión inicial del período). Sin ganancia, 0.</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'+
+      '<div><div style="'+lb+'">Inicio del período</div><input id="hon-ini" type="date" value="'+pd.ini+'" style="'+inp+'"></div>'+
+      '<div><div style="'+lb+'">Cierre del período</div><input id="hon-fin" type="date" value="'+pd.fin+'" style="'+inp+'"></div>'+
+      '<div><div style="'+lb+'">Inversión inicial USD</div><input id="hon-inv" type="number" step="any" value="'+(inv?Math.round(inv*100)/100:'')+'" style="'+inp+'" oninput="honCalc()"></div>'+
+      '<div><div style="'+lb+'">Valor final USD (broker)</div><input id="hon-val" type="number" step="any" placeholder="el que muestra el broker" style="'+inp+'" oninput="honCalc()"></div>'+
+    '</div>'+
+    '<div id="hon-res" style="margin-top:.7rem;padding:.55rem .7rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:.78rem">Cargá el valor final del broker.</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'+
+      '<div><div style="'+lb+'">Monto cobrado USD</div><input id="hon-cob" type="number" step="any" style="'+inp+'" oninput="this.dataset.man=1"></div>'+
+      '<div><div style="'+lb+'">Fecha de cobro</div><input id="hon-fecha" type="date" value="'+_hoyLocalISO()+'" style="'+inp+'"></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.8rem"><button class="btn btn-sm" onclick="document.getElementById(\'hon-dlg\').remove()">Cerrar</button><button class="btn btn-a btn-sm" onclick="honGuardar()">Registrar cobro</button></div>'+
+    '<div style="'+lb+';margin-top:1rem">Honorarios registrados</div><div id="hon-lista"></div></div>';
+  document.body.appendChild(ov);honLista();
+}
+function honCalc(){
+  var inv=parseFloat(document.getElementById('hon-inv').value),val=parseFloat(document.getElementById('hon-val').value),r=document.getElementById('hon-res'),c=document.getElementById('hon-cob');
+  if(!(inv>0)||!(val>0)){r.textContent='Cargá la inversión inicial y el valor final del broker.';return;}
+  var g=val-inv,h=Math.max(0,g*CFG.honorario),pc=g/inv*100;
+  r.innerHTML='Ganancia: <b style="color:'+(g>=0?'var(--accent)':'var(--red)')+'">'+(g>=0?'+':'−')+'USD '+Math.abs(g).toLocaleString('es-AR',{maximumFractionDigits:2})+'</b> ('+(pc>=0?'+':'')+pc.toFixed(2).replace('.',',')+'%)<br>'+
+    'Honorario '+Math.round(CFG.honorario*100)+'%: <b style="color:var(--accent);font-size:.95rem">USD '+h.toLocaleString('es-AR',{maximumFractionDigits:2})+'</b>'+(g<=0?' <span style="color:var(--text3)">(sin ganancia, no se cobra)</span>':'');
+  if(c&&!c.dataset.man)c.value=Math.round(h*100)/100;
+}
+async function honGuardar(){
+  var g=function(id){return document.getElementById(id).value;};
+  var inv=parseFloat(g('hon-inv')),val=parseFloat(g('hon-val')),cob=parseFloat(g('hon-cob'));
+  if(!(inv>0)||!(val>0)){alert('Falta la inversión inicial o el valor final.');return;}
+  if(!g('hon-fin')){alert('Falta la fecha de cierre del período.');return;}
+  if(isNaN(cob))cob=Math.max(0,(val-inv)*CFG.honorario);
+  var e={ini:g('hon-ini'),fin:g('hon-fin'),anio:g('hon-fin').slice(0,4),inv:inv,valorFinal:val,ganancia:Math.round((val-inv)*100)/100,pct:CFG.honorario,honorario:Math.round(Math.max(0,(val-inv)*CFG.honorario)*100)/100,cobrado:Math.round(cob*100)/100,fechaCobro:g('hon-fecha'),ts:Date.now()};
+  await honCargar();
+  var i=HON_LIST.findIndex(function(x){return x.fin===e.fin;});
+  if(i>=0){if(!confirm('Ya hay un honorario registrado para el cierre '+e.fin.split('-').reverse().join('/')+'. ¿Reemplazarlo?'))return;HON_LIST[i]=e;}else HON_LIST.push(e);
+  HON_LIST.sort(function(a,b){return a.fin<b.fin?-1:1;});
+  var ok=await sbSetConfig('honorarios',HON_LIST);
+  if(!ok){alert('No se pudo guardar en la nube. Probá de nuevo.');return;}
+  honLista();_famLastSave=0;try{renderPortfolio();}catch(x){}
+  var r=document.getElementById('hon-res');if(r)r.innerHTML='✓ Registrado: USD '+e.cobrado.toLocaleString('es-AR')+' del período que cerró el '+e.fin.split('-').reverse().join('/');
+}
+async function honBorrar(i){
+  if(!HON_LIST||!HON_LIST[i])return;var x=HON_LIST[i];
+  if(!confirm('¿Borrar el honorario del cierre '+x.fin.split('-').reverse().join('/')+' (USD '+x.cobrado+')?'))return;
+  HON_LIST.splice(i,1);await sbSetConfig('honorarios',HON_LIST);honLista();_famLastSave=0;try{renderPortfolio();}catch(e){}
+}
+function honLista(){
+  var el=document.getElementById('hon-lista');if(!el)return;var L=HON_LIST||[];
+  if(!L.length){el.innerHTML='<div style="font-family:var(--mono);font-size:.7rem;color:var(--text3)">Todavía no registraste ninguno.</div>';return;}
+  var tot=L.reduce(function(a,x){return a+(x.cobrado||0);},0);
+  el.innerHTML='<table style="width:100%;font-size:.74rem"><thead><tr><th style="text-align:left">Período</th><th>Ganancia</th><th>Cobrado</th><th></th></tr></thead><tbody>'+
+    L.map(function(x,i){return '<tr><td>'+(x.ini?x.ini.split('-').reverse().join('/').slice(0,10)+' → ':'')+x.fin.split('-').reverse().join('/')+'</td><td class="mono">'+(x.ganancia>=0?'+':'')+Math.round(x.ganancia).toLocaleString('es-AR')+'</td><td class="mono" style="color:var(--accent)">USD '+(x.cobrado||0).toLocaleString('es-AR')+'</td><td style="text-align:right"><span onclick="honBorrar('+i+')" style="cursor:pointer;color:var(--text3)" title="Borrar">✕</span></td></tr>';}).join('')+
+    '</tbody><tfoot><tr><td><b>Total</b></td><td></td><td class="mono" style="color:var(--accent)"><b>USD '+tot.toLocaleString('es-AR')+'</b></td><td></td></tr></tfoot></table>';
+}
