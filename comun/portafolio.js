@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=117, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=119, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v119 | 2026-10-05 | Fix: la carga masiva de aportes/retiros rechazaba como duplicado el segundo movimiento igual del mismo día dentro de la misma lista (ej. dos retiros de $1.000.000 el 23/02); ahora solo compara contra lo ya guardado.',
+  'v118 | 2026-10-05 | Feat (GDC, CFG.aportes): card 💵 Aportes y retiros (fecha, USD o ARS al MEP del día, carga masiva). La Inv. Inicial queda como valor al inicio del período; ganancia = valor − inicial − aportes + retiros y rendimiento ponderado por días (Dietz modificado). Evolución: la línea de capital sube con cada aporte. Se guarda en config flujos_capital.',
   'v117 | 2026-10-05 | UI: se saca la nota de abajo de Rendimiento por período (escala √ / año en curso) para ganar lugar.',
   'v116 | 2026-10-05 | Cambio: Evolución ignora fines de semana y feriados (no hay mercado): no se registran puntos esos días y los ya guardados no se grafican. Feriados en FERIADOS_AR (2025-2026), editable.',
   'v115 | 2026-10-05 | Feat: AO29C (y AO29D) usan el flujo de AO29 en Próximos cobros y TIR real (FLUJOS_ALIAS + flujoDe). En general, cualquier bono en especie C/D toma el flujo del bono base si está cargado.',
@@ -3903,6 +3905,10 @@ function renderPortfolio(){
   var invInicial=getRawNum('inv-sidebar-usd');
   var baseRend=invInicial>0?invInicial:totalCost;
   var rendPct=baseRend>0?(valConLiq-baseRend)/baseRend*100:null;
+  // CFG.aportes: ganancia sin aportes/retiros y rendimiento ponderado por días (Dietz modificado)
+  var _apc=(CFG.aportes&&typeof aporCalc==='function')?aporCalc(valConLiq,invInicial):null;
+  if(CFG.aportes){_aporUlt=_apc?Object.assign({inv:invInicial},_apc):null;try{aporSumRender();}catch(e){}}
+  if(_apc&&_apc.rend!=null)rendPct=_apc.rend;
   var rendEl=document.getElementById('m-rend');
   if(rendPct!==null){
     var rendColor=rendPct<0?'var(--red)':rendPct<10?'#eab308':'var(--accent)';
@@ -3941,8 +3947,8 @@ function renderPortfolio(){
   var gananciaEl=document.getElementById('m-ganancia');
   var invInicialG=getRawNum('inv-sidebar-usd');
   if(invInicialG>0){
-    var gananciaNeta=valConLiq-invInicialG;
-    var gananciaPct=gananciaNeta/invInicialG*100;
+    var gananciaNeta=_apc?_apc.gan:valConLiq-invInicialG;
+    var gananciaPct=(_apc&&_apc.rend!=null)?_apc.rend:gananciaNeta/invInicialG*100;
     var gananciaColor=gananciaPct<0?'var(--red)':gananciaPct<=10?'#f97316':'var(--accent)';
     var gananciaSign=gananciaNeta>=0?'+':'';
     gananciaEl.innerHTML='<span style="color:'+gananciaColor+';font-weight:700">'+gananciaSign+'$'+Math.round(Math.abs(gananciaNeta)).toLocaleString('es-AR')+'</span>';
@@ -5965,7 +5971,7 @@ async function histRecord(d,cart){
   if(!p){p={d:hoy,c:{}};pts.push(p);}
   p.c[cart]={v:Math.round(d.totalVal*100)/100,cost:Math.round(d.totalCost*100)/100};
   p.liq=Math.round((d.liqTotalUSD||0)*100)/100;
-  if(cart==='principal'||p.rend==null){p.rend=d.rendPct!=null?Math.round(d.rendPct*100)/100:null;p.inv=d.invInicial||null;}
+  if(cart==='principal'||p.rend==null){p.rend=d.rendPct!=null?Math.round(d.rendPct*100)/100:null;p.inv=d.invInicial?Math.round(d.invInicial+(CFG.aportes&&typeof aporNeto==='function'?aporNeto():0)):null;}
   await sbSetConfig('historial',HIST);
   histRender();
 }
@@ -11085,3 +11091,129 @@ function saludCalc(d){
   try{out.bk=localStorage.getItem(PFX+'bk_last')||null;}catch(e){}
   return out;
 }
+
+// ─── Aportes y retiros de dinero (CFG.aportes) — rendimiento por el método de Dietz modificado ─────
+// Config 'flujos_capital': [{id,fecha:'AAAA-MM-DD',tipo:'aporte'|'retiro',moneda:'USD'|'ARS',monto,usd,tc,nota}]
+// Inv. Inicial = valor al inicio del período (no se toca al aportar). Dentro del período:
+//   ganancia = valor − inicial − aportes + retiros
+//   capital promedio = inicial + Σ aporte·(días invertido/días del período) − Σ retiro·(días afuera/días del período)
+//   rendimiento = ganancia / capital promedio
+var APOR=null,_aporLoaded=false;
+async function aporLoad(){
+  if(_aporLoaded)return APOR;
+  try{
+    var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.flujos_capital&select=value',{headers:sbHeaders()});
+    if(!r.ok)return null;var d=await r.json();if(!Array.isArray(d))return null;
+    var v=d[0]?d[0].value:null;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){v=null;}}
+    APOR=Array.isArray(v)?v:[];_aporLoaded=true;return APOR;
+  }catch(e){return null;}
+}
+async function aporSave(){
+  if(!_aporLoaded)return false;
+  APOR.sort(function(a,b){return a.fecha<b.fecha?-1:a.fecha>b.fecha?1:a.id-b.id;});
+  var ok=await sbSetConfig('flujos_capital',APOR);
+  if(!ok)alert('No se pudo guardar en Supabase. Revisá la conexión y volvé a intentar (lo cargado sigue en pantalla).');
+  return ok;
+}
+function _aporDias(a,b){var p=a.split('-'),q=b.split('-');return Math.round((new Date(+q[0],+q[1]-1,+q[2])-new Date(+p[0],+p[1]-1,+p[2]))/86400000);}
+// Inicio del período: último corte (CFG.periodoInicio) o 1 de enero
+function aporIni(){var c=(typeof histUltimoCorte==='function')?histUltimoCorte():null;return c||(_hHoy().slice(0,4)+'-01-01');}
+function aporDelPeriodo(){var ini=aporIni(),hoy=_hHoy();return (APOR||[]).filter(function(x){return x.fecha>=ini&&x.fecha<=hoy;});}
+// Resultado del período para un valor actual y una inversión inicial
+function aporCalc(val,inv){
+  if(!CFG.aportes||!_aporLoaded||!(inv>0))return null;
+  var ini=aporIni(),hoy=_hHoy(),T=Math.max(1,_aporDias(ini,hoy)),ap=0,re=0,pond=0;
+  aporDelPeriodo().forEach(function(x){var u=+x.usd||0,w=Math.max(0,Math.min(1,_aporDias(x.fecha,hoy)/T));
+    if(x.tipo==='retiro'){re+=u;pond-=u*w;}else{ap+=u;pond+=u*w;}});
+  var neto=ap-re,gan=val-inv-neto,base=inv+pond;
+  return {ini:ini,ap:ap,re:re,neto:neto,gan:gan,base:base,rend:base>0?gan/base*100:null,rendSimple:(inv+neto)>0?gan/(inv+neto)*100:null,n:aporDelPeriodo().length};
+}
+function aporNeto(){var c=aporCalc(1,1);return c?c.neto:0;}
+function _aporTC(iso){var dmy=iso.split('-').reverse().join('/');return getMEP(dmy)||(iso===_hHoy()&&MEP_HOY>0?MEP_HOY:null);}
+function aporAgregar(fecha,tipo,moneda,monto,nota){
+  if(!_aporLoaded){alert('Todavía no se cargaron los aportes guardados. Esperá unos segundos y probá de nuevo.');return false;}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)||!(monto>0)){alert('Fecha o monto inválido.');return false;}
+  if(fecha>_hHoy()){alert('La fecha es futura.');return false;}
+  var tc=null,usd=monto;
+  if(moneda==='ARS'){tc=_aporTC(fecha);if(!tc){alert('Falta el MEP del '+fecha.split('-').reverse().join('/')+'. Cargalo en Tipo de cambio y volvé a intentar.');return false;}usd=Math.round(monto/tc*100)/100;}
+  APOR.push({id:Date.now()+Math.floor(Math.random()*1000),fecha:fecha,tipo:tipo==='retiro'?'retiro':'aporte',moneda:moneda,monto:monto,usd:usd,tc:tc,nota:nota||''});
+  return true;
+}
+async function aporAgregarForm(){
+  var g=function(id){return document.getElementById(id);};
+  var monto=parseFloat(String(g('apor-monto').value).replace(/\./g,'').replace(',','.'));
+  if(!aporAgregar(g('apor-fecha').value,g('apor-tipo').value,g('apor-mon').value,monto,g('apor-nota').value))return;
+  g('apor-monto').value='';g('apor-nota').value='';
+  await aporSave();aporRefrescar();
+}
+// Carga masiva: una línea por movimiento → dd/mm/aaaa;aporte|retiro;USD|ARS;monto;nota
+async function aporPegar(){
+  var ta=document.getElementById('apor-txt'),st=document.getElementById('apor-st'),L=String(ta.value||'').split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
+  var ok=0,err=[],prev=(APOR||[]).slice(); // duplicados solo contra lo ya guardado (en la lista puede haber dos iguales el mismo día)
+  L.forEach(function(l,i){var c=l.split(/[;\t]/).map(function(x){return x.trim();});
+    var m=(c[0]||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(!m){err.push('línea '+(i+1)+': fecha');return;}
+    var f=m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2),t=/^r/i.test(c[1]||'')?'retiro':'aporte',mo=/ars|\$|peso/i.test(c[2]||'')&&!/us/i.test(c[2]||'')?'ARS':'USD';
+    var s=String(c[3]||'').replace(/[^\d,.\-]/g,'');if(s.indexOf(',')>=0)s=s.replace(/\./g,'').replace(',','.');var n=parseFloat(s);
+    if(prev.some(function(x){return x.fecha===f&&x.tipo===t&&x.moneda===mo&&Math.abs(x.monto-n)<0.005;})){err.push('línea '+(i+1)+': ya estaba');return;}
+    var a0=window.alert;window.alert=function(msg){err.push('línea '+(i+1)+': '+msg);};
+    try{if(aporAgregar(f,t,mo,n,c[4]||''))ok++;}finally{window.alert=a0;}});
+  if(ok){await aporSave();ta.value='';}
+  st.textContent=ok+' cargado(s)'+(err.length?' · '+err.join(' · '):'');aporRefrescar();
+}
+async function aporBorrar(id){
+  var x=(APOR||[]).find(function(a){return a.id===id;});if(!x)return;
+  if(!confirm('¿Borrar el '+x.tipo+' del '+x.fecha.split('-').reverse().join('/')+' por USD '+Math.round(x.usd).toLocaleString('es-AR')+'?'))return;
+  APOR=APOR.filter(function(a){return a.id!==id;});await aporSave();aporRefrescar();
+}
+// Una sola vez: si los aportes del período ya estaban sumados a mano en la Inv. Inicial, se los resta
+function aporAjustarInv(){
+  var c=aporCalc(1,1);if(!c||!c.neto)return;var inv=getRawNum('inv-sidebar-usd');if(!(inv>0))return;var nueva=Math.round(inv-c.neto);
+  if(!confirm('Si ya habías sumado estos aportes a mano en la Inv. Inicial:\n\nInv. Inicial USD '+Math.round(inv).toLocaleString('es-AR')+' − aportes netos USD '+Math.round(c.neto).toLocaleString('es-AR')+' = USD '+nueva.toLocaleString('es-AR')+'\n\n¿La cambio?'))return;
+  setFmtNum('inv-sidebar-usd',nueva,0);if(typeof saveInvInicial==='function')saveInvInicial(nueva);aporRefrescar();
+}
+function aporRefrescar(){try{renderPortfolio();}catch(e){}aporRender();}
+var _aporUlt=null;
+function aporSumHTML(){
+  var c=_aporUlt,ini=aporIni(),fd=function(i){return i.split('-').reverse().join('/');},n0=function(v){return Math.round(v).toLocaleString('es-AR');};
+  var pc=function(v){return v==null?'—':'<b style="color:'+(v>=0?'var(--accent)':'var(--red)')+'">'+(v>=0?'+':'')+v.toFixed(1).replace('.',',')+'%</b>';};
+  return '<div style="font-family:var(--mono);font-size:.7rem;color:var(--text2);line-height:1.7">Período desde <b>'+fd(ini)+'</b>'+
+    (c?' · Inv. inicial USD '+n0(c.inv)+' · Aportes USD '+n0(c.ap)+(c.re?' · Retiros USD '+n0(c.re):'')+
+      '<br>Ganancia <b style="color:'+(c.gan>=0?'var(--accent)':'var(--red)')+'">USD '+n0(c.gan)+'</b> · Rendimiento '+pc(c.rend)+
+      (c.n?' <span style="color:var(--text3)" title="Lo que daba sumando los aportes a la Inv. Inicial (como si hubieran estado todo el período)">(sin ponderar '+(c.rendSimple==null?'—':c.rendSimple.toFixed(1).replace('.',','))+'%)</span>':''):' · cargá la Inv. Inicial')+'</div>';
+}
+function aporSumRender(){var e=document.getElementById('apor-sum');if(e)e.innerHTML=aporSumHTML();else aporRender();}
+function aporRender(){
+  if(!CFG.aportes)return;
+  var card=document.getElementById('apor-card');
+  if(!card){var row=(typeof topCardsRow==='function')?topCardsRow():null;if(!row)return;
+    card=document.createElement('div');card.className='card';card.id='apor-card';
+    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px"><span class="card-title">💵 Aportes y retiros</span><span style="margin-left:auto"></span></div><div id="apor-body" style="padding:.7rem 1rem 1rem"></div>';
+    row.appendChild(card);topCardPrep(card,'1 1 340px');}
+  var b=document.getElementById('apor-body');if(!b)return;
+  if(!_aporLoaded){b.innerHTML='<div class="smsg">Cargando…</div>';return;}
+  var c=_aporUlt,ini=aporIni(),fd=function(i){return i.split('-').reverse().join('/');},n0=function(v){return Math.round(v).toLocaleString('es-AR');};
+  var pc=function(v){return v==null?'—':'<b style="color:'+(v>=0?'var(--accent)':'var(--red)')+'">'+(v>=0?'+':'')+v.toFixed(1).replace('.',',')+'%</b>';};
+  var mono='font-family:var(--mono);font-size:.7rem';
+  var h='<div id="apor-sum">'+aporSumHTML()+'</div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">'+
+    '<input type="date" id="apor-fecha" value="'+_hHoy()+'" style="'+mono+';width:128px">'+
+    '<select id="apor-tipo" style="'+mono+'"><option value="aporte">Aporte</option><option value="retiro">Retiro</option></select>'+
+    '<select id="apor-mon" style="'+mono+'"><option>USD</option><option value="ARS">ARS (al MEP)</option></select>'+
+    '<input id="apor-monto" placeholder="Monto" inputmode="decimal" style="'+mono+';width:100px">'+
+    '<input id="apor-nota" placeholder="Nota" style="'+mono+';width:110px">'+
+    '<button class="btn btn-a btn-sm" onclick="aporAgregarForm()">Agregar</button></div>';
+  var L=(APOR||[]).slice().sort(function(a,b){return a.fecha<b.fecha?1:-1;});
+  if(L.length)h+='<div class="tw" style="max-height:220px;overflow-y:auto;margin-top:8px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th style="text-align:right">Monto</th><th style="text-align:right">USD</th><th></th></tr></thead><tbody>'+
+    L.map(function(x){var fuera=x.fecha<ini;return '<tr style="'+(fuera?'opacity:.45':'')+'" title="'+(fuera?'Período anterior (ya forma parte de la Inv. Inicial)':'')+(x.nota?' '+x.nota.replace(/"/g,''):'')+'"><td class="mono">'+fd(x.fecha)+'</td><td style="color:'+(x.tipo==='retiro'?'var(--red)':'var(--accent)')+'">'+x.tipo+'</td><td class="mono" style="text-align:right">'+(x.moneda==='ARS'?'$ '+n0(x.monto)+'<span style="color:var(--text3)"> /'+n0(x.tc)+'</span>':'US$ '+n0(x.monto))+'</td><td class="mono" style="text-align:right">'+(x.tipo==='retiro'?'−':'')+n0(x.usd)+'</td><td><button class="btn btn-d btn-sm" onclick="aporBorrar('+x.id+')">x</button></td></tr>';}).join('')+'</tbody></table></div>';
+  h+='<details style="margin-top:8px"><summary style="'+mono+';color:var(--text3);cursor:pointer">Carga masiva / ajustar Inv. Inicial</summary>'+
+    '<div style="'+mono+';color:var(--text3);margin:6px 0">Una línea por movimiento: <b>dd/mm/aaaa;aporte o retiro;USD o ARS;monto;nota</b> (los ARS se pasan al MEP de esa fecha).</div>'+
+    '<textarea id="apor-txt" rows="4" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.4rem;'+mono+'" placeholder="15/03/2026;aporte;ARS;5.000.000;sueldo&#10;02/07/2026;retiro;USD;1000"></textarea>'+
+    '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap"><button class="btn btn-a btn-sm" onclick="aporPegar()">Cargar</button>'+
+    (c&&c.neto?'<button class="btn btn-sm" onclick="aporAjustarInv()" title="Usalo una sola vez si los aportes de este período ya los habías sumado a mano en la Inv. Inicial">Restar aportes de la Inv. Inicial</button>':'')+
+    '<span id="apor-st" class="smsg"></span></div></details>';
+  h+='<div style="'+mono+';font-size:.6rem;color:var(--text3);margin-top:6px">Ganancia = valor − Inv. inicial − aportes + retiros. Rendimiento = ganancia ÷ capital promedio (cada aporte pesa según los días que estuvo invertido).</div>';
+  var foc=document.activeElement&&document.activeElement.id,keep={};['apor-fecha','apor-tipo','apor-mon','apor-monto','apor-nota','apor-txt'].forEach(function(id){var e=document.getElementById(id);if(e)keep[id]=e.value;});
+  b.innerHTML=h;
+  Object.keys(keep).forEach(function(id){var e=document.getElementById(id);if(e&&keep[id]!=null&&keep[id]!=='')e.value=keep[id];});if(foc&&document.getElementById(foc))document.getElementById(foc).focus();
+}
+(function _aporBoot(n){setTimeout(function(){if(!CFG.aportes)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){aporLoad().then(function(a){if(a){try{renderPortfolio();}catch(e){}aporRender();}else if(n<40)_aporBoot(n+1);});}else if(n<40)_aporBoot(n+1);},1500);})(0);
