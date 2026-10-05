@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=99, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=100, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v100 | 2026-10-04 | Fix: las fechas precargadas (compra, venta, movimientos, cobros) usaban la hora UTC — después de las 21 h aparecía la fecha de mañana — y no se actualizaban si la app quedaba abierta de un día para otro. Ahora usan la fecha local, se refrescan solas al volver a la app, se marcan en ámbar si no son hoy y al confirmar una compra o venta con otra fecha se pide confirmación.',
   'v99 | 2026-10-04 | Feat: control de precio al cargar compras y ventas (si se aleja más de 10% del mercado pide confirmación, con pista de cero de más/menos). Papelera: movimientos y cobros borrados o editados quedan 30 días (config papelera, en Supabase) con "↶ Deshacer" al momento y tarjeta 🗑 Papelera en Movimientos para restaurar.',
   'v98 | 2026-10-04 | Feat (GDC): Ratios → "Auditar tabla completa": compara cada Cedear de la tabla con NYSE y el CCL, lista los que no cierran (primero los que están en cartera 📌) con "Usar" / "Usar todos" y "Sync a las demás carteras". Marca datos dudosos y tickers sin precio NYSE.',
   'v97 | 2026-10-04 | UI: vista celular — en pantallas angostas cada posición de la cartera se muestra como tarjeta (ticker y Δ arriba; inversión, mercado, PPC, % anual, P. Venta y cantidad con su etiqueta) en vez de la tabla ancha.',
@@ -1227,7 +1228,7 @@ function onTipo(){
 
 function resetMFechaHoy(){
   var el=document.getElementById('m-fecha');
-  if(el) el.value=new Date().toISOString().split('T')[0];
+  if(el){el.value=_hoyLocalISO();el.dataset.auto=el.value;fechaMarcar(el);}
 }
 resetMFechaHoy();
 document.getElementById('m-fecha').addEventListener('change',function(){
@@ -1310,7 +1311,7 @@ function addMov(){
   if(isNaN(qty)||qty===0){flash(sel,'Cantidad invalida',true);return;}
   if(isNaN(precioARSInput)||precioARSInput<0){flash(sel,'Precio invalido',true);return;}
   if(!cclVal||cclVal<=0){flash(sel,'⚠️ Sin CCL/MEP — revisá el tipo de cambio',true);return;}
-  if((tipo==='compra'||tipo==='venta')&&!precioGuard(ticker,precioARSInput,fecha))return;
+  if((tipo==='compra'||tipo==='venta')&&(!fechaGuard(fecha,tipo)||!precioGuard(ticker,precioARSInput,fecha)))return;
   var ratio=getRatio(ticker);
   var precioUSD=cclVal?precioARS*ratio/cclVal:null;
   // Calcular comisión absoluta: (qty * precioARS * % / 100)
@@ -2036,7 +2037,7 @@ function vbuyOnMktChange(){
 
 function vbuyResetFecha(){
   var el=document.getElementById('vbuy-fecha');
-  if(el) el.value=new Date().toISOString().split('T')[0];
+  if(el){el.value=_hoyLocalISO();el.dataset.auto=el.value;fechaMarcar(el);}
 }
 
 function vbuyClear(){
@@ -2072,7 +2073,7 @@ function vbuyConfirmar(){
   if(mkt==='FCI')qty=qty/1000;
   var cclVal=getTC(fecha,mkt);
   if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP para esa fecha',true);return;}
-  if(!precioGuard(ticker,precioARSInput,fecha))return;
+  if(!fechaGuard(fecha,'compra')||!precioGuard(ticker,precioARSInput,fecha))return;
   var ratio=getRatio(ticker);
   var precioUSD=isBonoUSDDirecto(ticker)?precioARS:(cclVal?precioARS*ratio/cclVal:null);
 
@@ -2113,7 +2114,7 @@ function vsellPopulateSelect(){
 
 function vsellResetFecha(){
   var el=document.getElementById('vsell-fecha');
-  if(el) el.value=new Date().toISOString().split('T')[0];
+  if(el){el.value=_hoyLocalISO();el.dataset.auto=el.value;fechaMarcar(el);}
 }
 
 function vsellGetLastMercado(ticker){
@@ -2206,7 +2207,7 @@ function vsellConfirmar(){
   if(isNaN(qty)||qty<=0){flash(statusEl,'Cantidad inválida',true);return;}
   if(!fecha){flash(statusEl,'Falta la fecha',true);return;}
   if(isNaN(precioARSInput)||precioARSInput<=0){flash(statusEl,'Precio inválido',true);return;}
-  if(!precioGuard(ticker,precioARSInput,fecha))return;
+  if(!fechaGuard(fecha,'venta')||!precioGuard(ticker,precioARSInput,fecha))return;
 
   var mkt=vsellGetLastMercado(ticker);
   var sector=getSector(ticker);
@@ -2548,7 +2549,7 @@ function calcularDividendosHistoricos(rows){
 
 function ventahistResetFecha(){
   var el=document.getElementById('vhist-add-fecha');
-  if(el) el.value=new Date().toISOString().split('T')[0];
+  if(el){el.value=_hoyLocalISO();el.dataset.auto=el.value;fechaMarcar(el);}
 }
 
 // Persiste la base histórica (localStorage + Supabase), igual patrón que ccl_override/mep_override.
@@ -5451,7 +5452,7 @@ var SPY_HIST=null,SPY_KEYS=null,_spyLoading=false;
 var SPY_LS_KEY=(PFX+'spyHist');
 (function(){try{var c=JSON.parse(localStorage.getItem(SPY_LS_KEY)||'null');if(c&&c.data){SPY_HIST=c.data;SPY_KEYS=Object.keys(c.data).sort();window._spyDay=c.day;}}catch(e){}})();
 async function fetchSPYHist(force){
-  var hoy=new Date().toISOString().slice(0,10);
+  var hoy=_hoyLocalISO();
   if(_spyLoading)return;if(!force&&SPY_HIST&&window._spyDay===hoy)return;
   _spyLoading=true;
   var url='https://query2.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=10y';
@@ -6755,7 +6756,7 @@ function exportCSV(){
   var h=['Fecha','Tipo','Mercado','Ticker','Cantidad','PrecioARS','CCL','PrecioUSD','Comision','Notas'];
   var rows=movimientos.map(function(m){return[m.fecha,m.tipo,m.mercado,m.ticker,m.qty,m.precioARS,m.ccl,m.precioUSD,m.comision,m.notas].map(function(v){return'"'+(v!=null?v:'')+'"';}).join(',');});
   var csv=[h.join(',')].concat(rows).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='portafolio_nyse_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='portafolio_nyse_'+_hoyLocalISO()+'.csv';a.click();
 }
 
 function clearAll(){
@@ -6881,7 +6882,7 @@ var dividendos = [];
 document.addEventListener('DOMContentLoaded',function(){
   var df=document.getElementById('d-fecha');
   if(df){
-    df.value=new Date().toISOString().split('T')[0];
+    df.value=_hoyLocalISO();df.dataset.auto=df.value;
     df.addEventListener('change',function(){var f=this.value.split('-').reverse().join('/');var c=getCCL(f);if(c){document.getElementById('d-ccl').value=c;calcDivUSD();}});
   }
   var _da=document.getElementById('d-ars'),_dc=document.getElementById('d-ccl');
@@ -7155,7 +7156,7 @@ function initTracker(){
   document.getElementById('trk-add-btn').addEventListener('click',trkAddDiv);
   trkImpInit();
   ['trk-calc-ars','trk-calc-usd','trk-calc-activo'].forEach(function(id){var _e=document.getElementById(id);if(_e)_e.addEventListener('input',trkCalcCCL);});
-  document.getElementById('trk-fecha').value=new Date().toISOString().split('T')[0];
+  (function(e){e.value=_hoyLocalISO();e.dataset.auto=e.value;})(document.getElementById('trk-fecha'));
   trkShowApp();
 }
 
@@ -10647,3 +10648,41 @@ function papRender(){
 }
 (function(){var go=function(){var tr=function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){_papCargar().then(papRender);}else setTimeout(tr,1500);};tr();};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+
+// ─── Fecha de hoy en los formularios ──────────────────────────────────────────
+// Antes se usaba new Date().toISOString() (UTC): en Argentina, después de las 21 h ya daba la fecha
+// de MAÑANA. Además, si la app quedaba abierta de un día para otro, la fecha precargada seguía siendo
+// la de ayer. Ahora: fecha local, se actualiza sola al volver a la app (si no la cambiaste a mano),
+// el campo se marca en ámbar cuando la fecha no es hoy, y al confirmar una compra o venta con otra
+// fecha se pide confirmación.
+function _hoyLocalISO(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+var _FECHA_IDS=['m-fecha','vbuy-fecha','vsell-fecha','d-fecha','trk-fecha','vhist-add-fecha'];
+function fechaMarcar(el){
+  if(!el)return;var dist=el.value&&el.value!==_hoyLocalISO();
+  el.style.borderColor=dist?'var(--amber,#eab308)':'';el.style.color=dist?'var(--amber,#eab308)':'';
+  el.title=dist?'Ojo: esta fecha no es hoy':'';
+}
+function fechasHoyRefrescar(){
+  var hoy=_hoyLocalISO();
+  _FECHA_IDS.forEach(function(id){var el=document.getElementById(id);if(!el)return;
+    if(!el.value||(el.dataset.auto&&el.value===el.dataset.auto&&el.dataset.auto!==hoy)){el.value=hoy;el.dataset.auto=hoy;try{el.dispatchEvent(new Event('change'));}catch(e){}}
+    fechaMarcar(el);});
+}
+function fechaGuard(fechaDMY,tipo){
+  try{var p=String(fechaDMY||'').split('/');if(p.length!==3)return true;
+    var iso=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'),hoy=_hoyLocalISO();if(iso===hoy)return true;
+    return confirm('📅 La fecha de esta '+(tipo||'operación')+' es '+p[0].padStart(2,'0')+'/'+p[1].padStart(2,'0')+'/'+p[2]+', no es hoy ('+hoy.split('-').reverse().join('/')+').\n\n¿Es correcta?');
+  }catch(e){return true;}
+}
+(function(){
+  function setup(){
+    _FECHA_IDS.forEach(function(id){var el=document.getElementById(id);if(!el||el._fm)return;el._fm=1;
+      if(!el.dataset.auto&&el.value===_hoyLocalISO())el.dataset.auto=el.value;
+      el.addEventListener('input',function(){fechaMarcar(el);});el.addEventListener('change',function(){fechaMarcar(el);});});
+    fechasHoyRefrescar();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)fechasHoyRefrescar();});
+  window.addEventListener('focus',fechasHoyRefrescar);
+  setInterval(fechasHoyRefrescar,60000);
+})();
