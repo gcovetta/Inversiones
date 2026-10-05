@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=105, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=106, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v106 | 2026-10-04 | UI: Inv. Inicial pasa al lado de la Liquidez en la barra superior (el chip de la cartera la tapaba) y la barra queda en una sola línea, con scroll horizontal si no entra.',
   'v105 | 2026-10-04 | UI: identidad de cada cartera — marco y color propios (GDC verde, Ana violeta, Hilda naranja, Juli celeste, Omar amarillo), chip fijo arriba a la derecha con foto y nombre, nombre en marca de agua, pestaña "Nombre · Inversiones" con ícono de color, y confirmación grande de compras y ventas que dice en qué cartera se opera (Enter confirma, Esc cancela).',
   'v104 | 2026-10-04 | Feat: botón 💼 Honorario en Evolución (Ana y Juli): se carga el valor final según el broker, calcula ganancia y el 20% (sin ganancia, 0), y registra lo cobrado en config honorarios; viaja en el resumen para el acumulado de Carteras administradas.',
   'v103 | 2026-10-04 | Fix: los dividendos no tenían la protección de los movimientos — se guardaban sin reintentos ni aviso y podían escribirse antes de terminar de leer la nube (pisándola con una lista vacía). Ahora: reintentos, snapshot pendiente que se sube al volver a abrir, no se escribe antes del init y barra roja fija "No se guardó en la nube" con Reintentar (también para movimientos).',
@@ -10912,6 +10913,21 @@ function cartIdentidad(){
     else{ch.style.position='fixed';ch.style.top='8px';ch.style.right='12px';ch.style.zIndex='99991';document.body.appendChild(ch);}
   }
   var chip=document.getElementById('cart-chip');chip.innerHTML=_cartAv(22)+'<span id="cart-chip-n">'+cartNombre()+'</span>';
+  // Inv. Inicial al lado de la Liquidez (antes iba al final de la barra con margin-left:auto y quedaba
+  // tapada por el chip o en una segunda línea oculta). La barra queda en una sola línea con scroll.
+  try{var inv=document.getElementById('inv-sidebar-usd'),lu=document.getElementById('liq-usd');
+    if(inv&&lu&&!inv._mov){inv._mov=1;var invBox=inv.closest('div');while(invBox&&invBox.parentNode&&!invBox.parentNode.classList.contains('topbar'))invBox=invBox.parentNode;
+      var liqItem=lu.closest('.topbar-item');
+      if(invBox&&liqItem&&invBox!==liqItem){invBox.style.marginLeft='.6rem';invBox.style.paddingLeft='.8rem';invBox.style.paddingRight='.8rem';invBox.style.borderRight='1px solid var(--border)';invBox.style.flexShrink='0';invBox.querySelectorAll('.topbar-label').forEach(function(l){l.style.whiteSpace='nowrap';});liqItem.style.flexShrink='0';
+        // Liquidez + Inv. Inicial al principio de la barra (siempre a la vista; las cotizaciones siguen después)
+        var tbp=liqItem.parentNode,ub=document.getElementById('auth-user-box'),ref=ub&&ub.parentNode===tbp?ub.nextSibling:tbp.firstChild;
+        liqItem.style.borderLeft='none';liqItem.style.marginLeft='0';liqItem.style.paddingLeft='0';
+        tbp.insertBefore(liqItem,ref);tbp.insertBefore(invBox,liqItem.nextSibling);}}
+    var tbx=document.querySelector('.topbar'),tr=document.getElementById('tb-right');
+    if(tbx){tbx.style.flexWrap='nowrap';tbx.style.overflowX='auto';tbx.style.overflowY='hidden';tbx.style.scrollbarWidth='none';if(tr)tbx.style.paddingRight=(tr.offsetWidth+24)+'px';}
+    // fijo a la derecha de la barra (fuera del scroll horizontal)
+    if(tr&&tbx){var rr=tbx.getBoundingClientRect();tr.style.position='fixed';tr.style.top=(rr.top+rr.height/2)+'px';tr.style.right='10px';tr.style.zIndex='99992';}
+  }catch(e){console.warn('inv inicial',e);}
 }
 // Confirmación grande de compra / venta
 function opModal(o){
