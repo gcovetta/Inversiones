@@ -74,6 +74,11 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
 #portal .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:0}
 .ch{padding:.55rem .9rem;border-bottom:1px solid var(--border);font-size:.84rem;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .cb{padding:.75rem .9rem}
+.card>.ch{cursor:pointer;user-select:none}
+.card>.ch .car{font-size:.7rem;color:var(--text3);margin-left:auto;padding-left:6px;transition:transform .15s}
+.card.col>.ch{border-bottom:none}.card.col>.ch .car{transform:rotate(-90deg)}
+.card.col>:not(.ch){display:none!important}
+.colbtn{font-family:var(--mono);font-size:.7rem;background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;cursor:pointer}
 .tw{overflow-x:auto}
 #portal table{width:100%;border-collapse:collapse;font-size:.75rem}
 #portal th{font-family:var(--mono);font-size:.58rem;color:var(--text3);text-transform:uppercase;text-align:right;padding:.3rem .45rem;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
@@ -115,7 +120,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v29</span>
+  <span class="subtitle">Carteras administradas · v30</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -145,8 +150,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v29 · 05/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v29</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v30 · 05/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v30</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -263,7 +268,7 @@ function render(){
   var gan=F.val-F.cost;
   var cobs=Object.values(F.cob).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:0;});
   var cU=cobs.reduce(function(a,x){return a+x.usd;},0),cA=cobs.reduce(function(a,x){return a+x.ars;},0);
-  var h='<div class="top"><h1>📈 Carteras administradas</h1><span class="sub">datos al último ingreso a cada portafolio · USD a valor de mercado</span><div class="chips">'+chips+'</div></div>';
+  var h='<div class="top"><h1>📈 Carteras administradas</h1><span class="sub">datos al último ingreso a cada portafolio · USD a valor de mercado</span><div class="chips">'+chips+'</div><button class="colbtn" onclick="colTodos(true)" title="Colapsar todos los cuadros">▸ Colapsar todo</button><button class="colbtn" onclick="colTodos(false)" title="Expandir todos los cuadros">▾ Expandir todo</button></div>';
   h+=_bkBar;
   h+='<div class="kpis">'+
     '<div class="k"><div class="kl">Total administrado (USD)</div><div class="kv">'+n0(F.total+EXTRA)+'</div><div class="ks">'+(ccl?'≈ $'+n0((F.total+EXTRA)*ccl)+' al CCL':'')+(EXTRA?'<br>incl. '+sv.map(function(c){return esc(c.nombre)+' '+k(DATA[c.id].o.total);}).join(' · '):'')+'</div></div>'+
@@ -311,6 +316,7 @@ function render(){
   h+=tail;
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
+  try{colSetup();}catch(e){console.warn('colSetup',e);}
   CFG.forEach(function(c){var el=document.getElementById('pl-'+c.id),d=DATA[c.id];if(!el)return;var a0=el.closest('a');if(a0){a0.style.borderColor=ccol(c);var im=a0.querySelector('img');if(im)im.style.borderColor=ccol(c);}if(!d||!d.o){el.textContent='';return;}var o=d.o,r=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);
     var hn=honorario(c,o);el.innerHTML='USD '+k(o.total)+(r!=null?' · <span class="'+(r>=0?'grn':'red')+'">'+pct(r)+'</span>':'')+(hn!=null?' · <span title="Tu honorario (20% de la ganancia del período)">💼 '+(hn>0?k(hn):'0')+'</span>':'');});
 }
@@ -336,6 +342,24 @@ async function bkAll(){
 }
 function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
 // ── 🎯 Posiciones que alcanzaron su P. Venta (y las que están a menos de 3%) en todas las carteras ──
+var PV_MAS=false;
+function pvMas(){PV_MAS=!PV_MAS;var t=document.getElementById('pv-mas'),b=document.getElementById('pv-mas-btn');if(t)t.style.display=PV_MAS?'table-row-group':'none';
+  if(b)b.textContent=PV_MAS?'Ver menos':'Ver '+(t?t.rows.length:0)+' más';}
+// ── Cuadros plegables: click en el título. Se recuerda en este navegador; algunos arrancan cerrados ──
+var COL_DEF=['🩺 Chequeo','🎯 Precio de venta','Mayores posiciones','Próximos cobros de todos'],COL=null;
+function _colKey(ch){var t='';ch.childNodes.forEach(function(n){if(n.nodeType===3)t+=n.textContent;});return t.trim();}
+function _colLoad(){if(COL)return COL;COL={};try{COL=JSON.parse(localStorage.getItem('idx_col')||'{}')||{};}catch(e){COL={};}return COL;}
+function _colSave(){try{localStorage.setItem('idx_col',JSON.stringify(COL));}catch(e){}}
+function _colEs(k){var c=_colLoad();return (k in c)?!!c[k]:COL_DEF.indexOf(k)>=0;}
+function colSetup(){
+  document.querySelectorAll('#portal .card>.ch').forEach(function(ch){
+    var k=_colKey(ch);if(!k)return;var card=ch.parentNode;
+    if(!ch.querySelector('.car')){var s=document.createElement('span');s.className='car';s.textContent='▾';ch.appendChild(s);}
+    card.classList.toggle('col',_colEs(k));
+    ch.onclick=function(ev){if(ev.target.closest('a,button,input,select'))return;var v=!card.classList.contains('col');card.classList.toggle('col',v);_colLoad()[k]=v;_colSave();};
+  });
+}
+function colTodos(v){document.querySelectorAll('#portal .card>.ch').forEach(function(ch){var k=_colKey(ch);if(!k)return;ch.parentNode.classList.toggle('col',v);_colLoad()[k]=v;});_colSave();}
 function pvCard(){
   var hit=[],cerca=[],resto=[],sinDatos=[];
   VIEW.forEach(function(c){var d=DATA[c.id];if(!d||!d.o||OFF[c.id])return;var alguno=false;Object.keys(d.o.pos).forEach(function(t){var p=d.o.pos[t];if(p.up==null||p.pv==null)return;alguno=true;
@@ -348,7 +372,9 @@ function pvCard(){
   var row=function(r,h){return '<tr><td><b>'+esc(r.t)+'</b> <span class="mut">'+(SECT[r.s]?SECT[r.s][0]:'')+'</span></td><td style="text-align:left"><a href="'+r.c.link+'">'+av(r.c)+esc(r.c.nombre)+'</a></td><td>USD '+r.pv.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td>'+
     '<td class="'+(h?'grn':r.up<=3?'yel':'mut')+'">'+(h?'superó '+pct(-r.up):'falta '+pct(r.up).replace('+',''))+'</td><td class="'+(r.pnl>=0?'grn':'red')+'">'+(r.pnl==null?'—':pct(r.pnl))+'</td><td>'+n0(r.v)+'</td></tr>';};
   return '<div class="card pvc"><div class="ch">🎯 Precio de venta <span class="sub">'+hit.length+' alcanzado'+(hit.length!==1?'s':'')+(cerca.length&&cerca[0].up<=3?' · '+cerca.filter(function(r){return r.up<=3;}).length+' a menos de 3%':'')+'</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th style="text-align:left">Cartera</th><th>P. Venta</th><th>Estado</th><th>Ganancia</th><th>Valor USD</th></tr></thead><tbody>'+
-    hit.map(function(r){return row(r,true);}).join('')+cerca.map(function(r){return row(r,false);}).join('')+'</tbody></table>'+
+    (function(){var all=hit.map(function(r){return row(r,true);}).concat(cerca.map(function(r){return row(r,false);}));
+      return all.slice(0,5).join('')+'</tbody>'+(all.length>5?'<tbody id="pv-mas" style="display:'+(PV_MAS?'table-row-group':'none')+'">'+all.slice(5).join('')+'</tbody>':'')+'</table>'+
+        (all.length>5?'<button class="colbtn" style="margin-top:6px" id="pv-mas-btn" onclick="pvMas()">'+(PV_MAS?'Ver menos':'Ver '+(all.length-5)+' más')+'</button>':'');})()+
     '<div class="sub" style="margin-top:6px">'+(!hit.length&&cerca.length&&cerca[0].up>3?'Ninguna llegó ni está a menos de 3%: estas son las 5 más cerca. ':'')+'Datos al último ingreso a cada portafolio. "Ganancia" es la de la posición (mercado vs. costo).'+(sinDatos.length?' Sin datos todavía de '+sinDatos.map(esc).join(', ')+' (abrí esos portafolios).':'')+'</div></div></div>';
 }
 // ── 💰 Tus ingresos: rentas y dividendos de GDC + honorarios (cobrados y proyectados) ──
@@ -422,7 +448,7 @@ function chequeoCard(){
     if(c.honorario){var pr=honProy(c,o);if(pr&&pr.fin){var df=Math.ceil((pr.fin-new Date())/86400000);if(df>=0&&df<=15)P.push({n:1,t:'cierra el período en '+df+' día'+(df!==1?'s':'')+' ('+_fd(pr.fin)+'): registrá el honorario con 💼'});}}
     if(P.length)L.push({c:c,P:P});else ok.push(c.nombre);});
   var col={1:'#38bdf8',2:'#eab308',3:'#ff5252'};
-  if(!L.length)return '<div class="card" style="margin-bottom:12px"><div class="cb" style="padding:.55rem .8rem;font-size:.8rem">🩺 <b>Chequeo:</b> <span class="grn">todo en orden</span> en '+ok.map(esc).join(', ')+'</div></div>';
+  if(!L.length)return '<div class="card" style="margin-bottom:12px"><div class="ch">🩺 Chequeo <span class="sub grn">todo en orden</span></div><div class="cb" style="font-size:.8rem">Sin nada para revisar en '+ok.map(esc).join(', ')+'.</div></div>';
   return '<div class="card" style="margin-bottom:12px"><div class="ch">🩺 Chequeo <span class="sub">'+L.reduce(function(a,x){return a+x.P.length;},0)+' cosa(s) para revisar'+(ok.length?' · en orden: '+ok.map(esc).join(', '):'')+'</span></div><div class="cb" style="font-size:.8rem;line-height:1.55">'+
     L.map(function(x){return '<div style="margin-bottom:6px"><a href="'+x.c.link+'">'+av(x.c)+'<b>'+esc(x.c.nombre)+'</b></a><ul style="margin:2px 0 0 0;padding-left:20px">'+
       x.P.sort(function(a,b){return b.n-a.n;}).map(function(p){return '<li style="color:'+col[p.n]+'"><span style="color:var(--text)">'+esc(p.t)+'</span></li>';}).join('')+'</ul></div>';}).join('')+'</div></div>';
