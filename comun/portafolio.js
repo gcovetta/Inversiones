@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=97, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=98, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v98 | 2026-10-04 | Feat (GDC): Ratios → "Auditar tabla completa": compara cada Cedear de la tabla con NYSE y el CCL, lista los que no cierran (primero los que están en cartera 📌) con "Usar" / "Usar todos" y "Sync a las demás carteras". Marca datos dudosos y tickers sin precio NYSE.',
   'v97 | 2026-10-04 | UI: vista celular — en pantallas angostas cada posición de la cartera se muestra como tarjeta (ticker y Δ arriba; inversión, mercado, PPC, % anual, P. Venta y cantidad con su etiqueta) en vez de la tabla ancha.',
   'v96 | 2026-10-04 | UI: el aviso de ratio desactualizado va al final de la página Portafolio. Ratios menores a 1 se muestran como "0,33 (1 Cedear = 3 acciones)" en vez de redondear a 0,5.',
   'v95 | 2026-10-04 | UI: atajo C lleva al recuadro 🛒 Comprar del Portafolio con el cursor en Ticker; V lleva al recuadro 💸 Vender con el foco en el combo de tickers (los despliega si estaban plegados y los resalta un instante).',
@@ -10482,3 +10483,78 @@ document.addEventListener('keydown',function(e){
     P+'td:empty{display:none}'+
   '}';
   document.head.appendChild(st);})();
+
+// ─── Auditoría de la tabla completa de ratios (solo GDC, que es la que se sincroniza) ─────────
+// Para cada Cedear de RATIOS_TABLE con precio en BYMA: ratio que surge del mercado =
+// precio NYSE (Finnhub) × CCL ÷ precio del Cedear. Lista los que difieren más de 25%, con "Usar"
+// para corregirlos (igual que editarlo a mano) y "Sync" para mandar la tabla a las demás carteras.
+var RA_AUD={res:[],corriendo:false,hechos:0,total:0,cancel:false};
+// ratios típicos: enteros (20, 144) o fracciones 1/n (0,3333 = 1 Cedear cada 3 acciones)
+function _raNice(x){if(x<1){return Math.round(10000/Math.round(1/x))/10000;}var r=Math.round(x);return Math.abs(x/r-1)<0.03?r:Math.round(x*10)/10;}
+function _raFmt(x){return String(x).replace('.',',');}
+function raAudUI(){
+  var pg=document.getElementById('page-ratios');if(!pg||!CFG.sync)return;
+  var c=document.getElementById('ra-aud-card');
+  if(!c){c=document.createElement('div');c.className='card';c.id='ra-aud-card';c.style.marginBottom='1rem';pg.insertBefore(c,pg.firstChild);}
+  var A=RA_AUD,h='<div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="card-title">🔍 Auditoría de ratios</span>'+
+    '<span class="smsg" style="font-size:.66rem">compara cada Cedear con NYSE y el CCL ('+(CCL_HOY?'$'+Math.round(CCL_HOY).toLocaleString('es-AR'):'—')+')</span>'+
+    (A.corriendo?'<span class="smsg">'+A.hechos+' / '+A.total+'…</span><button class="btn btn-sm" style="margin-left:auto" onclick="RA_AUD.cancel=true">Detener</button>'
+      :'<button class="btn btn-a btn-sm" style="margin-left:auto" onclick="raAuditar()">'+(A.fecha?'Volver a auditar':'Auditar tabla completa')+'</button>')+'</div>';
+  if(A.fecha){
+    var mal=A.res.filter(function(r){return r.estado==='mal';}),dud=A.res.filter(function(r){return r.estado==='dudoso';}),err=A.res.filter(function(r){return r.estado==='error';});
+    h+='<div class="card-body" style="padding-top:.4rem">';
+    h+='<div class="smsg" style="margin-bottom:6px">'+A.fecha+' · '+A.ok+' coinciden (±25%) · <b style="color:'+(mal.length?'var(--amber,#eab308)':'var(--accent)')+'">'+mal.length+' a corregir</b>'+(dud.length?' · '+dud.length+' con dato dudoso':'')+(err.length?' · '+err.length+' sin precio NYSE':'')+'</div>';
+    if(mal.length){
+      h+='<div class="tw"><table><thead><tr><th>Ticker</th><th>Ratio cargado</th><th>Según mercado</th><th>Cedear $</th><th>NYSE USD</th><th></th></tr></thead><tbody>'+
+        mal.map(function(r){var n=_raNice(r.sug);return '<tr><td style="font-weight:700">'+r.t+(r.enCartera?' <span title="Lo tenés en cartera">📌</span>':'')+'</td><td class="mono">'+_raFmt(r.r)+'</td><td class="mono" style="color:var(--amber,#eab308);font-weight:700">'+_raFmt(n)+(r.sug<1?' <span class="muted" style="font-weight:400">(1 Cedear = '+Math.round(1/r.sug)+' acciones)</span>':'')+'</td>'+
+          '<td class="mono">'+Math.round(r.ars).toLocaleString('es-AR')+'</td><td class="mono">'+r.usd.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td>'+
+          '<td>'+(r.aplicado?'<span style="color:var(--accent)">✓ '+_raFmt(r.aplicado)+'</span>':'<button class="btn btn-a btn-sm" onclick="raAudUsar(\''+r.t+'\','+n+')">Usar '+_raFmt(n)+'</button>')+'</td></tr>';}).join('')+'</tbody></table></div>';
+      var pend=mal.filter(function(r){return !r.aplicado;}).length,apl=mal.length-pend;
+      h+='<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">'+(pend?'<button class="btn btn-sm" onclick="raAudUsarTodos()">Usar todos ('+pend+')</button>':'')+
+        (apl?'<button class="btn btn-a btn-sm" onclick="raAudSync()">⟳ Sync a las demás carteras</button><span class="smsg" id="ra-aud-sync"></span>':'')+'</div>';
+    }
+    if(dud.length)h+='<div class="smsg" style="margin-top:8px">Dato dudoso (no se propone cambio): '+dud.map(function(r){return r.t+' (Cedear $'+r.ars+')';}).join(', ')+'</div>';
+    if(err.length)h+='<div class="smsg" style="margin-top:4px">Sin precio en NYSE: '+err.map(function(r){return r.t;}).join(', ')+'</div>';
+    h+='</div>';
+  }
+  c.innerHTML=h;
+}
+async function raAuditar(){
+  if(RA_AUD.corriendo)return;
+  var mapa={};try{mapa=await fetchArgCedearsAPI();}catch(e){alert('No se pudieron traer los precios de BYMA');return;}
+  var enCartera={};try{getPositions().forEach(function(p){if(p.qty>0.000001)enCartera[p.ticker]=1;});}catch(e){}
+  var tks=Object.keys(RATIOS_TABLE).filter(function(t){var q=mapa[t];var s=getSector(t);return q&&q.price>0&&['argentina','bonos','on','fci'].indexOf(s)<0&&!BRL_TICKERS.has(t);}).sort();
+  RA_AUD={res:[],corriendo:true,hechos:0,total:tks.length,cancel:false};raAudUI();
+  var ok=0;
+  for(var i=0;i<tks.length&&!RA_AUD.cancel;i++){
+    var t=tks[i],ars=mapa[t].price,r=RATIOS_TABLE[t];
+    try{var f=await fetchFinnhub(getFinnhubTicker(t)),usd=f.price,sug=usd*CCL_HOY/ars;
+      var est=(ars<50||sug<0.02||sug>5000)?'dudoso':Math.abs(r/sug-1)>0.25?'mal':'ok';if(est==='ok')ok++;
+      RA_AUD.res.push({t:t,r:r,sug:sug,ars:ars,usd:usd,estado:est,enCartera:!!enCartera[t]});
+    }catch(e){RA_AUD.res.push({t:t,r:r,ars:ars,estado:'error'});}
+    RA_AUD.hechos=i+1;if(i%5===0)raAudUI();
+    await new Promise(function(res){setTimeout(res,1100);});
+  }
+  RA_AUD.res.sort(function(a,b){return (b.enCartera?1:0)-(a.enCartera?1:0)||a.t.localeCompare(b.t);});
+  RA_AUD.corriendo=false;RA_AUD.ok=ok;RA_AUD.fecha=new Date().toLocaleString('es-AR')+(RA_AUD.cancel?' (detenida)':'');
+  raAudUI();
+}
+function raAudUsar(t,v,silencioso){
+  if(!silencioso&&!confirm('¿Cambiar el ratio de '+t+' de '+RATIOS_TABLE[t]+' a '+v+'?\n\nSe recalculan los movimientos de '+t+' con el ratio nuevo.'))return;
+  RATIOS_TABLE[t]=v;try{localStorage.setItem((PFX+'ratios'),JSON.stringify(RATIOS_TABLE));}catch(e){}
+  sbSetConfig('ratios',RATIOS_TABLE);
+  RA_AUD.res.forEach(function(r){if(r.t===t)r.aplicado=v;});
+  try{renderRatios();}catch(e){}try{recalcMovimientos(t);}catch(e){}
+  raAudUI();
+}
+function raAudUsarTodos(){
+  var L=RA_AUD.res.filter(function(r){return r.estado==='mal'&&!r.aplicado;});if(!L.length)return;
+  if(!confirm('¿Aplicar los '+L.length+' ratios sugeridos?\n\n'+L.map(function(r){return r.t+': '+r.r+' → '+_raNice(r.sug);}).join('\n')))return;
+  L.forEach(function(r){raAudUsar(r.t,_raNice(r.sug),true);});
+}
+async function raAudSync(){
+  var el=document.getElementById('ra-aud-sync');if(el)el.textContent='Sincronizando…';
+  try{var errs=await syncDataToOthers(function(m){if(el)el.textContent=m;});if(el)el.textContent=errs.length?'Con errores: '+errs.join(', '):'✓ Enviado a Omar, Ana, Hilda y Juli';}
+  catch(e){if(el)el.textContent='Error: '+e.message;}
+}
+(function(){var go=function(){try{raAudUI();}catch(e){}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
