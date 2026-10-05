@@ -115,7 +115,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v27</span>
+  <span class="subtitle">Carteras administradas · v28</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -145,8 +145,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v27 · 05/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v27</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v28 · 05/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v28</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 42120.61}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -352,6 +352,23 @@ function pvCard(){
     '<div class="sub" style="margin-top:6px">'+(!hit.length&&cerca.length&&cerca[0].up>3?'Ninguna llegó ni está a menos de 3%: estas son las 5 más cerca. ':'')+'Datos al último ingreso a cada portafolio. "Ganancia" es la de la posición (mercado vs. costo).'+(sinDatos.length?' Sin datos todavía de '+sinDatos.map(esc).join(', ')+' (abrí esos portafolios).':'')+'</div></div></div>';
 }
 // ── 💰 Tus ingresos: rentas y dividendos de GDC + honorarios (cobrados y proyectados) ──
+// Meta de ingresos (USD por año): 100.000 → 8.333 por mes
+var META_INGRESO_ANUAL=100000;
+function metaBox(tot,tR,g){
+  var M=META_INGRESO_ANUAL;if(!(M>0))return '';
+  var mes=tot/12,mm=M/12,pct=Math.min(100,tot/M*100),falta=Math.max(0,mm-mes);
+  var base=g?(g.total||0):0,y=(base>0&&tR>0)?tR/base:0;
+  var cap=y>0?falta*12/y:0;
+  return '<div style="margin:0 0 12px;padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;background:var(--surface2,#172035)">'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;font-size:.8rem">'+
+      '<b>🎯 Meta: USD '+n0(mm)+' por mes</b><span class="mut">(USD '+n0(M)+' al año)</span>'+
+      '<span>Hoy: <b class="grn">USD '+n0(mes)+'</b> por mes ('+n1(pct)+'%)</span>'+
+      (falta>0?'<span>Falta: <b style="color:#eab308">USD '+n0(falta)+'</b> por mes</span>':'<span class="grn"><b>¡Meta cumplida!</b></span>')+
+    '</div>'+
+    '<div style="height:10px;background:var(--bg,#0b1120);border-radius:5px;margin-top:7px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#38bdf8,#00e676);border-radius:5px"></div></div>'+
+    (cap>0?'<div class="sub" style="margin-top:6px" title="Lo que falta por año dividido el rendimiento en cobros actual de GDC ('+n1(y*100)+'% anual). Es una referencia: cambia si cambia el rendimiento.">Al rendimiento en cobros de hoy ('+n1(y*100)+'% anual), para cubrir lo que falta necesitarías ≈ USD '+n0(cap)+' más invertidos.</div>':'')+
+  '</div>';
+}
 function ingresosCard(){
   var g=DATA.gdc&&DATA.gdc.o,cm=(g&&g.cm)||{},ct=(g&&g.ct)||null;
   var hoy=new Date(),meses=[];for(var i=11;i>=0;i--){var d=new Date(hoy.getFullYear(),hoy.getMonth()-i,1);meses.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2));}
@@ -382,6 +399,7 @@ function ingresosCard(){
       '<div class="k"><div class="kl">Honorarios cobrados</div><div class="kv">USD '+n0(tH)+'</div><div class="ks">Ana y Juli, en los últimos 12 meses</div></div>'+
       '<div class="k"><div class="kl">Honorarios proyectados</div><div class="kv">USD '+n0(tP)+'</div><div class="ks">'+(pr.length?pr.join(' · '):'—')+'</div></div>'+
     '</div>'+
+    metaBox(tot,tR,g)+
     '<svg viewBox="0 0 '+W+' '+(H+24)+'" width="100%" style="max-height:170px">'+bars+'</svg>'+
     '<div class="legend"><span><i style="background:#38bdf8"></i>Rentas y dividendos GDC</span><span><i style="background:#00e676"></i>Honorarios</span>'+(tA?'<span><i style="border:1px dashed #94a3b8"></i>Amortizaciones (no suman)</span>':'')+'</div>'+
     '<div class="sub" style="margin-top:4px">Rentas: cobros confirmados en la solapa Dividendos de GDC (se actualiza al abrir GDC); los cobros en pesos al MEP. Las amortizaciones se separan según la etiqueta de cada cobro (se cambia con un click en Dividendos). Honorarios: los registrados con 💼 en Ana y Juli y los cargados a mano (en el mes de cierre de cada período).</div></div></div>';
