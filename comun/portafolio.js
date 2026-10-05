@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=100, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=102, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v102 | 2026-10-04 | UI: orden de campos — Comprar: Ticker, Precio, Cantidad, Fecha, Mercado (automático); Vender: Ticker, Precio, Cantidad, Fecha. Se saca el campo CCL de Vender: el tipo de cambio sale siempre de la tabla (CCL o MEP según el activo).',
+  'v101 | 2026-10-04 | Feat: al escribir el ticker en 🛒 Comprar y en Movimientos se elige solo el mercado (el de la última operación de ese ticker, la tabla de sectores o las listas de BYMA: bonos, ON, acciones, Cedears con su país) y se muestra de dónde salió; en Comprar también se precarga el precio de mercado. Sugerencias con los tickers ya operados. Se puede cambiar a mano.',
   'v100 | 2026-10-04 | Fix: las fechas precargadas (compra, venta, movimientos, cobros) usaban la hora UTC — después de las 21 h aparecía la fecha de mañana — y no se actualizaban si la app quedaba abierta de un día para otro. Ahora usan la fecha local, se refrescan solas al volver a la app, se marcan en ámbar si no son hoy y al confirmar una compra o venta con otra fecha se pide confirmación.',
   'v99 | 2026-10-04 | Feat: control de precio al cargar compras y ventas (si se aleja más de 10% del mercado pide confirmación, con pista de cero de más/menos). Papelera: movimientos y cobros borrados o editados quedan 30 días (config papelera, en Supabase) con "↶ Deshacer" al momento y tarjeta 🗑 Papelera en Movimientos para restaurar.',
   'v98 | 2026-10-04 | Feat (GDC): Ratios → "Auditar tabla completa": compara cada Cedear de la tabla con NYSE y el CCL, lista los que no cierran (primero los que están en cartera 📌) con "Usar" / "Usar todos" y "Sync a las demás carteras". Marca datos dudosos y tickers sin precio NYSE.',
@@ -2215,7 +2217,7 @@ function vsellConfirmar(){
   var precioARS=esBonoON?precioARSInput/100:precioARSInput;
   var cclManual=parseFloat(cclEl.value);
   var cclVal=cclManual>0?cclManual:getTC(fecha,mkt);
-  if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP — completá el campo CCL',true);return;}
+  if(!cclVal||cclVal<=0){flash(statusEl,'⚠️ Sin CCL/MEP para esa fecha — cargalo en Tipo de cambio (tecla T)',true);return;}
   var ratio=getRatio(ticker);
   var precioUSD=isBonoUSDDirecto(ticker)?precioARS:(cclVal?precioARS*ratio/cclVal:null);
 
@@ -10685,4 +10687,82 @@ function fechaGuard(fechaDMY,tipo){
   document.addEventListener('visibilitychange',function(){if(!document.hidden)fechasHoyRefrescar();});
   window.addEventListener('focus',fechasHoyRefrescar);
   setInterval(fechasHoyRefrescar,60000);
+})();
+
+// ─── Mercado automático al cargar una compra ──────────────────────────────────
+// Al escribir el ticker en 🛒 Comprar (o en el formulario de Movimientos) se elige solo el mercado:
+//  1) el que usaste la última vez que operaste ese ticker en esta cartera,
+//  2) la tabla de sectores de la app,
+//  3) las listas de BYMA (data912): bonos, ON, acciones argentinas o Cedears (con su país),
+// y, en Comprar, se precarga el precio de mercado si el campo está vacío. Todo se puede cambiar a mano.
+var _MKT_LISTAS=null,_mktListasCargando=null;
+var _SECT_A_MKT={nyse:'USA',argentina:'ARGENTINA',brasil:'BRASIL',europa:'EUROPA',china:'CHINA',cripto:'CRIPTO',bonos:'BONOS',on:'ON',fci:'FCI'};
+var _MKT_NOMBRE={USA:'NYSE / NASDAQ',ETF:'ETF (USA)',ARGENTINA:'Argentina',BONOS:'Bonos',ON:'ON',FCI:'FCI',BRASIL:'Brasil',EUROPA:'Europa',CHINA:'China',CRIPTO:'Cripto'};
+function _mktListas(){
+  if(_MKT_LISTAS)return Promise.resolve(_MKT_LISTAS);
+  if(!_mktListasCargando)_mktListasCargando=Promise.all([fetchBonosAPI().catch(function(){return {};}),fetchONsAPI().catch(function(){return {};}),fetchArgNotesAPI().catch(function(){return {};}),fetchArgEqAPI().catch(function(){return {};}),fetchArgCedearsAPI().catch(function(){return {};})])
+    .then(function(r){_MKT_LISTAS={bonos:r[0],on:Object.assign({},r[2],r[1]),arg:r[3],ced:r[4]};return _MKT_LISTAS;});
+  return _mktListasCargando;
+}
+function _mktPais(t){var m=(typeof RATIOS_META!=='undefined'&&RATIOS_META[t])||{};var p=String(m.pais||'').toLowerCase();
+  if(/brasil|brazil/.test(p))return 'BRASIL';if(/china|hong/.test(p))return 'CHINA';
+  if(/alemania|francia|espa|reino|holanda|pa[ií]ses bajos|suiza|italia|b[eé]lgica|irlanda|suecia|dinamarca|noruega|finlandia|luxemburgo|europa/.test(p))return 'EUROPA';return null;}
+async function mktDetectar(t){
+  t=String(t||'').trim().toUpperCase();if(!t)return null;
+  for(var i=movimientos.length-1;i>=0;i--){var m=movimientos[i];if(m&&m.ticker===t&&m.mercado&&m.mercado!=='—')return {mkt:m.mercado,por:'lo que usaste antes'};}
+  if(SECTOR_MAP[t]&&_SECT_A_MKT[SECTOR_MAP[t]])return {mkt:_SECT_A_MKT[SECTOR_MAP[t]],por:'la tabla de la app'};
+  var L=await _mktListas();
+  if(L.bonos[t])return {mkt:'BONOS',por:'BYMA'};
+  if(L.on[t])return {mkt:'ON',por:'BYMA'};
+  if(L.arg[t])return {mkt:'ARGENTINA',por:'BYMA'};
+  if(L.ced[t])return {mkt:_mktPais(t)||'USA',por:'BYMA (Cedear)'};
+  return null;
+}
+function _mktHint(sel,txt,ok){
+  var id=sel.id+'-hint',h=document.getElementById(id);
+  if(!h){h=document.createElement('div');h.id=id;h.style.cssText='font-family:var(--mono);font-size:.6rem;margin-top:2px';sel.parentNode.appendChild(h);}
+  h.style.color=ok?'var(--accent)':'var(--text3)';h.textContent=txt||'';
+}
+function mktEnlazar(tkId,mktId,precioId,onMkt){
+  var tk=document.getElementById(tkId),sel=document.getElementById(mktId);if(!tk||!sel||tk._mktAuto)return;tk._mktAuto=1;
+  var manual=false,tmr=null,ult='';
+  sel.addEventListener('change',function(e){if(e.isTrusted)manual=true;});
+  var correr=async function(){
+    var t=tk.value.trim().toUpperCase();if(t===ult)return;ult=t;
+    if(!t){_mktHint(sel,'');manual=false;return;}
+    if(manual)return;
+    var r=null;try{r=await mktDetectar(t);}catch(e){}
+    if(tk.value.trim().toUpperCase()!==t)return;
+    if(r&&sel.querySelector('option[value="'+r.mkt+'"]')){
+      if(sel.value!==r.mkt){sel.value=r.mkt;try{sel.dispatchEvent(new Event('change'));}catch(e){}if(onMkt)try{onMkt();}catch(e){}}
+      _mktHint(sel,'✓ '+(_MKT_NOMBRE[r.mkt]||r.mkt)+' — según '+r.por,true);
+    } else _mktHint(sel,'No reconocí '+t+': elegí el mercado',false);
+    if(precioId){var pe=document.getElementById(precioId);if(pe&&!pe.value){var pm=null;try{pm=_precioMercadoARS(t);}catch(e){}
+      if(!(pm>0)&&_MKT_LISTAS){var e2=_MKT_LISTAS.bonos[t]||_MKT_LISTAS.on[t]||_MKT_LISTAS.arg[t]||_MKT_LISTAS.ced[t];if(e2&&e2.price>0)pm=e2.price;}
+      if(pm>0){pe.value=Math.round(pm*100)/100;pe.dataset.auto='1';try{pe.dispatchEvent(new Event('input'));}catch(e){}}}}
+  };
+  tk.addEventListener('input',function(){clearTimeout(tmr);tmr=setTimeout(correr,450);});
+  tk.addEventListener('change',correr);tk.addEventListener('blur',correr);
+  // datalist con los tickers que ya operaste en esta cartera
+  var dl=document.getElementById(tkId+'-dl');if(!dl){dl=document.createElement('datalist');dl.id=tkId+'-dl';document.body.appendChild(dl);tk.setAttribute('list',dl.id);}
+  tk.addEventListener('focus',function(){var seen={},o='';for(var i=movimientos.length-1;i>=0;i--){var m=movimientos[i];if(m&&m.ticker&&m.ticker!=='APORTE'&&!seen[m.ticker]){seen[m.ticker]=1;o+='<option value="'+m.ticker+'">';}}dl.innerHTML=o;});
+  // al limpiar el formulario (después de guardar) vuelve a detectar
+  tk.addEventListener('input',function(){if(!tk.value){manual=false;ult='';_mktHint(sel,'');var pe=precioId&&document.getElementById(precioId);if(pe&&pe.dataset.auto){pe.value='';delete pe.dataset.auto;}}});
+}
+(function(){var go=function(){try{mktEnlazar('vbuy-ticker','vbuy-mkt','vbuy-precio-ars',function(){if(typeof vbuyOnMktChange==='function')vbuyOnMktChange();});mktEnlazar('m-ticker','m-mkt',null,null);}catch(e){console.warn('mktEnlazar',e);}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
+
+// ─── Orden de campos en Comprar y Vender ──────────────────────────────────────
+// Comprar: Ticker · Precio · Cantidad · Fecha · Mercado (se autoselecciona).
+// Vender:  Ticker · Precio · Cantidad · Fecha. El CCL/MEP no se pide: sale de la tabla de Tipo de
+// cambio según el activo (CCL para acciones/Cedears, MEP para bonos/ON/FCI).
+(function(){
+  function ordenar(ids){var gs=ids.map(function(id){var e=document.getElementById(id);return e?e.closest('.fgrp'):null;});
+    if(gs.some(function(g){return !g;}))return;var cont=gs[0].parentNode;gs.forEach(function(g){cont.appendChild(g);});}
+  function setup(){
+    try{ordenar(['vbuy-ticker','vbuy-precio-ars','vbuy-qty','vbuy-fecha','vbuy-mkt']);}catch(e){}
+    try{ordenar(['vsell-ticker','vsell-precio-ars','vsell-qty','vsell-fecha']);
+      var c=document.getElementById('vsell-ccl');if(c){c.value='';var g=c.closest('.fgrp');if(g)g.style.display='none';}}catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
