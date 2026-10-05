@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=115, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=116, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v116 | 2026-10-05 | Cambio: Evolución ignora fines de semana y feriados (no hay mercado): no se registran puntos esos días y los ya guardados no se grafican. Feriados en FERIADOS_AR (2025-2026), editable.',
   'v115 | 2026-10-05 | Feat: AO29C (y AO29D) usan el flujo de AO29 en Próximos cobros y TIR real (FLUJOS_ALIAS + flujoDe). En general, cualquier bono en especie C/D toma el flujo del bono base si está cargado.',
   'v114 | 2026-10-05 | Feat: el resumen guarda un chequeo de salud (cobros pendientes de confirmar, fechas sin CCL/MEP cargado, posiciones negativas o sin precio, último backup) para la tarjeta "🩺 Chequeo" del index.',
   'v113 | 2026-10-05 | Cambio: todas las carteras valúan acciones y Cedears al MEP (antes solo Ana y Juli): si se venden en pesos, los dólares se recompran al MEP. Con CFG.valuarMEP:false se vuelve al CCL. El día del cambio el valor sube aprox. la brecha CCL/MEP sobre la parte en acciones y Cedears.',
@@ -5936,6 +5937,11 @@ document.addEventListener('DOMContentLoaded',function(){
 // config 'historial' = {v:1, puntos:[{d:'AAAA-MM-DD', c:{cartera:{v,cost}}, liq, inv, rend}], cierres:[{d, valor, invAnterior}]}
 var HIST=null,_histLoaded=false,HIST_RANGO=null,_histChart=null;
 function _hHoy(){return _bkHoy();}
+// Días sin mercado (fines de semana y feriados nacionales de Argentina): no se registran ni se grafican en Evolución.
+// Lista de feriados para corregir/agregar a mano (AAAA-MM-DD).
+var FERIADOS_AR=new Set(['2025-01-01','2025-03-03','2025-03-04','2025-03-24','2025-04-02','2025-04-17','2025-04-18','2025-05-01','2025-05-02','2025-06-16','2025-06-20','2025-07-09','2025-08-15','2025-10-10','2025-11-21','2025-11-24','2025-12-08','2025-12-25',
+  '2026-01-01','2026-02-16','2026-02-17','2026-03-23','2026-03-24','2026-04-02','2026-04-03','2026-05-01','2026-05-25','2026-06-15','2026-07-09','2026-07-10','2026-08-17','2026-10-12','2026-11-23','2026-12-07','2026-12-08','2026-12-25']);
+function esDiaHabil(iso){var p=String(iso||'').split('-');if(p.length!==3)return true;var dw=new Date(+p[0],+p[1]-1,+p[2]).getDay();return dw!==0&&dw!==6&&!FERIADOS_AR.has(iso);}
 async function histLoad(){
   // Sólo se da por cargado si Supabase respondió bien: si falla, no se crea un historial vacío
   // (que después pisaría el guardado).
@@ -5953,6 +5959,7 @@ async function histLoad(){
 }
 async function histRecord(d,cart){
   if(!(await histLoad()))return;
+  if(!esDiaHabil(_hHoy()))return; // sin mercado: no se agrega punto
   var hoy=_hHoy(),pts=HIST.puntos,p=pts.length&&pts[pts.length-1].d===hoy?pts[pts.length-1]:null;
   if(!p){p={d:hoy,c:{}};pts.push(p);}
   p.c[cart]={v:Math.round(d.totalVal*100)/100,cost:Math.round(d.totalCost*100)/100};
@@ -5971,6 +5978,7 @@ function histSerie(){
   // CFG.histCarteras: qué carteras suman al gráfico (Omar: solo 'principal'; Cocos y VetaJeep no)
   var incl=CFG.histCarteras||null;
   HIST.puntos.forEach(function(p){Object.keys(p.c||{}).forEach(function(k){if(!incl||incl.indexOf(k)>=0)last[k]=p.c[k];});
+    if(!esDiaHabil(p.d))return; // fines de semana y feriados (puntos viejos) no se grafican
     var v=0,cost=0;Object.keys(last).forEach(function(k){v+=last[k].v;cost+=last[k].cost;});
     out.push({d:p.d,v:v+(p.liq||0),pos:v,cost:cost,inv:p.inv,rend:p.rend});});
   return out;
