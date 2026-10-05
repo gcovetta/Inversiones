@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=102, APP_VERSION_FECHA='04/10/2026';
+var APP_VERSION=103, APP_VERSION_FECHA='04/10/2026';
 var APP_CHANGELOG=[
+  'v103 | 2026-10-04 | Fix: los dividendos no tenían la protección de los movimientos — se guardaban sin reintentos ni aviso y podían escribirse antes de terminar de leer la nube (pisándola con una lista vacía). Ahora: reintentos, snapshot pendiente que se sube al volver a abrir, no se escribe antes del init y barra roja fija "No se guardó en la nube" con Reintentar (también para movimientos).',
   'v102 | 2026-10-04 | UI: orden de campos — Comprar: Ticker, Precio, Cantidad, Fecha, Mercado (automático); Vender: Ticker, Precio, Cantidad, Fecha. Se saca el campo CCL de Vender: el tipo de cambio sale siempre de la tabla (CCL o MEP según el activo).',
   'v101 | 2026-10-04 | Feat: al escribir el ticker en 🛒 Comprar y en Movimientos se elige solo el mercado (el de la última operación de ese ticker, la tabla de sectores o las listas de BYMA: bonos, ON, acciones, Cedears con su país) y se muestra de dónde salió; en Comprar también se precarga el precio de mercado. Sugerencias con los tickers ya operados. Se puede cambiar a mano.',
   'v100 | 2026-10-04 | Fix: las fechas precargadas (compra, venta, movimientos, cobros) usaban la hora UTC — después de las 21 h aparecía la fecha de mañana — y no se actualizaban si la app quedaba abierta de un día para otro. Ahora usan la fecha local, se refrescan solas al volver a la app, se marcan en ámbar si no son hoy y al confirmar una compra o venta con otra fecha se pide confirmación.',
@@ -1871,7 +1872,27 @@ var _gdcInitDone = false;
 // Si sbSaveArray falla (red, Supabase caído, etc.) el guardado quedaba SOLO local y en el próximo
 // reload initFromSupabase() pisa todo con la versión vieja de Supabase — el movimiento "desaparece".
 // Antes esto era silencioso (sbSaveArray traga el error y devuelve false). Ahora se avisa en #lupd.
-function warnSaveFailed(){
+// Aviso de "no se guardó en la nube": barra roja fija arriba con Reintentar (queda hasta que se guarde).
+var _SAVE_FAIL={};
+function saveFailClear(tabla){delete _SAVE_FAIL[tabla];_saveFailRender();}
+function _saveFailRender(){
+  var ks=Object.keys(_SAVE_FAIL),b=document.getElementById('save-fail-bar');
+  if(!ks.length){if(b)b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='save-fail-bar';document.body.appendChild(b);}
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:100005;background:var(--red,#ff5252);color:#fff;font-family:var(--mono);font-size:.78rem;padding:.5rem .9rem;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 2px 12px rgba(0,0,0,.4)';
+  var nom={movimientos:'movimientos',trk_divs:'dividendos'};
+  b.innerHTML='<span>⚠️ No se guardaron en la nube los '+ks.map(function(k){return nom[k]||k;}).join(' y ')+' — quedaron solo en este navegador. No cierres la página.</span>'+
+    '<button onclick="saveFailRetry()" style="background:#fff;color:#b00020;border:none;border-radius:6px;padding:4px 12px;font-weight:700;cursor:pointer">Reintentar</button>';
+}
+async function saveFailRetry(){
+  var b=document.getElementById('save-fail-bar');if(b){var bt=b.querySelector('button');if(bt)bt.textContent='Guardando…';}
+  for(var k in _SAVE_FAIL){var arr=k==='movimientos'?movimientos:k==='trk_divs'?TRK.divs:null;if(!arr)continue;
+    var ok=await sbSaveArrayRetry(k,arr);if(ok){delete _SAVE_FAIL[k];try{localStorage.removeItem(PFX+(k==='movimientos'?'pending_sync':'trk_pending'));}catch(e){}}}
+  _saveFailRender();
+  var l=document.getElementById('lupd');if(l&&!Object.keys(_SAVE_FAIL).length){l.style.color='var(--accent)';l.textContent='✓ Guardado en la nube';setTimeout(function(){l.style.color='';},4000);}
+}
+function warnSaveFailed(tabla){
+  _SAVE_FAIL[tabla||'movimientos']=1;_saveFailRender();
   var el=document.getElementById('lupd');
   if(!el)return;
   el.textContent='⚠️ No se guardó en la nube — reintentá o revisá tu conexión';
@@ -1886,7 +1907,7 @@ function saveAndRender(){
   // lo usa para no pisar movimientos reales con una versión vieja de Supabase.
   // (Incidente: compra de MO cargada y perdida silenciosamente — 2026-09-01, GDC.)
   try{localStorage.setItem((PFX+'pending_sync'),JSON.stringify(movimientos));}catch(e){}
-  if(_gdcInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok){ warnSaveFailed(); } else { try{localStorage.removeItem((PFX+'pending_sync'));}catch(e){} } }); }
+  if(_gdcInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok){ warnSaveFailed('movimientos'); } else { try{localStorage.removeItem((PFX+'pending_sync'));}catch(e){} saveFailClear('movimientos'); } }); }
   else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
   renderMovimientos();renderPortfolio();renderDivsCard();vsellPopulateSelect();
   (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
@@ -7117,7 +7138,14 @@ var TRK = {
 function trkHsh(s){return s.split('').reduce(function(a,c){return(((a<<5)-a)+c.charCodeAt(0))|0;},0).toString(36);}
 function trkSave(){
   try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
-  sbSaveArray('trk_divs', TRK.divs);
+  // Igual que los movimientos: snapshot "pendiente de subir" + reintentos + aviso si falla. Y nunca
+  // escribir antes de terminar de leer Supabase (si no, una lista vacía o parcial pisaba la de la nube).
+  try{localStorage.setItem((PFX+'trk_pending'),JSON.stringify(TRK.divs));}catch(e){}
+  if(typeof _gdcInitDone==='undefined'||!_gdcInitDone){console.warn('[trkSave] init no terminó — no se sube todavía ('+TRK.divs.length+' cobros)');return;}
+  sbSaveArrayRetry('trk_divs', TRK.divs).then(function(ok){
+    if(ok){try{localStorage.removeItem((PFX+'trk_pending'));}catch(e){}saveFailClear('trk_divs');}
+    else warnSaveFailed('trk_divs');
+  });
 }
 function trkLoad(){
   // TRK.divs ya fue cargado desde Supabase en el init.
@@ -8445,7 +8473,12 @@ function trkCalcCCL(){
 
     // 3. Tracker divs CCL
     var sbTrkDivs = await sbLoadArray('trk_divs');
-    if(sbTrkDivs && sbTrkDivs.length){
+    // Cobros cargados que no llegaron a subirse (falló la red o se cerró la pestaña): tienen prioridad
+    var _trkPend=null;try{_trkPend=JSON.parse(localStorage.getItem((PFX+'trk_pending'))||'null');}catch(e){}
+    if(Array.isArray(_trkPend)&&sbTrkDivs!==null){
+      TRK.divs=_trkPend;try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
+      sbSaveArrayRetry('trk_divs',TRK.divs).then(function(ok){if(ok){try{localStorage.removeItem((PFX+'trk_pending'));}catch(e){}}else warnSaveFailed('trk_divs');});
+    } else if(sbTrkDivs && sbTrkDivs.length){
       TRK.divs = sbTrkDivs;
       // Recuperar desde localStorage si tiene más entradas (Supabase pudo haber sido limpiado)
       try{var _lsTrk=localStorage.getItem(TRK.DKEY);if(_lsTrk){var _lsTrkData=JSON.parse(_lsTrk);if(_lsTrkData.length>TRK.divs.length){TRK.divs=_lsTrkData;sbSaveArray('trk_divs',TRK.divs);}}}catch(e){}
