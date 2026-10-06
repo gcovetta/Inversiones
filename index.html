@@ -120,7 +120,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v37</span>
+  <span class="subtitle">Carteras administradas · v38</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -150,8 +150,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v37 · 05/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v37</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v38 · 06/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v38</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -251,8 +251,9 @@ function rendTd(o,d){
 }
 // Acumulado desde que arrancó: períodos anteriores encadenados × período actual (igual que "Acumulado desde" en Rendimiento por período)
 function promTd(c,o,d){
-  if(c.id==='gdc'||c.src)return '<td class="mut">—</td>';
+  if(c.src)return '<td class="mut">—</td>';
   var rp=o.rp||{},ys=Object.keys(rp).sort(),pi=o.pi||PI_DEF[c.id]||'01-01';
+  if(!ys.length)return '<td class="mut" title="Todavía no tiene un período cerrado: el acumulado es igual al rendimiento del período">—</td>';
   var acc=1;ys.forEach(function(y){acc*=1+rp[y]/100;});if(d!=null)acc*=1+d/100;
   if(!ys.length&&d==null)return '<td class="mut">—</td>';
   var p=pi.split('-'),y0=ys.length?ys[0]:null,desde=y0?(p[1]+'/'+p[0]+'/'+y0.slice(2)):(o.pi?'el inicio del período actual':'');
@@ -305,7 +306,7 @@ function render(){
   h+=busqCard();
   h+=pvCard();
   // por persona
-  h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table><thead><tr><th>Portafolio</th><th>USD</th><th title="Rendimiento del período en curso (el del Resumen de cada portafolio) y, debajo, los períodos anteriores">Rend.</th><th title="Lo que ganó desde que empezó a invertir con vos: todos los períodos encadenados, incluido el actual (como el Acumulado de Rendimiento por período). GDC no.">Acumulado</th><th title="Tiempo que falta para el próximo corte anual (cierre del período)">Cierre de ciclo</th><th title="Tu honorario: 20% de (valor actual − inversión inicial del período). Sin ganancia, 0">Honorario</th><th>Actualizado</th></tr></thead><tbody>'+
+  h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table><thead><tr><th>Portafolio</th><th>USD</th><th title="Rendimiento del período en curso (el del Resumen de cada portafolio) y, debajo, los períodos anteriores">Rend.</th><th title="Lo que ganó desde que empezó a invertir con vos: todos los períodos encadenados, incluido el actual (como el Acumulado de Rendimiento por período). Con un solo período, —.">Acumulado</th><th title="Tiempo que falta para el próximo corte anual (cierre del período)">Cierre de ciclo</th><th title="Tu honorario: 20% de (valor actual − inversión inicial del período). Sin ganancia, 0">Honorario</th><th>Actualizado</th></tr></thead><tbody>'+
     on.slice().sort(function(a,b){return DATA[b.id].o.total-DATA[a.id].o.total;}).map(function(c){var o=DATA[c.id].o;var d=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);var old=Date.now()-o.ts>7*86400000;
       return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a>'+(o.carteras.length>1&&!c.src?' <span class="mut">('+o.carteras.length+' carteras)</span>':'')+'</td><td>'+n0(o.total)+'</td>'+rendTd(o,d)+promTd(c,o,d)+cicloTd(o)+honTd(c,o)+'<td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'">'+ago(o.ts)+'</td></tr>';}).join('')+
     sv.map(function(c){var o=DATA[c.id].o;var old=Date.now()-o.ts>7*86400000;
