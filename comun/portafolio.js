@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=128, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=129, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v129 | 2026-10-05 | Feat: el resumen manda al index el rendimiento de los períodos anteriores (rendPer) para mostrarlo en Por persona.',
   'v128 | 2026-10-05 | Feat: aportes y retiros activados en Hilda (con esto, las 5 carteras).',
   'v127 | 2026-10-05 | Feat: aportes y retiros activados en Juli (honorario descuenta aportes − retiros del período).',
   'v126 | 2026-10-05 | Fix: los CCL/MEP que manda el Sync de GDC desaparecían en Ana/Hilda/Juli/Omar: al abrir el portafolio, el MEP de hoy se guardaba en Supabase con la tabla vieja (antes de leer la de Supabase) y pisaba lo sincronizado. Ahora no se escribe ccl/mep_override hasta haberlo leído.',
@@ -5855,6 +5856,8 @@ async function famSaveSnapshot(d){
       var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;var tp=divTipo(x),b=_ct[k]||(_ct[k]={div:0,renta:0,amort:0});b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']=Math.round((b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']+u)*100)/100;});
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
     try{doc.salud=saludCalc(d);}catch(e){}
+    // rendimiento de los períodos anteriores (cargados en la config + cierres registrados) para el index
+    if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}}
     if(CFG.aportes&&_aporLoaded&&cart==='principal'){try{doc.aporNeto=Math.round(aporNeto()*100)/100;}catch(e){}}else if(!CFG.aportes)delete doc.aporNeto;
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
@@ -11247,3 +11250,11 @@ function aporRender(){
   Object.keys(keep).forEach(function(id){var e=document.getElementById(id);if(e&&keep[id]!=null&&keep[id]!=='')e.value=keep[id];});if(foc&&document.getElementById(foc))document.getElementById(foc).focus();
 }
 (function _aporBoot(n){setTimeout(function(){if(!CFG.aportes)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){aporLoad().then(function(a){if(a){try{renderPortfolio();}catch(e){}aporRender();try{histRender();}catch(e){}}else if(n<40)_aporBoot(n+1);});}else if(n<40)_aporBoot(n+1);},1500);})(0);
+
+// Períodos anteriores {añoDeInicio: rendimiento %}: CFG.rendAnual (o la solapa Rendimiento anual con histDesdeRA) + cierres guardados
+function rendPeriodos(){
+  var per={};Object.keys(CFG.rendAnual||{}).forEach(function(y){var r=+CFG.rendAnual[y];if(isFinite(r))per[y]=Math.round(r*100)/100;});
+  ((typeof HIST!=='undefined'&&HIST&&HIST.cierres)||[]).forEach(function(cz){if(cz.rendFinal!=null)per[String(parseInt(cz.d.slice(0,4),10)-1)]=Math.round(cz.rendFinal*100)/100;});
+  var corte=(typeof histUltimoCorte==='function')?histUltimoCorte():null;if(corte)delete per[corte.slice(0,4)]; // el en curso va aparte
+  return per;
+}
