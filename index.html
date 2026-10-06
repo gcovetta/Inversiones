@@ -120,7 +120,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v34</span>
+  <span class="subtitle">Carteras administradas · v35</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -150,8 +150,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v34 · 05/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v34</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v35 · 05/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v35</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -249,6 +249,17 @@ function rendTd(o,d){
   return '<td class="'+(d==null?'mut':d>=0?'grn':'red')+'" title="'+esc(tip)+'">'+(d==null?'—':pct(d))+
     (ys.length?'<div style="font-size:.6rem;line-height:1.35;margin-top:1px;white-space:nowrap">'+ys.slice(0,3).map(function(y){var r=rp[y];return '<span class="mut">'+lbl(y)+'</span> <span class="'+(r>=0?'grn':'red')+'">'+(r>=0?'+':'')+(Math.abs(r)>=100?Math.round(r):r.toFixed(1).replace('.',','))+'%</span>';}).join(' · ')+'</div>':'')+'</td>';
 }
+// Promedio anual compuesto: (Π(1+r) de los períodos anteriores × (1+r actual))^(1/años) − 1, años = períodos cerrados + fracción del actual
+function promTd(c,o,d){
+  if(c.id==='gdc'||c.src)return '<td class="mut">—</td>';
+  var rp=o.rp||{},ys=Object.keys(rp),pi=o.pi||PI_DEF[c.id]||'01-01';
+  var hoy=new Date();hoy.setHours(0,0,0,0);var p=pi.split('-');var ini=new Date(hoy.getFullYear(),+p[0]-1,+p[1]);if(ini>hoy)ini.setFullYear(ini.getFullYear()-1);
+  var frac=Math.max(0,(hoy-ini)/86400000/365),anios=ys.length+(d!=null?frac:0);
+  if(anios<1)return '<td class="mut" title="Menos de un año de historia: todavía no se puede anualizar sin exagerar">—</td>';
+  var acc=1;ys.forEach(function(y){acc*=1+rp[y]/100;});if(d!=null)acc*=1+d/100;
+  var r=(Math.pow(acc,1/anios)-1)*100;
+  return '<td class="'+(r>=0?'grn':'red')+'" title="'+esc('Acumulado '+pct((acc-1)*100)+' en '+n1(anios)+' años → '+pct(r)+' por año')+'">'+pct(r)+'</td>';
+}
 function honTd(c,o){var h=honorario(c,o);if(h==null)return '<td class="mut">—</td>';var g=o.total-o.inv-(o.apn||0);
   var hc=honCobrados(c),cob=Object.keys(hc).reduce(function(a,y){return a+hc[y];},0);
   return '<td class="'+(h>0?'grn':'mut')+'" title="'+Math.round(c.honorario*100)+'% de la ganancia del período: valor USD '+n0(o.total)+' − inversión inicial USD '+n0(o.inv)+' = '+(g>=0?'+':'−')+'USD '+n0(Math.abs(g))+(cob?' · Ya cobrado: '+Object.keys(hc).sort().map(function(y){return y+' USD '+n0(hc[y]);}).join(', '):'')+'"><b>'+(h>0?'USD '+n0(h):'USD 0')+'</b>'+(function(){var pr=honProy(c,o);return pr&&!pr.pronto?'<div class="mut" style="font-size:.66rem" title="Proyección si sigue al mismo ritmo">→ ≈ '+n0(pr.monto)+' al '+_fd(pr.fin)+'</div>':'';})()+(cob?'<div class="mut" style="font-size:.66rem">+ '+n0(cob)+' cobrado</div>':'')+'</td>';}
@@ -295,11 +306,11 @@ function render(){
   h+=busqCard();
   h+=pvCard();
   // por persona
-  h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table><thead><tr><th>Portafolio</th><th>USD</th><th>% del total</th><th title="Rendimiento del período en curso (el del Resumen de cada portafolio) y, debajo, los períodos anteriores">Rend.</th><th title="Tiempo que falta para el próximo corte anual (cierre del período)">Cierre de ciclo</th><th title="Tu honorario: 20% de (valor actual − inversión inicial del período). Sin ganancia, 0">Honorario</th><th>Actualizado</th></tr></thead><tbody>'+
+  h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table><thead><tr><th>Portafolio</th><th>USD</th><th title="Rendimiento del período en curso (el del Resumen de cada portafolio) y, debajo, los períodos anteriores">Rend.</th><th title="Promedio anual compuesto: todos los períodos encadenados (el actual en proporción a lo que va del año) y llevados a una tasa por año. Se muestra con al menos un año de historia. GDC no.">Prom. anual</th><th title="Tiempo que falta para el próximo corte anual (cierre del período)">Cierre de ciclo</th><th title="Tu honorario: 20% de (valor actual − inversión inicial del período). Sin ganancia, 0">Honorario</th><th>Actualizado</th></tr></thead><tbody>'+
     on.slice().sort(function(a,b){return DATA[b.id].o.total-DATA[a.id].o.total;}).map(function(c){var o=DATA[c.id].o;var d=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);var old=Date.now()-o.ts>7*86400000;
-      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a>'+(o.carteras.length>1&&!c.src?' <span class="mut">('+o.carteras.length+' carteras)</span>':'')+'</td><td>'+n0(o.total)+'</td><td>'+n1(o.total/(F.total+EXTRA)*100)+'%</td>'+rendTd(o,d)+cicloTd(o)+honTd(c,o)+'<td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'">'+ago(o.ts)+'</td></tr>';}).join('')+
+      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a>'+(o.carteras.length>1&&!c.src?' <span class="mut">('+o.carteras.length+' carteras)</span>':'')+'</td><td>'+n0(o.total)+'</td>'+rendTd(o,d)+promTd(c,o,d)+cicloTd(o)+honTd(c,o)+'<td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'">'+ago(o.ts)+'</td></tr>';}).join('')+
     sv.map(function(c){var o=DATA[c.id].o;var old=Date.now()-o.ts>7*86400000;
-      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a></td><td>'+n0(o.total)+'</td><td>'+n1(o.total/(F.total+EXTRA)*100)+'%</td>'+salidaTd(c,o)+'<td class="mut">—</td><td class="mut">—</td><td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'">'+ago(o.ts)+'</td></tr>';}).join('')+
+      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a></td><td>'+n0(o.total)+'</td>'+salidaTd(c,o)+'<td class="mut">—</td><td class="mut">—</td><td class="mut">—</td><td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'">'+ago(o.ts)+'</td></tr>';}).join('')+
     '</tbody></table></div></div>';
   // distribucion familia
   h+='<div class="card"><div class="ch">Distribución total</div><div class="cb">'+distBlocks(F,false)+'</div></div>';
