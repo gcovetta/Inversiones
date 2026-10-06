@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=122, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=123, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v123 | 2026-10-05 | Feat: aportes y retiros en Ana. Honorario (💼) descuenta los aportes − retiros del período (campo nuevo, se toma de 💵) y el resumen manda aporNeto al index para "Tus honorarios hoy" y la proyección.',
   'v122 | 2026-10-05 | Feat: aportes y retiros activados en Omar (cartera principal; Cocos y VetaJeep no los usan y el cuadro se oculta al verlas). Período desde el último corte (25/04).',
   'v121 | 2026-10-05 | Evolución (CFG.aportes): la línea punteada de capital del período actual se recalcula con Inv. Inicial + aportes − retiros a cada fecha, también en los días ya guardados.',
   'v120 | 2026-10-05 | Fix: carga masiva de aportes/retiros leía montos con punto de miles y sin decimales ("600.000") como 600; ahora 600.000 = seiscientos mil.',
@@ -5848,6 +5849,7 @@ async function famSaveSnapshot(d){
       var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;var tp=divTipo(x),b=_ct[k]||(_ct[k]={div:0,renta:0,amort:0});b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']=Math.round((b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']+u)*100)/100;});
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
     try{doc.salud=saludCalc(d);}catch(e){}
+    if(CFG.aportes&&_aporLoaded&&cart==='principal'){try{doc.aporNeto=Math.round(aporNeto()*100)/100;}catch(e){}}else if(!CFG.aportes)delete doc.aporNeto;
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
     if(ok){_famLastSave=now;_famLastTotal=tot;}
@@ -10132,7 +10134,7 @@ async function infGenerar(){
     if(p0&&p0.d<hoy){base=p0.v;gan=total-p0.v;rend=gan/p0.v*100;}
     perLbl='Último mes';sub='incluye aportes o retiros';
   } else {
-    rend=d.rendPct!=null?d.rendPct:null;base=d.invInicial||null;gan=(base&&rend!=null)?base*rend/100:null;
+    rend=d.rendPct!=null?d.rendPct:null;base=d.invInicial||null;gan=(CFG.aportes&&typeof _aporUlt!=='undefined'&&_aporUlt)?_aporUlt.gan:((base&&rend!=null)?base*rend/100:null);
     perLbl='Ganancia del período';sub=iniAct?'desde el '+_infDMY(iniAct):'';
   }
   // ── posiciones
@@ -10877,12 +10879,13 @@ async function honAbrir(){
   var pct=Math.round(CFG.honorario*100);
   ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;max-width:480px;width:100%;padding:1rem 1.1rem;font-family:var(--sans);color:var(--text);max-height:92vh;overflow:auto">'+
     '<div style="font-weight:700;font-size:.95rem">💼 Honorario de '+CFG.nombre+'</div>'+
-    '<div style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:2px">'+pct+'% de (valor final según el broker − inversión inicial del período). Sin ganancia, 0.</div>'+
+    '<div style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:2px">'+pct+'% de (valor final según el broker − inversión inicial − aportes + retiros del período). Sin ganancia, 0.</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'+
       '<div><div style="'+lb+'">Inicio del período</div><input id="hon-ini" type="date" value="'+pd.ini+'" style="'+inp+'"></div>'+
       '<div><div style="'+lb+'">Cierre del período</div><input id="hon-fin" type="date" value="'+pd.fin+'" style="'+inp+'"></div>'+
       '<div><div style="'+lb+'">Inversión inicial USD</div><input id="hon-inv" type="number" step="any" value="'+(inv?Math.round(inv*100)/100:'')+'" style="'+inp+'" oninput="honCalc()"></div>'+
       '<div><div style="'+lb+'">Valor final USD (broker)</div><input id="hon-val" type="number" step="any" placeholder="el que muestra el broker" style="'+inp+'" oninput="honCalc()"></div>'+
+      '<div style="grid-column:1/-1"><div style="'+lb+'">Aportes − retiros del período USD</div><input id="hon-apn" type="number" step="any" value="'+(Math.round(_honApn(pd.ini,pd.fin)*100)/100)+'" style="'+inp+'" oninput="honCalc()"><div style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:2px">Se toma de 💵 Aportes y retiros (se recalcula al cambiar las fechas). La plata que puso o sacó no es ganancia.</div></div>'+
     '</div>'+
     '<div id="hon-res" style="margin-top:.7rem;padding:.55rem .7rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:.78rem">Cargá el valor final del broker.</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'+
@@ -10892,11 +10895,15 @@ async function honAbrir(){
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.8rem"><button class="btn btn-sm" onclick="document.getElementById(\'hon-dlg\').remove()">Cerrar</button><button class="btn btn-a btn-sm" onclick="honGuardar()">Registrar cobro</button></div>'+
     '<div style="'+lb+';margin-top:1rem">Honorarios registrados</div><div id="hon-lista"></div></div>';
   document.body.appendChild(ov);honLista();
+  ['hon-ini','hon-fin'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',function(){var a=document.getElementById('hon-apn');if(a)a.value=Math.round(_honApn(document.getElementById('hon-ini').value,document.getElementById('hon-fin').value)*100)/100;honCalc();});});
 }
+// Aportes − retiros (USD) entre el inicio (incluido) y el cierre (excluido: lo del día del corte va al período siguiente)
+function _honApn(ini,fin){if(!CFG.aportes||!_aporLoaded||!ini)return 0;var n=0;(APOR||[]).forEach(function(a){if(a.fecha>=ini&&(!fin||a.fecha<fin))n+=(a.tipo==='retiro'?-1:1)*(+a.usd||0);});return n;}
+function _honApnInput(){var e=document.getElementById('hon-apn');var v=e?parseFloat(e.value):0;return isNaN(v)?0:v;}
 function honCalc(){
   var inv=parseFloat(document.getElementById('hon-inv').value),val=parseFloat(document.getElementById('hon-val').value),r=document.getElementById('hon-res'),c=document.getElementById('hon-cob');
   if(!(inv>0)||!(val>0)){r.textContent='Cargá la inversión inicial y el valor final del broker.';return;}
-  var g=val-inv,h=Math.max(0,g*CFG.honorario),pc=g/inv*100;
+  var apn=_honApnInput(),g=val-inv-apn,h=Math.max(0,g*CFG.honorario),pc=g/inv*100;
   r.innerHTML='Ganancia: <b style="color:'+(g>=0?'var(--accent)':'var(--red)')+'">'+(g>=0?'+':'−')+'USD '+Math.abs(g).toLocaleString('es-AR',{maximumFractionDigits:2})+'</b> ('+(pc>=0?'+':'')+pc.toFixed(2).replace('.',',')+'%)<br>'+
     'Honorario '+Math.round(CFG.honorario*100)+'%: <b style="color:var(--accent);font-size:.95rem">USD '+h.toLocaleString('es-AR',{maximumFractionDigits:2})+'</b>'+(g<=0?' <span style="color:var(--text3)">(sin ganancia, no se cobra)</span>':'');
   if(c&&!c.dataset.man)c.value=Math.round(h*100)/100;
@@ -10906,8 +10913,9 @@ async function honGuardar(){
   var inv=parseFloat(g('hon-inv')),val=parseFloat(g('hon-val')),cob=parseFloat(g('hon-cob'));
   if(!(inv>0)||!(val>0)){alert('Falta la inversión inicial o el valor final.');return;}
   if(!g('hon-fin')){alert('Falta la fecha de cierre del período.');return;}
-  if(isNaN(cob))cob=Math.max(0,(val-inv)*CFG.honorario);
-  var e={ini:g('hon-ini'),fin:g('hon-fin'),anio:g('hon-fin').slice(0,4),inv:inv,valorFinal:val,ganancia:Math.round((val-inv)*100)/100,pct:CFG.honorario,honorario:Math.round(Math.max(0,(val-inv)*CFG.honorario)*100)/100,cobrado:Math.round(cob*100)/100,fechaCobro:g('hon-fecha'),ts:Date.now()};
+  var apn=_honApnInput(),gan=val-inv-apn;
+  if(isNaN(cob))cob=Math.max(0,gan*CFG.honorario);
+  var e={ini:g('hon-ini'),fin:g('hon-fin'),anio:g('hon-fin').slice(0,4),inv:inv,aportesNetos:Math.round(apn*100)/100,valorFinal:val,ganancia:Math.round(gan*100)/100,pct:CFG.honorario,honorario:Math.round(Math.max(0,gan*CFG.honorario)*100)/100,cobrado:Math.round(cob*100)/100,fechaCobro:g('hon-fecha'),ts:Date.now()};
   await honCargar();
   var i=HON_LIST.findIndex(function(x){return x.fin===e.fin;});
   if(i>=0){if(!confirm('Ya hay un honorario registrado para el cierre '+e.fin.split('-').reverse().join('/')+'. ¿Reemplazarlo?'))return;HON_LIST[i]=e;}else HON_LIST.push(e);

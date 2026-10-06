@@ -120,7 +120,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v31</span>
+  <span class="subtitle">Carteras administradas · v32</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -150,8 +150,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v31 · 05/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v31</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v32 · 05/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v32</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -185,7 +185,7 @@ async function loadOne(c,tok){
 function agg(doc,solo,principal){
   if(principal===undefined)principal=true;
   var ks=Object.keys(doc.carteras).filter(function(k){return !solo||solo.indexOf(k)>=0;});
-  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,ver:doc.appVersion||null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
+  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,apn:principal?(+doc.aporNeto||0):0,ver:doc.appVersion||null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
   if(solo&&ks.length===1&&doc.carteras[ks[0]].ts)o.ts=doc.carteras[ks[0]].ts;
   ks.forEach(function(cn){var c=doc.carteras[cn];
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
@@ -237,10 +237,10 @@ function honProy(c,o){if(!c.honorario||!o||!(o.inv>0)||!o.pi)return null;
   var ini=new Date(hoy.getFullYear(),parseInt(p[0],10)-1,parseInt(p[1],10));if(ini>hoy)ini.setFullYear(ini.getFullYear()-1);
   var fin=new Date(ini);fin.setFullYear(fin.getFullYear()+1);
   var tot=(fin-ini)/86400000,pas=(hoy-ini)/86400000;if(pas<30)return {pronto:true,fin:fin};
-  var gan=o.total-o.inv,gp=gan*tot/pas;return {monto:Math.max(0,gp*c.honorario),fin:fin,ganProy:gp,pctProy:gp/o.inv*100};}
+  var gan=o.total-o.inv-(o.apn||0),gp=gan*tot/pas;return {monto:Math.max(0,gp*c.honorario),fin:fin,ganProy:gp,pctProy:gp/o.inv*100};}
 function _fd(d){return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+String(d.getFullYear()).slice(2);}
-function honorario(c,o){if(!c.honorario||!o||!(o.inv>0))return null;return Math.max(0,(o.total-o.inv)*c.honorario);}
-function honTd(c,o){var h=honorario(c,o);if(h==null)return '<td class="mut">—</td>';var g=o.total-o.inv;
+function honorario(c,o){if(!c.honorario||!o||!(o.inv>0))return null;return Math.max(0,(o.total-o.inv-(o.apn||0))*c.honorario);}
+function honTd(c,o){var h=honorario(c,o);if(h==null)return '<td class="mut">—</td>';var g=o.total-o.inv-(o.apn||0);
   var hc=honCobrados(c),cob=Object.keys(hc).reduce(function(a,y){return a+hc[y];},0);
   return '<td class="'+(h>0?'grn':'mut')+'" title="'+Math.round(c.honorario*100)+'% de la ganancia del período: valor USD '+n0(o.total)+' − inversión inicial USD '+n0(o.inv)+' = '+(g>=0?'+':'−')+'USD '+n0(Math.abs(g))+(cob?' · Ya cobrado: '+Object.keys(hc).sort().map(function(y){return y+' USD '+n0(hc[y]);}).join(', '):'')+'"><b>'+(h>0?'USD '+n0(h):'USD 0')+'</b>'+(function(){var pr=honProy(c,o);return pr&&!pr.pronto?'<div class="mut" style="font-size:.66rem" title="Proyección si sigue al mismo ritmo">→ ≈ '+n0(pr.monto)+' al '+_fd(pr.fin)+'</div>':'';})()+(cob?'<div class="mut" style="font-size:.66rem">+ '+n0(cob)+' cobrado</div>':'')+'</td>';}
 function render(){
