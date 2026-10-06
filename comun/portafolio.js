@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=129, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=130, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v130 | 2026-10-05 | Feat: (1) detector de aportes/retiros sin cargar: si el valor salta más del 6% (10% con varios días sin abrir) y USD 500 sin aporte cargado, avisa en 💵 con "Cargar" o "Es mercado" y en el 🩺 Chequeo del index. (2) Cierre de período asistido: valor al cierre (editable), ganancia y rendimiento con aportes, se guarda en el historial (Rendimiento por período y Acumulado del index), nueva Inv. Inicial y, con honorario, abre 💼 precargado. Aviso 15 días antes del corte. GDC con período 01-01.',
   'v129 | 2026-10-05 | Feat: el resumen manda al index el rendimiento de los períodos anteriores (rendPer) para mostrarlo en Por persona.',
   'v128 | 2026-10-05 | Feat: aportes y retiros activados en Hilda (con esto, las 5 carteras).',
   'v127 | 2026-10-05 | Feat: aportes y retiros activados en Juli (honorario descuenta aportes − retiros del período).',
@@ -5857,7 +5858,8 @@ async function famSaveSnapshot(d){
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
     try{doc.salud=saludCalc(d);}catch(e){}
     // rendimiento de los períodos anteriores (cargados en la config + cierres registrados) para el index
-    if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}}
+    if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}
+      try{await saltosOkLoad();doc.salud=doc.salud||{};doc.salud.saltos=saltosDetectar();var _c=histUltimoCorte();doc.salud.cierrePend=(_c&&HIST&&!HIST.cierres.some(function(x){return x.d===_c;})&&HIST.puntos.length&&HIST.puntos[0].d<_c&&_aporDias(_c,_hHoy())<=60)?_c:null;}catch(e){}}
     if(CFG.aportes&&_aporLoaded&&cart==='principal'){try{doc.aporNeto=Math.round(aporNeto()*100)/100;}catch(e){}}else if(!CFG.aportes)delete doc.aporNeto;
     _famPrev=doc;
     var ok=await sbSetConfig('resumen_familia',doc);
@@ -6070,8 +6072,9 @@ function histRender(){
   nota.textContent=serie.length<2?('El historial empieza '+(primero?'el '+primero:'hoy')+': se agrega un punto por día cada vez que abrís el portafolio.'):'Valor total = posiciones a mercado + liquidez, en USD. Línea punteada = inversión inicial del período. Marcas verticales = cortes anuales.';
   // aviso de cierre de período
   var ci=document.getElementById('hist-cierre');
-  var pend=corte&&!HIST.cierres.some(function(x){return x.d===corte;})&&(new Date(_hHoy())-new Date(corte))/86400000<=20&&ult;
-  ci.innerHTML=pend?'<div style="margin:.6rem 1rem 0;padding:.5rem .7rem;border:1px solid var(--amber);border-radius:var(--rsm);background:rgba(234,179,8,.08);font-family:var(--mono);font-size:.72rem">📅 Se cumplió el corte anual ('+corte.split('-').reverse().join('/')+'). <button class="btn btn-sm" onclick="histCerrarPeriodo()" style="margin-left:6px">Cerrar período</button> <span style="color:var(--text3)">nueva inversión inicial = valor total de hoy</span></div>':'';
+  var pend=corte&&!HIST.cierres.some(function(x){return x.d===corte;})&&(new Date(_hHoy())-new Date(corte))/86400000<=60&&ult&&HIST.puntos.length&&HIST.puntos[0].d<corte;
+  var _prox=null;if(corte){var _pc=(parseInt(corte.slice(0,4),10)+1)+corte.slice(4),_dd=_aporDias(_hHoy(),_pc);if(_dd>=0&&_dd<=15)_prox={d:_pc,n:_dd};}
+  ci.innerHTML=(!pend&&_prox)?'<div style="margin:.6rem 1rem 0;padding:.5rem .7rem;border:1px solid var(--border2);border-radius:var(--rsm);font-family:var(--mono);font-size:.72rem">📅 El período cierra el <b>'+_prox.d.split('-').reverse().join('/')+'</b> (en '+_prox.n+' día'+(_prox.n!==1?'s':'')+'). Ese día te va a aparecer el botón para cerrarlo.</div>':pend?'<div style="margin:.6rem 1rem 0;padding:.5rem .7rem;border:1px solid var(--amber);border-radius:var(--rsm);background:rgba(234,179,8,.08);font-family:var(--mono);font-size:.72rem">📅 Se cumplió el corte anual ('+corte.split('-').reverse().join('/')+'). <button class="btn btn-sm" onclick="cierreAbrir()" style="margin-left:6px">Cerrar período</button> <span style="color:var(--text3)">calcula ganancia y rendimiento con aportes, guarda el resultado y actualiza la Inv. Inicial</span></div>':'';
   // cortes dentro del rango
   var cortes=[];if(CFG.periodoInicio&&s.length){var y0=parseInt(s[0].d.slice(0,4),10),y1=parseInt(s[s.length-1].d.slice(0,4),10);for(var y=y0;y<=y1;y++){var cd=y+'-'+CFG.periodoInicio;if(cd>=s[0].d&&cd<=s[s.length-1].d)cortes.push(cd);}}
   histRenderAnual(ult);
@@ -6116,17 +6119,6 @@ function histRenderAnual(ult){
     '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'+ys.map(function(y){var r=per[y].r,h=Math.max(4,Math.round(Math.sqrt(Math.abs(r)/max)*56));var col=r>=0?(per[y].src==='curso'?'rgba(0,230,118,.45)':'var(--accent)'):'var(--red)';
       return '<div style="text-align:center;min-width:54px;font-family:var(--mono)"><div style="font-size:.7rem;font-weight:700;color:'+(r>=0?'var(--accent)':'var(--red)')+'">'+(r>=0?'+':'')+(Math.abs(r)>=100?Math.round(r):r.toFixed(1).replace('.',','))+'%</div><div style="height:56px;display:flex;align-items:flex-end;justify-content:center"><div style="width:26px;height:'+h+'px;background:'+col+';border-radius:3px 3px 0 0"></div></div><div style="font-size:.62rem;color:var(--text2);margin-top:3px">'+lbl(y)+(per[y].src==='curso'?' <span style="color:var(--text3)">(en curso)</span>':'')+'</div></div>';}).join('')+
     '<div style="margin-left:auto;text-align:right;font-family:var(--mono)"><div style="font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.07em">Acumulado desde '+lbl(ys[0])+'</div><div style="font-size:1.15rem;font-weight:700;color:'+(acc>=1?'var(--accent)':'var(--red)')+'">'+(acc>=1?'+':'')+Math.round((acc-1)*100).toLocaleString('es-AR')+'%</div><div style="font-size:.62rem;color:var(--text2)">×'+acc.toFixed(2).replace('.',',')+' lo invertido</div></div></div>';
-}
-async function histCerrarPeriodo(){
-  var corte=histUltimoCorte();var serie=histSerie();var ult=serie[serie.length-1];
-  if(!corte||!ult)return;
-  var nueva=Math.round(ult.v);var ant=getRawNum('inv-sidebar-usd');
-  if(!confirm('Cerrar el período al '+corte.split('-').reverse().join('/')+'?\n\nInversión inicial actual: USD '+Math.round(ant).toLocaleString('es-AR')+'\nNueva inversión inicial: USD '+nueva.toLocaleString('es-AR')+' (valor total de hoy)\n\nEl rendimiento empieza a contarse de nuevo desde acá.'))return;
-  HIST.cierres.push({d:corte,valor:nueva,invAnterior:ant,rendFinal:ult.rend,fechaCierre:_hHoy()});
-  await sbSetConfig('historial',HIST);
-  setFmtNum('inv-sidebar-usd',nueva,0);saveInvInicial(nueva);
-  var di=document.getElementById('inv-inicial-usd-display');if(di)di.textContent='$'+nueva.toLocaleString('es-AR');
-  renderPortfolio();histRender();
 }
 (function _histBoot(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){if(CFG.historial)histLoad().then(function(h){if(h)histRender();});}else if(n<30)_histBoot(n+1);},2000);})(0);
 
@@ -10879,9 +10871,9 @@ function _honPeriodoDefault(){
   var corte=histUltimoCorte();if(!corte)return {ini:'',fin:''};
   var ini=(parseInt(corte.slice(0,4),10)-1)+corte.slice(4);return {ini:ini,fin:corte};
 }
-async function honAbrir(){
-  await honCargar();
-  var pd=_honPeriodoDefault(),inv=getRawNum('inv-sidebar-usd')||'';
+async function honAbrir(pre){
+  await honCargar();pre=(pre&&typeof pre==='object'&&pre.fin)?pre:null;
+  var pd=pre?{ini:pre.ini,fin:pre.fin}:_honPeriodoDefault(),inv=pre?pre.inv:(getRawNum('inv-sidebar-usd')||'');
   var ov=document.getElementById('hon-dlg');if(ov)ov.remove();
   ov=document.createElement('div');ov.id='hon-dlg';ov.onclick=function(e){if(e.target===ov)ov.remove();};
   ov.style.cssText='position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
@@ -10895,8 +10887,8 @@ async function honAbrir(){
       '<div><div style="'+lb+'">Inicio del período</div><input id="hon-ini" type="date" value="'+pd.ini+'" style="'+inp+'"></div>'+
       '<div><div style="'+lb+'">Cierre del período</div><input id="hon-fin" type="date" value="'+pd.fin+'" style="'+inp+'"></div>'+
       '<div><div style="'+lb+'">Inversión inicial USD</div><input id="hon-inv" type="number" step="any" value="'+(inv?Math.round(inv*100)/100:'')+'" style="'+inp+'" oninput="honCalc()"></div>'+
-      '<div><div style="'+lb+'">Valor final USD (broker)</div><input id="hon-val" type="number" step="any" placeholder="el que muestra el broker" style="'+inp+'" oninput="honCalc()"></div>'+
-      '<div style="grid-column:1/-1"><div style="'+lb+'">Aportes − retiros del período USD</div><input id="hon-apn" type="number" step="any" value="'+(Math.round(_honApn(pd.ini,pd.fin)*100)/100)+'" style="'+inp+'" oninput="honCalc()"><div style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:2px">Se toma de 💵 Aportes y retiros (se recalcula al cambiar las fechas). La plata que puso o sacó no es ganancia.</div></div>'+
+      '<div><div style="'+lb+'">Valor final USD (broker)</div><input id="hon-val" type="number" step="any" placeholder="el que muestra el broker" value="'+(pre?Math.round(pre.val*100)/100:'')+'" style="'+inp+'" oninput="honCalc()"></div>'+
+      '<div style="grid-column:1/-1"><div style="'+lb+'">Aportes − retiros del período USD</div><input id="hon-apn" type="number" step="any" value="'+(Math.round((pre?pre.apn:_honApn(pd.ini,pd.fin))*100)/100)+'" style="'+inp+'" oninput="honCalc()"><div style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:2px">Se toma de 💵 Aportes y retiros (se recalcula al cambiar las fechas). La plata que puso o sacó no es ganancia.</div></div>'+
     '</div>'+
     '<div id="hon-res" style="margin-top:.7rem;padding:.55rem .7rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:.78rem">Cargá el valor final del broker.</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'+
@@ -10905,7 +10897,7 @@ async function honAbrir(){
     '</div>'+
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.8rem"><button class="btn btn-sm" onclick="document.getElementById(\'hon-dlg\').remove()">Cerrar</button><button class="btn btn-a btn-sm" onclick="honGuardar()">Registrar cobro</button></div>'+
     '<div style="'+lb+';margin-top:1rem">Honorarios registrados</div><div id="hon-lista"></div></div>';
-  document.body.appendChild(ov);honLista();
+  document.body.appendChild(ov);honLista();if(pre)honCalc();
   ['hon-ini','hon-fin'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',function(){var a=document.getElementById('hon-apn');if(a)a.value=Math.round(_honApn(document.getElementById('hon-ini').value,document.getElementById('hon-fin').value)*100)/100;honCalc();});});
 }
 // Aportes − retiros (USD) entre el inicio (incluido) y el cierre (excluido: lo del día del corte va al período siguiente)
@@ -11227,7 +11219,7 @@ function aporRender(){
   var c=_aporUlt,ini=aporIni(),fd=function(i){return i.split('-').reverse().join('/');},n0=function(v){return Math.round(v).toLocaleString('es-AR');};
   var pc=function(v){return v==null?'—':'<b style="color:'+(v>=0?'var(--accent)':'var(--red)')+'">'+(v>=0?'+':'')+v.toFixed(1).replace('.',',')+'%</b>';};
   var mono='font-family:var(--mono);font-size:.7rem';
-  var h='<div id="apor-sum">'+aporSumHTML()+'</div>';
+  var h='<div id="apor-sum">'+aporSumHTML()+'</div>'+saltosHTML();
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">'+
     '<input type="date" id="apor-fecha" value="'+_hHoy()+'" style="'+mono+';width:128px">'+
     '<select id="apor-tipo" style="'+mono+'"><option value="aporte">Aporte</option><option value="retiro">Retiro</option></select>'+
@@ -11249,7 +11241,7 @@ function aporRender(){
   b.innerHTML=h;
   Object.keys(keep).forEach(function(id){var e=document.getElementById(id);if(e&&keep[id]!=null&&keep[id]!=='')e.value=keep[id];});if(foc&&document.getElementById(foc))document.getElementById(foc).focus();
 }
-(function _aporBoot(n){setTimeout(function(){if(!CFG.aportes)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){aporLoad().then(function(a){if(a){try{renderPortfolio();}catch(e){}aporRender();try{histRender();}catch(e){}}else if(n<40)_aporBoot(n+1);});}else if(n<40)_aporBoot(n+1);},1500);})(0);
+(function _aporBoot(n){setTimeout(function(){if(!CFG.aportes)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){aporLoad().then(async function(a){if(a){await saltosOkLoad();if(CFG.historial)await histLoad();try{renderPortfolio();}catch(e){}aporRender();try{histRender();}catch(e){}}else if(n<40)_aporBoot(n+1);});}else if(n<40)_aporBoot(n+1);},1500);})(0);
 
 // Períodos anteriores {añoDeInicio: rendimiento %}: CFG.rendAnual (o la solapa Rendimiento anual con histDesdeRA) + cierres guardados
 function rendPeriodos(){
@@ -11258,3 +11250,94 @@ function rendPeriodos(){
   var corte=(typeof histUltimoCorte==='function')?histUltimoCorte():null;if(corte)delete per[corte.slice(0,4)]; // el en curso va aparte
   return per;
 }
+
+// ─── Detector de aportes/retiros sin cargar ───────────────────────────────────
+// Entre dos días seguidos del historial: salto = Δ valor − aportes/retiros cargados en esas fechas.
+// Si el salto pasa el 6% del valor (10% si hay más de 4 días entre puntos) y USD 500, se avisa.
+// "Es mercado" lo descarta (config saltos_ok, lista de fechas).
+var SALTOS_OK=null;
+async function saltosOkLoad(){if(SALTOS_OK)return SALTOS_OK;try{var v=await sbGetConfig('saltos_ok');SALTOS_OK=Array.isArray(v)?v:[];}catch(e){SALTOS_OK=[];}return SALTOS_OK;}
+function saltosDetectar(){
+  if(!CFG.aportes||!_aporLoaded||typeof histSerie!=='function'||!HIST)return [];
+  var s=histSerie().filter(function(x){return !x.previo&&x.v>0;});
+  var lim=new Date();lim.setDate(lim.getDate()-90);var limS=lim.getFullYear()+'-'+('0'+(lim.getMonth()+1)).slice(-2)+'-'+('0'+lim.getDate()).slice(-2);
+  var ok=SALTOS_OK||[],out=[];
+  for(var i=1;i<s.length;i++){var a=s[i-1],b=s[i];if(b.d<limS||ok.indexOf(b.d)>=0)continue;
+    var fl=0;(APOR||[]).forEach(function(x){if(x.fecha>a.d&&x.fecha<=b.d)fl+=(x.tipo==='retiro'?-1:1)*(+x.usd||0);});
+    var res=b.v-a.v-fl,dias=_aporDias(a.d,b.d),th=Math.max(500,a.v*(dias<=4?0.06:0.10));
+    if(Math.abs(res)>th)out.push({d:b.d,desde:a.d,dif:Math.round(res),pct:Math.round(res/a.v*1000)/10});}
+  return out.slice(-6);
+}
+async function saltoEsMercado(d){await saltosOkLoad();if(SALTOS_OK.indexOf(d)<0)SALTOS_OK.push(d);await sbSetConfig('saltos_ok',SALTOS_OK);_famLastSave=0;aporRender();try{renderPortfolio();}catch(e){}}
+function saltoCargar(d,dif){
+  var f=document.getElementById('apor-fecha'),t=document.getElementById('apor-tipo'),m=document.getElementById('apor-mon'),mo=document.getElementById('apor-monto');
+  if(f)f.value=d;if(t)t.value=dif<0?'retiro':'aporte';if(m)m.value='USD';if(mo){mo.value=String(Math.abs(dif));mo.focus();}
+}
+function saltosHTML(){
+  var L=saltosDetectar();if(!L.length)return '';
+  var fd=function(i){return i.split('-').reverse().join('/');};
+  return '<div style="margin-top:8px;padding:.45rem .6rem;border:1px solid var(--amber);border-radius:6px;background:rgba(234,179,8,.08);font-family:var(--mono);font-size:.66rem;line-height:1.7">'+
+    '⚠ <b>¿Entró o salió plata?</b> El valor saltó más de lo que se mueve el mercado:'+
+    L.map(function(x){return '<div>'+fd(x.desde)+' → <b>'+fd(x.d)+'</b>: <b style="color:'+(x.dif>=0?'var(--accent)':'var(--red)')+'">'+(x.dif>=0?'+':'−')+'USD '+Math.abs(x.dif).toLocaleString('es-AR')+'</b> ('+(x.pct>=0?'+':'')+String(x.pct).replace('.',',')+'%) '+
+      '<button class="btn btn-sm" style="font-size:.6rem;padding:0 6px" onclick="saltoCargar(\''+x.d+'\','+x.dif+')">Cargar</button> '+
+      '<button class="btn btn-sm" style="font-size:.6rem;padding:0 6px" onclick="saltoEsMercado(\''+x.d+'\')">Es mercado</button></div>';}).join('')+
+    '<div style="color:var(--text3)">"Cargar" completa el formulario con fecha y monto aproximado: corregí el monto real antes de agregar.</div></div>';
+}
+
+// ─── Cierre de período asistido ───────────────────────────────────────────────
+// Valor al cierre = último punto del historial hasta el día del corte (editable: mejor el del broker).
+// Ganancia y rendimiento del período que cierra con aportes/retiros (Dietz); se guarda en HIST.cierres
+// (Rendimiento por período y Acumulado del index), la Inv. Inicial pasa a ser el valor al cierre y, con honorario, abre 💼.
+function _cierreRango(corte){var y=parseInt(corte.slice(0,4),10)-1;return {ini:y+corte.slice(4),fin:corte};}
+function cierreCalc(V,inv,ini,fin){
+  var T=Math.max(1,_aporDias(ini,fin)),ap=0,re=0,pond=0;
+  (CFG.aportes&&_aporLoaded?APOR:[]).forEach(function(x){if(x.fecha<ini||x.fecha>=fin)return;var u=+x.usd||0,w=Math.max(0,Math.min(1,_aporDias(x.fecha,fin)/T));
+    if(x.tipo==='retiro'){re+=u;pond-=u*w;}else{ap+=u;pond+=u*w;}});
+  var neto=ap-re,gan=V-inv-neto,base=inv+pond;return {ap:ap,re:re,neto:neto,gan:gan,rend:base>0?gan/base*100:null};
+}
+function cierreAbrir(){
+  var corte=histUltimoCorte();if(!corte)return;var r=_cierreRango(corte);
+  var serie=histSerie().filter(function(x){return !x.previo&&x.d<=corte;}),p=serie[serie.length-1];
+  var inv=getRawNum('inv-sidebar-usd')||0,V=p?Math.round(p.v*100)/100:'';
+  var fd=function(i){return i.split('-').reverse().join('/');};
+  var ov=document.getElementById('cierre-dlg');if(ov)ov.remove();
+  ov=document.createElement('div');ov.id='cierre-dlg';ov.onclick=function(e){if(e.target===ov)ov.remove();};
+  ov.style.cssText='position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  var inp='width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.4rem .5rem;font-family:var(--mono);font-size:.84rem';
+  var lb='font-family:var(--mono);font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:.55rem 0 .2rem';
+  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;max-width:460px;width:100%;padding:1rem 1.1rem;font-family:var(--sans);color:var(--text)">'+
+    '<div style="font-weight:700;font-size:.95rem">📅 Cerrar período de '+CFG.nombre+'</div>'+
+    '<div style="font-family:var(--mono);font-size:.64rem;color:var(--text3);margin-top:2px">'+fd(r.ini)+' → '+fd(r.fin)+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'+
+      '<div><div style="'+lb+'">Inv. inicial del período</div><input id="cie-inv" type="number" step="any" value="'+(Math.round(inv*100)/100)+'" style="'+inp+'" oninput="cierreRecalc()"></div>'+
+      '<div><div style="'+lb+'">Valor al '+fd(r.fin)+' USD</div><input id="cie-val" type="number" step="any" value="'+V+'" style="'+inp+'" oninput="cierreRecalc()"></div>'+
+    '</div>'+
+    '<div style="font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:3px">'+(p?'Propuesto: el valor de la app del '+fd(p.d)+'. Si tenés el del broker al cierre, usá ese.':'Cargá el valor del broker al cierre.')+'</div>'+
+    '<div id="cie-res" style="margin-top:.7rem;padding:.55rem .7rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:.76rem;line-height:1.6"></div>'+
+    '<div style="font-family:var(--mono);font-size:.6rem;color:var(--text3);margin-top:.5rem">Al confirmar: se guarda el resultado del período, la nueva Inv. Inicial pasa a ser el valor al cierre y los aportes del período nuevo empiezan en cero.'+(CFG.honorario?' Después se abre 💼 Honorario con estos datos.':'')+'</div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.8rem"><button class="btn btn-sm" onclick="document.getElementById(\'cierre-dlg\').remove()">Cancelar</button><button class="btn btn-a btn-sm" onclick="cierreGuardar()">Cerrar período</button></div></div>';
+  document.body.appendChild(ov);cierreRecalc();
+}
+function cierreRecalc(){
+  var corte=histUltimoCorte(),r=_cierreRango(corte),inv=parseFloat(document.getElementById('cie-inv').value),V=parseFloat(document.getElementById('cie-val').value),el=document.getElementById('cie-res');
+  if(!(inv>0)||!(V>0)){el.textContent='Falta la Inv. inicial o el valor al cierre.';return null;}
+  var c=cierreCalc(V,inv,r.ini,r.fin),n0=function(v){return Math.round(v).toLocaleString('es-AR');};
+  el.innerHTML='Aportes USD '+n0(c.ap)+(c.re?' · Retiros USD '+n0(c.re):'')+'<br>Ganancia del período: <b style="color:'+(c.gan>=0?'var(--accent)':'var(--red)')+'">'+(c.gan>=0?'+':'−')+'USD '+n0(Math.abs(c.gan))+'</b><br>Rendimiento: <b style="color:'+(c.rend>=0?'var(--accent)':'var(--red)')+'">'+(c.rend==null?'—':(c.rend>=0?'+':'')+c.rend.toFixed(2).replace('.',',')+'%')+'</b>'+
+    (CFG.honorario?'<br>Honorario '+Math.round(CFG.honorario*100)+'%: <b>USD '+n0(Math.max(0,c.gan*CFG.honorario))+'</b>':'');
+  return c;
+}
+async function cierreGuardar(){
+  var corte=histUltimoCorte();if(!corte)return;var r=_cierreRango(corte);
+  var inv=parseFloat(document.getElementById('cie-inv').value),V=parseFloat(document.getElementById('cie-val').value);
+  var c=cierreRecalc();if(!c)return;
+  if(HIST.cierres.some(function(x){return x.d===corte;})&&!confirm('Ya hay un cierre guardado para el '+corte.split('-').reverse().join('/')+'. ¿Reemplazarlo?'))return;
+  HIST.cierres=HIST.cierres.filter(function(x){return x.d!==corte;});
+  HIST.cierres.push({d:corte,valor:Math.round(V*100)/100,invAnterior:inv,aportesNetos:Math.round(c.neto*100)/100,ganancia:Math.round(c.gan*100)/100,rendFinal:c.rend!=null?Math.round(c.rend*100)/100:null,fechaCierre:_hHoy()});
+  var ok=await sbSetConfig('historial',HIST);if(!ok){alert('No se pudo guardar el cierre en la nube. Probá de nuevo.');return;}
+  var nueva=Math.round(V*100)/100;setFmtNum('inv-sidebar-usd',nueva,0);saveInvInicial(nueva);
+  var di=document.getElementById('inv-inicial-usd-display');if(di)di.textContent='$'+Math.round(nueva).toLocaleString('es-AR');
+  var dl=document.getElementById('cierre-dlg');if(dl)dl.remove();
+  _famLastSave=0;try{renderPortfolio();}catch(e){}try{histRender();}catch(e){}try{aporRender();}catch(e){}
+  if(CFG.honorario&&typeof honAbrir==='function')honAbrir({ini:r.ini,fin:r.fin,inv:inv,val:V,apn:c.neto});
+}
+function histCerrarPeriodo(){cierreAbrir();}
