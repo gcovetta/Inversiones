@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=126, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=127, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v127 | 2026-10-05 | Feat: aportes y retiros activados en Juli (honorario descuenta aportes − retiros del período).',
   'v126 | 2026-10-05 | Fix: los CCL/MEP que manda el Sync de GDC desaparecían en Ana/Hilda/Juli/Omar: al abrir el portafolio, el MEP de hoy se guardaba en Supabase con la tabla vieja (antes de leer la de Supabase) y pisaba lo sincronizado. Ahora no se escribe ccl/mep_override hasta haberlo leído.',
   'v125 | 2026-10-05 | Fix: el resultado de la carga masiva de aportes (cuántos se cargaron y por qué se rechazó alguno) se borraba al redibujar el cuadro y no se veía; ahora queda visible (en rojo si hubo rechazos).',
   'v124 | 2026-10-05 | Fix: al cargar un aporte/retiro en pesos sin MEP para esa fecha, en vez de rechazarlo pide el MEP y lo guarda en Tipo de cambio (cada portafolio tiene su propia tabla de MEP).',
