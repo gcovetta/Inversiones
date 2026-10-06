@@ -1,3 +1,5 @@
+// ─── Ajustes para celular (sin scroll horizontal, menú compacto, todo un poco más chico) ───
+(function(){try{var st=document.createElement('style');st.id='mobile-fix-css';st.textContent="@media(max-width:680px){\n  html{font-size:14px}\n  .panels-grid{grid-template-columns:minmax(0,1fr)!important}\n  .panels-grid>*{min-width:0}\n  .sidebar{max-height:52px;align-items:stretch}\n  .sidebar>div:not(.nav-sec){display:none!important}\n  .nav-item{width:auto!important;flex:0 0 auto!important;justify-content:center}\n  .nav-item>div{display:none!important}\n  #port-summary-section{gap:8px!important}\n  #port-summary-section>div{flex:1 1 100%!important;width:auto!important;min-width:0;max-width:100%}\n  #port-summary-section>div[style*=\"grid-template-columns:1fr 1fr 1fr\"]{grid-template-columns:repeat(3,minmax(0,1fr))!important}\n  #port-summary-section>div[style*=\"flex-direction:column\"][style*=\"width:155px\"]{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]{flex-wrap:nowrap!important}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]>div{flex:1 1 50%!important;min-width:0!important;padding:.3rem!important}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]>div>div{height:150px!important}\n  #port-summary-section .metric{padding:.5rem .6rem}\n  #top-cards-row>.card{flex:1 1 100%!important}\n  #port-watchzone-section{flex-direction:column!important}\n  #port-watchzone-section>*{flex:1 1 auto!important;width:auto!important;min-width:0!important}\n  #pos-footer-bar{position:static!important;box-shadow:none!important;padding:.35rem .6rem!important}\n  #pos-footer-bar .qty-toggle{font-size:.6rem!important}\n  #claude-version-badge{font-size:.55rem!important;padding:2px 6px!important;opacity:.75;bottom:4px!important;right:4px!important}\n}\n";(document.head||document.documentElement).appendChild(st);}catch(e){}})();
 // ═══════════════════════════════════════════════════════════════════════════
 // portafolio.js — código común de los portafolios (Etapa 1 de la unificación, 2026-10-03)
 // Por ahora contiene el script principal de GDC tal cual estaba inline en PortafolioGDC.html.
@@ -9,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=130, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=131, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v131 | 2026-10-06 | UI celular: sin desborde horizontal (tablas de posiciones y métricas del resumen se ajustan al ancho), menú de solapas compacto (antes ocupaba media pantalla), tortas lado a lado, barra "Posiciones abiertas" deja de quedar fija tapando contenido, badge de versión más chico y letra un poco menor.',
   'v130 | 2026-10-05 | Feat: (1) detector de aportes/retiros sin cargar: si el valor salta más del 6% (10% con varios días sin abrir) y USD 500 sin aporte cargado, avisa en 💵 con "Cargar" o "Es mercado" y en el 🩺 Chequeo del index. (2) Cierre de período asistido: valor al cierre (editable), ganancia y rendimiento con aportes, se guarda en el historial (Rendimiento por período y Acumulado del index), nueva Inv. Inicial y, con honorario, abre 💼 precargado. Aviso 15 días antes del corte. GDC con período 01-01.',
   'v129 | 2026-10-05 | Feat: el resumen manda al index el rendimiento de los períodos anteriores (rendPer) para mostrarlo en Por persona.',
   'v128 | 2026-10-05 | Feat: aportes y retiros activados en Hilda (con esto, las 5 carteras).',
@@ -11341,3 +11344,4 @@ async function cierreGuardar(){
   if(CFG.honorario&&typeof honAbrir==='function')honAbrir({ini:r.ini,fin:r.fin,inv:inv,val:V,apn:c.neto});
 }
 function histCerrarPeriodo(){cierreAbrir();}
+
