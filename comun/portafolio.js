@@ -9,8 +9,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=123, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=125, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v125 | 2026-10-05 | Fix: el resultado de la carga masiva de aportes (cuántos se cargaron y por qué se rechazó alguno) se borraba al redibujar el cuadro y no se veía; ahora queda visible (en rojo si hubo rechazos).',
+  'v124 | 2026-10-05 | Fix: al cargar un aporte/retiro en pesos sin MEP para esa fecha, en vez de rechazarlo pide el MEP y lo guarda en Tipo de cambio (cada portafolio tiene su propia tabla de MEP).',
   'v123 | 2026-10-05 | Feat: aportes y retiros en Ana. Honorario (💼) descuenta los aportes − retiros del período (campo nuevo, se toma de 💵) y el resumen manda aporNeto al index para "Tus honorarios hoy" y la proyección.',
   'v122 | 2026-10-05 | Feat: aportes y retiros activados en Omar (cartera principal; Cocos y VetaJeep no los usan y el cuadro se oculta al verlas). Período desde el último corte (25/04).',
   'v121 | 2026-10-05 | Evolución (CFG.aportes): la línea punteada de capital del período actual se recalcula con Inv. Inicial + aportes − retiros a cada fecha, también en los días ya guardados.',
@@ -11151,7 +11153,12 @@ function aporAgregar(fecha,tipo,moneda,monto,nota){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)||!(monto>0)){alert('Fecha o monto inválido.');return false;}
   if(fecha>_hHoy()){alert('La fecha es futura.');return false;}
   var tc=null,usd=monto;
-  if(moneda==='ARS'){tc=_aporTC(fecha);if(!tc){alert('Falta el MEP del '+fecha.split('-').reverse().join('/')+'. Cargalo en Tipo de cambio y volvé a intentar.');return false;}usd=Math.round(monto/tc*100)/100;}
+  if(moneda==='ARS'){tc=_aporTC(fecha);
+    if(!tc){var dmy=fecha.split('-').reverse().join('/'),v=prompt('No hay MEP cargado para el '+dmy+' en este portafolio.\nIngresá el MEP de ese día (se guarda también en Tipo de cambio):','');
+      v=parseFloat(String(v||'').replace(/\./g,'').replace(',','.'));
+      if(v>0){MEP_TABLE[fmtKey(dmy)]=v;try{tcSavePersist();}catch(e){}try{tcRender();}catch(e){}tc=v;}
+      else{alert('Falta el MEP del '+dmy+'. Cargalo en Tipo de cambio y volvé a intentar.');return false;}}
+    usd=Math.round(monto/tc*100)/100;}
   APOR.push({id:Date.now()+Math.floor(Math.random()*1000),fecha:fecha,tipo:tipo==='retiro'?'retiro':'aporte',moneda:moneda,monto:monto,usd:usd,tc:tc,nota:nota||''});
   return true;
 }
@@ -11174,7 +11181,7 @@ async function aporPegar(){
     var a0=window.alert;window.alert=function(msg){err.push('línea '+(i+1)+': '+msg);};
     try{if(aporAgregar(f,t,mo,n,c[4]||''))ok++;}finally{window.alert=a0;}});
   if(ok){await aporSave();ta.value='';}
-  st.textContent=ok+' cargado(s)'+(err.length?' · '+err.join(' · '):'');aporRefrescar();
+  _aporMsg=ok+' cargado(s)'+(err.length?' · '+err.join(' · '):'');_aporMsgErr=!!err.length;aporRefrescar(); // el mensaje sobrevive al redibujado
 }
 async function aporBorrar(id){
   var x=(APOR||[]).find(function(a){return a.id===id;});if(!x)return;
@@ -11188,7 +11195,7 @@ function aporAjustarInv(){
   setFmtNum('inv-sidebar-usd',nueva,0);if(typeof saveInvInicial==='function')saveInvInicial(nueva);aporRefrescar();
 }
 function aporRefrescar(){try{renderPortfolio();}catch(e){}aporRender();try{histRender();}catch(e){}}
-var _aporUlt=null;
+var _aporUlt=null,_aporMsg='',_aporMsgErr=false;
 function aporSumHTML(){
   var c=_aporUlt,ini=aporIni(),fd=function(i){return i.split('-').reverse().join('/');},n0=function(v){return Math.round(v).toLocaleString('es-AR');};
   var pc=function(v){return v==null?'—':'<b style="color:'+(v>=0?'var(--accent)':'var(--red)')+'">'+(v>=0?'+':'')+v.toFixed(1).replace('.',',')+'%</b>';};
@@ -11222,12 +11229,12 @@ function aporRender(){
   var L=(APOR||[]).slice().sort(function(a,b){return a.fecha<b.fecha?1:-1;});
   if(L.length)h+='<div class="tw" style="max-height:220px;overflow-y:auto;margin-top:8px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th style="text-align:right">Monto</th><th style="text-align:right">USD</th><th></th></tr></thead><tbody>'+
     L.map(function(x){var fuera=x.fecha<ini;return '<tr style="'+(fuera?'opacity:.45':'')+'" title="'+(fuera?'Período anterior (ya forma parte de la Inv. Inicial)':'')+(x.nota?' '+x.nota.replace(/"/g,''):'')+'"><td class="mono">'+fd(x.fecha)+'</td><td style="color:'+(x.tipo==='retiro'?'var(--red)':'var(--accent)')+'">'+x.tipo+'</td><td class="mono" style="text-align:right">'+(x.moneda==='ARS'?'$ '+n0(x.monto)+'<span style="color:var(--text3)"> /'+n0(x.tc)+'</span>':'US$ '+n0(x.monto))+'</td><td class="mono" style="text-align:right">'+(x.tipo==='retiro'?'−':'')+n0(x.usd)+'</td><td><button class="btn btn-d btn-sm" onclick="aporBorrar('+x.id+')">x</button></td></tr>';}).join('')+'</tbody></table></div>';
-  h+='<details style="margin-top:8px"><summary style="'+mono+';color:var(--text3);cursor:pointer">Carga masiva / ajustar Inv. Inicial</summary>'+
+  h+='<details style="margin-top:8px"'+(_aporMsg?' open':'')+'><summary style="'+mono+';color:var(--text3);cursor:pointer">Carga masiva / ajustar Inv. Inicial</summary>'+
     '<div style="'+mono+';color:var(--text3);margin:6px 0">Una línea por movimiento: <b>dd/mm/aaaa;aporte o retiro;USD o ARS;monto;nota</b> (los ARS se pasan al MEP de esa fecha).</div>'+
     '<textarea id="apor-txt" rows="4" style="width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:.4rem;'+mono+'" placeholder="15/03/2026;aporte;ARS;5.000.000;sueldo&#10;02/07/2026;retiro;USD;1000"></textarea>'+
     '<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap"><button class="btn btn-a btn-sm" onclick="aporPegar()">Cargar</button>'+
     (c&&c.neto?'<button class="btn btn-sm" onclick="aporAjustarInv()" title="Usalo una sola vez si los aportes de este período ya los habías sumado a mano en la Inv. Inicial">Restar aportes de la Inv. Inicial</button>':'')+
-    '<span id="apor-st" class="smsg"></span></div></details>';
+    '<span id="apor-st" class="'+(_aporMsgErr?'emsg':'smsg')+'" style="'+(_aporMsgErr?'color:var(--red)':'')+'">'+String(_aporMsg).replace(/</g,'&lt;')+'</span></div></details>';
   h+='<div style="'+mono+';font-size:.6rem;color:var(--text3);margin-top:6px">Ganancia = valor − Inv. inicial − aportes + retiros. Rendimiento = ganancia ÷ capital promedio (cada aporte pesa según los días que estuvo invertido).</div>';
   var foc=document.activeElement&&document.activeElement.id,keep={};['apor-fecha','apor-tipo','apor-mon','apor-monto','apor-nota','apor-txt'].forEach(function(id){var e=document.getElementById(id);if(e)keep[id]=e.value;});
   b.innerHTML=h;
