@@ -9,8 +9,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=125, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=126, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v126 | 2026-10-05 | Fix: los CCL/MEP que manda el Sync de GDC desaparecían en Ana/Hilda/Juli/Omar: al abrir el portafolio, el MEP de hoy se guardaba en Supabase con la tabla vieja (antes de leer la de Supabase) y pisaba lo sincronizado. Ahora no se escribe ccl/mep_override hasta haberlo leído.',
   'v125 | 2026-10-05 | Fix: el resultado de la carga masiva de aportes (cuántos se cargaron y por qué se rechazó alguno) se borraba al redibujar el cuadro y no se veía; ahora queda visible (en rojo si hubo rechazos).',
   'v124 | 2026-10-05 | Fix: al cargar un aporte/retiro en pesos sin MEP para esa fecha, en vez de rechazarlo pide el MEP y lo guarda en Tipo de cambio (cada portafolio tiene su propia tabla de MEP).',
   'v123 | 2026-10-05 | Feat: aportes y retiros en Ana. Honorario (💼) descuenta los aportes − retiros del período (campo nuevo, se toma de 💵) y el resumen manda aporNeto al index para "Tus honorarios hoy" y la proyección.',
@@ -1181,9 +1182,12 @@ function tcSavePersist(){
     localStorage.setItem((PFX+'ccl_override'),JSON.stringify(CCL_TABLE));
     localStorage.setItem((PFX+'mep_override'),JSON.stringify(MEP_TABLE));
   }catch(e){}
-  sbSetConfig('ccl_override', CCL_TABLE);
-  sbSetConfig('mep_override', MEP_TABLE);
+  _tcSbPersist();
 }
+// No escribir ccl/mep_override en Supabase antes de haberlos leído: al abrir el portafolio, el MEP de hoy
+// se guardaba con la tabla vieja y borraba los tipos de cambio que había mandado el Sync de GDC.
+var _tcOvrLoaded=false,_tcOvrPend=false;
+function _tcSbPersist(){if(!_tcOvrLoaded){_tcOvrPend=true;return;}sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}
 function tcLoadPersist(){
   try{
     var sc=localStorage.getItem((PFX+'ccl_override'));
@@ -3176,8 +3180,7 @@ function tcStampearFecha(fecha,esBonoON,valor){
     localStorage.setItem((PFX+'ccl_override'),JSON.stringify(CCL_TABLE));
     localStorage.setItem((PFX+'mep_override'),JSON.stringify(MEP_TABLE));
   }catch(e){}
-  sbSetConfig('ccl_override',CCL_TABLE);
-  sbSetConfig('mep_override',MEP_TABLE);
+  _tcSbPersist();
 }
 // Backfill: recorre TODOS los movimientos ya cargados y completa los huecos de CCL_TABLE/
 // MEP_TABLE con lo que cada uno ya tiene guardado en m.ccl (promedio si un mismo día hay
@@ -3219,8 +3222,7 @@ function backfillTCDesdeMovimientos(){
       localStorage.setItem((PFX+'ccl_override'),JSON.stringify(CCL_TABLE));
       localStorage.setItem((PFX+'mep_override'),JSON.stringify(MEP_TABLE));
     }catch(e){}
-    sbSetConfig('ccl_override',CCL_TABLE);
-    sbSetConfig('mep_override',MEP_TABLE);
+    _tcSbPersist();
   }
   return {completados:completados,revisar:revisar};
 }
@@ -7455,7 +7457,7 @@ async function _fetchTopbarRates(){
     var dc=await rc.json();
     var vc=parseFloat(dc.venta);
     if(vc>0){
-      CCL_HOY=vc;CCL_TABLE[_HOY_KEY]=vc;try{localStorage.setItem((PFX+'ccl_override'),JSON.stringify(CCL_TABLE));}catch(e){}sbSetConfig('ccl_override',CCL_TABLE);
+      CCL_HOY=vc;CCL_TABLE[_HOY_KEY]=vc;try{localStorage.setItem((PFX+'ccl_override'),JSON.stringify(CCL_TABLE));}catch(e){}_tcSbPersist();
       document.getElementById('tb-ccl').textContent='$'+vc.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
       document.getElementById('tb-ccl-src').textContent='venta';
       var rcTag2=document.getElementById('rc-ccl-tag');
@@ -7489,7 +7491,7 @@ async function _fetchTopbarRates(){
     var dm=await rm.json();
     var vm=parseFloat(dm.venta);
     if(vm>0){
-      MEP_HOY=vm;MEP_TABLE[_HOY_KEY]=vm;try{localStorage.setItem((PFX+'mep_override'),JSON.stringify(MEP_TABLE));}catch(e){}sbSetConfig('mep_override',MEP_TABLE);
+      MEP_HOY=vm;MEP_TABLE[_HOY_KEY]=vm;try{localStorage.setItem((PFX+'mep_override'),JSON.stringify(MEP_TABLE));}catch(e){}_tcSbPersist();
       document.getElementById('tb-mep').textContent='$'+vm.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});
       document.getElementById('tb-mep-src').textContent='venta';
     }
@@ -8585,6 +8587,8 @@ function trkCalcCCL(){
     var sbMepOvr = await sbGetConfig('mep_override');
     if(sbMepOvr){Object.assign(MEP_TABLE, sbMepOvr);}
     else{try{var sm=localStorage.getItem((PFX+'mep_override'));if(sm)Object.assign(MEP_TABLE,JSON.parse(sm));}catch(e){}}
+    _tcOvrLoaded=true; // recién ahora la tabla en memoria tiene lo de Supabase (incluido lo que mandó el Sync de GDC)
+    if(_tcOvrPend){_tcOvrPend=false;sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}
     tcRefrescarHoy();
 
     // 7. Liquidez
