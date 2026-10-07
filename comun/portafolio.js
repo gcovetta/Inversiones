@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=134, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=135, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v135 | 2026-10-06 | Feat: vista familiar de solo lectura (vista.html#id): con CFG.vistaFamiliar cada portafolio publica en config vista_familiar un resumen (valor, ganancia desde el inicio, períodos, evolución semanal, distribución, cobros, aportes). Entrada con Google o link por email; cada Supabase decide quién puede leerlo. Activado en GDC para probar.',
   'v134 | 2026-10-06 | Feat: modo celular simplificado — en el teléfono el Portafolio abre con resumen (valor, hoy, período, ganancia), alertas, lo que más se movió, cobros de 7 días, distribución, posiciones, meta (GDC) y botones Comprar/Vender/Cobro/Aporte. "Ver todo" abre la vista completa y "📱 Vista simple" vuelve.',
   'v133 | 2026-10-06 | Fix celular: las tarjetas de posiciones medían 480px (min-width viejo de la tabla) y el % de cada posición quedaba cortado a la derecha; ahora usan el ancho de la pantalla.',
   'v132 | 2026-10-06 | Fix celular: el botón ☰ no hacía nada con el teléfono vertical (el menú estaba siempre como barra). Ahora abre el menú de solapas como lista; se cierra al elegir una o tocar afuera.',
@@ -5864,6 +5865,7 @@ async function famSaveSnapshot(d){
       var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;var tp=divTipo(x),b=_ct[k]||(_ct[k]={div:0,renta:0,amort:0});b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']=Math.round((b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']+u)*100)/100;});
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
     try{doc.salud=saludCalc(d);}catch(e){}
+    if(cart==='principal'&&CFG.vistaFamiliar){try{await vistaPublicar(d);}catch(e){}}
     // rendimiento de los períodos anteriores (cargados en la config + cierres registrados) para el index
     if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}
       try{await saltosOkLoad();doc.salud=doc.salud||{};doc.salud.saltos=saltosDetectar();var _c=histUltimoCorte();doc.salud.cierrePend=(_c&&HIST&&!HIST.cierres.some(function(x){return x.d===_c;})&&HIST.puntos.length&&HIST.puntos[0].d<_c&&_aporDias(_c,_hHoy())<=60)?_c:null;}catch(e){}}
@@ -11454,4 +11456,39 @@ function mobRender(d){
   h+='<div class="mb" style="padding:9px"><div class="mbtn"><button onclick="mobIr(\'compra\')"><b>🛒</b>Comprar</button><button onclick="mobIr(\'venta\')"><b>💸</b>Vender</button><button onclick="mobIr(\'cobro\')"><b>💰</b>Cobro</button><button onclick="mobIr(\'aporte\')"><b>💵</b>Aporte</button></div></div>';
   h+='<div class="mlink" style="font-size:.8rem" onclick="mobVerTodo()">Ver todo (vista completa) ›</div>';
   v.innerHTML=h;
+}
+
+// ─── Vista familiar (solo lectura) ────────────────────────────────────────────
+// Cada vez que se guarda el resumen, se publica en config 'vista_familiar' un resumen chico para la página
+// vista.html (lo que ve el familiar). Solo datos de lectura: valor, ganancia, períodos, evolución, distribución,
+// cobros y aportes. Nada de movimientos, precios de venta ni honorarios.
+// CFG.capitalInicio = capital puesto (USD) hasta el inicio del período actual → habilita "Ganaste desde que empezaste" en USD.
+async function vistaPublicar(d){
+  try{
+    if(!CFG.vistaFamiliar)return;
+    var hoy=_hHoy(),ini=(typeof aporIni==='function')?aporIni():null;
+    var tot=(d.totalVal||0)+(d.liqTotalUSD||0);
+    var per=(typeof rendPeriodos==='function')?rendPeriodos():{};
+    var rend=d.rendPct!=null?Math.round(d.rendPct*100)/100:null;
+    var acc=1;Object.keys(per).forEach(function(y){acc*=1+per[y]/100;});if(rend!=null)acc*=1+rend/100;
+    var apor=(CFG.aportes&&_aporLoaded?APOR:[]).map(function(x){return {f:x.fecha,t:x.tipo,u:Math.round((+x.usd||0)*100)/100};});
+    var capital=null;if(CFG.capitalInicio>0){capital=CFG.capitalInicio;apor.forEach(function(x){if(ini&&x.f>=ini)capital+=(x.t==='retiro'?-1:1)*x.u;});}
+    // evolución: un punto por semana (+ el último), con la línea de capital puesto si se conoce
+    var serie=[];try{var s=histSerie(),pts=[],byW={};
+      s.forEach(function(x){if(x.previo){pts.push(x);return;}var dt=new Date(x.d+'T12:00:00'),wk=x.d.slice(0,4)+'-'+Math.floor((dt-new Date(dt.getFullYear(),0,1))/604800000);byW[wk]=x;});
+      pts=pts.concat(Object.keys(byW).map(function(k){return byW[k];})).sort(function(a,b){return a.d<b.d?-1:1;});
+      serie=pts.map(function(x){var cap=null;
+        if(x.previo)cap=x.inv||null;else if(CFG.capitalInicio>0){cap=CFG.capitalInicio;apor.forEach(function(a){if(ini&&a.f>=ini&&a.f<=x.d)cap+=(a.t==='retiro'?-1:1)*a.u;});}
+        return [x.d,Math.round(x.v),cap!=null?Math.round(cap):null];});}catch(e){}
+    var sv=d.sectorVal||{},rf=0,rv=0;Object.keys(sv).forEach(function(k){if(['bonos','on','fci','letras'].indexOf(k)>=0)rf+=sv[k]||0;else rv+=sv[k]||0;});
+    var lim=new Date();lim.setDate(lim.getDate()+30);var limS=lim.getFullYear()+'-'+('0'+(lim.getMonth()+1)).slice(-2)+'-'+('0'+lim.getDate()).slice(-2);
+    var cob=[];try{cob=(calcularCalendarioCobros().items||[]).filter(function(it){return it.fecha<=limS;}).slice(0,12).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:Math.round(it.total*100)/100};});}catch(e){}
+    var y0=hoy.slice(0,4)+'-01-01',cobAnio=0;try{(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!=='principal'))return;var f=_infISO(x.fecha);if(f&&f>=y0)cobAnio+=divUSD(x)||0;});}catch(e){}
+    var doc={v:1,ts:Date.now(),nombre:CFG.persona||CFG.nombre,cartera:CFG.nombre,valor:Math.round(tot),mep:MEP_HOY||null,
+      periodoIni:ini,rend:rend,ganPer:(typeof _aporUlt!=='undefined'&&_aporUlt)?Math.round(_aporUlt.gan):null,
+      per:per,acum:Math.round((acc-1)*10000)/100,capital:capital!=null?Math.round(capital):null,
+      dist:{rf:Math.round(rf),rv:Math.round(rv),liq:Math.round(d.liqTotalUSD||0),dolz:d.dolzPct!=null?Math.round(d.dolzPct):null},
+      cobros:cob,cobradoAnio:Math.round(cobAnio),aportes:apor,serie:serie,wa:CFG.whatsapp||null};
+    await sbSetConfig('vista_familiar',doc);
+  }catch(e){console.warn('vistaPublicar',e);}
 }

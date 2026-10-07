@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mi cartera</title>
+<meta name="theme-color" content="#0b1120">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Mi cartera">
+<link rel="apple-touch-icon" href="app/apple-touch-icon.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#3d5a80;--g:#00e676;--r:#ff5252;--bl:#448aff;--c:#22c55e;--mono:ui-monospace,"JetBrains Mono",SFMono-Regular,monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--t);font-family:var(--sans)}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.app{max-width:480px;margin:0 auto;padding:14px 12px 24px;display:flex;flex-direction:column;gap:10px}
+.hd{display:flex;align-items:center;gap:12px;padding:4px 4px 6px}
+.av{width:48px;height:48px;border-radius:50%;border:2.5px solid var(--c);object-fit:cover;background:var(--s2)}
+.hd h1{margin:0;font-size:1.12rem}.hd .s{font-size:.7rem;color:var(--t2);margin-top:2px}
+.blk{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:13px 14px}
+.lbl{font-family:var(--mono);font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em}
+.big{font-family:var(--mono);font-size:1.9rem;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.g{color:var(--g)}.r{color:var(--r)}.m{color:var(--t2)}
+.hero{background:linear-gradient(135deg,rgba(0,230,118,.12),rgba(68,138,255,.06));border-color:rgba(0,230,118,.35)}
+.gain{font-family:var(--mono);font-size:2.1rem;font-weight:800;letter-spacing:-.02em}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.two>div{background:var(--s2);border-radius:9px;padding:7px 9px}.two .v{font-family:var(--mono);font-weight:700;font-size:.95rem;margin-top:2px}
+.row{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:.8rem;padding:3px 0}
+.tot{border-top:1px solid var(--b);margin-top:5px;padding-top:6px}
+.bar{display:flex;height:16px;border-radius:5px;overflow:hidden;gap:2px;margin-top:8px}.bar span{display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:700;color:#0b1120;white-space:nowrap;overflow:hidden}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:.68rem;color:var(--t2);margin-top:6px}.leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+.foot{text-align:center;font-size:.64rem;color:var(--t3);line-height:1.6;padding:6px 8px}
+.btn{display:block;width:100%;text-align:center;border-radius:12px;padding:12px;font-size:.9rem;font-weight:700;border:1px solid var(--b2);background:var(--s2);color:var(--t);cursor:pointer;text-decoration:none;font-family:var(--sans)}
+.wa{background:#25d366;border-color:#25d366;color:#05220f}
+input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--t);padding:12px;font-size:1rem;margin:8px 0}
+.msg{font-size:.78rem;color:var(--t2);text-align:center;line-height:1.5;margin-top:8px}
+.out{background:none;border:none;color:var(--t3);font-size:.68rem;text-decoration:underline;cursor:pointer;margin:4px auto 0;display:block}
+</style></head><body>
+<div class="app" id="app"><div class="msg">Cargando…</div></div>
+<script>
+// Carteras: cada una lee su propio Supabase (solo el resumen 'vista_familiar').
+var CARTERAS={
+  gdc:{url:'https://wstnseufzyavgdovrehu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU',img:'GDC/PerfilGaston.png',color:'#22c55e'}
+};
+var id=(location.hash||'#gdc').slice(1).toLowerCase(),C=CARTERAS[id];
+var app=document.getElementById('app');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+if(!C){app.innerHTML='<div class="msg">Link incorrecto.</div>';}
+else{
+  document.documentElement.style.setProperty('--c',C.color);
+  var SB=supabase.createClient(C.url,C.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'vista-'+id}});
+  SB.auth.getSession().then(function(r){var s=r.data&&r.data.session;if(s)cargar(s);else login();});
+  SB.auth.onAuthStateChange(function(ev,s){if(ev==='SIGNED_IN'&&s)cargar(s);});
+}
+function login(msg){
+  app.innerHTML='<div class="hd"><img class="av" src="'+C.img+'" onerror="this.style.visibility=\'hidden\'"><div><h1>Tu cartera</h1><div class="s">Entrá una vez y queda guardado en este celular</div></div></div>'+
+    '<div class="blk"><button class="btn" onclick="google()">Entrar con Google</button>'+
+    '<div class="msg" style="margin:12px 0 2px">o con tu email</div><input id="em" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com">'+
+    '<button class="btn" onclick="mail()">Mandame el link para entrar</button><div class="msg" id="lm">'+(msg||'')+'</div></div>'+
+    '<div class="foot">Solo vas a poder ver tu propia cartera, no se puede operar desde acá.</div>';
+}
+function redir(){return location.origin+location.pathname+location.hash;}
+function google(){SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:redir()}});}
+function mail(){var e=(document.getElementById('em').value||'').trim(),m=document.getElementById('lm');if(!/^\S+@\S+\.\S+$/.test(e)){m.textContent='Revisá el email.';return;}
+  m.textContent='Enviando…';SB.auth.signInWithOtp({email:e,options:{emailRedirectTo:redir(),shouldCreateUser:true}}).then(function(r){
+    m.innerHTML=r.error?('No se pudo enviar: '+esc(r.error.message)):'Listo. Abrí el mail que te llegó y tocá <b>"Log In"</b>. Si no lo ves, fijate en spam.';});}
+function salir(){SB.auth.signOut().then(function(){login();});}
+function cargar(s){
+  app.innerHTML='<div class="msg">Cargando tu cartera…</div>';
+  SB.from('config').select('value').eq('key','vista_familiar').then(function(r){
+    var row=r.data&&r.data[0];
+    if(r.error||!row){app.innerHTML='<div class="blk"><div class="msg">Entraste como <b>'+esc(s.user&&s.user.email)+'</b>, pero esta cuenta todavía no tiene acceso a esta cartera.<br>Pedile a Gastón que la habilite.</div><button class="out" onclick="salir()">Entrar con otra cuenta</button></div>';return;}
+    var d=row.value;if(typeof d==='string'){try{d=JSON.parse(d);}catch(e){}}
+    render(d,s);
+  });
+}
+var n0=function(x){return Math.round(x||0).toLocaleString('es-AR');};
+var pc=function(x,dec){if(x==null||!isFinite(x))return '—';return (x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(dec==null?1:dec).replace('.',',')+'%';};
+var cls=function(x){return x>0?'g':x<0?'r':'m';};
+var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var fm=function(iso){return MES[+iso.slice(5,7)-1]+'-'+iso.slice(2,4);};
+var fd=function(iso){return iso.slice(8,10)+'/'+iso.slice(5,7);};
+function render(d,s){
+  var ini=d.periodoIni||'',ys=Object.keys(d.per||{}).sort(),pi=ini.slice(4);
+  var desde=ys.length?(ys[0]+pi):ini;
+  var dt=new Date(d.ts);
+  var h='<div class="hd"><img class="av" src="'+C.img+'" onerror="this.style.visibility=\'hidden\'"><div><h1>Hola, '+esc(d.nombre)+'</h1><div class="s">Tu cartera · actualizada '+dt.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+'</div></div></div>';
+  // 1. hoy
+  h+='<div class="blk"><div class="lbl">Tu cartera hoy</div><div class="big">USD '+n0(d.valor)+'</div>'+(d.mep?'<div class="m" style="font-size:.72rem">≈ $ '+(d.valor*d.mep/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+' millones al dólar MEP</div>':'')+'</div>';
+  // 2. ganancia
+  var gan=d.capital?d.valor-d.capital:null;
+  h+='<div class="blk hero"><div class="lbl">Ganaste desde que empezaste'+(desde?' ('+fm(desde)+')':'')+'</div>'+
+    (gan!=null?'<div class="gain '+cls(gan)+'">'+(gan>=0?'+':'−')+'USD '+n0(Math.abs(gan))+'</div>':'<div class="gain '+cls(d.acum)+'">'+pc(d.acum,0)+'</div>')+
+    '<div class="two"><div><div class="lbl">Rendimiento total</div><div class="v '+cls(d.acum)+'">'+pc(d.acum,ys.length?0:1)+'</div></div>'+
+    '<div><div class="lbl">Este período</div><div class="v '+cls(d.rend)+'">'+pc(d.rend)+'</div><div class="m" style="font-size:.62rem">'+(ini?'desde el '+fd(ini)+'/'+ini.slice(2,4):'')+(d.ganPer!=null?' · '+(d.ganPer>=0?'+':'−')+'USD '+n0(Math.abs(d.ganPer)):'')+'</div></div></div></div>';
+  // 3. evolución
+  var se=(d.serie||[]).filter(function(p){return p[1]>0;});
+  if(se.length>=2){var W=320,H=110,t0=new Date(se[0][0]).getTime(),t1=new Date(se[se.length-1][0]).getTime()||t0+1,
+    mx=Math.max.apply(null,se.map(function(p){return Math.max(p[1],p[2]||0);}))*1.05,
+    X=function(dd){return 5+(new Date(dd).getTime()-t0)/(t1-t0||1)*(W-10);},Y=function(v){return H-14-(v/mx)*(H-22);};
+    var pv=se.map(function(p,i){return (i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1);}).join(' ');
+    var cp=se.filter(function(p){return p[2]!=null;}),pcap=cp.map(function(p,i){return (i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[2]).toFixed(1);}).join(' ');
+    h+='<div class="blk"><div class="lbl">Cómo fue creciendo</div><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="margin-top:6px">'+
+      (pcap?'<path d="'+pcap+'" fill="none" stroke="#7a9cc5" stroke-width="1.5" stroke-dasharray="4 3"/>':'')+
+      '<path d="'+pv+'" fill="none" stroke="#00e676" stroke-width="2.5" stroke-linejoin="round"/>'+
+      '<g font-family="ui-monospace,monospace" font-size="8" fill="#3d5a80"><text x="5" y="'+(H-2)+'">'+fm(se[0][0])+'</text><text x="'+(W-5)+'" y="'+(H-2)+'" text-anchor="end">hoy</text></g></svg>'+
+      '<div class="leg"><span><i style="background:#00e676"></i>Lo que vale</span>'+(pcap?'<span><i style="background:#7a9cc5"></i>Lo que pusiste</span>':'')+'</div></div>';}
+  // 4. cada año
+  if(ys.length||d.rend!=null){h+='<div class="blk"><div class="lbl" style="margin-bottom:4px">Cada año</div>'+
+    ys.map(function(y){var a=y+pi,b=(+y+1)+pi;return '<div class="row"><span>'+fm(a)+' → '+fm(b)+'</span><span class="'+cls(d.per[y])+'">'+pc(d.per[y])+'</span></div>';}).join('')+
+    (d.rend!=null?'<div class="row"><span>'+(ini?fm(ini):'')+' → hoy <span class="m">(en curso)</span></span><span class="'+cls(d.rend)+'">'+pc(d.rend)+'</span></div>':'')+'</div>';}
+  // 5. distribución
+  var ds=d.dist||{},T=(ds.rf||0)+(ds.rv||0)+(ds.liq||0)||1,w=function(x){return Math.round((x||0)/T*100);};
+  h+='<div class="blk"><div class="lbl">En qué está invertido</div><div class="bar">'+
+    (ds.rf>0?'<span style="width:'+w(ds.rf)+'%;background:#448aff;color:#fff">'+(w(ds.rf)>=15?'Bonos '+w(ds.rf)+'%':'')+'</span>':'')+
+    (ds.rv>0?'<span style="width:'+w(ds.rv)+'%;background:#00e676">'+(w(ds.rv)>=15?'Acciones '+w(ds.rv)+'%':'')+'</span>':'')+
+    (ds.liq>0?'<span style="width:'+Math.max(2,w(ds.liq))+'%;background:#7a9cc5"></span>':'')+'</div>'+
+    '<div class="leg"><span><i style="background:#448aff"></i>Bonos y ON '+w(ds.rf)+'%</span><span><i style="background:#00e676"></i>Acciones y Cedears '+w(ds.rv)+'%</span><span><i style="background:#7a9cc5"></i>Efectivo '+w(ds.liq)+'%</span></div>'+
+    (ds.dolz!=null?'<div class="m" style="font-size:.68rem;margin-top:5px">'+ds.dolz+'% en dólares o atado al dólar</div>':'')+'</div>';
+  // 6. cobros
+  var cb=d.cobros||[];
+  h+='<div class="blk"><div class="lbl" style="margin-bottom:4px">Vas a cobrar (próximos 30 días)</div>'+
+    (cb.length?cb.map(function(x){return '<div class="row"><span>'+fd(x.f)+' · '+esc(x.t)+'</span><span class="g">'+(x.m==='USD'?'USD ':'$ ')+n0(x.x)+'</span></div>';}).join(''):'<div class="m" style="font-size:.76rem">Nada en los próximos 30 días</div>')+
+    '<div class="row tot"><span class="m">Cobrado en '+new Date().getFullYear()+'</span><span><b>USD '+n0(d.cobradoAnio)+'</b></span></div></div>';
+  // 7. aportes
+  var ap=d.aportes||[];
+  if(ap.length||d.capital){var g={};ap.forEach(function(a){var k=a.f.slice(0,7);g[k]=(g[k]||0)+(a.t==='retiro'?-1:1)*a.u;});
+    h+='<div class="blk"><div class="lbl" style="margin-bottom:4px">Tus aportes y retiros</div>'+
+      Object.keys(g).sort().map(function(k){var v=g[k];return '<div class="row"><span>'+MES[+k.slice(5)-1]+'-'+k.slice(2,4)+'</span><span class="'+(v<0?'r':'')+'">'+(v<0?'−':'')+'USD '+n0(Math.abs(v))+'</span></div>';}).join('')+
+      (d.capital?'<div class="row tot"><span class="m">Total puesto</span><span><b>USD '+n0(d.capital)+'</b></span></div>':'')+'</div>';}
+  // 8. whatsapp
+  if(d.wa)h+='<a class="btn wa" href="https://wa.me/'+encodeURIComponent(String(d.wa).replace(/\D/g,''))+'">💬 Escribirle a Gastón</a>';
+  h+='<div class="foot">Valores en dólares a precio de mercado. Los activos en pesos se pasan al dólar MEP.<br>Rendimientos pasados no garantizan resultados futuros.</div>'+
+    '<button class="out" onclick="salir()">Salir ('+esc(s.user&&s.user.email)+')</button>';
+  app.innerHTML=h;
+}
+</script>
+</body></html>
