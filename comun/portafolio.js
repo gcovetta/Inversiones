@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=136, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=137, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v137 | 2026-10-06 | Feat (GDC, CFG.push): avisos push con la app cerrada — botón 🔕/🔔 para registrar el dispositivo (config push_subs) y publicación de lo que hay que vigilar (push_watch: precios de venta, cobros de 10 días, cierres). Los manda la función programada "avisos" de Supabase. sw.js muestra las notificaciones.',
   'v136 | 2026-10-06 | Feat (GDC, CFG.simRetiro): 🏖️ Simulador de retiro — cuánto dura el capital sacando X por mes, capital para no tocarlo, retiro "eterno", gráfico y escenarios 5–20%; precarga el valor actual y tus rendimientos por año; escenarios guardados en config sim_retiro.',
   'v135 | 2026-10-06 | Feat: vista familiar de solo lectura (vista.html#id): con CFG.vistaFamiliar cada portafolio publica en config vista_familiar un resumen (valor, ganancia desde el inicio, períodos, evolución semanal, distribución, cobros, aportes). Entrada con Google o link por email; cada Supabase decide quién puede leerlo. Activado en GDC para probar.',
   'v134 | 2026-10-06 | Feat: modo celular simplificado — en el teléfono el Portafolio abre con resumen (valor, hoy, período, ganancia), alertas, lo que más se movió, cobros de 7 días, distribución, posiciones, meta (GDC) y botones Comprar/Vender/Cobro/Aporte. "Ver todo" abre la vista completa y "📱 Vista simple" vuelve.',
@@ -5868,6 +5869,7 @@ async function famSaveSnapshot(d){
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
     try{doc.salud=saludCalc(d);}catch(e){}
     if(cart==='principal'&&CFG.vistaFamiliar){try{await vistaPublicar(d);}catch(e){}}
+    if(cart==='principal'&&CFG.push){try{await pushWatchPublicar(d);}catch(e){}}
     // rendimiento de los períodos anteriores (cargados en la config + cierres registrados) para el index
     if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}
       try{await saltosOkLoad();doc.salud=doc.salud||{};doc.salud.saltos=saltosDetectar();var _c=histUltimoCorte();doc.salud.cierrePend=(_c&&HIST&&!HIST.cierres.some(function(x){return x.d===_c;})&&HIST.puntos.length&&HIST.puntos[0].d<_c&&_aporDias(_c,_hHoy())<=60)?_c:null;}catch(e){}}
@@ -11576,3 +11578,64 @@ function simrResultado(){
     '<div class="tw" style="margin-top:6px"><table style="font-family:var(--mono);font-size:.72rem;width:100%"><thead><tr><th style="text-align:left">Rendimiento</th><th>¿Cuánto dura?</th><th>Capital para no tocarlo</th><th>Retiro eterno</th></tr></thead><tbody>'+esc+'</tbody></table></div>';
 }
 (function _simrBoot(n){setTimeout(function(){if(!CFG.simRetiro)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){simrLoad().then(function(){if(CFG.historial&&typeof histLoad==='function')return histLoad();}).then(function(){simrRender(true);});}else if(n<40)_simrBoot(n+1);},1800);})(0);
+
+// ─── 🔔 Avisos push (CFG.push) ─────────────────────────────────────────────────
+// La app registra el dispositivo (config push_subs) y publica qué vigilar (config push_watch).
+// Una función programada en Supabase ("avisos") revisa precios, cobros y cierres y manda la notificación,
+// aunque la app esté cerrada. En iPhone hace falta tener la app agregada a la pantalla de inicio (iOS 16.4+).
+var VAPID_PUB='BP6CJHf5i2nKacdBN9fVoFcjZ51gozu_-YY8Xg1fZPD-GaGezoyGrzARFUz9k6KzWlytWcssXGCFyOT7CyXyR2w';
+function _b64u(s){var p='='.repeat((4-s.length%4)%4),b=(s+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b),o=new Uint8Array(r.length);for(var i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o;}
+function pushSoportado(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;}
+function _esIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent);}
+async function pushEstado(){if(!pushSoportado())return 'no';try{var reg=await navigator.serviceWorker.getRegistration('../');if(!reg)reg=await navigator.serviceWorker.ready;var s=await reg.pushManager.getSubscription();return s?'on':'off';}catch(e){return 'off';}}
+async function pushBtnPintar(){var b=document.getElementById('push-btn');if(!b)return;var e=await pushEstado();b.textContent=e==='on'?'🔔':'🔕';b.title=e==='on'?'Avisos activados en este dispositivo (click: probar o desactivar)':'Activar avisos en este dispositivo';}
+async function pushClick(){
+  if(!pushSoportado()){alert(_esIOS()?'Para recibir avisos en el iPhone:\n\n1. Abrí esta página en Safari\n2. Compartir → "Agregar a inicio"\n3. Abrí la app desde ese ícono y tocá 🔕 de nuevo.\n\n(Necesita iOS 16.4 o más nuevo.)':'Este navegador no permite notificaciones push.');return;}
+  var est=await pushEstado();
+  if(est==='on'){
+    if(confirm('Los avisos están activados en este dispositivo.\n\nAceptar = mandar un aviso de prueba\nCancelar = ver opción para desactivarlos'))return pushProbar();
+    if(confirm('¿Desactivar los avisos en este dispositivo?'))return pushDesactivar();return;}
+  var perm=await Notification.requestPermission();if(perm!=='granted'){alert('No se dieron permisos de notificación. Podés habilitarlos en Ajustes del teléfono → Notificaciones.');return;}
+  try{
+    var reg=await navigator.serviceWorker.register('../sw.js',{scope:'../'});await navigator.serviceWorker.ready;
+    var sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_b64u(VAPID_PUB)});
+    var j=sub.toJSON(),L=(await sbGetConfig('push_subs'))||[];if(!Array.isArray(L))L=[];
+    L=L.filter(function(x){return x.endpoint!==j.endpoint;});L.push({endpoint:j.endpoint,keys:j.keys,ua:navigator.userAgent.slice(0,80),ts:Date.now()});
+    var ok=await sbSetConfig('push_subs',L);if(!ok){alert('No se pudo guardar la suscripción. Probá de nuevo.');return;}
+    _famLastSave=0;try{renderPortfolio();}catch(e){}
+    await pushBtnPintar();
+    if(confirm('✓ Avisos activados en este dispositivo.\n\n¿Mandar un aviso de prueba?'))pushProbar();
+  }catch(e){alert('No se pudieron activar los avisos: '+(e&&e.message||e));}
+}
+async function pushProbar(){
+  try{var tok=window._sbAccessToken||'';
+    var r=await fetch(SUPABASE_URL+'/functions/v1/avisos?test=1',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+(tok||SUPABASE_KEY),'x-user-token':tok,'Content-Type':'application/json'},body:'{}'});
+    var t=await r.text();if(!r.ok){alert('La prueba falló ('+r.status+'): '+t.slice(0,200)+'\n\n¿Ya subiste la función "avisos" a Supabase?');return;}
+    var d={};try{d=JSON.parse(t);}catch(e){}alert('Aviso de prueba enviado a '+(d.enviados!=null?d.enviados:'?')+' dispositivo(s). Debería llegarte en unos segundos.');
+  }catch(e){alert('No se pudo llamar a la función de avisos: '+(e&&e.message||e));}
+}
+async function pushDesactivar(){
+  try{var reg=await navigator.serviceWorker.ready,s=await reg.pushManager.getSubscription();if(s){var ep=s.endpoint;await s.unsubscribe();
+    var L=(await sbGetConfig('push_subs'))||[];if(Array.isArray(L)){await sbSetConfig('push_subs',L.filter(function(x){return x.endpoint!==ep;}));}}}catch(e){}
+  pushBtnPintar();
+}
+// Qué tiene que vigilar el servidor (se publica con el resumen)
+async function pushWatchPublicar(d){
+  if(!CFG.push)return;
+  try{
+    var tg=[];(d.pos||[]).forEach(function(p){if(!(p.pv>0))return;var s=p.s,k;
+      if(s==='fci'||(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.t)))return;
+      if((s==='bonos'||s==='on')&&typeof isBonoUSDDirecto==='function'&&isBonoUSDDirecto(p.t))k='usd';else if(s==='bonos'||s==='on')k='bono';else k='ccl';
+      var last=(p.up!=null&&isFinite(p.up))?p.pv/(1+p.up/100):null;
+      tg.push({t:p.t,sym:p.t,k:k,r:(typeof getRatio==='function'?getRatio(p.t):1)||1,pv:p.pv,last:last?Math.round(last*1000)/1000:null});});
+    var lim=new Date();lim.setDate(lim.getDate()+10);var limS=lim.getFullYear()+'-'+('0'+(lim.getMonth()+1)).slice(-2)+'-'+('0'+lim.getDate()).slice(-2);
+    var cob=[];try{cob=(calcularCalendarioCobros().items||[]).filter(function(it){return it.fecha<=limS;}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:Math.round(it.total*100)/100};});}catch(e){}
+    var cortes=[];try{var c=histUltimoCorte();if(c)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:(parseInt(c.slice(0,4),10)+1)+c.slice(4)});
+      if(c&&HIST&&!HIST.cierres.some(function(x){return x.d===c;})&&_aporDias(c,_hHoy())<=1)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:c});}catch(e){}
+    await sbSetConfig('push_watch',{ts:Date.now(),cartera:CFG.nombre,url:location.href.split('#')[0],targets:tg,cobros:cob,cortes:cortes});
+  }catch(e){console.warn('pushWatchPublicar',e);}
+}
+(function(){function add(){if(!CFG.push)return;var hr=document.querySelector('.hright');if(!hr||document.getElementById('push-btn'))return;
+  var b=document.createElement('button');b.id='push-btn';b.className='btn-sidebar-toggle';b.style.cssText='width:auto;padding:0 8px;font-size:.85rem';b.textContent='🔕';b.onclick=pushClick;
+  hr.insertBefore(b,hr.firstChild);pushBtnPintar();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();})();
