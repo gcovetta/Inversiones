@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=137, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=138, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v138 | 2026-10-06 | Feat: vista familiar activada en Ana, Hilda, Juli y Omar (vista.html?c=ana|hilda|juli|omar); Hilda, Juli y Omar con capitalInicio para mostrar la ganancia en USD.',
   'v137 | 2026-10-06 | Feat (GDC, CFG.push): avisos push con la app cerrada — botón 🔕/🔔 para registrar el dispositivo (config push_subs) y publicación de lo que hay que vigilar (push_watch: precios de venta, cobros de 10 días, cierres). Los manda la función programada "avisos" de Supabase. sw.js muestra las notificaciones.',
   'v136 | 2026-10-06 | Feat (GDC, CFG.simRetiro): 🏖️ Simulador de retiro — cuánto dura el capital sacando X por mes, capital para no tocarlo, retiro "eterno", gráfico y escenarios 5–20%; precarga el valor actual y tus rendimientos por año; escenarios guardados en config sim_retiro.',
   'v135 | 2026-10-06 | Feat: vista familiar de solo lectura (vista.html#id): con CFG.vistaFamiliar cada portafolio publica en config vista_familiar un resumen (valor, ganancia desde el inicio, períodos, evolución semanal, distribución, cobros, aportes). Entrada con Google o link por email; cada Supabase decide quién puede leerlo. Activado en GDC para probar.',

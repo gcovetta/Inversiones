@@ -37,7 +37,11 @@ input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:1
 <script>
 // Carteras: cada una lee su propio Supabase (solo el resumen 'vista_familiar').
 var CARTERAS={
-  gdc:{url:'https://wstnseufzyavgdovrehu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU',img:'GDC/PerfilGaston.png',color:'#22c55e'}
+  gdc:{url:'https://wstnseufzyavgdovrehu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU',img:'GDC/PerfilGaston.png',color:'#22c55e'},
+  ana:{url:'https://arxntlqhtrtskabzihlf.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg',img:'Ana/PerfilAna.png',color:'#e879f9'},
+  hilda:{url:'https://zqlpfvxgtxfnqztiudzc.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4',img:'Hilda/PerfilHilda.png',color:'#fb923c'},
+  juli:{url:'https://ujgkiuqvehidcnbtwrqn.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk',img:'Juli/Juli.png',color:'#38bdf8'},
+  omar:{url:'https://opbbnvfmgdmdsmbhmgsc.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng',img:'Omar/perfilOmar.png',color:'#facc15'}
 };
 // La cartera viene en ?c=gdc o en #gdc. Al volver de Google, Supabase pone el token en el # (por eso se recuerda la última).
 var _q=new URLSearchParams(location.search).get('c'),_h=(location.hash||'').slice(1),_ls=null;try{_ls=localStorage.getItem('vista_cartera');}catch(e){}
@@ -62,8 +66,8 @@ function login(msg){
 function redir(){return location.origin+location.pathname+'?c='+id;}
 function google(){SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:redir()}});}
 function mail(){var e=(document.getElementById('em').value||'').trim(),m=document.getElementById('lm');if(!/^\S+@\S+\.\S+$/.test(e)){m.textContent='Revisá el email.';return;}
-  m.textContent='Enviando…';SB.auth.signInWithOtp({email:e,options:{emailRedirectTo:redir(),shouldCreateUser:true}}).then(function(r){
-    m.innerHTML=r.error?('No se pudo enviar: '+esc(r.error.message)):'Listo. Abrí el mail que te llegó y tocá <b>"Log In"</b>. Si no lo ves, fijate en spam.';});}
+  m.textContent='Enviando…';SB.auth.signInWithOtp({email:e,options:{emailRedirectTo:redir(),shouldCreateUser:false}}).then(function(r){
+    m.innerHTML=r.error?(/signup|not allowed|not found/i.test(r.error.message)?'Ese email no está habilitado. Pedile a Gastón que lo agregue.':'No se pudo enviar: '+esc(r.error.message)):'Listo. Abrí el mail que te llegó y tocá <b>"Log In"</b>. Si no lo ves, fijate en spam.';});}
 function salir(){SB.auth.signOut().then(function(){login();});}
 function cargar(s){
   app.innerHTML='<div class="msg">Cargando tu cartera…</div>';
