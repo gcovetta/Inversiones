@@ -39,7 +39,10 @@ input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:1
 var CARTERAS={
   gdc:{url:'https://wstnseufzyavgdovrehu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU',img:'GDC/PerfilGaston.png',color:'#22c55e'}
 };
-var id=(location.hash||'#gdc').slice(1).toLowerCase(),C=CARTERAS[id];
+// La cartera viene en ?c=gdc o en #gdc. Al volver de Google, Supabase pone el token en el # (por eso se recuerda la última).
+var _q=new URLSearchParams(location.search).get('c'),_h=(location.hash||'').slice(1),_ls=null;try{_ls=localStorage.getItem('vista_cartera');}catch(e){}
+var id=String(_q||(_h&&_h.indexOf('=')<0?_h:'')||_ls||'gdc').toLowerCase(),C=CARTERAS[id];
+try{if(C)localStorage.setItem('vista_cartera',id);}catch(e){}
 var app=document.getElementById('app');
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 if(!C){app.innerHTML='<div class="msg">Link incorrecto.</div>';}
@@ -56,7 +59,7 @@ function login(msg){
     '<button class="btn" onclick="mail()">Mandame el link para entrar</button><div class="msg" id="lm">'+(msg||'')+'</div></div>'+
     '<div class="foot">Solo vas a poder ver tu propia cartera, no se puede operar desde acá.</div>';
 }
-function redir(){return location.origin+location.pathname+location.hash;}
+function redir(){return location.origin+location.pathname+'?c='+id;}
 function google(){SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:redir()}});}
 function mail(){var e=(document.getElementById('em').value||'').trim(),m=document.getElementById('lm');if(!/^\S+@\S+\.\S+$/.test(e)){m.textContent='Revisá el email.';return;}
   m.textContent='Enviando…';SB.auth.signInWithOtp({email:e,options:{emailRedirectTo:redir(),shouldCreateUser:true}}).then(function(r){
