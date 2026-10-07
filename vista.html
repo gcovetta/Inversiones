@@ -59,8 +59,10 @@ else{
 function login(msg){
   app.innerHTML='<div class="hd"><img class="av" src="'+C.img+'" onerror="this.style.visibility=\'hidden\'"><div><h1>Tu cartera</h1><div class="s">Entrá una vez y queda guardado en este celular</div></div></div>'+
     '<div class="blk"><button class="btn" onclick="google()">Entrar con Google</button>'+
-    '<div class="msg" style="margin:12px 0 2px">o con tu email</div><input id="em" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com">'+
-    '<button class="btn" onclick="mail()">Mandame el link para entrar</button><div class="msg" id="lm">'+(msg||'')+'</div></div>'+
+    '<div class="msg" style="margin:12px 0 2px">o con tu email</div><input id="em" type="email" inputmode="email" autocomplete="username" placeholder="tu@email.com">'+
+    '<input id="pw" type="password" autocomplete="current-password" placeholder="contraseña (si Gastón te pasó una)" style="margin-top:8px" onkeydown="if(event.key===\'Enter\')clave()">'+
+    '<button class="btn" onclick="clave()">Entrar con contraseña</button>'+
+    '<button class="btn" onclick="mail()" style="background:transparent;border:1px solid currentColor;opacity:.8">No tengo contraseña: mandame un link por mail</button><div class="msg" id="lm">'+(msg||'')+'</div></div>'+
     '<div class="foot">Solo vas a poder ver tu propia cartera, no se puede operar desde acá.</div>';
 }
 function redir(){return location.origin+location.pathname+'?c='+id;}
@@ -68,6 +70,9 @@ function google(){SB.auth.signInWithOAuth({provider:'google',options:{redirectTo
 function mail(){var e=(document.getElementById('em').value||'').trim(),m=document.getElementById('lm');if(!/^\S+@\S+\.\S+$/.test(e)){m.textContent='Revisá el email.';return;}
   m.textContent='Enviando…';SB.auth.signInWithOtp({email:e,options:{emailRedirectTo:redir(),shouldCreateUser:false}}).then(function(r){
     m.innerHTML=r.error?(/signup|not allowed|not found/i.test(r.error.message)?'Ese email no está habilitado. Pedile a Gastón que lo agregue.':'No se pudo enviar: '+esc(r.error.message)):'Listo. Abrí el mail que te llegó y tocá <b>"Log In"</b>. Si no lo ves, fijate en spam.';});}
+function clave(){var e=(document.getElementById('em').value||'').trim(),p=document.getElementById('pw').value||'',m=document.getElementById('lm');
+  if(!/^\S+@\S+\.\S+$/.test(e)){m.textContent='Revisá el email.';return;}if(!p){m.textContent='Escribí la contraseña.';return;}
+  m.textContent='Entrando…';SB.auth.signInWithPassword({email:e,password:p}).then(function(r){if(r.error)m.textContent=/invalid/i.test(r.error.message)?'Email o contraseña incorrectos.':'No se pudo entrar: '+r.error.message;});}
 function salir(){SB.auth.signOut().then(function(){login();});}
 function cargar(s){
   app.innerHTML='<div class="msg">Cargando tu cartera…</div>';
