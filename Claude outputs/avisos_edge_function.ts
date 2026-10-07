@@ -7,7 +7,9 @@
 // Precios: data912 (BYMA) y tipo de cambio de dolarapi.
 // Llamadas: normal (cron, cada hora) → P. Venta, subas de más de 5%, cobros de mañana y cierres
 //           ?resumen=1 (cron 17:30) → además manda el resumen del día de la cartera
+//                                      y guarda los precios de cierre en la tabla precios_hist (historial)
 //           ?test=1 (con tu sesión) → manda un aviso de prueba.
+// Cada corrida guarda config push_log (hora, modo, avisos, dispositivos, error) para el panel 🛠 Sistema.
 import webpush from "npm:web-push@3.6.7";
 
 const SB = Deno.env.get("SUPABASE_URL")!;
@@ -53,6 +55,32 @@ async function precios() {
   }
   return { map, pct };
 }
+// Una sola bajada de precios por corrida
+let _P: { map: Record<string, number>; pct: Record<string, number> } | null = null;
+async function preciosMemo() { if (!_P) _P = await precios(); return _P; }
+
+// Historial: una fila por rueda con el cierre de todos los activos de data912 (+ CCL y MEP)
+async function guardarHist(hoy: string): Promise<string> {
+  const dow = new Date(hoy + "T12:00:00Z").getUTCDay();
+  if (dow === 0 || dow === 6) return "fin de semana";
+  const P = await preciosMemo(); const n = Object.keys(P.map).length;
+  if (n < 50) return "sin precios";
+  // feriado: data912 repite la rueda anterior → si casi todo es igual a lo último guardado, no se guarda
+  const r = await fetch(`${SB}/rest/v1/precios_hist?select=fecha,precios&order=fecha.desc&limit=1`, { headers: H });
+  if (!r.ok) return "falta la tabla precios_hist";
+  const last = (await r.json())?.[0];
+  if (last && last.fecha !== hoy && last.precios) {
+    let tot = 0, ig = 0;
+    for (const k in P.map) if (last.precios[k] != null) { tot++; if (Math.abs(+last.precios[k] - P.map[k]) < 1e-9 || Math.round(P.map[k] * 100) / 100 === +last.precios[k]) ig++; }
+    if (tot > 50 && ig / tot > 0.9) return "feriado (sin rueda)";
+  }
+  const precios: Record<string, number> = {};
+  for (const [k, v] of Object.entries(P.map)) precios[k] = Math.round(v * 100) / 100;
+  const ccl = await tc("contadoconliqui"), mep = await tc("bolsa");
+  const w = await fetch(`${SB}/rest/v1/precios_hist?on_conflict=fecha`, { method: "POST", headers: { ...H, Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ fecha: hoy, precios, ccl, mep, ts: new Date().toISOString() }) });
+  return w.ok ? `${n} precios` : `error al guardar (${w.status})`;
+}
+
 async function tc(tipo: string) { try { const r = await fetch(`https://dolarapi.com/v1/dolares/${tipo}`); const d = await r.json(); return parseFloat(d.venta) || null; } catch { return null; } }
 
 async function enviar(subs: any[], msg: { title: string; body: string; url?: string; tag?: string }) {
@@ -66,11 +94,25 @@ async function enviar(subs: any[], msg: { title: string; body: string; url?: str
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-user-token" };
 
+// Deja registro de cada corrida (lo muestra el panel 🛠 Sistema del index)
+async function log(modo: string, d: Record<string, unknown>) {
+  try { await setCfg("push_log", { ts: Date.now(), modo, ...d }); } catch { /* el registro nunca frena los avisos */ }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const url = new URL(req.url);
+  const modo = url.searchParams.get("test") ? "prueba" : url.searchParams.get("resumen") ? "cierre" : "horario";
+  try { return await correr(req, url, modo); }
+  catch (e: any) { await log(modo, { error: String(e?.message || e) }); return new Response(JSON.stringify({ ok: false, error: String(e?.message || e) }), { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }); }
+});
+
+async function correr(req: Request, url: URL, modo: string) {
+  _P = null;
+  const extra: Record<string, unknown> = {};
+  if (modo === "cierre") { try { extra.hist = await guardarHist(hoyAR()); } catch (e: any) { extra.hist = "error: " + String(e?.message || e); } }
   let subs: any[] = (await getCfg("push_subs")) || [];
-  if (!subs.length) return new Response(JSON.stringify({ ok: true, msg: "sin dispositivos suscriptos" }), { headers: { ...CORS, "Content-Type": "application/json" } });
+  if (!subs.length) { await log(modo, { ...extra, subs: 0, avisos: 0, enviados: 0 }); return new Response(JSON.stringify({ ok: true, msg: "sin dispositivos suscriptos" }), { headers: { ...CORS, "Content-Type": "application/json" } }); }
 
   // Aviso de prueba: solo si lo pide el dueño con su sesión
   if (url.searchParams.get("test")) {
@@ -79,18 +121,19 @@ Deno.serve(async (req) => {
     if (!u || u.email !== DUENO) return new Response("no autorizado", { status: 401, headers: CORS });
     const r = await enviar(subs, { title: "🔔 Inversiones", body: "Los avisos funcionan en este dispositivo.", tag: "test" });
     if (r.vivos.length !== subs.length) await setCfg("push_subs", r.vivos);
+    await log(modo, { ...extra, subs: r.vivos.length, avisos: 1, enviados: r.ok });
     return new Response(JSON.stringify({ ok: true, enviados: r.ok }), { headers: { ...CORS, "Content-Type": "application/json" } });
   }
 
   const w = await getCfg("push_watch");
-  if (!w) return new Response(JSON.stringify({ ok: true, msg: "sin datos para vigilar (abrí la app una vez)" }));
+  if (!w) { await log(modo, { ...extra, subs: subs.length, avisos: 0, enviados: 0, error: "sin push_watch (abrí la app una vez)" }); return new Response(JSON.stringify({ ok: true, msg: "sin datos para vigilar (abrí la app una vez)" })); }
   const estado: Record<string, string> = (await getCfg("push_estado")) || {};
   const hoy = hoyAR(), manana = hoyAR(1), avisos: { title: string; body: string; tag: string; key: string }[] = [];
   const cart = w.cartera || "GDC";
 
   // 1) Precio de venta alcanzado
   const tgs: any[] = w.targets || [], pos: any[] = w.pos || [];
-  const P = (tgs.length || pos.length) ? await precios() : { map: {}, pct: {} };
+  const P = (tgs.length || pos.length) ? await preciosMemo() : { map: {}, pct: {} };
   const px: Record<string, number> = P.map, pct: Record<string, number> = P.pct;
   if (tgs.length) {
     const ccl = await tc("contadoconliqui"), mep = await tc("bolsa");
@@ -153,5 +196,6 @@ Deno.serve(async (req) => {
   const lim = hoyAR(-60); for (const k of Object.keys(estado)) if (estado[k] < lim) delete estado[k];
   await setCfg("push_estado", estado);
   if (avisos.length) await setCfg("push_subs", subs);
+  await log(modo, { ...extra, subs: subs.length, avisos: avisos.length, enviados, precios: Object.keys(px).length });
   return new Response(JSON.stringify({ ok: true, avisos: avisos.length, enviados }), { headers: { ...CORS, "Content-Type": "application/json" } });
-});
+}

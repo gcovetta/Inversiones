@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=140, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=141, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v141 | 2026-10-07 | Feat: historial de precios — botón 📈 al lado de cada activo abre su gráfico en USD (data912 + historial propio en Supabase de GDC para ONs), con tus compras/ventas y tu PPC; rangos 3M / 1A / desde la compra / todo. Fix: la variación del CCL usaba una URL que ya no existe.',
   'v140 | 2026-10-07 | El resumen manda al index el estado del sistema (sist: vista familiar publicada, aportes cargados, avisos, último backup) para el panel 🛠 Sistema.',
   'v139 | 2026-10-07 | Avisos: push_watch incluye posiciones y liquidez para el resumen del día al cierre y el aviso de subas de más de 5% (función avisos actualizada).',
   'v138 | 2026-10-06 | Feat: vista familiar activada en Ana, Hilda, Juli y Omar (vista.html?c=ana|hilda|juli|omar); Hilda, Juli y Omar con capitalInicio para mostrar la ganancia en USD.',
@@ -3832,7 +3833,7 @@ function renderPortfolio(){
     var row='<tr class="'+_markClass+'">' +
       '<td style="font-weight:700">'+
         '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
-        p.ticker+(_pvHit?'<span class="qhelp" style="font-size:.68rem;margin-left:3px">🎯<span class="qhelp-tip">Alcanzó su P. Venta</span></span>':'')+finishFlag+flujoFlag+divHistFlag+_markNote+
+        p.ticker+((sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker)))?'<button class="ph-btn" data-tk="'+p.ticker.replace(/"/g,'&quot;')+'" data-ppc="'+(ppcUSD||0)+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;font-size:.72rem;opacity:.75">📈</button>':'')+(_pvHit?'<span class="qhelp" style="font-size:.68rem;margin-left:3px">🎯<span class="qhelp-tip">Alcanzó su P. Venta</span></span>':'')+finishFlag+flujoFlag+divHistFlag+_markNote+
       '</td>'+
       '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
       panualCell+
@@ -7488,7 +7489,7 @@ async function _fetchTopbarRates(){
           d.setDate(d.getDate()-1);
         }
         if(!prevCCL){
-          var rh=await fetchWithTimeout('https://api.argentinadatos.com/v1/cotizaciones/dolares/ccl',{},5000);
+          var rh=await fetchWithTimeout('https://api.argentinadatos.com/v1/cotizaciones/dolares/contadoconliqui',{},5000);
           if(rh.ok){var dh=await rh.json();if(dh&&dh.length>=2)prevCCL=parseFloat(dh[dh.length-2].venta);}
         }
         if(prevCCL&&prevCCL>0){
@@ -11582,6 +11583,109 @@ function simrResultado(){
     '<div class="tw" style="margin-top:6px"><table style="font-family:var(--mono);font-size:.72rem;width:100%"><thead><tr><th style="text-align:left">Rendimiento</th><th>¿Cuánto dura?</th><th>Capital para no tocarlo</th><th>Retiro eterno</th></tr></thead><tbody>'+esc+'</tbody></table></div>';
 }
 (function _simrBoot(n){setTimeout(function(){if(!CFG.simRetiro)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){simrLoad().then(function(){if(CFG.historial&&typeof histLoad==='function')return histLoad();}).then(function(){simrRender(true);});}else if(n<40)_simrBoot(n+1);},1800);})(0);
+
+// ─── 📈 Historial de precios por activo ─────────────────────────────────────
+// Bonos, acciones y Cedears: historia diaria de data912 (años hacia atrás).
+// ONs y lo que data912 no tenga: tabla propia precios_hist (Supabase de GDC), que guarda la
+// función "avisos" en la corrida de las 17:30. Se pasa a USD con el MEP (bonos/ONs) o el CCL
+// (acciones y Cedears) de cada día (argentinadatos). Los bonos C/D ya cotizan en dólares.
+var PH_SB={url:'https://wstnseufzyavgdovrehu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU'};
+var _phFx={},_phSer={},_phChart=null,_phSt=null;
+function _phFxLoad(t){
+  if(!_phFx[t])_phFx[t]=fetchWithTimeout('https://api.argentinadatos.com/v1/cotizaciones/dolares/'+t,{},12000)
+    .then(function(r){return r.ok?r.json():[];}).then(function(a){var m={};(a||[]).forEach(function(x){var v=parseFloat(x.venta);if(x.fecha&&v>0)m[x.fecha]=v;});return m;})
+    .catch(function(){delete _phFx[t];return {};});
+  return _phFx[t];
+}
+function _phCat(s){if(s==='bonos')return 'bonds';if(s==='argentina')return 'stocks';if(s==='on'||s==='fci')return null;return 'cedears';}
+function _phIso(f){var p=String(f||'').split('/');return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):null;}
+async function _phSerie(tk,s){
+  if(_phSer[tk])return _phSer[tk];
+  var raw={},src={d912:0,propio:0},cat=_phCat(s);
+  if(cat){try{var r=await fetchWithTimeout('https://data912.com/historical/'+cat+'/'+encodeURIComponent(tk),{headers:{Accept:'application/json'}},15000);
+    if(r.ok){var a=await r.json();(Array.isArray(a)?a:[]).forEach(function(x){var c=parseFloat(x.c);if(x.date&&c>0){raw[x.date]=c;src.d912++;}});}}catch(e){}}
+  try{var r2=await fetchWithTimeout(PH_SB.url+'/rest/v1/precios_hist?select=fecha,px:precios->>'+encodeURIComponent(String(tk).toUpperCase())+'&order=fecha.asc',{headers:{apikey:PH_SB.key,Authorization:'Bearer '+PH_SB.key}},12000);
+    if(r2.ok){(await r2.json()||[]).forEach(function(x){var v=parseFloat(x.px);if(x.fecha&&v>0&&raw[x.fecha]==null){raw[x.fecha]=v;src.propio++;}});}}catch(e){}
+  var usdDir=isBonoUSDDirecto(tk),fx=usdDir?{}:await _phFxLoad((s==='bonos'||s==='on')?'bolsa':'contadoconliqui');
+  var fxK=Object.keys(fx).sort(),ser=[],j=0,lastFx=null;
+  Object.keys(raw).sort().forEach(function(d){
+    if(usdDir){ser.push([d,raw[d]]);return;}
+    while(j<fxK.length&&fxK[j]<=d){lastFx=fx[fxK[j]];j++;}
+    if(lastFx>0)ser.push([d,raw[d]/lastFx]);
+  });
+  var res={ser:ser,src:src,fxOk:usdDir||fxK.length>0};
+  if(ser.length)_phSer[tk]=res;
+  return res;
+}
+function phCerrar(){var o=document.getElementById('ph-modal');if(o)o.style.display='none';if(_phChart){try{_phChart.destroy();}catch(e){}_phChart=null;}}
+async function phAbrir(tk,ppc){
+  var s=getSector(tk),bono=(s==='bonos'||s==='on');
+  var o=document.getElementById('ph-modal');
+  if(!o){o=document.createElement('div');o.id='ph-modal';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px';
+    o.onclick=function(e){if(e.target===o)phCerrar();};document.body.appendChild(o);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')phCerrar();});}
+  o.style.display='flex';
+  var btn=function(k,l){return '<button class="btn btn-sm" data-r="'+k+'" onclick="phRango(\''+k+'\')" style="padding:3px 9px">'+l+'</button>';};
+  o.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;width:min(780px,100%);max-height:94vh;overflow:auto;padding:14px 16px;color:var(--text)">'+
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:1.05rem">📈 '+String(tk).replace(/[<>&"]/g,'')+'</b><span style="color:var(--text3);font-size:.75rem">precio en USD'+(bono?' cada 100 VN':'')+'</span>'+
+    '<span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap" id="ph-rg">'+btn('3m','3M')+btn('1a','1A')+btn('compra','Desde la compra')+btn('todo','Todo')+'</span>'+
+    '<button class="btn btn-sm" onclick="phCerrar()" style="padding:3px 9px">✕</button></div>'+
+    '<div id="ph-info" style="font-family:var(--mono);font-size:.78rem;margin:10px 0 6px;color:var(--text2)">Cargando historia…</div>'+
+    '<div style="position:relative;height:min(320px,48vh)"><canvas id="ph-cv"></canvas></div>'+
+    '<div id="ph-nota" style="font-size:.66rem;color:var(--text3);margin-top:8px"></div></div>';
+  var mov=movimientos.filter(function(m){return m&&m.ticker===tk&&(m.tipo==='compra'||m.tipo==='venta')&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);})
+    .map(function(m){return {d:_phIso(m.fecha),t:m.tipo};}).filter(function(m){return m.d;}).sort(function(a,b){return a.d<b.d?-1:1;});
+  var ppc100=ppc>0?(bono?ppc*100:ppc):null;
+  _phSt={tk:tk,ppc:ppc100,mov:mov,rango:mov.length?'compra':'1a',data:null};
+  var r=await _phSerie(tk,s);
+  if(!_phSt||_phSt.tk!==tk)return;
+  _phSt.data=r;
+  var nota=[];
+  if(r.src.d912)nota.push('Historia de data912 (cierre diario)');
+  if(r.src.propio)nota.push(r.src.propio+' día'+(r.src.propio>1?'s':'')+' del historial propio');
+  nota.push(isBonoUSDDirecto(tk)?'cotiza directo en dólares':'pasado a USD con el '+(bono?'MEP':'CCL')+' de cada día');
+  if(bono)nota.push('el precio baja cuando paga cupón o amortiza: eso no es pérdida, ya lo cobraste');
+  nota.push('▲ compras ▼ ventas · línea punteada = tu PPC');
+  document.getElementById('ph-nota').textContent=nota.join(' · ')+'.';
+  if(!r.ser.length){document.getElementById('ph-info').innerHTML=s==='on'?'Todavía no hay historia para esta ON: se empieza a guardar todos los días al cierre (17:30) desde que se activó el historial.':'No se encontró historia para este activo.'+(r.fxOk?'':' (no se pudo bajar el tipo de cambio)');return;}
+  phRango(_phSt.rango);
+}
+function phRango(k){
+  if(!_phSt||!_phSt.data)return;_phSt.rango=k;
+  document.querySelectorAll('#ph-rg button').forEach(function(b){var on=b.dataset.r===k;b.style.background=on?'var(--accent)':'';b.style.color=on?'#04150b':'';});
+  var ser=_phSt.data.ser,last=ser[ser.length-1][0],dd=new Date(last+'T12:00:00'),desde='0000';
+  if(k==='3m'){dd.setMonth(dd.getMonth()-3);desde=dd.toISOString().slice(0,10);}
+  else if(k==='1a'){dd.setFullYear(dd.getFullYear()-1);desde=dd.toISOString().slice(0,10);}
+  else if(k==='compra'&&_phSt.mov.length){var d0=new Date(_phSt.mov[0].d+'T12:00:00');d0.setDate(d0.getDate()-20);desde=d0.toISOString().slice(0,10);}
+  var pts=ser.filter(function(x){return x[0]>=desde;});if(pts.length<2)pts=ser.slice(-60);
+  // marcas de compra/venta en el primer día con precio desde esa fecha
+  var mk={};_phSt.mov.forEach(function(m){for(var i=0;i<pts.length;i++){if(pts[i][0]>=m.d){mk[i]=mk[i]||{c:0,v:0};mk[i][m.t==='compra'?'c':'v']++;break;}}});
+  // achicar a ~500 puntos sin perder marcas ni extremos
+  var step=Math.max(1,Math.ceil(pts.length/500)),idx=[];
+  for(var i=0;i<pts.length;i++){if(i%step===0||i===pts.length-1||mk[i])idx.push(i);}
+  var lab=idx.map(function(i){return pts[i][0];}),val=idx.map(function(i){return pts[i][1];});
+  var cpr=idx.map(function(i){return mk[i]&&mk[i].c?pts[i][1]:null;}),vta=idx.map(function(i){return mk[i]&&mk[i].v?pts[i][1]:null;});
+  var hoy=pts[pts.length-1][1],ini=pts[0][1],mx=Math.max.apply(null,val),mn=Math.min.apply(null,val);
+  var dec=hoy<20?3:2,f=function(x){return x.toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec});};
+  var pc=function(x){return '<b style="color:'+(x>=0?'var(--green)':'var(--red)')+'">'+(x>=0?'+':'−')+Math.abs(x).toFixed(1).replace('.',',')+'%</b>';};
+  var fdm=function(iso){return iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(2,4);};
+  document.getElementById('ph-info').innerHTML='Último cierre ('+fdm(pts[pts.length-1][0])+') <b style="color:var(--text)">USD '+f(hoy)+'</b>'+
+    (_phSt.ppc?' · vs tu PPC (USD '+f(_phSt.ppc)+') '+pc((hoy/_phSt.ppc-1)*100):'')+
+    ' · en el período '+pc((hoy/ini-1)*100)+' · máx '+f(mx)+' · mín '+f(mn);
+  if(_phChart){try{_phChart.destroy();}catch(e){}_phChart=null;}
+  if(typeof Chart==='undefined')return;
+  var cs=getComputedStyle(document.documentElement),cv=function(n,d){return (cs.getPropertyValue(n)||'').trim()||d;};
+  var txt=cv('--text3','#7a9cc5'),grid=cv('--border','#1e3050'),acc=cv('--accent','#00e676'),red=cv('--red','#ff5252'),blue=cv('--blue','#448aff');
+  var ds=[{label:'Precio USD',data:val,borderColor:blue,borderWidth:1.6,pointRadius:0,tension:.15,fill:false},
+    {label:'Compra',data:cpr,showLine:false,pointStyle:'triangle',pointRadius:7,pointBackgroundColor:acc,pointBorderColor:acc},
+    {label:'Venta',data:vta,showLine:false,pointStyle:'triangle',pointRotation:180,pointRadius:7,pointBackgroundColor:red,pointBorderColor:red}];
+  if(_phSt.ppc)ds.push({label:'Tu PPC',data:lab.map(function(){return _phSt.ppc;}),borderColor:cv('--amber','#f59e0b'),borderDash:[5,4],borderWidth:1.2,pointRadius:0,fill:false});
+  _phChart=new Chart(document.getElementById('ph-cv'),{type:'line',data:{labels:lab,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{filter:function(it){return it.raw!=null;},callbacks:{title:function(it){return it.length?fdm(it[0].label):'';},label:function(it){return it.dataset.label+': USD '+f(it.raw);}}}},
+      scales:{x:{ticks:{color:txt,maxTicksLimit:7,maxRotation:0,callback:function(v){var l=this.getLabelForValue(v);return l?l.slice(5,7)+'/'+l.slice(2,4):'';}},grid:{color:grid,display:false}},
+        y:{ticks:{color:txt,maxTicksLimit:6},grid:{color:grid}}}}});
+}
 
 // ─── 🔔 Avisos push (CFG.push) ─────────────────────────────────────────────────
 // La app registra el dispositivo (config push_subs) y publica qué vigilar (config push_watch).
