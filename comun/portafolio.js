@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=138, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=139, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v139 | 2026-10-07 | Avisos: push_watch incluye posiciones y liquidez para el resumen del día al cierre y el aviso de subas de más de 5% (función avisos actualizada).',
   'v138 | 2026-10-06 | Feat: vista familiar activada en Ana, Hilda, Juli y Omar (vista.html?c=ana|hilda|juli|omar); Hilda, Juli y Omar con capitalInicio para mostrar la ganancia en USD.',
   'v137 | 2026-10-06 | Feat (GDC, CFG.push): avisos push con la app cerrada — botón 🔕/🔔 para registrar el dispositivo (config push_subs) y publicación de lo que hay que vigilar (push_watch: precios de venta, cobros de 10 días, cierres). Los manda la función programada "avisos" de Supabase. sw.js muestra las notificaciones.',
   'v136 | 2026-10-06 | Feat (GDC, CFG.simRetiro): 🏖️ Simulador de retiro — cuánto dura el capital sacando X por mes, capital para no tocarlo, retiro "eterno", gráfico y escenarios 5–20%; precarga el valor actual y tus rendimientos por año; escenarios guardados en config sim_retiro.',
@@ -11633,7 +11634,8 @@ async function pushWatchPublicar(d){
     var cob=[];try{cob=(calcularCalendarioCobros().items||[]).filter(function(it){return it.fecha<=limS;}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:Math.round(it.total*100)/100};});}catch(e){}
     var cortes=[];try{var c=histUltimoCorte();if(c)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:(parseInt(c.slice(0,4),10)+1)+c.slice(4)});
       if(c&&HIST&&!HIST.cierres.some(function(x){return x.d===c;})&&_aporDias(c,_hHoy())<=1)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:c});}catch(e){}
-    await sbSetConfig('push_watch',{ts:Date.now(),cartera:CFG.nombre,url:location.href.split('#')[0],targets:tg,cobros:cob,cortes:cortes});
+    var pos=(d.pos||[]).filter(function(p){return p.v>0;}).map(function(p){return {t:p.t,sym:p.t,v:Math.round(p.v)};});
+    await sbSetConfig('push_watch',{ts:Date.now(),cartera:CFG.nombre,url:location.href.split('#')[0],targets:tg,cobros:cob,cortes:cortes,pos:pos,liq:Math.round(d.liqTotalUSD||0)});
   }catch(e){console.warn('pushWatchPublicar',e);}
 }
 (function(){function add(){if(!CFG.push)return;var hr=document.querySelector('.hright');if(!hr||document.getElementById('push-btn'))return;
