@@ -1,0 +1,31 @@
+CONFIGURAR LOS AVISOS PUSH — Supabase de GDC
+(Este archivo tiene una clave privada: no lo subas al repo ni lo compartas)
+
+1) SUBIR LA FUNCIÓN
+   Supabase (proyecto de GDC) → Edge Functions → "Deploy a new function" → "Via Editor"
+   - Nombre: avisos
+   - Borrá el código de ejemplo y pegá todo el contenido de avisos_edge_function.ts
+   - Deploy
+
+2) CARGAR LAS CLAVES (Secrets)
+   Edge Functions → Secrets → Add new secret (dos veces):
+   - Nombre: VAPID_PUBLIC    Valor: BP6CJHf5i2nKacdBN9fVoFcjZ51gozu_-YY8Xg1fZPD-GaGezoyGrzARFUz9k6KzWlytWcssXGCFyOT7CyXyR2w
+   - Nombre: VAPID_PRIVATE   Valor: rH-SBHN_NqSUcCIKMc2TZ9DZCk4yxH6iUo13CO_nUdw
+   (SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY ya vienen cargadas solas)
+
+3) PROGRAMAR LOS HORARIOS (Cron)
+   Integrations → Cron → (si lo pide, "Enable" la integración) → Create job, dos veces:
+   - Nombre: avisos-11hs   Horario (cron): 0 14 * * 1-5   (11:00 de Argentina, lunes a viernes)
+   - Nombre: avisos-17hs   Horario (cron): 0 20 * * 1-5   (17:00 de Argentina, lunes a viernes)
+   En cada uno:
+     Tipo: "Supabase Edge Function" → función: avisos → método: POST
+     Header: Authorization = Bearer <la clave anon de GDC>
+       (es la "supabaseKey" que figura en PortafolioGDC.html, empieza con eyJ...;
+        también está en Project Settings → API → anon public)
+
+4) ACTIVAR EN EL CELULAR
+   - Subí la v137 (git add/commit/push).
+   - iPhone: abrí GDC en Safari → Compartir → "Agregar a inicio" (si no lo tenés ya).
+   - Abrí GDC desde ese ícono, tocá 🔕 arriba → Permitir notificaciones.
+   - Te ofrece mandar un aviso de prueba: tiene que llegarte en segundos.
+   - En la compu (Chrome/Safari) podés hacer lo mismo para recibirlos ahí también.

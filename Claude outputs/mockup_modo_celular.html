@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Modo celular — propuesta</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#3d5a80;--g:#00e676;--r:#ff5252;--y:#eab308;--bl:#448aff;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:20px 12px}
+.wrap{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+.note{max-width:340px;font-size:.82rem;color:var(--t2);line-height:1.55}
+.note h1{font-size:1.05rem;color:var(--t);margin:0 0 8px}
+.note li{margin-bottom:6px}
+.phone{width:375px;max-width:100%;background:var(--bg);border:10px solid #1a1f2b;border-radius:38px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.sb{display:flex;justify-content:space-between;padding:10px 22px 4px;font-size:.78rem;font-weight:600}
+.hd{display:flex;align-items:center;gap:10px;padding:8px 14px 10px;border-bottom:1px solid var(--b)}
+.av{width:34px;height:34px;border-radius:50%;border:2px solid var(--g);background:#2a3550;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem}
+.hd b{font-size:.98rem}.hd .tc{margin-left:auto;font-family:var(--mono);font-size:.62rem;color:var(--t2);text-align:right;line-height:1.4}
+.body{padding:10px 12px 18px;display:flex;flex-direction:column;gap:10px}
+.blk{position:relative;background:var(--s);border:1px solid var(--b);border-radius:12px;padding:11px 12px}
+.n{position:absolute;top:-8px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--bl);color:#fff;font-weight:800;font-size:.72rem;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--bg)}
+.lbl{font-family:var(--mono);font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em}
+.big{font-family:var(--mono);font-size:1.7rem;font-weight:700;letter-spacing:-.02em}
+.row{display:flex;justify-content:space-between;align-items:baseline}
+.g{color:var(--g)}.r{color:var(--r)}.y{color:var(--y)}.m{color:var(--t2)}
+.kp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+.kp div{background:var(--s2);border-radius:8px;padding:6px 7px}.kp .v{font-family:var(--mono);font-weight:700;font-size:.86rem;margin-top:2px}
+.al{display:flex;gap:8px;align-items:flex-start;font-size:.76rem;padding:6px 0;border-bottom:1px solid var(--b)}.al:last-child{border-bottom:none;padding-bottom:0}
+.tk{font-family:var(--mono);font-weight:700}
+.mv{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:var(--mono);font-size:.74rem}
+.mv div div{display:flex;justify-content:space-between;padding:2px 0}
+.bar{display:flex;height:16px;border-radius:5px;overflow:hidden;gap:2px;margin-top:6px}
+.bar span{display:flex;align-items:center;justify-content:center;font-size:.56rem;font-weight:700;color:#0b1120}
+.pos{display:grid;grid-template-columns:1fr auto auto;gap:3px 12px;font-family:var(--mono);font-size:.76rem;margin-top:6px}
+.pos .h{font-size:.55rem;color:var(--t3);text-transform:uppercase}
+.met{height:8px;background:var(--s2);border-radius:4px;overflow:hidden;margin-top:7px}.met i{display:block;height:100%;width:7%;background:linear-gradient(90deg,#38bdf8,#00e676)}
+.btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.btns div{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:8px 2px;text-align:center;font-size:.64rem;color:var(--t2)}.btns div b{display:block;font-size:1.05rem;margin-bottom:2px}
+.more{text-align:center;font-family:var(--mono);font-size:.68rem;color:var(--bl);padding:4px 0}
+</style></head><body>
+<div class="wrap">
+<div class="note">
+  <h1>📱 Modo celular — propuesta</h1>
+  <p>Es lo que verías al abrir la app en el teléfono, en este orden. Cada bloque tiene un número: decime cuáles mirás y cuáles sacarías, o si cambiarías el orden.</p>
+  <ol>
+    <li><b>Resumen</b>: valor total, cuánto se movió hoy y el rendimiento del período.</li>
+    <li><b>Alertas</b>: precios de venta alcanzados, chequeo y aportes sin cargar.</li>
+    <li><b>Lo que más se movió hoy</b>: 3 que suben y 3 que bajan.</li>
+    <li><b>Próximos cobros</b> (7 días).</li>
+    <li><b>Distribución</b> en una sola barra.</li>
+    <li><b>Mis posiciones</b> en lista corta: valor, % del día y % total.</li>
+    <li><b>Meta de ingresos</b> (solo GDC): USD 8.333 por mes.</li>
+    <li><b>Botones rápidos</b>: comprar, vender, cargar cobro, aporte.</li>
+  </ol>
+  <p>Abajo de todo, "Ver todo" abre la vista completa de hoy (tablas, tortas, Evolución, etc.).</p>
+  <p style="color:var(--t3)">Los números son de ejemplo.</p>
+</div>
+
+<div class="phone">
+  <div class="sb"><span>9:41</span><span>📶 🔋</span></div>
+  <div class="hd"><div class="av">G</div><b>GDC</b><div class="tc">CCL $1.471<br>MEP $1.415</div></div>
+  <div class="body">
+
+    <div class="blk"><span class="n">1</span>
+      <div class="lbl">Valor total</div>
+      <div class="row"><span class="big">USD 176.737</span></div>
+      <div class="kp">
+        <div><div class="lbl">Hoy</div><div class="v g">+0,6%</div><div class="m" style="font-size:.6rem">+USD 1.050</div></div>
+        <div><div class="lbl">Período</div><div class="v g">+9,0%</div><div class="m" style="font-size:.6rem">desde 01/01</div></div>
+        <div><div class="lbl">Ganancia</div><div class="v g">16.840</div><div class="m" style="font-size:.6rem">USD en 2026</div></div>
+      </div>
+    </div>
+
+    <div class="blk"><span class="n">2</span>
+      <div class="lbl" style="margin-bottom:4px">Alertas</div>
+      <div class="al">🎯<div><b>3 llegaron a su P. Venta:</b> <span class="tk">EWZ · ITUB · PAGS</span></div></div>
+      <div class="al">⚠️<div>¿Entró plata el <b>23/09</b>? El valor saltó +USD 5.300</div></div>
+      <div class="al">📅<div>Hilda cierra el período en <b>12 días</b></div></div>
+    </div>
+
+    <div class="blk"><span class="n">3</span>
+      <div class="lbl" style="margin-bottom:6px">Lo que más se movió hoy</div>
+      <div class="mv">
+        <div><div><span>LONG</span><span class="g">+2,5%</span></div><div><span>CECO2</span><span class="g">+2,2%</span></div><div><span>HARG</span><span class="g">+2,0%</span></div></div>
+        <div><div><span>CADO</span><span class="r">−1,2%</span></div><div><span>MELI</span><span class="r">−0,9%</span></div><div><span>AL30</span><span class="r">−0,4%</span></div></div>
+      </div>
+    </div>
+
+    <div class="blk"><span class="n">4</span>
+      <div class="lbl" style="margin-bottom:4px">Próximos cobros · 7 días</div>
+      <div class="row" style="font-family:var(--mono);font-size:.76rem;padding:2px 0"><span>09/10 · AO29</span><span class="g">USD 85</span></div>
+      <div class="row" style="font-family:var(--mono);font-size:.76rem;padding:2px 0"><span>09/10 · GD35</span><span class="g">USD 140</span></div>
+      <div class="row" style="font-family:var(--mono);font-size:.76rem;padding:2px 0"><span>11/10 · KO</span><span class="g">USD 12</span></div>
+    </div>
+
+    <div class="blk"><span class="n">5</span>
+      <div class="lbl">Distribución</div>
+      <div class="bar"><span style="width:46%;background:#00e676">RV 46%</span><span style="width:45%;background:#448aff;color:#fff">RF 45%</span><span style="width:9%;background:#7a9cc5">9%</span></div>
+      <div class="m" style="font-size:.66rem;margin-top:5px">Dolarizado 93% · Liquidez USD 15.900</div>
+    </div>
+
+    <div class="blk"><span class="n">6</span>
+      <div class="lbl">Mis posiciones (mayor valor primero)</div>
+      <div class="pos">
+        <span class="h">Ticker</span><span class="h" style="text-align:right">USD</span><span class="h" style="text-align:right">Hoy / Total</span>
+        <span>GD35</span><span style="text-align:right">24.300</span><span style="text-align:right"><span class="g">+0,3</span> / <span class="g">+18%</span></span>
+        <span>AL30</span><span style="text-align:right">19.870</span><span style="text-align:right"><span class="r">−0,4</span> / <span class="g">+12%</span></span>
+        <span>META</span><span style="text-align:right">12.150</span><span style="text-align:right"><span class="g">+1,1</span> / <span class="g">+19%</span></span>
+        <span>MSFT</span><span style="text-align:right">9.640</span><span style="text-align:right"><span class="g">+0,5</span> / <span class="g">+25%</span></span>
+        <span>AVGO</span><span style="text-align:right">8.210</span><span style="text-align:right"><span class="m">0,0</span> / <span class="y">+9%</span></span>
+      </div>
+      <div class="more">ver las 38 posiciones ›</div>
+    </div>
+
+    <div class="blk"><span class="n">7</span>
+      <div class="row"><span class="lbl">🎯 Meta USD 8.333 / mes</span><span style="font-family:var(--mono);font-size:.72rem">hoy <b class="g">USD 610</b></span></div>
+      <div class="met"><i></i></div>
+      <div class="m" style="font-size:.64rem;margin-top:5px">7,3% de la meta · faltan USD 7.723 por mes</div>
+    </div>
+
+    <div class="blk" style="padding:9px"><span class="n">8</span>
+      <div class="btns"><div><b>🛒</b>Comprar</div><div><b>💸</b>Vender</div><div><b>💰</b>Cobro</div><div><b>💵</b>Aporte</div></div>
+    </div>
+
+    <div class="more" style="font-size:.78rem">Ver todo (vista completa) ›</div>
+  </div>
+</div>
+</div>
+</body></html>

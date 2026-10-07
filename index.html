@@ -129,7 +129,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v39</span>
+  <span class="subtitle">Carteras administradas · v40</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -159,8 +159,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v39 · 06/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v39</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v40 · 07/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v40</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -179,12 +179,15 @@ function k(v){return Math.abs(v)>=1000?(Math.round(v/100)/10).toLocaleString('es
 function ago(ts){if(!ts)return '—';var s=(Date.now()-ts)/1000;if(s<3600)return 'hace '+Math.max(1,Math.round(s/60))+' min';if(s<86400)return 'hace '+Math.round(s/3600)+' h';var d=Math.round(s/86400);return d===1?'ayer':'hace '+d+' días';}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
+var LOGS={};
 async function loadOne(c,tok){
   try{
-    var r=await fetch(c.url+'/rest/v1/config?key=eq.resumen_familia&select=value',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
+    var r=await fetch(c.url+'/rest/v1/config?key=in.(resumen_familia,push_log)&select=key,value',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
     if(!r.ok)return {err:'HTTP '+r.status};
-    var d=await r.json();if(!d||!d[0])return {err:'sin resumen'};
-    var v=d[0].value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){}}
+    var d=await r.json();if(!d||!d.length)return {err:'sin resumen'};
+    var pv=function(x){var v=x.value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){}}return v;};
+    var row=d.filter(function(x){return x.key==='resumen_familia';})[0],lg=d.filter(function(x){return x.key==='push_log';})[0];
+    var v=row?pv(row):null;LOGS[c.id]=lg?pv(lg):null;
     if(!v||!v.carteras)return {err:'sin resumen'};
     return {doc:v};
   }catch(e){return {err:'sin conexión'};}
@@ -194,7 +197,7 @@ async function loadOne(c,tok){
 function agg(doc,solo,principal){
   if(principal===undefined)principal=true;
   var ks=Object.keys(doc.carteras).filter(function(k){return !solo||solo.indexOf(k)>=0;});
-  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,apn:principal?(+doc.aporNeto||0):0,rp:principal?(doc.rendPer||null):null,ver:doc.appVersion||null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
+  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,apn:principal?(+doc.aporNeto||0):0,rp:principal?(doc.rendPer||null):null,ver:doc.appVersion||null,sist:principal?(doc.sist||null):null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
   if(solo&&ks.length===1&&doc.carteras[ks[0]].ts)o.ts=doc.carteras[ks[0]].ts;
   ks.forEach(function(cn){var c=doc.carteras[cn];
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
@@ -342,6 +345,7 @@ function render(){
     cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
   h+=ingresosCard();
   h+=moversCard();
+  h+=sistemaCard();
   h+=tail;
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
@@ -375,7 +379,7 @@ var PV_MAS=false;
 function pvMas(){PV_MAS=!PV_MAS;var t=document.getElementById('pv-mas'),b=document.getElementById('pv-mas-btn');if(t)t.style.display=PV_MAS?'table-row-group':'none';
   if(b)b.textContent=PV_MAS?'Ver menos':'Ver '+(t?t.rows.length:0)+' más';}
 // ── Cuadros plegables: click en el título. Se recuerda en este navegador; algunos arrancan cerrados ──
-var COL_DEF=['🩺 Chequeo','🎯 Precio de venta','Mayores posiciones','Próximos cobros de todos'],COL=null;
+var COL_DEF=['🛠 Sistema','🩺 Chequeo','🎯 Precio de venta','Mayores posiciones','Próximos cobros de todos'],COL=null;
 function _colKey(ch){var t='';ch.childNodes.forEach(function(n){if(n.nodeType===3)t+=n.textContent;});return t.trim();}
 function _colLoad(){if(COL)return COL;COL={};try{COL=JSON.parse(localStorage.getItem('idx_col')||'{}')||{};}catch(e){COL={};}return COL;}
 function _colSave(){try{localStorage.setItem('idx_col',JSON.stringify(COL));}catch(e){}}
@@ -484,6 +488,28 @@ function chequeoCard(){
   return '<div class="card" style="margin-bottom:12px"><div class="ch">🩺 Chequeo <span class="sub">'+L.reduce(function(a,x){return a+x.P.length;},0)+' cosa(s) para revisar'+(ok.length?' · en orden: '+ok.map(esc).join(', '):'')+'</span></div><div class="cb" style="font-size:.8rem;line-height:1.55">'+
     L.map(function(x){return '<div style="margin-bottom:6px"><a href="'+x.c.link+'">'+av(x.c)+'<b>'+esc(x.c.nombre)+'</b></a><ul style="margin:2px 0 0 0;padding-left:20px">'+
       x.P.sort(function(a,b){return b.n-a.n;}).map(function(p){return '<li style="color:'+col[p.n]+'"><span style="color:var(--text)">'+esc(p.t)+'</span></li>';}).join('')+'</ul></div>';}).join('')+'</div></div>';
+}
+// ── 🛠 Sistema: que todas las piezas automáticas estén andando ──
+function sistemaCard(){
+  var maxV=0;VIEW.forEach(function(c){var d=DATA[c.id];if(d&&d.o&&d.o.ver>maxV)maxV=d.o.ver;});
+  var ok='<span class="grn">✓</span> ',wa='<span class="yel">⚠</span> ',er='<span class="red">✗</span> ',mal=0;
+  var dias=function(iso){var m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/);if(!m)return null;var h=new Date();h.setHours(0,0,0,0);return Math.round((h-new Date(+m[1],+m[2]-1,+m[3]))/86400000);};
+  var filas=VIEW.filter(function(c){return !c.src;}).map(function(c){var d=DATA[c.id];
+    if(!d||!d.o){mal++;return '<tr><td style="text-align:left">'+av(c)+'<b>'+esc(c.nombre)+'</b></td><td colspan="7" class="red" style="text-align:left">'+er+esc((d&&d.err)||'sin datos')+'</td></tr>';}
+    var o=d.o,s=o.sist||{},sal=o.sal||{},cel=[];
+    var ab=(Date.now()-o.ts)/86400000;cel.push((ab>7?(mal++,wa):ok)+ago(o.ts));
+    cel.push((o.ver&&o.ver<maxV?(mal++,wa):ok)+(o.ver?'v'+o.ver:'—'));
+    var bk=s.bk||sal.bk,bd=dias(bk);cel.push(bd==null?(mal++,wa+'sin dato'):(bd>3?(mal++,wa):ok)+(bd===0?'hoy':bd===1?'ayer':'hace '+bd+' días'));
+    var ft=sal.faltaTC||[];cel.push(ft.length?(mal++,wa)+'falta en '+ft.length+' fecha'+(ft.length>1?'s':''):ok+'completo');
+    cel.push(s.vista?ok+ago(s.vista):'<span class="mut">—</span>');
+    cel.push(s.aportes!=null?ok+s.aportes+' cargado'+(s.aportes!==1?'s':''):'<span class="mut">—</span>');
+    var lg=LOGS[c.id],av2='<span class="mut">—</span>';
+    if(s.avisos||lg){if(!lg)av2=(mal++,wa)+'nunca corrió';else if(lg.error)av2=(mal++,er)+esc(String(lg.error).slice(0,40));
+      else{var hs=(Date.now()-lg.ts)/3600000,hab=[1,2,3,4,5].indexOf(new Date().getDay())>=0;av2=((hs>26&&hab)?(mal++,wa):ok)+ago(lg.ts)+' · '+(lg.subs||0)+' disp.'+(lg.avisos?' · '+lg.avisos+' aviso'+(lg.avisos>1?'s':''):'');}}
+    cel.push(av2);
+    return '<tr><td style="text-align:left">'+av(c)+'<b>'+esc(c.nombre)+'</b></td>'+cel.map(function(x){return '<td style="text-align:left;white-space:nowrap">'+x+'</td>';}).join('')+'</tr>';}).join('');
+  return '<div class="card" style="margin:12px 0"><div class="ch">🛠 Sistema <span class="sub">'+(mal?'<span class="yel">'+mal+' cosa(s) para mirar</span>':'<span class="grn">todo andando</span>')+'</span></div><div class="cb tw"><table><thead><tr><th style="text-align:left">Cartera</th><th style="text-align:left">Abierta</th><th style="text-align:left">Versión</th><th style="text-align:left">Backup</th><th style="text-align:left">CCL/MEP</th><th style="text-align:left">Vista familiar</th><th style="text-align:left">Aportes</th><th style="text-align:left">Avisos</th></tr></thead><tbody>'+filas+'</tbody></table>'+
+    '<div class="sub" style="margin-top:6px">Abierta: hace cuánto se abrió el portafolio (⚠ más de 7 días). Versión: ⚠ si quedó con una anterior. Backup: ⚠ más de 3 días. CCL/MEP: fechas con operaciones sin tipo de cambio cargado. Vista familiar: cuándo se publicó el resumen que ve el familiar. Avisos: última corrida de la función (⚠ si un día hábil pasó más de un día sin correr) y dispositivos registrados.</div></div></div>';
 }
 // ── Lo que más se movió en la última rueda (variación del día guardada en cada resumen) ──
 function moversCard(){

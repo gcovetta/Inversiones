@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=139, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=140, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v140 | 2026-10-07 | El resumen manda al index el estado del sistema (sist: vista familiar publicada, aportes cargados, avisos, último backup) para el panel 🛠 Sistema.',
   'v139 | 2026-10-07 | Avisos: push_watch incluye posiciones y liquidez para el resumen del día al cierre y el aviso de subas de más de 5% (función avisos actualizada).',
   'v138 | 2026-10-06 | Feat: vista familiar activada en Ana, Hilda, Juli y Omar (vista.html?c=ana|hilda|juli|omar); Hilda, Juli y Omar con capitalInicio para mostrar la ganancia en USD.',
   'v137 | 2026-10-06 | Feat (GDC, CFG.push): avisos push con la app cerrada — botón 🔕/🔔 para registrar el dispositivo (config push_subs) y publicación de lo que hay que vigilar (push_watch: precios de venta, cobros de 10 días, cierres). Los manda la función programada "avisos" de Supabase. sw.js muestra las notificaciones.',
@@ -5872,6 +5873,7 @@ async function famSaveSnapshot(d){
     try{doc.salud=saludCalc(d);}catch(e){}
     if(cart==='principal'&&CFG.vistaFamiliar){try{await vistaPublicar(d);}catch(e){}}
     if(cart==='principal'&&CFG.push){try{await pushWatchPublicar(d);}catch(e){}}
+    if(cart==='principal'){try{doc.sist={vista:CFG.vistaFamiliar?Date.now():null,aportes:(CFG.aportes&&_aporLoaded)?APOR.length:null,avisos:CFG.push?true:null,bk:(function(){try{return localStorage.getItem(PFX+'bk_last')||null;}catch(e){return null;}})()};}catch(e){}}
     // rendimiento de los períodos anteriores (cargados en la config + cierres registrados) para el index
     if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}
       try{await saltosOkLoad();doc.salud=doc.salud||{};doc.salud.saltos=saltosDetectar();var _c=histUltimoCorte();doc.salud.cierrePend=(_c&&HIST&&!HIST.cierres.some(function(x){return x.d===_c;})&&HIST.puntos.length&&HIST.puntos[0].d<_c&&_aporDias(_c,_hHoy())<=60)?_c:null;}catch(e){}}

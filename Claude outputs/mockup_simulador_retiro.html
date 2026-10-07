@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador de retiro — propuesta</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#3d5a80;--g:#00e676;--r:#ff5252;--y:#eab308;--bl:#448aff;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:var(--sans);padding:22px 14px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:1.15rem;margin:0 0 4px}.sub{color:var(--t2);font-size:.8rem;margin-bottom:16px;line-height:1.5}
+.card{background:var(--s);border:1px solid var(--b);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.lbl{font-family:var(--mono);font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em}
+.in{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.in label{display:block}.in input{width:100%;margin-top:5px;background:var(--s2);border:1px solid var(--b2);border-radius:8px;color:var(--t);font-family:var(--mono);font-size:.95rem;padding:8px 10px}
+.in small{display:block;color:var(--t3);font-size:.62rem;margin-top:3px;line-height:1.4}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.k{background:var(--s2);border-radius:10px;padding:10px 12px}.kv{font-family:var(--mono);font-size:1.35rem;font-weight:700;margin-top:3px}.ks{font-size:.7rem;color:var(--t2);margin-top:3px;line-height:1.4}
+.g{color:var(--g)}.r{color:var(--r)}.y{color:var(--y)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.8rem}
+th{font-size:.6rem;color:var(--t3);text-transform:uppercase;text-align:right;padding:6px 8px;border-bottom:1px solid var(--b);font-weight:500}th:first-child,td:first-child{text-align:left}
+td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--b)}tr.on td{background:rgba(68,138,255,.1)}
+.note{font-size:.72rem;color:var(--t3);line-height:1.6}
+.demo{font-size:.74rem;color:var(--y);background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.3);border-radius:8px;padding:.5rem .8rem;margin-bottom:14px}
+</style></head><body><div class="wrap">
+<div class="demo">⚠ Maqueta para ver cómo funcionaría. Es interactiva: cambiá los números de arriba. En la app vendría precargada con el valor real de GDC y tu rendimiento de cada año.</div>
+<h1>🏖️ Simulador de retiro</h1>
+<div class="sub">¿Cuánto dura tu cartera si empezás a sacar plata todos los meses? ¿Cuánto capital necesitás para vivir solo de lo que rinde?</div>
+
+<div class="card"><div class="in">
+  <label><span class="lbl">Capital hoy (USD)</span><input id="cap" type="number" value="176737"><small>Valor actual de GDC</small></label>
+  <label><span class="lbl">Retiro por mes (USD)</span><input id="ret" type="number" value="8333"><small>Tu meta: 100.000 por año</small></label>
+  <label><span class="lbl">Rendimiento anual (%)</span><input id="ren" type="number" step="0.5" value="10"><small>Tu promedio 2023–2026: ver tabla abajo</small></label>
+  <label><span class="lbl">Inflación del dólar (%)</span><input id="inf" type="number" step="0.5" value="3"><small>El retiro sube cada año para mantener lo que compra</small></label>
+  <label><span class="lbl">Aporte por mes hasta retirarte (USD)</span><input id="apo" type="number" value="0"><small>Plata que seguís poniendo</small></label>
+  <label><span class="lbl">Años hasta retirarte</span><input id="ani" type="number" value="0"><small>0 = empezás a sacar hoy</small></label>
+</div></div>
+
+<div class="card"><div class="res" id="res"></div></div>
+
+<div class="card"><div class="lbl" style="margin-bottom:6px">Cómo evoluciona tu capital</div><svg id="ch" viewBox="0 0 860 240" width="100%"></svg>
+  <div class="note"><span style="color:var(--g)">━</span> capital · <span style="color:var(--y)">┅</span> capital que no se consume (rinde lo mismo que retirás)</div></div>
+
+<div class="card"><div class="lbl" style="margin-bottom:6px">Escenarios con tu retiro de arriba</div>
+  <table><thead><tr><th>Rendimiento anual</th><th>¿Cuánto dura?</th><th>Capital para no tocarlo nunca</th><th>Retiro "eterno" con tu capital</th></tr></thead><tbody id="esc"></tbody></table>
+</div>
+
+<div class="card note">
+  <b style="color:var(--t2)">Cómo se calcula.</b> Mes a mes: el capital rinde la tasa anual (en cuotas mensuales), se le resta el retiro y, antes de retirarte, se le suma el aporte. Cada año el retiro sube por la inflación del dólar.
+  "Capital para no tocarlo nunca" = el capital cuyo rendimiento, descontada la inflación, alcanza para el retiro: retiro anual ÷ (rendimiento − inflación).
+  <br><b style="color:var(--t2)">En la app sumaría:</b> tus rendimientos reales por año (2023 +300%, 2024 +70%, 2025 +22,9%, 2026 en curso) para elegir un % realista, lo que ya cobrás en rentas y dividendos, y la posibilidad de guardar escenarios.
+  <br>Es una proyección con supuestos fijos: la realidad va a tener años buenos y malos. No es asesoramiento financiero.
+</div>
+</div>
+<script>
+var $=function(i){return document.getElementById(i);};
+var n0=function(x){return Math.round(x).toLocaleString('es-AR');};
+function sim(cap,ret,ren,inf,apo,ani){
+  var rm=Math.pow(1+ren/100,1/12)-1,c=cap,pts=[[0,c]],m=0,r=ret,limite=80*12,dura=null,fin=null;
+  for(m=1;m<=limite;m++){
+    c*=1+rm;
+    if(m<=ani*12){c+=apo;}else{c-=r;}
+    if(m%12===0)r*=1+inf/100;
+    if(c<=0&&dura==null){dura=m/12;c=0;}
+    if(m%3===0)pts.push([m/12,Math.max(0,c)]);
+    if(dura!=null&&m/12>=Math.max(dura+2,10))break;
+  }
+  return {pts:pts,dura:dura,fin:c};
+}
+function render(){
+  var cap=+$('cap').value||0,ret=+$('ret').value||0,ren=+$('ren').value||0,inf=+$('inf').value||0,apo=+$('apo').value||0,ani=+$('ani').value||0;
+  var s=sim(cap,ret,ren,inf,apo,ani),real=ren-inf;
+  var necesario=real>0?ret*12/(real/100):Infinity;
+  var eterno=real>0?cap*(real/100)/12:0;
+  var capRet=s.pts.filter(function(p){return p[0]<=ani;}).pop()[1];
+  $('res').innerHTML=
+    '<div class="k"><div class="lbl">Tu capital alcanza para</div><div class="kv '+(s.dura==null?'g':s.dura<15?'r':'y')+'">'+(s.dura==null?'para siempre':(s.dura-ani).toFixed(1).replace('.',',')+' años')+'</div><div class="ks">'+(s.dura==null?'el rendimiento cubre el retiro y la inflación':'sacando USD '+n0(ret)+' por mes desde '+(ani?'dentro de '+ani+' años':'hoy'))+'</div></div>'+
+    '<div class="k"><div class="lbl">Capital para no tocarlo nunca</div><div class="kv">'+(isFinite(necesario)?'USD '+n0(necesario):'—')+'</div><div class="ks">'+(isFinite(necesario)?(capRet>=necesario?'<span class="g">ya lo tenés ✓</span>':'te faltan USD '+n0(necesario-capRet)):'el rendimiento no supera la inflación')+'</div></div>'+
+    '<div class="k"><div class="lbl">Retiro "eterno" con tu capital</div><div class="kv">USD '+n0(eterno)+'/mes</div><div class="ks">lo que podés sacar sin achicar el capital (ajustado por inflación)</div></div>';
+  // gráfico
+  var W=860,H=240,P=36,xs=s.pts[s.pts.length-1][0]||1,ys=Math.max.apply(null,s.pts.map(function(p){return p[1];}).concat([isFinite(necesario)?necesario:0]))*1.08||1;
+  var X=function(x){return P+x/xs*(W-P-10);},Y=function(y){return H-24-y/ys*(H-34);};
+  var path=s.pts.map(function(p,i){return (i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1);}).join(' ');
+  var g='';for(var i=0;i<=4;i++){var v=ys*i/4;g+='<line x1="'+P+'" x2="'+(W-10)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#1e3050"/><text x="'+(P-4)+'" y="'+(Y(v)+3)+'" text-anchor="end" font-size="9" fill="#3d5a80">'+(v>=1e6?(v/1e6).toFixed(1)+'M':Math.round(v/1000)+'k')+'</text>';}
+  var step=xs>40?10:xs>20?5:2;for(var t=0;t<=xs;t+=step)g+='<text x="'+X(t)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" fill="#3d5a80">'+(t===0?'hoy':'+'+t+'a')+'</text>';
+  if(isFinite(necesario)&&necesario<ys)g+='<line x1="'+P+'" x2="'+(W-10)+'" y1="'+Y(necesario)+'" y2="'+Y(necesario)+'" stroke="#eab308" stroke-dasharray="5 4"/>';
+  if(ani>0)g+='<line x1="'+X(ani)+'" x2="'+X(ani)+'" y1="10" y2="'+(H-24)+'" stroke="#448aff" stroke-dasharray="3 3"/><text x="'+(X(ani)+4)+'" y="20" font-size="9" fill="#448aff">empezás a retirar</text>';
+  $('ch').innerHTML=g+'<path d="'+path+'" fill="none" stroke="#00e676" stroke-width="2.5"/>';
+  // escenarios
+  $('esc').innerHTML=[5,8,10,12,15,20].map(function(rr){var x=sim(cap,ret,rr,inf,apo,ani),re=rr-inf,ne=re>0?ret*12/(re/100):Infinity,et=re>0?cap*(re/100)/12:0;
+    return '<tr class="'+(rr===ren?'on':'')+'"><td>'+rr+'%</td><td class="'+(x.dura==null?'g':x.dura-ani<15?'r':'y')+'">'+(x.dura==null?'siempre':(x.dura-ani).toFixed(1).replace('.',',')+' años')+'</td><td>'+(isFinite(ne)?'USD '+n0(ne):'—')+'</td><td>USD '+n0(et)+'/mes</td></tr>';}).join('');
+}
+['cap','ret','ren','inf','apo','ani'].forEach(function(i){$(i).addEventListener('input',render);});render();
+</script></body></html>
