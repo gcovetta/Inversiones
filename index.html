@@ -130,7 +130,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v42</span>
+  <span class="subtitle">Carteras administradas · v43</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -160,8 +160,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v42 · 07/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v42</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v43 · 07/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v43</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -173,10 +173,14 @@ var CCOL={gdc:'#22c55e',ana:'#e879f9',hilda:'#fb923c',juli:'#38bdf8',omar:'#facc
 function ccol(c){return CCOL[c.id]||CCOL[c.src]||'#7a9cc5';}
 function av(c){return c.img?'<img class="av" src="'+c.img+'" style="border:2px solid '+ccol(c)+'" onerror="this.style.visibility=\'hidden\'">':'<span class="av" style="border:2px solid '+ccol(c)+';display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--text2)">'+esc(c.nombre.charAt(0))+'</span>';}
 try{OFF=JSON.parse(localStorage.getItem('fam_off')||'{}')||{};}catch(e){}
-function n0(v){return Math.round(v||0).toLocaleString('es-AR');}
+// 👁 Modo privado: tapa montos y cantidades (para mostrar el index sin que se vean los números); los % quedan
+var PRIV=false;try{PRIV=localStorage.getItem('idx_priv')==='1';}catch(e){}
+function privToggle(){PRIV=!PRIV;try{localStorage.setItem('idx_priv',PRIV?'1':'0');}catch(e){}var t=document.getElementById('mapa-tip');if(t)t.style.display='none';render();}
+function qf(v,o){return PRIV?'•••':(v||0).toLocaleString('es-AR',o);}
+function n0(v){return PRIV?'•••':Math.round(v||0).toLocaleString('es-AR');}
 function n1(v){return (v||0).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1});}
 function pct(v){return (v>0?'+':'')+n1(v)+'%';}
-function k(v){return Math.abs(v)>=1000?(Math.round(v/100)/10).toLocaleString('es-AR')+'k':n0(v);}
+function k(v){if(PRIV)return '•••';return Math.abs(v)>=1000?(Math.round(v/100)/10).toLocaleString('es-AR')+'k':n0(v);}
 function ago(ts){if(!ts)return '—';var s=(Date.now()-ts)/1000;if(s<3600)return 'hace '+Math.max(1,Math.round(s/60))+' min';if(s<86400)return 'hace '+Math.round(s/3600)+' h';var d=Math.round(s/86400);return d===1?'ayer':'hace '+d+' días';}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
@@ -303,7 +307,7 @@ function render(){
   var gan=F.val-F.cost;
   var cobs=Object.values(F.cob).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:0;});
   var cU=cobs.reduce(function(a,x){return a+x.usd;},0),cA=cobs.reduce(function(a,x){return a+x.ars;},0);
-  var h='<div class="top"><h1>📈 Carteras administradas</h1><span class="sub">datos al último ingreso a cada portafolio · USD a valor de mercado</span><div class="chips">'+chips+'</div><button class="colbtn" onclick="colTodos(true)" title="Colapsar todos los cuadros">▸ Colapsar todo</button><button class="colbtn" onclick="colTodos(false)" title="Expandir todos los cuadros">▾ Expandir todo</button></div>';
+  var h='<div class="top"><h1>📈 Carteras administradas</h1><span class="sub">datos al último ingreso a cada portafolio · USD a valor de mercado</span><div class="chips">'+chips+'</div><button class="colbtn" onclick="privToggle()" title="'+(PRIV?'Mostrar los montos':'Ocultar los montos (para mostrar la pantalla)')+'" style="'+(PRIV?'background:var(--amber);color:#1a1300;border-color:var(--amber)':'')+'">'+(PRIV?'🙈 Montos ocultos':'👁 Ocultar montos')+'</button><button class="colbtn" onclick="colTodos(true)" title="Colapsar todos los cuadros">▸ Colapsar todo</button><button class="colbtn" onclick="colTodos(false)" title="Expandir todos los cuadros">▾ Expandir todo</button></div>';
   h+=_bkBar;
   h+='<div class="kpis">'+
     '<div class="k"><div class="kl">Total administrado (USD)</div><div class="kv">'+n0(F.total+EXTRA)+'</div><div class="ks">'+(ccl?'≈ $'+n0((F.total+EXTRA)*ccl)+' al CCL':'')+(EXTRA?'<br>incl. '+sv.map(function(c){return esc(c.nombre)+' '+k(DATA[c.id].o.total);}).join(' · '):'')+'</div></div>'+
@@ -690,10 +694,10 @@ function busqRes(){
   h+='<div class="bhead"><b>'+esc(sel)+'</b> <span class="mut">'+(SECT[s0]?SECT[s0][0]:'')+' · en '+rows.length+' cartera'+(rows.length!==1?'s':'')+' · USD '+n0(V)+(pv!=null?' · P. Venta USD '+pv.toLocaleString('es-AR',{maximumFractionDigits:2}):'')+'</span></div>'+
     '<div class="tw"><table><thead><tr><th>Cartera</th><th>Cantidad</th><th>PPC USD</th><th>Valor USD</th><th>Ganancia</th><th>% anual</th><th>Al P. Venta</th></tr></thead><tbody>'+
     rows.map(function(r){var p=r.p,ppc=p.q>0?p.c/p.q:null,g=p.c>0?(p.v/p.c-1)*100:p.pnl;
-      return '<tr><td><a href="'+r.c.link+'">'+av(r.c)+'<b>'+esc(r.c.nombre)+'</b></a></td><td>'+p.q.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td><td>'+(ppc?ppc.toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td><td>'+n0(p.v)+'</td>'+
+      return '<tr><td><a href="'+r.c.link+'">'+av(r.c)+'<b>'+esc(r.c.nombre)+'</b></a></td><td>'+qf(p.q,{maximumFractionDigits:2})+'</td><td>'+(ppc?ppc.toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td><td>'+n0(p.v)+'</td>'+
         '<td class="'+col(g)+'">'+(g==null?'—':pct(g))+'</td><td class="'+col(p.an)+'">'+(p.an==null?'—':pct(p.an))+'</td>'+
         '<td class="'+(p.up==null?'mut':p.up<=0?'grn':'')+'" title="Cuánto falta para llegar al P. Venta">'+(p.up==null?'—':(p.up<=0?'🎯 ':'')+pct(p.up))+'</td></tr>';}).join('')+
-    '</tbody><tfoot><tr><td><b>Total</b></td><td>'+Q.toLocaleString('es-AR',{maximumFractionDigits:2})+'</td><td>'+(Q>0?(C/Q).toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td><td>'+n0(V)+'</td><td class="'+col(C>0?V/C-1:null)+'">'+(C>0?pct((V/C-1)*100):'—')+'</td><td></td><td></td></tr></tfoot></table></div>'+
+    '</tbody><tfoot><tr><td><b>Total</b></td><td>'+qf(Q,{maximumFractionDigits:2})+'</td><td>'+(Q>0?(C/Q).toLocaleString('es-AR',{maximumFractionDigits:2}):'—')+'</td><td>'+n0(V)+'</td><td class="'+col(C>0?V/C-1:null)+'">'+(C>0?pct((V/C-1)*100):'—')+'</td><td></td><td></td></tr></tfoot></table></div>'+
     '<div class="sub" style="margin-top:6px">Datos al último ingreso a cada portafolio. "Al P. Venta" es cuánto tiene que subir para llegar al precio de venta (🎯 = ya llegó).</div>';
   return h;
 }
