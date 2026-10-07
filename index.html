@@ -179,7 +179,7 @@ function k(v){return Math.abs(v)>=1000?(Math.round(v/100)/10).toLocaleString('es
 function ago(ts){if(!ts)return '—';var s=(Date.now()-ts)/1000;if(s<3600)return 'hace '+Math.max(1,Math.round(s/60))+' min';if(s<86400)return 'hace '+Math.round(s/3600)+' h';var d=Math.round(s/86400);return d===1?'ayer':'hace '+d+' días';}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
-var LOGS={};
+var LOGS={},VISITAS={};
 async function loadOne(c,tok){
   try{
     var r=await fetch(c.url+'/rest/v1/config?key=in.(resumen_familia,push_log)&select=key,value',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
@@ -188,6 +188,8 @@ async function loadOne(c,tok){
     var pv=function(x){var v=x.value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){}}return v;};
     var row=d.filter(function(x){return x.key==='resumen_familia';})[0],lg=d.filter(function(x){return x.key==='push_log';})[0];
     var v=row?pv(row):null;LOGS[c.id]=lg?pv(lg):null;
+    try{var rv=await fetch(c.url+'/rest/v1/vista_visitas?select=ts,disp&order=ts.desc&limit=200',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
+      VISITAS[c.id]=rv.ok?await rv.json():null;}catch(e){VISITAS[c.id]=null;}
     if(!v||!v.carteras)return {err:'sin resumen'};
     return {doc:v};
   }catch(e){return {err:'sin conexión'};}
@@ -495,21 +497,26 @@ function sistemaCard(){
   var ok='<span class="grn">✓</span> ',wa='<span class="yel">⚠</span> ',er='<span class="red">✗</span> ',mal=0;
   var dias=function(iso){var m=String(iso||'').match(/(\d{4})-(\d{2})-(\d{2})/);if(!m)return null;var h=new Date();h.setHours(0,0,0,0);return Math.round((h-new Date(+m[1],+m[2]-1,+m[3]))/86400000);};
   var filas=VIEW.filter(function(c){return !c.src;}).map(function(c){var d=DATA[c.id];
-    if(!d||!d.o){mal++;return '<tr><td style="text-align:left">'+av(c)+'<b>'+esc(c.nombre)+'</b></td><td colspan="7" class="red" style="text-align:left">'+er+esc((d&&d.err)||'sin datos')+'</td></tr>';}
+    if(!d||!d.o){mal++;return '<tr><td style="text-align:left">'+av(c)+'<b>'+esc(c.nombre)+'</b></td><td colspan="8" class="red" style="text-align:left">'+er+esc((d&&d.err)||'sin datos')+'</td></tr>';}
     var o=d.o,s=o.sist||{},sal=o.sal||{},cel=[];
     var ab=(Date.now()-o.ts)/86400000;cel.push((ab>7?(mal++,wa):ok)+ago(o.ts));
     cel.push((o.ver&&o.ver<maxV?(mal++,wa):ok)+(o.ver?'v'+o.ver:'—'));
     var bk=s.bk||sal.bk,bd=dias(bk);cel.push(bd==null?(mal++,wa+'sin dato'):(bd>3?(mal++,wa):ok)+(bd===0?'hoy':bd===1?'ayer':'hace '+bd+' días'));
     var ft=sal.faltaTC||[];cel.push(ft.length?(mal++,wa)+'falta en '+ft.length+' fecha'+(ft.length>1?'s':''):ok+'completo');
     cel.push(s.vista?ok+ago(s.vista):'<span class="mut">—</span>');
+    var vv=VISITAS[c.id];if(!s.vista)cel.push('<span class="mut">—</span>');
+    else if(!vv)cel.push('<span class="mut">sin registro</span>');
+    else if(!vv.length)cel.push('<span class="mut">nunca entró</span>');
+    else{var u=Date.parse(vv[0].ts),n30=vv.filter(function(x){return Date.now()-Date.parse(x.ts)<30*86400e3;}).length;
+      cel.push('👀 '+ago(u)+' · '+esc(vv[0].disp||'')+' · '+n30+' vez'+(n30!==1?'es':'')+' en 30 días');}
     cel.push(s.aportes!=null?ok+s.aportes+' cargado'+(s.aportes!==1?'s':''):'<span class="mut">—</span>');
     var lg=LOGS[c.id],av2='<span class="mut">—</span>';
     if(s.avisos||lg){if(!lg)av2=(mal++,wa)+'nunca corrió';else if(lg.error)av2=(mal++,er)+esc(String(lg.error).slice(0,40));
       else{var hs=(Date.now()-lg.ts)/3600000,hab=[1,2,3,4,5].indexOf(new Date().getDay())>=0;av2=((hs>26&&hab)?(mal++,wa):ok)+ago(lg.ts)+' · '+(lg.subs||0)+' disp.'+(lg.avisos?' · '+lg.avisos+' aviso'+(lg.avisos>1?'s':''):'');}}
     cel.push(av2);
     return '<tr><td style="text-align:left">'+av(c)+'<b>'+esc(c.nombre)+'</b></td>'+cel.map(function(x){return '<td style="text-align:left;white-space:nowrap">'+x+'</td>';}).join('')+'</tr>';}).join('');
-  return '<div class="card" style="margin:12px 0"><div class="ch">🛠 Sistema <span class="sub">'+(mal?'<span class="yel">'+mal+' cosa(s) para mirar</span>':'<span class="grn">todo andando</span>')+'</span></div><div class="cb tw"><table><thead><tr><th style="text-align:left">Cartera</th><th style="text-align:left">Abierta</th><th style="text-align:left">Versión</th><th style="text-align:left">Backup</th><th style="text-align:left">CCL/MEP</th><th style="text-align:left">Vista familiar</th><th style="text-align:left">Aportes</th><th style="text-align:left">Avisos</th></tr></thead><tbody>'+filas+'</tbody></table>'+
-    '<div class="sub" style="margin-top:6px">Abierta: hace cuánto se abrió el portafolio (⚠ más de 7 días). Versión: ⚠ si quedó con una anterior. Backup: ⚠ más de 3 días. CCL/MEP: fechas con operaciones sin tipo de cambio cargado. Vista familiar: cuándo se publicó el resumen que ve el familiar. Avisos: última corrida de la función (⚠ si un día hábil pasó más de un día sin correr) y dispositivos registrados.</div></div></div>';
+  return '<div class="card" style="margin:12px 0"><div class="ch">🛠 Sistema <span class="sub">'+(mal?'<span class="yel">'+mal+' cosa(s) para mirar</span>':'<span class="grn">todo andando</span>')+'</span></div><div class="cb tw"><table><thead><tr><th style="text-align:left">Cartera</th><th style="text-align:left">Abierta</th><th style="text-align:left">Versión</th><th style="text-align:left">Backup</th><th style="text-align:left">CCL/MEP</th><th style="text-align:left">Vista publicada</th><th style="text-align:left">Familiar entró</th><th style="text-align:left">Aportes</th><th style="text-align:left">Avisos</th></tr></thead><tbody>'+filas+'</tbody></table>'+
+    '<div class="sub" style="margin-top:6px">Abierta: hace cuánto se abrió el portafolio (⚠ más de 7 días). Versión: ⚠ si quedó con una anterior. Backup: ⚠ más de 3 días. CCL/MEP: fechas con operaciones sin tipo de cambio cargado. Vista publicada: cuándo se actualizó el resumen que ve el familiar. Familiar entró: última vez que abrió su vista y cuántas veces en los últimos 30 días. Avisos: última corrida de la función (⚠ si un día hábil pasó más de un día sin correr) y dispositivos registrados.</div></div></div>';
 }
 // ── Lo que más se movió en la última rueda (variación del día guardada en cada resumen) ──
 function moversCard(){

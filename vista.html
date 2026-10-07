@@ -75,8 +75,14 @@ function cargar(s){
     var row=r.data&&r.data[0];
     if(r.error||!row){app.innerHTML='<div class="blk"><div class="msg">Entraste como <b>'+esc(s.user&&s.user.email)+'</b>, pero esta cuenta todavía no tiene acceso a esta cartera.<br>Pedile a Gastón que la habilite.</div><button class="out" onclick="salir()">Entrar con otra cuenta</button></div>';return;}
     var d=row.value;if(typeof d==='string'){try{d=JSON.parse(d);}catch(e){}}
-    render(d,s);
+    render(d,s);visto(s);
   });
+}
+// Deja registrado que entró (tabla vista_visitas: solo puede agregar, no leer ni borrar). Una vez cada 30 min por dispositivo.
+var _visto=false;
+function visto(s){if(_visto)return;_visto=true;
+  try{var k='vista_visto_'+id,t=+localStorage.getItem(k)||0;if(Date.now()-t<30*60e3)return;localStorage.setItem(k,String(Date.now()));}catch(e){}
+  try{SB.from('vista_visitas').insert({email:(s.user&&s.user.email||'').toLowerCase(),disp:/Mobi|Android|iPhone/i.test(navigator.userAgent)?'celular':'compu'}).then(function(){},function(){});}catch(e){}
 }
 var n0=function(x){return Math.round(x||0).toLocaleString('es-AR');};
 var pc=function(x,dec){if(x==null||!isFinite(x))return '—';return (x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(dec==null?1:dec).replace('.',',')+'%';};
