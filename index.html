@@ -14,6 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Inversiones">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -129,7 +130,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v40</span>
+  <span class="subtitle">Carteras administradas · v41</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -159,8 +160,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v40 · 07/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v40</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v41 · 07/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v41</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -199,7 +200,7 @@ async function loadOne(c,tok){
 function agg(doc,solo,principal){
   if(principal===undefined)principal=true;
   var ks=Object.keys(doc.carteras).filter(function(k){return !solo||solo.indexOf(k)>=0;});
-  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,apn:principal?(+doc.aporNeto||0):0,rp:principal?(doc.rendPer||null):null,ver:doc.appVersion||null,sist:principal?(doc.sist||null):null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
+  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,apn:principal?(+doc.aporNeto||0):0,rp:principal?(doc.rendPer||null):null,ver:doc.appVersion||null,sist:principal?(doc.sist||null):null,b100:principal?(doc.b100||null):null,b100ref:doc.b100ref||null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
   if(solo&&ks.length===1&&doc.carteras[ks[0]].ts)o.ts=doc.carteras[ks[0]].ts;
   ks.forEach(function(cn){var c=doc.carteras[cn];
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
@@ -346,12 +347,14 @@ function render(){
   tail+='<div class="card"><div class="ch">Próximos cobros de todos <span class="sub">30 días · bonos/ON con flujo cargado</span></div><div class="cb tw">'+(cobs.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th>Quién</th><th>Monto</th></tr></thead><tbody>'+
     cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
   h+=ingresosCard();
+  h+=cmpCard();
   h+=moversCard();
   h+=sistemaCard();
   h+=tail;
   h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
   try{colSetup();}catch(e){console.warn('colSetup',e);}
+  try{cmpDraw();}catch(e){console.warn('cmp',e);}
   CFG.forEach(function(c){var el=document.getElementById('pl-'+c.id),d=DATA[c.id];if(!el)return;var a0=el.closest('a');if(a0){a0.style.borderColor=ccol(c);var im=a0.querySelector('img');if(im)im.style.borderColor=ccol(c);}if(!d||!d.o){el.textContent='';return;}var o=d.o,r=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);
     var hn=honorario(c,o);el.innerHTML='USD '+k(o.total)+(r!=null?' · <span class="'+(r>=0?'grn':'red')+'">'+pct(r)+'</span>':'')+(hn!=null?' · <span title="Tu honorario (20% de la ganancia del período)">💼 '+(hn>0?k(hn):'0')+'</span>':'');});
 }
@@ -429,6 +432,65 @@ function metaBox(tot,tR,g){
     '<div style="height:10px;background:var(--bg,#0b1120);border-radius:5px;margin-top:7px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#38bdf8,#00e676);border-radius:5px"></div></div>'+
     (cap>0?'<div class="sub" style="margin-top:6px" title="Lo que falta por año dividido el rendimiento en cobros actual de GDC ('+n1(y*100)+'% anual). Es una referencia: cambia si cambia el rendimiento.">Al rendimiento en cobros de hoy ('+n1(y*100)+'% anual), para cubrir lo que falta necesitarías ≈ USD '+n0(cap)+' más invertidos.</div>':'')+
   '</div>';
+}
+// ── 📊 Comparar carteras (base 100) ──
+var CMP={r:'anio',off:{},ch:null};
+function _cmpSeries(){
+  var L=[];
+  VIEW.filter(function(c){return !c.src;}).forEach(function(c){var d=DATA[c.id];if(!d||!d.o||!d.o.b100||d.o.b100.length<2)return;L.push({k:c.id,n:c.nombre,col:ccol(c),s:d.o.b100});});
+  var ref=null;VIEW.forEach(function(c){var d=DATA[c.id];if(d&&d.o&&d.o.b100ref&&d.o.b100ref.spx)ref=d.o.b100ref.spx;});
+  if(ref&&ref.length)L.push({k:'spx',n:'S&P 500',col:'#94a3b8',s:ref,ref:true});
+  return L;
+}
+function _cmpDesde(L){
+  var fin='';L.forEach(function(x){var l=x.s[x.s.length-1][0];if(l>fin)fin=l;});
+  var d=new Date(fin+'T12:00:00');
+  if(CMP.r==='anio')return fin.slice(0,4)+'-01-01';
+  if(CMP.r==='todo'){var m='9999';L.forEach(function(x){if(!x.ref&&x.s[0][0]<m)m=x.s[0][0];});return m==='9999'?'0000':m;}
+  d.setMonth(d.getMonth()-(+CMP.r));return d.toISOString().slice(0,10);
+}
+function cmpCard(){
+  var L=_cmpSeries();
+  if(!L.filter(function(x){return !x.ref;}).length)return '<div class="card" style="margin:12px 0"><div class="ch">📊 Comparar carteras <span class="sub">base 100</span></div><div class="cb mut">Todavía no hay datos: aparece cuando cada portafolio se abra con la versión nueva.</div></div>';
+  var bt=function(k,l){return '<button class="cmp-b" data-r="'+k+'" onclick="cmpRango(\''+k+'\')" style="background:'+(CMP.r===k?'var(--accent)':'var(--surface2)')+';color:'+(CMP.r===k?'#04150b':'var(--text2)')+';border:1px solid var(--border);border-radius:7px;padding:2px 8px;font-size:.7rem;cursor:pointer">'+l+'</button>';};
+  var chips=L.map(function(x){return '<span onclick="cmpToggle(\''+x.k+'\')" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:8px;border:1px solid var(--border);font-size:.72rem;'+(CMP.off[x.k]?'opacity:.35':'')+'"><i style="width:9px;height:9px;border-radius:2px;background:'+x.col+';display:inline-block'+(x.ref?';opacity:.6':'')+'"></i>'+esc(x.n)+'</span>';}).join(' ');
+  return '<div class="card" style="margin:12px 0" id="cmp-card"><div class="ch">📊 Comparar carteras <span class="sub">base 100 · rendimiento en USD</span><span style="margin-left:auto;display:flex;gap:4px">'+bt('1','1M')+bt('3','3M')+bt('anio','Año')+bt('12','12M')+bt('todo','Todo')+'</span></div><div class="cb">'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+chips+'</div>'+
+    '<div style="position:relative;height:320px"><canvas id="cmp-cv"></canvas></div>'+
+    '<div class="tw"><table style="margin-top:10px"><thead><tr><th style="text-align:left">Cartera</th><th>Hoy</th><th>En el período</th><th>Peor caída</th><th>vs S&amp;P</th></tr></thead><tbody id="cmp-tb"></tbody></table></div>'+
+    '<div class="sub" style="margin-top:8px">Todas arrancan en 100 el primer día del rango. Es el rendimiento de cada portafolio (el mismo de la app, con aportes y retiros descontados): un punto por día desde que se guarda el historial diario (octubre 2026) y, antes, solo el cierre de cada período. Tramo <b>punteado</b> = sin datos diarios en el medio (se une en línea recta), así que ahí no se ven las subas y bajas. Peor caída = mayor baja desde un máximo, solo con datos diarios. S&amp;P 500 vía Cedear SPY en dólares CCL, sin dividendos.</div></div></div>';
+}
+function cmpRango(k){CMP.r=k;document.querySelectorAll('#cmp-card .cmp-b').forEach(function(b){var on=b.dataset.r===k;b.style.background=on?'var(--accent)':'var(--surface2)';b.style.color=on?'#04150b':'var(--text2)';});cmpDraw();}
+function cmpToggle(k){CMP.off[k]=!CMP.off[k];var el=document.getElementById('cmp-card');if(el){var nw=document.createElement('div');nw.innerHTML=cmpCard();var keepCol=el.classList.contains('col');el.replaceWith(nw.firstChild);if(keepCol)document.getElementById('cmp-card').classList.add('col');try{colSetup();}catch(e){}}cmpDraw();}
+function _cmpDias(a,b){return Math.round((Date.parse(b)-Date.parse(a))/86400000);}
+function cmpDraw(){
+  var cv=document.getElementById('cmp-cv');if(!cv||typeof Chart==='undefined')return;
+  var L=_cmpSeries();if(!L.length)return;
+  var desde=_cmpDesde(L),fs={};
+  var R=L.map(function(x){var s=x.s,pts=[],antes=null;
+    s.forEach(function(p){if(p[0]<desde)antes=p;else pts.push(p);});
+    if(!pts.length)return null;
+    if(antes&&pts[0][0]>desde){var t=_cmpDias(antes[0],desde)/_cmpDias(antes[0],pts[0][0]);pts.unshift([desde,antes[1]+(pts[0][1]-antes[1])*t]);} // valor estimado al inicio del rango
+    else if(antes&&pts[0][0]!==desde)pts.unshift([desde,antes[1]]);
+    if(pts.length<2)return null;
+    var b=pts[0][1],mx=-1e9,dd=0,diar=0;
+    var v=pts.map(function(p,i){var y=p[1]/b*100;var cerca=i>0&&_cmpDias(pts[i-1][0],p[0])<=6;if(cerca){diar++;mx=Math.max(mx,y);dd=Math.min(dd,y/mx-1);}else mx=y;return [p[0],y];});
+    v.forEach(function(p){fs[p[0]]=1;});return {x:x,v:v,fin:v[v.length-1][1],dd:diar>=10?dd*100:null,ini:pts[0][0]};}).filter(Boolean);
+  var lab=Object.keys(fs).sort();
+  var spx=R.filter(function(r){return r.x.k==='spx';})[0];
+  var ds=R.filter(function(r){return !CMP.off[r.x.k];}).map(function(r){var m={};r.v.forEach(function(p){m[p[0]]=p[1];});
+    return {label:r.x.n,data:lab.map(function(d){return m[d]!=null?Math.round(m[d]*100)/100:null;}),spanGaps:true,borderColor:r.x.col,borderWidth:r.x.ref?1.3:2,borderDash:r.x.ref?[5,4]:[],pointRadius:0,tension:0,
+      segment:r.x.ref?undefined:{borderDash:function(c){return _cmpDias(lab[c.p0DataIndex],lab[c.p1DataIndex])>6?[3,4]:undefined;}}};});
+  if(CMP.ch){try{CMP.ch.destroy();}catch(e){}CMP.ch=null;}
+  var n1=function(x){return x.toFixed(1).replace('.',',');};
+  var cs=getComputedStyle(document.documentElement),txt=(cs.getPropertyValue('--text3')||'#7a9cc5').trim(),grid=(cs.getPropertyValue('--border')||'#1e3050').trim();
+  CMP.ch=new Chart(cv,{type:'line',data:{labels:lab,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},tooltip:{itemSort:function(a,b){return b.raw-a.raw;},filter:function(it){return it.raw!=null;},callbacks:{title:function(it){var l=it[0].label;return l.slice(8)+'/'+l.slice(5,7)+'/'+l.slice(0,4);},label:function(it){return ' '+it.dataset.label+': '+n1(it.raw);}}}},
+    scales:{x:{ticks:{color:txt,maxTicksLimit:7,maxRotation:0,callback:function(v){var l=this.getLabelForValue(v);return l?l.slice(8)+'/'+l.slice(5,7)+'/'+l.slice(2,4):'';}},grid:{display:false}},
+      y:{ticks:{color:txt,maxTicksLimit:6},grid:{color:function(c){return c.tick&&c.tick.value===100?txt:grid;}}}}}});
+  var pc=function(x,pp){return '<span class="'+(x>=0?'grn':'red')+'">'+(x>=0?'+':'−')+n1(Math.abs(x))+(pp?' pp':'%')+'</span>';};
+  var tb=document.getElementById('cmp-tb');if(tb)tb.innerHTML=R.slice().sort(function(a,b){return b.fin-a.fin;}).map(function(r){var x=r.x;
+    return '<tr style="'+(CMP.off[x.k]?'opacity:.4':'')+'"><td style="text-align:left"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+x.col+';margin-right:6px"></i>'+esc(x.n)+(x.ref?' <span class="mut">(ref.)</span>':'')+(r.ini>desde?' <span class="mut" title="Su historia empieza después del inicio del rango">desde '+r.ini.slice(8)+'/'+r.ini.slice(5,7)+'/'+r.ini.slice(2,4)+'</span>':'')+'</td><td>'+n1(r.fin)+'</td><td>'+pc(r.fin-100)+'</td><td class="red">'+(r.dd==null?'<span class="mut">—</span>':r.dd<-0.05?'−'+n1(Math.abs(r.dd))+'%':'—')+'</td><td>'+(x.ref||!spx||r.ini!==spx.ini?'<span class="mut">—</span>':pc(r.fin-spx.fin,true))+'</td></tr>';}).join('');
 }
 function ingresosCard(){
   var g=DATA.gdc&&DATA.gdc.o,cm=(g&&g.cm)||{},ct=(g&&g.ct)||null;

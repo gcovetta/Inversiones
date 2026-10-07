@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparar carteras — propuesta</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0b1120;--s:#111927;--b:#1e3050;--t:#e8f0ff;--t2:#7a9cc5;--t3:#3d5a80;--g:#00e676;--r:#ff5252;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:20px 14px}
+.wrap{max-width:900px;margin:0 auto}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin-bottom:14px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:700}
+.sub{font-size:.72rem;color:var(--t3);font-weight:400}
+.rg{margin-left:auto;display:flex;gap:4px}
+.rg button,.chip{background:#172035;border:1px solid #264070;color:var(--t2);border-radius:8px;padding:3px 9px;font-size:.72rem;cursor:pointer}
+.rg button.on{background:var(--g);color:#04150b;border-color:var(--g);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 8px}
+.chip{display:flex;align-items:center;gap:6px}.chip i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.chip.off{opacity:.35}
+.box{position:relative;height:340px}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:.78rem}
+th{color:var(--t3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--b);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em}
+td{padding:6px 8px;text-align:right;font-family:var(--mono);border-bottom:1px solid #16233a}
+th:first-child,td:first-child{text-align:left;font-family:var(--sans)}
+.g{color:var(--g)}.r{color:var(--r)}.m{color:var(--t3)}
+.foot{font-size:.66rem;color:var(--t3);margin-top:10px;line-height:1.5}
+@media(max-width:600px){.box{height:260px}td:nth-child(4),th:nth-child(4){display:none}}
+</style></head><body><div class="wrap">
+<div class="note">
+  <b>📊 Comparar carteras (base 100)</b> — una tarjeta nueva en el index. Todas las carteras arrancan en <b>100</b> el mismo día, así se comparan aunque tengan tamaños distintos (Ana USD 11 mil vs GDC USD 200 mil). Si una línea termina en 112, esa cartera ganó 12% en el período.<br>
+  Los aportes y retiros <b>no mueven la línea</b> (se usa el rendimiento, no el valor), así que meter plata no parece ganancia. Como referencia van el <b>S&amp;P 500</b> y el <b>Merval</b>, los dos en dólares CCL.<br>
+  Tocando un nombre lo prendés o apagás. <span style="color:var(--t3)">Números de ejemplo, no reales.</span>
+</div>
+<div class="card">
+  <div class="ch">📊 Comparar carteras <span class="sub">base 100 · rendimiento en USD</span>
+    <span class="rg" id="rg"><button data-r="3">3M</button><button data-r="6">6M</button><button data-r="0" class="on">2026</button><button data-r="12">12M</button></span></div>
+  <div class="chips" id="chips"></div>
+  <div class="box"><canvas id="cv"></canvas></div>
+  <table><thead><tr><th>Cartera</th><th>Hoy</th><th>En el período</th><th>Peor caída</th><th>vs S&amp;P</th></tr></thead><tbody id="tb"></tbody></table>
+  <div class="foot">Rendimiento diario calculado con el historial de precios y descontando aportes y retiros (Dietz). Omar se puede ver total o separado en Cristian / Jeep. Peor caída = mayor baja desde un máximo dentro del período.</div>
+</div>
+</div>
+<script>
+var S=[
+ {k:'gdc',n:'GDC',c:'#00e676',fin:9.4,vol:.55},
+ {k:'hilda',n:'Hilda',c:'#fb923c',fin:12.1,vol:.45},
+ {k:'ana',n:'Ana',c:'#e879f9',fin:8.2,vol:.6},
+ {k:'juli',n:'Juli',c:'#38bdf8',fin:6.3,vol:.5},
+ {k:'omar',n:'Omar',c:'#facc15',fin:7.1,vol:.4},
+ {k:'spx',n:'S&P 500',c:'#94a3b8',fin:11.0,vol:.8,ref:1},
+ {k:'mrv',n:'Merval',c:'#64748b',fin:-4.5,vol:1.4,ref:1}];
+// serie diaria (hábiles) desde 07/10/2025 hasta 07/10/2026, paseo al azar con semilla fija que termina en "fin"
+var dias=[];for(var d=new Date(2025,9,7);d<=new Date(2026,9,7);d.setDate(d.getDate()+1)){if(d.getDay()%6)dias.push(d.toISOString().slice(0,10));}
+var seed=7;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647-.5;}
+var i26=dias.findIndex(function(x){return x>='2026-01-01';});
+S.forEach(function(s){var v=[0];for(var i=1;i<dias.length;i++)v.push(v[i-1]+rnd()*s.vol);
+  // forzar que desde el 1/1 termine en "fin" y el año previo sea suave
+  var a=v[i26],b=v[v.length-1],L=Math.log(1+s.fin/100),pre=Math.log(1+s.fin/100*0.35);
+  s.lv=v.map(function(x,i){var t=i/(dias.length-1);return i<i26?(x-v[0])*0.02+pre*(i/i26)-pre:(x-a-(b-a)*(i-i26)/(dias.length-1-i26))*0.02+L*(i-i26)/(dias.length-1-i26);});
+  s.on=true;});
+var meses=0,ch=null;
+function corte(){if(!meses)return i26;var d=new Date(2026,9,7);d.setMonth(d.getMonth()-meses);var iso=d.toISOString().slice(0,10);return Math.max(0,dias.findIndex(function(x){return x>=iso;}));}
+function n1(x){return x.toFixed(1).replace('.',',');}
+function pc(x){return '<span class="'+(x>=0?'g':'r')+'">'+(x>=0?'+':'−')+n1(Math.abs(x))+'%</span>';}
+function draw(){
+  var i0=corte(),lab=dias.slice(i0);
+  var ds=S.filter(function(s){return s.on;}).map(function(s){var b=s.lv[i0];return {label:s.n,data:s.lv.slice(i0).map(function(x){return Math.round(100*Math.exp(x-b)*100)/100;}),borderColor:s.c,borderWidth:s.ref?1.3:2,borderDash:s.ref?[5,4]:[],pointRadius:0,tension:.2};});
+  if(ch)ch.destroy();
+  ch=new Chart(document.getElementById('cv'),{type:'line',data:{labels:lab,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},tooltip:{itemSort:function(a,b){return b.raw-a.raw;},callbacks:{title:function(it){var l=it[0].label;return l.slice(8)+'/'+l.slice(5,7)+'/'+l.slice(0,4);},label:function(it){return ' '+it.dataset.label+': '+n1(it.raw);}}}},
+    scales:{x:{ticks:{color:'#3d5a80',maxTicksLimit:7,maxRotation:0,callback:function(v){var l=this.getLabelForValue(v);return l.slice(5,7)+'/'+l.slice(2,4);}},grid:{display:false}},
+      y:{ticks:{color:'#3d5a80'},grid:{color:function(c){return c.tick.value===100?'#3d5a80':'#16233a';}}}}}});
+  var spx=S[5],spr=(Math.exp(spx.lv[spx.lv.length-1]-spx.lv[i0])-1)*100;
+  document.getElementById('tb').innerHTML=S.map(function(s){var b=s.lv[i0],ser=s.lv.slice(i0),fin=Math.exp(ser[ser.length-1]-b)*100,mx=-1e9,dd=0;
+    ser.forEach(function(x){mx=Math.max(mx,x);dd=Math.min(dd,Math.exp(x-mx)-1);});
+    return '<tr style="'+(s.on?'':'opacity:.4')+'"><td><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+s.c+';margin-right:6px"></i>'+s.n+(s.ref?' <span class="m">(ref.)</span>':'')+'</td><td>'+n1(fin)+'</td><td>'+pc(fin-100)+'</td><td class="r">−'+n1(Math.abs(dd*100))+'%</td><td>'+(s.k==='spx'?'<span class="m">—</span>':pc(fin-100-spr).replace('%','')+' <span class="m">pp</span>')+'</td></tr>';}).join('');
+}
+document.getElementById('chips').innerHTML=S.map(function(s,i){return '<span class="chip" data-i="'+i+'"><i style="background:'+s.c+(s.ref?';opacity:.6':'')+'"></i>'+s.n+'</span>';}).join('');
+document.querySelectorAll('.chip').forEach(function(c){c.onclick=function(){var s=S[+c.dataset.i];s.on=!s.on;c.classList.toggle('off',!s.on);draw();};});
+document.querySelectorAll('#rg button').forEach(function(b){b.onclick=function(){meses=+b.dataset.r;document.querySelectorAll('#rg button').forEach(function(x){x.classList.toggle('on',x===b);});draw();};});
+draw();
+</script></body></html>

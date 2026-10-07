@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=141, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=142, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v142 | 2026-10-07 | Feat: el resumen manda la serie base 100 de la cartera (cortes de períodos anteriores + un punto por día del historial diario, con aportes/retiros descontados) para la tarjeta 📊 Comparar carteras del index; GDC además manda el S&P 500 de referencia.',
   'v141 | 2026-10-07 | Feat: historial de precios — botón 📈 al lado de cada activo abre su gráfico en USD (data912 + historial propio en Supabase de GDC para ONs), con tus compras/ventas y tu PPC; rangos 3M / 1A / desde la compra / todo. Fix: la variación del CCL usaba una URL que ya no existe.',
   'v140 | 2026-10-07 | El resumen manda al index el estado del sistema (sist: vista familiar publicada, aportes cargados, avisos, último backup) para el panel 🛠 Sistema.',
   'v139 | 2026-10-07 | Avisos: push_watch incluye posiciones y liquidez para el resumen del día al cierre y el aviso de subas de más de 5% (función avisos actualizada).',
@@ -5877,6 +5878,8 @@ async function famSaveSnapshot(d){
     if(cart==='principal'){try{doc.sist={vista:CFG.vistaFamiliar?Date.now():null,aportes:(CFG.aportes&&_aporLoaded)?APOR.length:null,avisos:CFG.push?true:null,bk:(function(){try{return localStorage.getItem(PFX+'bk_last')||null;}catch(e){return null;}})()};}catch(e){}}
     // rendimiento de los períodos anteriores (cargados en la config + cierres registrados) para el index
     if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}
+    if(cart==='principal'){try{if(typeof histLoad==='function')await histLoad();var _bs=b100Serie();if(_bs)doc.b100=_bs;else delete doc.b100;delete doc.b100cov;
+      var _br=_b100Ref();if(_br&&_br.spx)doc.b100ref={spx:_br.spx};if(CFG.id==='gdc'&&(!_br||_br.d!==_flujosHoyStr()))b100RefBg();}catch(e){}}
       try{await saltosOkLoad();doc.salud=doc.salud||{};doc.salud.saltos=saltosDetectar();var _c=histUltimoCorte();doc.salud.cierrePend=(_c&&HIST&&!HIST.cierres.some(function(x){return x.d===_c;})&&HIST.puntos.length&&HIST.puntos[0].d<_c&&_aporDias(_c,_hHoy())<=60)?_c:null;}catch(e){}}
     if(CFG.aportes&&_aporLoaded&&cart==='principal'){try{doc.aporNeto=Math.round(aporNeto()*100)/100;}catch(e){}}else if(!CFG.aportes)delete doc.aporNeto;
     _famPrev=doc;
@@ -11685,6 +11688,38 @@ function phRango(k){
       plugins:{legend:{display:false},tooltip:{filter:function(it){return it.raw!=null;},callbacks:{title:function(it){return it.length?fdm(it[0].label):'';},label:function(it){return it.dataset.label+': USD '+f(it.raw);}}}},
       scales:{x:{ticks:{color:txt,maxTicksLimit:7,maxRotation:0,callback:function(v){var l=this.getLabelForValue(v);return l?l.slice(5,7)+'/'+l.slice(2,4):'';}},grid:{color:grid,display:false}},
         y:{ticks:{color:txt,maxTicksLimit:6},grid:{color:grid}}}}});
+}
+
+// ─── 📊 Base 100: rendimiento acumulado para comparar carteras en el index ──
+// Serie de la cartera principal: un punto en cada corte de período (rendimientos de períodos anteriores,
+// rendPeriodos) y un punto por día hábil desde que existe el historial diario (HIST: rend del período
+// en curso guardado cada día, ya descontando aportes y retiros). Entre puntos lejanos el index dibuja
+// punteado (sin datos diarios). GDC además manda el S&P 500 (Cedear SPY en USD CCL) de referencia.
+function b100Serie(){
+  if(typeof HIST==='undefined'||!HIST||!CFG.periodoInicio)return null;
+  var PI=CFG.periodoInicio,corte=histUltimoCorte();if(!corte)return null;
+  var cDe=function(d){var c=d.slice(0,4)+'-'+PI;return c<=d?c:(parseInt(d.slice(0,4),10)-1)+'-'+PI;};
+  var per={};try{per=rendPeriodos()||{};}catch(e){}
+  var ys=Object.keys(per).sort(),anc={},out=[],idx=100;
+  if(ys.length){var d0=ys[0]+'-'+PI;out.push([d0,100]);anc[d0]=100;
+    ys.forEach(function(y){idx*=1+per[y]/100;var f=(parseInt(y,10)+1)+'-'+PI;if(f>corte)return;idx=Math.round(idx*100)/100;out.push([f,idx]);anc[f]=idx;});}
+  if(anc[corte]==null){if(out.length&&out[out.length-1][0]<corte){anc[corte]=out[out.length-1][1];out.push([corte,anc[corte]]);}else if(!out.length){anc[corte]=100;out.push([corte,100]);}}
+  (HIST.puntos||[]).forEach(function(p){if(!p||p.rend==null||!esDiaHabil(p.d))return;var b=anc[cDe(p.d)];if(b==null||p.d<=cDe(p.d))return;
+    out.push([p.d,Math.round(b*(1+p.rend/100)*100)/100]);});
+  out.sort(function(a,b){return a[0]<b[0]?-1:a[0]>b[0]?1:0;});
+  return out.length>1?out:null;
+}
+var _b100RefRun=false;
+function _b100Ref(){try{return JSON.parse(localStorage.getItem(PFX+'b100ref')||'null');}catch(e){return null;}}
+function b100RefBg(){
+  if(_b100RefRun||CFG.id!=='gdc')return;_b100RefRun=true;
+  setTimeout(async function(){
+    try{var sp=await _phSerie('SPY','nyse');if(sp&&sp.ser.length){var lim=new Date();lim.setFullYear(lim.getFullYear()-3);var li=lim.toISOString().slice(0,10);
+      var c={d:_flujosHoyStr(),spx:sp.ser.filter(function(x){return x[0]>=li;}).map(function(x){return [x[0],Math.round(x[1]*1000)/1000];})};
+      try{localStorage.setItem(PFX+'b100ref',JSON.stringify(c));}catch(e){}
+      _famLastSave=0;if(typeof INF_LAST!=='undefined'&&INF_LAST)famQueueSnapshot(INF_LAST);}
+    }catch(e){console.warn('b100ref',e);}finally{_b100RefRun=false;}
+  },9000);
 }
 
 // ─── 🔔 Avisos push (CFG.push) ─────────────────────────────────────────────────
