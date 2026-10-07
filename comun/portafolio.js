@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=142, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=143, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v143 | 2026-10-07 | UI: la Inv. Inicial pide confirmación (antes → ahora) al cambiarla y se ve distinta de la Liquidez (🔒, color ámbar).',
   'v142 | 2026-10-07 | Feat: el resumen manda la serie base 100 de la cartera (cortes de períodos anteriores + un punto por día del historial diario, con aportes/retiros descontados) para la tarjeta 📊 Comparar carteras del index; GDC además manda el S&P 500 de referencia.',
   'v141 | 2026-10-07 | Feat: historial de precios — botón 📈 al lado de cada activo abre su gráfico en USD (data912 + historial propio en Supabase de GDC para ONs), con tus compras/ventas y tu PPC; rangos 3M / 1A / desde la compra / todo. Fix: la variación del CCL usaba una URL que ya no existe.',
   'v140 | 2026-10-07 | El resumen manda al index el estado del sistema (sist: vista familiar publicada, aportes cargados, avisos, último backup) para el panel 🛠 Sistema.',
@@ -1628,6 +1629,12 @@ function rvLoad(){}
 function rvConfirm(){ renderPortfolio(); perfCalcUpdate(); }
 function invConfirm(){
   var v=getRawNum('inv-sidebar-usd');
+  // Pide confirmación si cambia la Inv. Inicial guardada (está al lado de la Liquidez y es fácil pisarla sin querer)
+  var prev=0;try{prev=parseFloat(localStorage.getItem(PFX+'inv_inicial'))||0;}catch(e){}
+  if(Math.round(v)===Math.round(prev)||invConfirm._ask)return;
+  var f=function(x){return 'USD '+Math.round(x||0).toLocaleString('es-AR');};
+  invConfirm._ask=true;var _ok=true;try{_ok=!(prev>0)||confirm('⚠️ Vas a cambiar la INVERSIÓN INICIAL (no la liquidez).\n\nAntes: '+f(prev)+'\nAhora: '+f(v)+'\n\nCambia el rendimiento del período y el honorario. ¿Confirmás?');}finally{setTimeout(function(){invConfirm._ask=false;},0);}
+  if(!_ok){setFmtNum('inv-sidebar-usd',prev,0);return;}
   saveInvInicial(v);
   var btn=document.querySelector('[onclick="invConfirm()"]');
   if(btn){var orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--accent)';setTimeout(function(){btn.textContent=orig;},1000);}
@@ -11005,6 +11012,8 @@ function cartIdentidad(){
   try{var hi=document.querySelector('header img');if(hi){hi.style.borderColor=c;hi.style.boxShadow='0 0 0 3px '+c+'33';}}catch(e){}
   // Inv. Inicial al lado de la Liquidez (antes iba al final de la barra con margin-left:auto y quedaba
   // tapada por el chip o en una segunda línea oculta). La barra queda en una sola línea con scroll.
+  try{var _iv=document.getElementById('inv-sidebar-usd');if(_iv&&!_iv._sty){_iv._sty=1;_iv.style.borderColor='var(--amber,#f59e0b)';_iv.style.color='var(--amber,#f59e0b)';_iv.style.background='rgba(245,158,11,.08)';_iv.title='Inversión inicial del período (USD). Al cambiarla pide confirmación.';
+    var _lb=_iv.closest('div')&&_iv.closest('div').parentNode&&_iv.closest('div').parentNode.querySelector('.topbar-label');if(_lb){_lb.textContent='🔒 Inv. Inicial';_lb.style.color='var(--amber,#f59e0b)';}}}catch(e){}
   try{var inv=document.getElementById('inv-sidebar-usd'),lu=document.getElementById('liq-usd');
     if(inv&&lu&&!inv._mov){inv._mov=1;var invBox=inv.closest('div');while(invBox&&invBox.parentNode&&!invBox.parentNode.classList.contains('topbar'))invBox=invBox.parentNode;
       var liqItem=lu.closest('.topbar-item');
