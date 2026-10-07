@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=135, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=136, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v136 | 2026-10-06 | Feat (GDC, CFG.simRetiro): 🏖️ Simulador de retiro — cuánto dura el capital sacando X por mes, capital para no tocarlo, retiro "eterno", gráfico y escenarios 5–20%; precarga el valor actual y tus rendimientos por año; escenarios guardados en config sim_retiro.',
   'v135 | 2026-10-06 | Feat: vista familiar de solo lectura (vista.html#id): con CFG.vistaFamiliar cada portafolio publica en config vista_familiar un resumen (valor, ganancia desde el inicio, períodos, evolución semanal, distribución, cobros, aportes). Entrada con Google o link por email; cada Supabase decide quién puede leerlo. Activado en GDC para probar.',
   'v134 | 2026-10-06 | Feat: modo celular simplificado — en el teléfono el Portafolio abre con resumen (valor, hoy, período, ganancia), alertas, lo que más se movió, cobros de 7 días, distribución, posiciones, meta (GDC) y botones Comprar/Vender/Cobro/Aporte. "Ver todo" abre la vista completa y "📱 Vista simple" vuelve.',
   'v133 | 2026-10-06 | Fix celular: las tarjetas de posiciones medían 480px (min-width viejo de la tabla) y el % de cada posición quedaba cortado a la derecha; ahora usan el ancho de la pantalla.',
@@ -3961,6 +3962,7 @@ function renderPortfolio(){
     sinPrecio:open.filter(function(p){return p._valueUSD==null;}).map(function(p){return p.ticker;}),
     cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
   });}catch(_e){console.warn('famQueueSnapshot',_e);}
+  if(CFG.simRetiro){_simrCapHoy=valConLiq;try{simrRender();}catch(_e){}}
   try{mobRender({open:open,valConLiq:valConLiq,rendPct:rendPct,liq:liqTotalUSD,dolzPct:dolzPct,sectorVal:sectorVal,cobros:(_calCobros&&_calCobros.items)||[],pv:(typeof _pvAlerts!=='undefined'?_pvAlerts:[])});}catch(_e){console.warn('mobRender',_e);}
 
   // Ganancia Neta = Valor Total USD - Inv. Inicial USD
@@ -11492,3 +11494,85 @@ async function vistaPublicar(d){
     await sbSetConfig('vista_familiar',doc);
   }catch(e){console.warn('vistaPublicar',e);}
 }
+
+// ─── 🏖️ Simulador de retiro (CFG.simRetiro, solo GDC) ─────────────────────────
+// Mes a mes: el capital rinde la tasa anual, se suma el aporte hasta la fecha de retiro y después se resta el
+// retiro, que sube cada año por la inflación del dólar. Capital "eterno" = retiro anual ÷ (rendimiento − inflación).
+// Los datos cargados y los escenarios guardados quedan en config 'sim_retiro'.
+var SIMR=null,_simrLoaded=false,_simrCapAuto=true,_simrSaveT=null;
+async function simrLoad(){if(_simrLoaded)return;try{var v=await sbGetConfig('sim_retiro');if(v&&typeof v==='object')SIMR=v;}catch(e){}
+  SIMR=SIMR||{};SIMR.in=SIMR.in||{ret:8333,ren:10,inf:3,apo:0,ani:0};SIMR.esc=SIMR.esc||[];_simrLoaded=true;}
+function simrSave(){clearTimeout(_simrSaveT);_simrSaveT=setTimeout(function(){sbSetConfig('sim_retiro',SIMR);},800);}
+function simrCalc(cap,ret,ren,inf,apo,ani){
+  var rm=Math.pow(1+ren/100,1/12)-1,c=cap,pts=[[0,c]],r=ret,dura=null;
+  for(var m=1;m<=960;m++){c*=1+rm;if(m<=ani*12)c+=apo;else c-=r;if(m%12===0)r*=1+inf/100;
+    if(c<=0&&dura==null){dura=m/12;c=0;}if(m%3===0)pts.push([m/12,Math.max(0,c)]);if(dura!=null&&m/12>=Math.max(dura+2,10))break;}
+  return {pts:pts,dura:dura};
+}
+function _simrVals(){var g=function(i){var e=document.getElementById('simr-'+i);return e?(parseFloat(String(e.value).replace(/\./g,'').replace(',','.'))||0):0;};
+  return {cap:g('cap'),ret:g('ret'),ren:g('ren'),inf:g('inf'),apo:g('apo'),ani:g('ani')};}
+function simrInput(id){if(id==='cap')_simrCapAuto=false;var v=_simrVals();SIMR.in={ret:v.ret,ren:v.ren,inf:v.inf,apo:v.apo,ani:v.ani};simrSave();simrResultado();}
+function simrUsarRen(r){var e=document.getElementById('simr-ren');if(e){e.value=r;simrInput('ren');}}
+function simrGuardarEsc(){var n=prompt('Nombre del escenario (ej. "Retiro en 5 años"):','');if(!n)return;var v=_simrVals();
+  SIMR.esc=SIMR.esc.filter(function(x){return x.n!==n;});SIMR.esc.unshift({n:n,v:v});SIMR.esc=SIMR.esc.slice(0,8);simrSave();simrRender(true);}
+function simrCargarEsc(i){var x=SIMR.esc[i];if(!x)return;['cap','ret','ren','inf','apo','ani'].forEach(function(k){var e=document.getElementById('simr-'+k);if(e)e.value=x.v[k];});
+  _simrCapAuto=false;SIMR.in={ret:x.v.ret,ren:x.v.ren,inf:x.v.inf,apo:x.v.apo,ani:x.v.ani};simrSave();simrResultado();}
+function simrBorrarEsc(i){SIMR.esc.splice(i,1);simrSave();simrRender(true);}
+var _simrCapHoy=0;
+function simrRender(force){
+  if(!CFG.simRetiro||!_simrLoaded)return;
+  var row=document.getElementById('top-cards-row');if(!row)return;
+  var card=document.getElementById('simr-card');
+  if(!card){card=document.createElement('div');card.className='card';card.id='simr-card';card.style.marginBottom='1rem';
+    card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px"><span class="card-title">🏖️ Simulador de retiro</span><span class="tag" style="margin-left:6px">¿cuánto dura tu capital?</span><button class="card-toggle" onclick="cardToggle(this)">▾</button></div><div id="simr-body" style="padding:.7rem 1rem 1rem"></div>';
+    card.setAttribute('data-persist','1');try{if(localStorage.getItem(PFX+'col_simr-card')!=='0'){card.classList.add('card-collapsed');card.querySelector('.card-toggle').textContent='▸';}}catch(e){}
+    row.parentNode.insertBefore(card,row.nextSibling);force=true;}
+  var b=document.getElementById('simr-body');
+  if(!force&&document.getElementById('simr-cap')){if(_simrCapAuto){document.getElementById('simr-cap').value=Math.round(_simrCapHoy);simrResultado();}return;}
+  var I=SIMR.in,mono='font-family:var(--mono)';
+  var inp=function(id,lbl,val,help,step){return '<label style="display:block"><span style="'+mono+';font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">'+lbl+'</span>'+
+    '<input id="simr-'+id+'" type="number" step="'+(step||'any')+'" value="'+val+'" oninput="simrInput(\''+id+'\')" style="width:100%;margin-top:4px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);'+mono+';font-size:.85rem;padding:.35rem .5rem">'+
+    '<span style="display:block;font-size:.58rem;color:var(--text3);margin-top:2px">'+help+'</span></label>';};
+  // rendimientos reales para elegir un % realista
+  var per={};try{per=rendPeriodos();}catch(e){}var ys=Object.keys(per).sort();
+  var chips=ys.map(function(y){return '<button class="btn btn-sm" style="font-size:.62rem;padding:1px 7px" onclick="simrUsarRen('+per[y]+')">'+y+': '+(per[y]>=0?'+':'')+String(Math.round(per[y]*10)/10).replace('.',',')+'%</button>';}).join(' ');
+  try{var _ra=(typeof _aporUlt!=='undefined'&&_aporUlt&&_aporUlt.rend!=null)?Math.round(_aporUlt.rend*10)/10:null;if(_ra!=null)chips+=' <button class="btn btn-sm" style="font-size:.62rem;padding:1px 7px" onclick="simrUsarRen('+_ra+')">'+_hHoy().slice(0,4)+' en curso: '+(_ra>=0?'+':'')+String(_ra).replace('.',',')+'%</button>';}catch(e){}
+  var rec=ys.filter(function(y){return +y>=2024;});if(rec.length){var acc=1;rec.forEach(function(y){acc*=1+per[y]/100;});var prom=Math.round((Math.pow(acc,1/rec.length)-1)*1000)/10;
+    chips+=' <button class="btn btn-sm" style="font-size:.62rem;padding:1px 7px;border-color:var(--accent);color:var(--accent)" onclick="simrUsarRen('+prom+')">promedio '+rec[0]+'–'+rec[rec.length-1]+': '+String(prom).replace('.',',')+'% anual</button>';}
+  b.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">'+
+    inp('cap','Capital hoy (USD)',Math.round(_simrCapHoy||0),'valor actual de GDC (si lo cambiás, queda fijo)')+
+    inp('ret','Retiro por mes (USD)',I.ret,'tu meta: 100.000 por año')+
+    inp('ren','Rendimiento anual (%)',I.ren,'tocá un año de abajo para usarlo','0.5')+
+    inp('inf','Inflación del dólar (%)',I.inf,'el retiro sube cada año','0.5')+
+    inp('apo','Aporte por mes (USD)',I.apo,'hasta que empieces a retirar')+
+    inp('ani','Años hasta retirarte',I.ani,'0 = empezás hoy','1')+'</div>'+
+    (chips?'<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap;align-items:center"><span style="'+mono+';font-size:.58rem;color:var(--text3)">TUS AÑOS:</span>'+chips+'</div>':'')+
+    '<div id="simr-res" style="margin-top:10px"></div>'+
+    '<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button class="btn btn-a btn-sm" onclick="simrGuardarEsc()">Guardar escenario</button>'+
+      SIMR.esc.map(function(x,i){return '<span style="display:inline-flex;align-items:center;gap:2px"><button class="btn btn-sm" style="font-size:.66rem" onclick="simrCargarEsc('+i+')">'+String(x.n).replace(/</g,'&lt;')+'</button><button class="btn btn-sm" style="font-size:.6rem;padding:0 5px;color:var(--text3)" onclick="simrBorrarEsc('+i+')" title="Borrar">×</button></span>';}).join('')+'</div>'+
+    '<div style="'+mono+';font-size:.58rem;color:var(--text3);margin-top:8px;line-height:1.5">Mes a mes: el capital rinde la tasa anual, suma el aporte hasta retirarte y después resta el retiro, que sube cada año por la inflación. Capital para no tocarlo = retiro anual ÷ (rendimiento − inflación). Proyección con supuestos fijos: la realidad tiene años buenos y malos.</div>';
+  simrResultado();
+}
+function simrResultado(){
+  var el=document.getElementById('simr-res');if(!el)return;var v=_simrVals(),s=simrCalc(v.cap,v.ret,v.ren,v.inf,v.apo,v.ani),real=v.ren-v.inf;
+  var nec=real>0?v.ret*12/(real/100):Infinity,et=real>0?v.cap*(real/100)/12:0,n0=function(x){return Math.round(x).toLocaleString('es-AR');};
+  var capRet=(s.pts.filter(function(p){return p[0]<=v.ani;}).pop()||[0,v.cap])[1];
+  var dur=s.dura==null?null:s.dura-v.ani,cl=dur==null?'var(--accent)':dur<15?'var(--red)':'#eab308';
+  var k=function(l,val,sub,c){return '<div style="background:var(--surface2);border-radius:8px;padding:8px 10px"><div style="font-family:var(--mono);font-size:.56rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">'+l+'</div><div style="font-family:var(--mono);font-size:1.15rem;font-weight:700;margin-top:2px;'+(c?'color:'+c:'')+'">'+val+'</div><div style="font-size:.64rem;color:var(--text2);margin-top:2px">'+sub+'</div></div>';};
+  var W=760,H=180,P=34,xs=s.pts[s.pts.length-1][0]||1,ys=Math.max.apply(null,s.pts.map(function(p){return p[1];}).concat([isFinite(nec)?nec:0]))*1.08||1;
+  var X=function(x){return P+x/xs*(W-P-8);},Y=function(y){return H-20-y/ys*(H-28);};
+  var g='';for(var i=0;i<=4;i++){var yv=ys*i/4;g+='<line x1="'+P+'" x2="'+(W-8)+'" y1="'+Y(yv)+'" y2="'+Y(yv)+'" stroke="var(--border)"/><text x="'+(P-4)+'" y="'+(Y(yv)+3)+'" text-anchor="end" font-size="9" fill="#3d5a80">'+(yv>=1e6?(yv/1e6).toFixed(1)+'M':Math.round(yv/1000)+'k')+'</text>';}
+  var st=xs>40?10:xs>20?5:xs>8?2:1;for(var t=0;t<=xs;t+=st)g+='<text x="'+X(t)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#3d5a80">'+(t===0?'hoy':'+'+t+'a')+'</text>';
+  if(isFinite(nec)&&nec<ys)g+='<line x1="'+P+'" x2="'+(W-8)+'" y1="'+Y(nec)+'" y2="'+Y(nec)+'" stroke="#eab308" stroke-dasharray="5 4"/><text x="'+(W-10)+'" y="'+(Y(nec)-4)+'" text-anchor="end" font-size="9" fill="#eab308">capital para no tocarlo</text>';
+  if(v.ani>0)g+='<line x1="'+X(v.ani)+'" x2="'+X(v.ani)+'" y1="6" y2="'+(H-20)+'" stroke="#448aff" stroke-dasharray="3 3"/><text x="'+(X(v.ani)+4)+'" y="14" font-size="9" fill="#448aff">empezás a retirar</text>';
+  var path=s.pts.map(function(p,i){return (i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1);}).join(' ');
+  var esc=[5,8,10,12,15,20].map(function(rr){var x=simrCalc(v.cap,v.ret,rr,v.inf,v.apo,v.ani),re=rr-v.inf,ne=re>0?v.ret*12/(re/100):Infinity,d=x.dura==null?null:x.dura-v.ani;
+    return '<tr'+(rr===v.ren?' style="background:rgba(68,138,255,.1)"':'')+'><td style="text-align:left">'+rr+'%</td><td style="color:'+(d==null?'var(--accent)':d<15?'var(--red)':'#eab308')+'">'+(d==null?'siempre':d.toFixed(1).replace('.',',')+' años')+'</td><td>'+(isFinite(ne)?'USD '+n0(ne):'—')+'</td><td>USD '+n0(re>0?v.cap*(re/100)/12:0)+'/mes</td></tr>';}).join('');
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">'+
+    k('Tu capital alcanza para',dur==null?'para siempre':dur.toFixed(1).replace('.',',')+' años',dur==null?'el rendimiento cubre retiro e inflación':'sacando USD '+n0(v.ret)+'/mes'+(v.ani?' desde dentro de '+v.ani+' años':' desde hoy'),cl)+
+    k('Capital para no tocarlo',isFinite(nec)?'USD '+n0(nec):'—',isFinite(nec)?(capRet>=nec?'<span style="color:var(--accent)">ya lo tenés ✓</span>':'te faltan USD '+n0(nec-capRet)+(v.ani?' al retirarte':'')):'el rendimiento no supera la inflación')+
+    k('Retiro "eterno" hoy','USD '+n0(et)+'/mes','sin achicar el capital (ajustado por inflación)')+'</div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="margin-top:8px;max-height:220px;display:block">'+g+'<path d="'+path+'" fill="none" stroke="#00e676" stroke-width="2.5"/></svg>'+
+    '<div class="tw" style="margin-top:6px"><table style="font-family:var(--mono);font-size:.72rem;width:100%"><thead><tr><th style="text-align:left">Rendimiento</th><th>¿Cuánto dura?</th><th>Capital para no tocarlo</th><th>Retiro eterno</th></tr></thead><tbody>'+esc+'</tbody></table></div>';
+}
+(function _simrBoot(n){setTimeout(function(){if(!CFG.simRetiro)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){simrLoad().then(function(){if(CFG.historial&&typeof histLoad==='function')return histLoad();}).then(function(){simrRender(true);});}else if(n<40)_simrBoot(n+1);},1800);})(0);
