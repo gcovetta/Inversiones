@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapa de calor — propuesta</title>
+<style>
+:root{--s:#111927;--b:#1e3050;--t:#e8f0ff;--t2:#7a9cc5;--t3:#3d5a80;--g:#00e676;--r:#ff5252;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:20px 14px}
+.wrap{max-width:960px;margin:0 auto}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin-bottom:14px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:700}
+.sub{font-size:.72rem;color:var(--t3);font-weight:400}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.chip{background:#172035;border:1px solid #264070;color:var(--t2);border-radius:8px;padding:3px 10px;font-size:.72rem;cursor:pointer;display:flex;gap:6px;align-items:center}
+.chip.on{background:#e8f0ff;color:#0b1120;border-color:#e8f0ff;font-weight:700}
+.chip i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.res{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:.78rem;color:var(--t2);margin-bottom:10px}.res b{color:var(--t)}
+.map{position:relative;width:100%;height:460px;border-radius:8px;overflow:hidden;background:#0b1120}
+.grp{position:absolute;border:2px solid #05080f}
+.gl{position:absolute;left:4px;top:2px;font-size:.6rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;z-index:2;pointer-events:none}
+.tile{position:absolute;border:1px solid #05080f;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;cursor:default;transition:filter .1s}
+.tile:hover{filter:brightness(1.25);z-index:3}
+.tile b{font-size:.8rem;line-height:1.1}.tile span{font-family:var(--mono);font-size:.7rem;opacity:.9}
+.leg{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:.66rem;color:var(--t3);font-family:var(--mono)}
+.leg .bar{height:8px;width:220px;border-radius:4px;background:linear-gradient(90deg,#b71c1c,#5c2328,#2a3142,#1f5133,#0f8a45)}
+#tip{position:fixed;pointer-events:none;background:#0b1120;border:1px solid #264070;border-radius:8px;padding:8px 10px;font-size:.74rem;display:none;z-index:10;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#tip .r{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono)}
+.foot{font-size:.66rem;color:var(--t3);margin-top:8px;line-height:1.5}
+@media(max-width:600px){.map{height:380px}.tile b{font-size:.68rem}.tile span{font-size:.6rem}}
+</style></head><body><div class="wrap">
+<div class="note">
+  <b>🟩 Mapa del día</b>: una tarjeta nueva en el index. Cada cuadrado es un activo. El <b>tamaño</b> es cuánto pesa (USD sumando todas las carteras) y el <b>color</b> es cuánto se movió hoy: verde sube, rojo baja, gris quieto. Van agrupados por tipo.<br>
+  Arriba elegís <b>todas las carteras o una sola</b>. Pasando el mouse (o tocando en el celu) ves en qué carteras está y cuánto ganó o perdió cada una hoy por ese activo.<br>
+  <span style="color:var(--t3)">Datos de ejemplo.</span>
+</div>
+<div class="card">
+  <div class="ch">🟩 Mapa del día <span class="sub">tamaño = USD · color = variación de hoy</span></div>
+  <div class="chips" id="chips"></div>
+  <div class="res" id="res"></div>
+  <div class="map" id="map"></div>
+  <div class="leg">−4%<div class="bar"></div>+4%</div>
+  <div class="foot">La variación sale de las cotizaciones que cada portafolio usó en su última apertura de hoy; si una cartera no se abrió hoy, sus activos se ven con el último dato y en el detalle dice "dato de ayer". FCI y liquidez no entran.</div>
+</div>
+</div>
+<div id="tip"></div>
+<script>
+var C={gdc:{n:'GDC',c:'#22c55e'},ana:{n:'Ana',c:'#e879f9'},hilda:{n:'Hilda',c:'#fb923c'},juli:{n:'Juli',c:'#38bdf8'},omar:{n:'Omar',c:'#facc15'}};
+// [ticker, tipo, %hoy, {cartera:USD}]
+var A=[
+ ['GD30','Bonos',0.4,{gdc:14200,hilda:31000,omar:12000,ana:1800}],['AL30','Bonos',0.6,{gdc:9800,hilda:18500,juli:3100}],
+ ['GD35','Bonos',-0.3,{gdc:12100,hilda:22400,omar:9000}],['GD38','Bonos',-0.5,{hilda:11800,omar:7600}],['AE38','Bonos',-0.2,{gdc:6400}],
+ ['TZX28','Bonos',0.1,{gdc:5200,juli:2400}],['AO27','Bonos',0.0,{gdc:4100}],['BPY26','Bonos',0.2,{omar:6800}],
+ ['YMCJO','ONs',0.0,{gdc:5300,hilda:6100}],['MRCAO','ONs',0.1,{gdc:3900}],['TLC1O','ONs',-0.1,{omar:4200,ana:900}],
+ ['GGAL','Acciones AR',-2.8,{gdc:8200,hilda:4100,juli:1600}],['YPFD','Acciones AR',-1.9,{gdc:7600,hilda:5200,omar:3000}],['PAMP','Acciones AR',-1.2,{gdc:5100,juli:1200}],
+ ['VIST','Acciones AR',3.1,{gdc:6300,ana:900}],['BMA','Acciones AR',-3.4,{gdc:3800}],['TXAR','Acciones AR',1.1,{gdc:2400}],['CEPU','Acciones AR',0.6,{hilda:2300}],
+ ['SPY','Cedears',0.9,{gdc:9500,ana:2100,juli:2500}],['AAPL','Cedears',1.4,{gdc:6100,ana:800}],['MSFT','Cedears',0.7,{gdc:5400,juli:900}],
+ ['NVDA','Cedears',3.8,{gdc:7200,ana:1100}],['GOOGL','Cedears',-0.6,{gdc:4300}],['MELI','Cedears',-2.1,{gdc:5600,hilda:3200}],['AMZN','Cedears',0.3,{gdc:3700}],
+ ['KO','Cedears',-0.2,{gdc:2600,omar:1800}],['PLTR','Cedears',5.2,{gdc:3100}],['UBER','Cedears',-1.1,{gdc:2200}],['NU','Cedears',2.4,{gdc:1900,juli:700}],
+ ['BRKB','Cedears',0.2,{omar:3500}],['XLE','Cedears',-0.9,{gdc:1700}],['IBIT','Cedears',-3.9,{gdc:2800}]];
+var SEL='todas';
+function col(p){var t=Math.max(-1,Math.min(1,p/4));var g=[42,49,66];var up=[15,138,69],dn=[183,28,28];var e=t>=0?up:dn,a=Math.abs(t);a=Math.pow(a,.7);
+  return 'rgb('+g.map(function(v,i){return Math.round(v+(e[i]-v)*a);}).join(',')+')';}
+function fm(x){return Math.round(x).toLocaleString('es-AR');}
+function pc(x){return (x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
+// treemap "squarified"
+function squarify(items,x,y,w,h){var out=[];items=items.slice().sort(function(a,b){return b.v-a.v;});var tot=items.reduce(function(s,i){return s+i.v;},0);if(!tot)return out;
+  var scale=w*h/tot;items.forEach(function(i){i.a=i.v*scale;});
+  function worst(row,side){var s=row.reduce(function(t,r){return t+r.a;},0),mx=Math.max.apply(null,row.map(function(r){return r.a;})),mn=Math.min.apply(null,row.map(function(r){return r.a;}));return Math.max(side*side*mx/(s*s),(s*s)/(side*side*mn));}
+  function lay(row,box){var s=row.reduce(function(t,r){return t+r.a;},0);if(box.w>=box.h){var cw=s/box.h,cy=box.y;row.forEach(function(r){var hh=r.a/cw;out.push({i:r,x:box.x,y:cy,w:cw,h:hh});cy+=hh;});return {x:box.x+cw,y:box.y,w:box.w-cw,h:box.h};}
+    var rh=s/box.w,cx=box.x;row.forEach(function(r){var ww=r.a/rh;out.push({i:r,x:cx,y:box.y,w:ww,h:rh});cx+=ww;});return {x:box.x,y:box.y+rh,w:box.w,h:box.h-rh};}
+  var box={x:x,y:y,w:w,h:h},row=[],rest=items.slice();
+  while(rest.length){var it=rest[0],side=Math.min(box.w,box.h);if(!row.length||worst(row.concat([it]),side)<=worst(row,side)){row.push(it);rest.shift();}else{box=lay(row,box);row=[];}}
+  if(row.length)lay(row,box);return out;}
+function draw(){
+  var m=document.getElementById('map'),W=m.clientWidth,H=m.clientHeight;m.innerHTML='';
+  var items=A.map(function(a){var v=0;for(var k in a[3])if(SEL==='todas'||SEL===k)v+=a[3][k];return {t:a[0],g:a[1],p:a[2],by:a[3],v:v};}).filter(function(i){return i.v>0;});
+  var gs={};items.forEach(function(i){(gs[i.g]=gs[i.g]||{v:0,items:[]}).items.push(i);gs[i.g].v+=i.v;});
+  var G=squarify(Object.keys(gs).map(function(k){return {k:k,v:gs[k].v};}),0,0,W,H);
+  var tot=0,dif=0;items.forEach(function(i){tot+=i.v;dif+=i.v-i.v/(1+i.p/100);});
+  G.forEach(function(g){var gd=document.createElement('div');gd.className='grp';gd.style.cssText='left:'+g.x+'px;top:'+g.y+'px;width:'+g.w+'px;height:'+g.h+'px';
+    var gv=gs[g.i.k],gdif=gv.items.reduce(function(s,i){return s+i.v-i.v/(1+i.p/100);},0);
+    gd.innerHTML='<div class="gl">'+g.i.k+' '+pc(gdif/(gv.v-gdif)*100)+'</div>';m.appendChild(gd);
+    squarify(gv.items,0,12,g.w-4,g.h-16).forEach(function(r){var t=r.i,d=document.createElement('div');d.className='tile';
+      d.style.cssText='left:'+(r.x+1)+'px;top:'+(r.y+1)+'px;width:'+Math.max(0,r.w-1)+'px;height:'+Math.max(0,r.h-1)+'px;background:'+col(t.p);
+      var big=r.w>46&&r.h>30;d.innerHTML=big?'<b>'+t.t+'</b><span>'+pc(t.p)+'</span>':(r.w>30&&r.h>16?'<b style="font-size:.6rem">'+t.t+'</b>':'');
+      d.onmousemove=function(e){tip(e,t);};d.onmouseleave=function(){document.getElementById('tip').style.display='none';};d.onclick=function(e){tip(e,t);};
+      gd.appendChild(d);});});
+  document.getElementById('res').innerHTML='<span>Hoy '+(SEL==='todas'?'todas las carteras':C[SEL].n)+': <b style="color:'+(dif>=0?'var(--g)':'var(--r)')+'">'+pc(dif/(tot-dif)*100)+' ('+(dif>=0?'+':'−')+'USD '+fm(Math.abs(dif))+')</b></span><span>Valor en el mapa: <b>USD '+fm(tot)+'</b></span>'+
+    '<span>Subieron <b style="color:var(--g)">'+items.filter(function(i){return i.p>0;}).length+'</b> · bajaron <b style="color:var(--r)">'+items.filter(function(i){return i.p<0;}).length+'</b></span>';
+}
+function tip(e,t){var el=document.getElementById('tip'),rows='';
+  Object.keys(t.by).forEach(function(k){if(SEL!=='todas'&&SEL!==k)return;var v=t.by[k],d=v-v/(1+t.p/100);rows+='<div class="r"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+C[k].c+';margin-right:5px"></i>'+C[k].n+'</span><span>USD '+fm(v)+' <span style="color:'+(d>=0?'var(--g)':'var(--r)')+'">'+(d>=0?'+':'−')+fm(Math.abs(d))+'</span></span></div>';});
+  el.innerHTML='<div style="font-weight:700;margin-bottom:4px">'+t.t+' <span style="color:'+(t.p>=0?'var(--g)':'var(--r)')+';font-family:var(--mono)">'+pc(t.p)+'</span> <span style="color:var(--t3);font-weight:400;font-size:.66rem">'+t.g+'</span></div>'+rows;
+  el.style.display='block';var x=e.clientX+14,y=e.clientY+14;if(x+200>innerWidth)x=e.clientX-210;el.style.left=x+'px';el.style.top=y+'px';}
+document.getElementById('chips').innerHTML='<span class="chip on" data-k="todas">Todas</span>'+Object.keys(C).map(function(k){return '<span class="chip" data-k="'+k+'"><i style="background:'+C[k].c+'"></i>'+C[k].n+'</span>';}).join('');
+document.querySelectorAll('.chip').forEach(function(c){c.onclick=function(){SEL=c.dataset.k;document.querySelectorAll('.chip').forEach(function(x){x.classList.toggle('on',x===c);});draw();};});
+addEventListener('resize',draw);draw();
+</script></body></html>

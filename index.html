@@ -130,7 +130,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v41</span>
+  <span class="subtitle">Carteras administradas · v42</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -160,8 +160,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v41 · 07/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v41</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v42 · 07/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v42</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -348,6 +348,7 @@ function render(){
     cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
   h+=ingresosCard();
   h+=cmpCard();
+  h+=mapaCard();
   h+=moversCard();
   h+=sistemaCard();
   h+=tail;
@@ -355,6 +356,7 @@ function render(){
   app.innerHTML=h;
   try{colSetup();}catch(e){console.warn('colSetup',e);}
   try{cmpDraw();}catch(e){console.warn('cmp',e);}
+  try{mapaDraw();}catch(e){console.warn('mapa',e);}
   CFG.forEach(function(c){var el=document.getElementById('pl-'+c.id),d=DATA[c.id];if(!el)return;var a0=el.closest('a');if(a0){a0.style.borderColor=ccol(c);var im=a0.querySelector('img');if(im)im.style.borderColor=ccol(c);}if(!d||!d.o){el.textContent='';return;}var o=d.o,r=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);
     var hn=honorario(c,o);el.innerHTML='USD '+k(o.total)+(r!=null?' · <span class="'+(r>=0?'grn':'red')+'">'+pct(r)+'</span>':'')+(hn!=null?' · <span title="Tu honorario (20% de la ganancia del período)">💼 '+(hn>0?k(hn):'0')+'</span>':'');});
 }
@@ -581,6 +583,72 @@ function sistemaCard(){
     '<div class="sub" style="margin-top:6px">Abierta: hace cuánto se abrió el portafolio (⚠ más de 7 días). Versión: ⚠ si quedó con una anterior. Backup: ⚠ más de 3 días. CCL/MEP: fechas con operaciones sin tipo de cambio cargado. Vista publicada: cuándo se actualizó el resumen que ve el familiar. Familiar entró: última vez que abrió su vista y cuántas veces en los últimos 30 días. Avisos: última corrida de la función (⚠ si un día hábil pasó más de un día sin correr) y dispositivos registrados; después de las 17:30 muestra cuántos precios guardó el historial 📈.</div></div></div>';
 }
 // ── Lo que más se movió en la última rueda (variación del día guardada en cada resumen) ──
+// ── 🟩 Mapa del día: tamaño = USD, color = variación de la rueda ──
+var MAPA={sel:'todas'};
+var MAPA_GR={bonos:'Bonos',on:'ONs',argentina:'Acciones AR'};
+function _mapaGrupo(s){if(s==='fci')return null;return MAPA_GR[s]||'Cedears';}
+function _mapaDatos(){
+  var vs=VIEW.filter(function(c){return !OFF[c.id]&&DATA[c.id]&&DATA[c.id].o;});
+  var dia=function(ts){var d=new Date(ts);return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
+  var ult=vs.length?Math.max.apply(null,vs.map(function(c){return dia(DATA[c.id].o.ts);})):0;
+  var T={};
+  vs.forEach(function(c){var o=DATA[c.id].o,viejo=dia(o.ts)!==ult;
+    Object.keys(o.pos).forEach(function(t){var p=o.pos[t],g=_mapaGrupo(p.s);if(!g||!(p.v>0))return;
+      var x=T[t]||(T[t]={t:t,g:g,ch:null,by:{}});if(p.ch!=null&&isFinite(p.ch)&&(x.ch==null||!viejo))x.ch=p.ch;
+      x.by[c.id]={n:c.nombre,col:ccol(c),v:p.v,ch:p.ch,viejo:viejo};});});
+  return {vs:vs,T:T,ult:ult};
+}
+function mapaCard(){
+  var D=_mapaDatos();if(!Object.keys(D.T).length)return '';
+  if(MAPA.sel!=='todas'&&!D.vs.some(function(c){return c.id===MAPA.sel;}))MAPA.sel='todas';
+  var chip=function(k,n,col){var on=MAPA.sel===k;return '<span class="mp-chip" data-k="'+k+'" onclick="mapaSel(\''+k+'\')" style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;font-size:.72rem;border:1px solid '+(on?'var(--text)':'var(--border2)')+';background:'+(on?'var(--text)':'var(--surface2)')+';color:'+(on?'var(--bg)':'var(--text2)')+';font-weight:'+(on?700:400)+'">'+(col?'<i style="width:9px;height:9px;border-radius:2px;display:inline-block;background:'+col+'"></i>':'')+esc(n)+'</span>';};
+  var fd=String(D.ult);
+  return '<div class="card" style="margin:12px 0" id="mapa-card"><div class="ch">🟩 Mapa del día <span class="sub">rueda del '+fd.slice(6,8)+'/'+fd.slice(4,6)+' · tamaño = USD · color = variación del día</span></div><div class="cb">'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+chip('todas','Todas')+D.vs.map(function(c){return chip(c.id,c.nombre,ccol(c));}).join('')+'</div>'+
+    '<div id="mapa-res" style="display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:.76rem;color:var(--text2);margin-bottom:8px"></div>'+
+    '<div id="mapa-box" style="position:relative;width:100%;height:440px;border-radius:8px;overflow:hidden;background:var(--bg)"></div>'+
+    '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.64rem;color:var(--text3);font-family:var(--mono)">−4%<span style="height:8px;width:200px;border-radius:4px;background:linear-gradient(90deg,#b71c1c,#5c2328,#2a3142,#1f5133,#0f8a45)"></span>+4%</div>'+
+    '<div class="sub" style="margin-top:6px">Variación del día de la última apertura de cada portafolio. Si una cartera no se abrió ese día, sus activos usan el dato anterior (en el detalle dice "dato viejo"). FCI y liquidez no entran. Pasá el mouse o tocá un cuadrado para ver en qué carteras está.</div></div></div>';
+}
+function mapaSel(k){MAPA.sel=k;document.querySelectorAll('#mapa-card .mp-chip').forEach(function(c){var on=c.dataset.k===k;c.style.background=on?'var(--text)':'var(--surface2)';c.style.color=on?'var(--bg)':'var(--text2)';c.style.borderColor=on?'var(--text)':'var(--border2)';c.style.fontWeight=on?700:400;});mapaDraw();}
+function _mapaCol(p){if(p==null||!isFinite(p))return '#2a3142';var t=Math.max(-1,Math.min(1,p/4)),g=[42,49,66],e=t>=0?[15,138,69]:[183,28,28],a=Math.pow(Math.abs(t),.7);
+  return 'rgb('+g.map(function(v,i){return Math.round(v+(e[i]-v)*a);}).join(',')+')';}
+function _mapaSq(items,x,y,w,h){var out=[];items=items.slice().sort(function(a,b){return b.v-a.v;});var tot=items.reduce(function(s,i){return s+i.v;},0);if(!tot||w<=0||h<=0)return out;
+  var sc=w*h/tot;items.forEach(function(i){i.a=i.v*sc;});
+  var worst=function(row,side){var s=0,mx=0,mn=1e18;row.forEach(function(r){s+=r.a;mx=Math.max(mx,r.a);mn=Math.min(mn,r.a);});return Math.max(side*side*mx/(s*s),(s*s)/(side*side*mn));};
+  var lay=function(row,b){var s=row.reduce(function(t,r){return t+r.a;},0);if(b.w>=b.h){var cw=s/b.h,cy=b.y;row.forEach(function(r){var hh=r.a/cw;out.push({i:r,x:b.x,y:cy,w:cw,h:hh});cy+=hh;});return {x:b.x+cw,y:b.y,w:b.w-cw,h:b.h};}
+    var rh=s/b.w,cx=b.x;row.forEach(function(r){var ww=r.a/rh;out.push({i:r,x:cx,y:b.y,w:ww,h:rh});cx+=ww;});return {x:b.x,y:b.y+rh,w:b.w,h:b.h-rh};};
+  var b={x:x,y:y,w:w,h:h},row=[],rest=items.slice();
+  while(rest.length){var it=rest[0],side=Math.min(b.w,b.h);if(!row.length||worst(row.concat([it]),side)<=worst(row,side)){row.push(it);rest.shift();}else{b=lay(row,b);row=[];}}
+  if(row.length)lay(row,b);return out;}
+function _mapaPc(x){return x==null||!isFinite(x)?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
+function mapaDraw(){
+  var m=document.getElementById('mapa-box');if(!m)return;
+  if(window.ResizeObserver&&MAPA.box!==m){if(MAPA.ro)MAPA.ro.disconnect();MAPA.box=m;MAPA.ro=new ResizeObserver(function(){if(m.clientWidth&&m.clientWidth!==MAPA.w)mapaDraw();});MAPA.ro.observe(m);}
+  var W=m.clientWidth,H=m.clientHeight;if(!W)return;MAPA.w=W;m.innerHTML='';
+  var D=_mapaDatos(),sel=MAPA.sel;
+  var items=Object.values(D.T).map(function(x){var v=0,ch=x.ch;Object.keys(x.by).forEach(function(k){if(sel==='todas'||sel===k)v+=x.by[k].v;});if(sel!=='todas'&&x.by[sel])ch=x.by[sel].ch;return {t:x.t,g:x.g,p:ch,by:x.by,v:v};}).filter(function(i){return i.v>0;});
+  var imp=function(i){return i.p!=null&&isFinite(i.p)?i.v-i.v/(1+i.p/100):0;};
+  var gs={};items.forEach(function(i){var g=gs[i.g]||(gs[i.g]={v:0,im:0,items:[]});g.items.push(i);g.v+=i.v;g.im+=imp(i);});
+  var tot=0,dif=0,up=0,dn=0;items.forEach(function(i){tot+=i.v;dif+=imp(i);if(i.p>0)up++;else if(i.p<0)dn++;});
+  _mapaSq(Object.keys(gs).map(function(k){return {k:k,v:gs[k].v};}),0,0,W,H).forEach(function(g){var G=gs[g.i.k];
+    var gd=document.createElement('div');gd.style.cssText='position:absolute;border:2px solid var(--bg);left:'+g.x+'px;top:'+g.y+'px;width:'+g.w+'px;height:'+g.h+'px';
+    gd.innerHTML='<div style="position:absolute;left:4px;top:1px;font-size:.58rem;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;pointer-events:none;white-space:nowrap">'+esc(g.i.k)+' '+_mapaPc(G.v-G.im>0?G.im/(G.v-G.im)*100:null)+'</div>';m.appendChild(gd);
+    _mapaSq(G.items,0,12,g.w-4,g.h-16).forEach(function(r){var t=r.i,d=document.createElement('div');
+      d.style.cssText='position:absolute;border:1px solid var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;cursor:pointer;left:'+(r.x+1)+'px;top:'+(r.y+1)+'px;width:'+Math.max(0,r.w-1)+'px;height:'+Math.max(0,r.h-1)+'px;background:'+_mapaCol(t.p);
+      d.innerHTML=(r.w>46&&r.h>30)?'<b style="font-size:.78rem;line-height:1.1">'+esc(t.t)+'</b><span style="font-family:var(--mono);font-size:.68rem;opacity:.9">'+_mapaPc(t.p)+'</span>':(r.w>30&&r.h>15?'<b style="font-size:.58rem">'+esc(t.t)+'</b>':'');
+      d.onmousemove=function(e){mapaTip(e,t);};d.onmouseleave=function(){var x=document.getElementById('mapa-tip');if(x)x.style.display='none';};d.onclick=function(e){e.stopPropagation();mapaTip(e,t);};
+      gd.appendChild(d);});});
+  var rs=document.getElementById('mapa-res');if(rs)rs.innerHTML='<span>'+(sel==='todas'?'Todas las carteras':esc((D.vs.filter(function(c){return c.id===sel;})[0]||{}).nombre||''))+': <b class="'+(dif>=0?'grn':'red')+'">'+_mapaPc(tot-dif>0?dif/(tot-dif)*100:null)+' ('+(dif>=0?'+':'−')+'USD '+n0(Math.abs(dif))+')</b></span><span>En el mapa: <b style="color:var(--text)">USD '+n0(tot)+'</b></span><span>Subieron <b class="grn">'+up+'</b> · bajaron <b class="red">'+dn+'</b></span>';
+}
+function mapaTip(e,t){var el=document.getElementById('mapa-tip');
+  if(!el){el=document.createElement('div');el.id='mapa-tip';el.style.cssText='position:fixed;pointer-events:none;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:.74rem;z-index:50;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.5)';document.body.appendChild(el);
+    document.addEventListener('click',function(){el.style.display='none';});}
+  var rows=Object.keys(t.by).filter(function(k){return MAPA.sel==='todas'||MAPA.sel===k;}).map(function(k){var b=t.by[k],d=b.ch!=null&&isFinite(b.ch)?b.v-b.v/(1+b.ch/100):null;
+    return '<div style="display:flex;justify-content:space-between;gap:12px;font-family:var(--mono)"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+b.col+';margin-right:5px"></i>'+esc(b.n)+(b.viejo?' <span class="mut" style="font-size:.6rem">dato viejo</span>':'')+'</span><span>USD '+n0(b.v)+(d!=null?' <span class="'+(d>=0?'grn':'red')+'">'+(d>=0?'+':'−')+n0(Math.abs(d))+'</span>':'')+'</span></div>';}).join('');
+  el.innerHTML='<div style="font-weight:700;margin-bottom:4px">'+esc(t.t)+' <span class="'+(t.p>=0?'grn':'red')+'" style="font-family:var(--mono)">'+_mapaPc(t.p)+'</span> <span class="mut" style="font-weight:400;font-size:.66rem">'+esc(t.g)+'</span></div>'+rows;
+  el.style.display='block';var x=e.clientX+14,y=e.clientY+14;if(x+210>innerWidth)x=Math.max(4,e.clientX-220);if(y+150>innerHeight)y=Math.max(4,e.clientY-150);el.style.left=x+'px';el.style.top=y+'px';}
+addEventListener('resize',function(){clearTimeout(MAPA._t);MAPA._t=setTimeout(mapaDraw,200);});
 function moversCard(){
   var vs=VIEW.filter(function(c){return !OFF[c.id]&&DATA[c.id]&&DATA[c.id].o;});if(!vs.length)return '';
   var dia=function(ts){var d=new Date(ts);return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
