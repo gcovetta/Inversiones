@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=147, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=148, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v148 | 2026-10-08 | Feat: Vigilancia se guarda en Supabase (igual en todos los dispositivos), con precio de compra objetivo (distancia en %, 🎯 al llegar y aviso push) y una nota por activo.',
   'v147 | 2026-10-08 | Feat: ⚠️ errores de carga en Movimientos — marca sin cantidad/precio, fecha inválida o futura, posibles duplicados, ventas de más de lo que se tenía y precios muy distintos a las otras operaciones del activo; aviso arriba con "ver solo esos".',
   'v146 | 2026-10-08 | Feat: ⏳ Ciclo de vida de bonos y ONs al final de Próximos Cobros (cobrado / falta cobrar / pagaste y % manteniéndolo hasta el final).',
   'v145 | 2026-10-08 | Revert: se sacan los cortes de cupón, el ciclo de vida y los datos de renta fija del resumen (v144). Queda solo el filtro Todo / R. Fija / R. Variable de la tabla del portafolio.',
@@ -4457,13 +4458,29 @@ var VIG_KEY=(PFX+'vigilancia');
 var vigItems=[];
 try{vigItems=JSON.parse(localStorage.getItem(VIG_KEY))||[];}catch(e){vigItems=[];}
 
+// Se guarda también en Supabase (config 'vigilancia') para verla igual en todos los dispositivos.
+var _vigLoaded=false;
+function vigSave(){try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}try{sbSetConfig('vigilancia',vigItems);}catch(e){}}
+async function vigLoad(){
+  if(_vigLoaded)return;
+  try{var c=await sbGetConfig('vigilancia');if(typeof c==='string'){try{c=JSON.parse(c);}catch(e){c=null;}}
+    if(Array.isArray(c)&&c.length){vigItems=c;try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}}
+    else if(vigItems.length){await sbSetConfig('vigilancia',vigItems);}
+    _vigLoaded=true;}catch(e){}
+}
+function vigSet(t,campo,val){var v=vigItems.find(function(x){return x.ticker===t;});if(!v)return;
+  if(campo==='obj'){var n=parseFloat(String(val).replace(',','.'));if(n>0)v.obj=n;else delete v.obj;}else if(campo==='nota'){val=String(val||'').trim();if(val)v.nota=val.slice(0,120);else delete v.nota;}
+  vigSave();vigRender();}
+// Precio en USD tal como se muestra en Vigilancia (bonos: cada 100 VN)
+function _vigPrecioUSD(t){var q=quotes[t];if(!q||q.price==null)return null;var s=getSector(t),bo=(s==='bonos'||s==='on'),fci=s==='fci',ars=(s==='argentina'||bo||fci),tc=(bo||fci)?(MEP_HOY||CCL_HOY):CCL_HOY;
+  if(bo&&isBonoUSDDirecto(t))return q.price;if(ars)return tc>0?q.price/tc:null;return q.fromByma?q.price/(CCL_HOY||1):q.price/(getRatio(t)||1);}
 function vigAdd(){
   var ticker=document.getElementById('vig-ticker').value.trim().toUpperCase();
   var qty=parseFloat(document.getElementById('vig-qty').value)||0;
   if(!ticker)return;
   var ex=vigItems.find(function(v){return v.ticker===ticker;});
   if(ex){ex.qty=qty;}else{vigItems.push({ticker:ticker,qty:qty});}
-  try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}
+  vigSave();
   document.getElementById('vig-ticker').value='';
   document.getElementById('vig-qty').value='';
   vigRender();
@@ -4471,7 +4488,7 @@ function vigAdd(){
 
 function vigRemove(ticker){
   vigItems=vigItems.filter(function(v){return v.ticker!==ticker;});
-  try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}
+  vigSave();
   vigRender();
 }
 
@@ -4479,6 +4496,7 @@ function vigRender(){
   var body=document.getElementById('vig-body');
   var empty=document.getElementById('vig-empty');
   var table=document.getElementById('vig-table');
+  if(!_vigLoaded){vigLoad().then(function(){if(_vigLoaded)vigRender();});}
   if(!vigItems.length){empty.style.display='';table.style.display='none';return;}
   empty.style.display='none';table.style.display='';
   var totARS=0,totUSD=0;
@@ -4519,6 +4537,10 @@ function vigRender(){
       '<td class="mono">'+fmtD(priceUSD,'u$s ')+'</td>'+
       '<td class="mono">'+fmt(valUSD,'u$s ')+'</td>'+
       '<td class="mono" style="color:'+chgColor+'">'+chgStr+'</td>'+
+      (function(){var _pu=_vigPrecioUSD(v.ticker),_d=(v.obj>0&&_pu)?(_pu/v.obj-1)*100:null,_ok=_d!=null&&_d<=0;
+        return '<td><input type="text" inputmode="decimal" value="'+(v.obj||'')+'" placeholder="—" title="Precio de compra objetivo en USD (bonos: cada 100 VN). Cuando el precio llegue o baje de este valor, se marca y te llega un aviso." onchange="vigSet(\''+v.ticker+'\',\'obj\',this.value)" style="width:70px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:2px 5px;text-align:right"></td>'+
+          '<td class="mono" style="color:'+(_ok?'var(--accent)':_d!=null&&_d<=5?'#eab308':'var(--text3)')+';font-weight:'+(_ok?700:400)+'" title="Cuánto tiene que bajar el precio para llegar al objetivo">'+(_d==null?'—':_ok?'🎯 llegó':'−'+_d.toFixed(1).replace('.',',')+'%')+'</td>'+
+          '<td><input type="text" value="'+String(v.nota||'').replace(/"/g,'&quot;')+'" placeholder="nota…" maxlength="120" onchange="vigSet(\''+v.ticker+'\',\'nota\',this.value)" style="width:160px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);font-size:.72rem;padding:2px 5px"></td>';})()+
       '<td><button class="btn btn-d btn-sm" onclick="vigRemove(\''+v.ticker+'\')">✕</button></td>'+
     '</tr>';
   }).join('');
@@ -8679,6 +8701,7 @@ function trkCalcCCL(){
     } else { loadLiquidez(); }
 
     // 8. Inversión inicial
+    try{await vigLoad();}catch(e){}
     var sbInv = await sbGetConfig('inv_inicial');
     if(sbInv){
       setFmtNum('inv-sidebar-usd', sbInv, 0);
@@ -11879,7 +11902,9 @@ async function pushWatchPublicar(d){
     var cortes=[];try{var c=histUltimoCorte();if(c)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:(parseInt(c.slice(0,4),10)+1)+c.slice(4)});
       if(c&&HIST&&!HIST.cierres.some(function(x){return x.d===c;})&&_aporDias(c,_hHoy())<=1)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:c});}catch(e){}
     var pos=(d.pos||[]).filter(function(p){return p.v>0;}).map(function(p){return {t:p.t,sym:p.t,v:Math.round(p.v)};});
-    await sbSetConfig('push_watch',{ts:Date.now(),cartera:CFG.nombre,url:location.href.split('#')[0],targets:tg,cobros:cob,cortes:cortes,pos:pos,liq:Math.round(d.liqTotalUSD||0)});
+    var compras=[];try{await vigLoad();vigItems.forEach(function(v){if(!(v.obj>0))return;var s=getSector(v.ticker),k=((s==='bonos'||s==='on')&&isBonoUSDDirecto(v.ticker))?'usd':(s==='bonos'||s==='on'||s==='fci')?'bono':'ccl';var u=_vigPrecioUSD(v.ticker);
+      compras.push({t:v.ticker,sym:v.ticker,k:k,r:1,obj:v.obj,last:u?Math.round(u*1000)/1000:null});});}catch(e){}
+    await sbSetConfig('push_watch',{ts:Date.now(),cartera:CFG.nombre,url:location.href.split('#')[0],targets:tg,cobros:cob,cortes:cortes,compras:compras,pos:pos,liq:Math.round(d.liqTotalUSD||0)});
   }catch(e){console.warn('pushWatchPublicar',e);}
 }
 (function(){function add(){if(!CFG.push)return;var hr=document.querySelector('.hright');if(!hr||document.getElementById('push-btn'))return;
