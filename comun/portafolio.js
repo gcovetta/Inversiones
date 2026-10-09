@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=149, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=150, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v150 | 2026-10-08 | UI: Vigilancia simplificada — solo Ticker, Δ%, objetivo con distancia y Nota (precio de hoy al pasar el mouse por el ticker); sin cantidad, precios, valores ni totales.',
   'v149 | 2026-10-08 | Fix: Vigilancia ahora cotiza los activos que no están en cartera (data912: bonos, letras, ONs, acciones y Cedears) y los bonos C/D se muestran en dólares directos.',
   'v148 | 2026-10-08 | Feat: Vigilancia se guarda en Supabase (igual en todos los dispositivos), con precio de compra objetivo (distancia en %, 🎯 al llegar y aviso push) y una nota por activo.',
   'v147 | 2026-10-08 | Feat: ⚠️ errores de carga en Movimientos — marca sin cantidad/precio, fecha inválida o futura, posibles duplicados, ventas de más de lo que se tenía y precios muy distintos a las otras operaciones del activo; aviso arriba con "ver solo esos".',
@@ -4495,13 +4496,13 @@ function _vigPrecioUSD(t){var q=quotes[t];if(!q||q.price==null)return null;var s
   if(bo&&isBonoUSDDirecto(t))return q.price;if(ars)return tc>0?q.price/tc:null;return q.fromByma?q.price/(CCL_HOY||1):q.price/(getRatio(t)||1);}
 function vigAdd(){
   var ticker=document.getElementById('vig-ticker').value.trim().toUpperCase();
-  var qty=parseFloat(document.getElementById('vig-qty').value)||0;
+  var _q=document.getElementById('vig-qty'),qty=_q?(parseFloat(_q.value)||0):0;
   if(!ticker)return;
   var ex=vigItems.find(function(v){return v.ticker===ticker;});
   if(ex){ex.qty=qty;}else{vigItems.push({ticker:ticker,qty:qty});}
   vigSave();_vigQts=0;
   document.getElementById('vig-ticker').value='';
-  document.getElementById('vig-qty').value='';
+  if(_q)_q.value='';
   vigRender();
 }
 
@@ -4552,23 +4553,17 @@ function vigRender(){
     var chgStr=chg==null?'—':(chg>=0?'+':'')+chg.toFixed(1)+'%';
     var fmt=function(n,prefix){return n==null?'—':prefix+(Math.round(n)).toLocaleString('es-AR');};
     var fmtD=function(n,prefix){return n==null?'—':prefix+n.toFixed(2);};
+    var _pu=_vigPrecioUSD(v.ticker);
     return '<tr>'+
-      '<td style="font-weight:600">'+v.ticker+'</td>'+
-      '<td class="mono">'+(v.qty||'—')+'</td>'+
-      '<td class="mono">'+(priceARS!=null?'$'+Math.round(priceARS).toLocaleString('es-AR'):'—')+'</td>'+
-      '<td class="mono">'+fmt(valARS,'$')+'</td>'+
-      '<td class="mono">'+fmtD(priceUSD,'u$s ')+'</td>'+
-      '<td class="mono">'+fmt(valUSD,'u$s ')+'</td>'+
+      '<td style="font-weight:600" title="'+(_pu?'Precio hoy: USD '+_pu.toFixed(_pu<10?3:2)+(priceARS!=null?' · $ '+Math.round(priceARS).toLocaleString('es-AR'):''):'Sin cotización')+'">'+v.ticker+'</td>'+
       '<td class="mono" style="color:'+chgColor+'">'+chgStr+'</td>'+
-      (function(){var _pu=_vigPrecioUSD(v.ticker),_d=(v.obj>0&&_pu)?(_pu/v.obj-1)*100:null,_ok=_d!=null&&_d<=0;
-        return '<td><input type="text" inputmode="decimal" value="'+(v.obj||'')+'" placeholder="—" title="Precio de compra objetivo en USD (bonos: cada 100 VN). Cuando el precio llegue o baje de este valor, se marca y te llega un aviso." onchange="vigSet(\''+v.ticker+'\',\'obj\',this.value)" style="width:70px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:2px 5px;text-align:right"></td>'+
-          '<td class="mono" style="color:'+(_ok?'var(--accent)':_d!=null&&_d<=5?'#eab308':'var(--text3)')+';font-weight:'+(_ok?700:400)+'" title="Cuánto tiene que bajar el precio para llegar al objetivo">'+(_d==null?'—':_ok?'🎯 llegó':'−'+_d.toFixed(1).replace('.',',')+'%')+'</td>'+
+      (function(){var _d=(v.obj>0&&_pu)?(_pu/v.obj-1)*100:null,_ok=_d!=null&&_d<=0;
+        return '<td style="white-space:nowrap"><input type="text" inputmode="decimal" value="'+(v.obj||'')+'" placeholder="objetivo" title="Precio de compra objetivo en USD, en la misma escala que el precio en USD del activo (pasá el mouse por el ticker para verlo; bonos: cada 100 VN). Al llegar se marca 🎯 y te llega un aviso." onchange="vigSet(\''+v.ticker+'\',\'obj\',this.value)" style="width:68px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:2px 5px;text-align:right"> '+
+          '<span class="mono" style="color:'+(_ok?'var(--accent)':_d!=null&&_d<=5?'#eab308':'var(--text3)')+';font-weight:'+(_ok?700:400)+';margin-left:6px">'+(_d==null?(v.obj>0?'sin precio':''):_ok?'🎯 llegó':'−'+_d.toFixed(1).replace('.',',')+'%')+'</span></td>'+
           '<td><input type="text" value="'+String(v.nota||'').replace(/"/g,'&quot;')+'" placeholder="nota…" maxlength="120" onchange="vigSet(\''+v.ticker+'\',\'nota\',this.value)" style="width:160px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);font-size:.72rem;padding:2px 5px"></td>';})()+
       '<td><button class="btn btn-d btn-sm" onclick="vigRemove(\''+v.ticker+'\')">✕</button></td>'+
     '</tr>';
   }).join('');
-  document.getElementById('vig-tot-ars').textContent=totARS?'$'+Math.round(totARS).toLocaleString('es-AR'):'—';
-  document.getElementById('vig-tot-usd').textContent=totUSD?'u$s '+Math.round(totUSD).toLocaleString('es-AR'):'—';
 }
 
 var _cmpData={gdc:null,veta:null,portafolio:null,broker:null};
