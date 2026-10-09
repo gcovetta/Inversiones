@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=146, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=147, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v147 | 2026-10-08 | Feat: ⚠️ errores de carga en Movimientos — marca sin cantidad/precio, fecha inválida o futura, posibles duplicados, ventas de más de lo que se tenía y precios muy distintos a las otras operaciones del activo; aviso arriba con "ver solo esos".',
   'v146 | 2026-10-08 | Feat: ⏳ Ciclo de vida de bonos y ONs al final de Próximos Cobros (cobrado / falta cobrar / pagaste y % manteniéndolo hasta el final).',
   'v145 | 2026-10-08 | Revert: se sacan los cortes de cupón, el ciclo de vida y los datos de renta fija del resumen (v144). Queda solo el filtro Todo / R. Fija / R. Variable de la tabla del portafolio.',
   'v144 | 2026-10-08 | Feat: ✂️ próximos cortes de cupón y ⏳ ciclo de vida de bonos/ONs en Próximos Cobros; filtro Todo / R. Fija / R. Variable en la tabla del portafolio; el resumen manda TIR, vencimiento, próximo pago, corte y cobros 12 meses de cada bono/ON (para 🏦 Renta fija del index) y el corte en los avisos.',
@@ -3267,6 +3268,53 @@ function backfillTCDesdeMovimientosUI(){
   alert(msg);
 }
 
+// ─── ⚠️ Errores de carga en movimientos ───────────────────────────────────────
+// Revisa todos los movimientos y marca los sospechosos: sin cantidad o precio, fecha inválida o futura,
+// posibles duplicados, ventas de más de lo que se tenía y precios muy distintos a las otras operaciones
+// del mismo activo (±180 días). Solo avisa: no cambia nada.
+var _movSoloProb=false,_movProbCache=null,_movProbKey='';
+function _movUnitUSD(m){
+  var bo=(m.mercado==='BONOS'||m.mercado==='ON'),mep=bo||m.mercado==='FCI',ars=(m.mercado==='ARGENTINA'||mep);
+  if(ars&&(m.precioARS||0)>0){if(isBonoUSDDirecto(m.ticker))return m.precioARS;var tc=(mep?(getMEP(m.fecha)||getCCL(m.fecha)):getCCL(m.fecha))||m.ccl;return tc>0?m.precioARS/tc:null;}
+  return (m.precioUSD||0)>0?m.precioUSD:null;
+}
+function movProblemas(){
+  var key=movimientos.length+'|'+(movimientos.length?movimientos[movimientos.length-1].id:'');
+  if(_movProbCache&&_movProbKey===key)return _movProbCache;
+  var P={},add=function(m,t){(P[m.id]=P[m.id]||[]).push(t);},hoy=_flujosHoyStr();
+  var ops=movimientos.filter(function(m){return m&&(m.tipo==='compra'||m.tipo==='venta');});
+  ops.forEach(function(m){
+    var iso=_phIso(m.fecha);
+    if(!iso||isNaN(Date.parse(iso)))add(m,'fecha inválida ('+(m.fecha||'vacía')+')');else if(iso>hoy)add(m,'fecha futura ('+m.fecha+')');
+    if(!m.ticker||!String(m.ticker).trim())add(m,'sin ticker');
+    if(!(+m.qty>0))add(m,'cantidad en 0 o negativa');
+    if(!((m.precioARS||0)>0)&&!((m.precioUSD||0)>0))add(m,'sin precio');
+  });
+  // duplicados exactos
+  var vis={};ops.forEach(function(m){var k=[m.fecha,m.tipo,m.ticker,m.qty,m.precioARS||m.precioUSD,m.cartera||'principal'].join('|');(vis[k]=vis[k]||[]).push(m);});
+  Object.keys(vis).forEach(function(k){if(vis[k].length>1)vis[k].forEach(function(m){add(m,'posible duplicado ('+vis[k].length+' iguales: misma fecha, cantidad y precio)');});});
+  // ventas de más de lo que se tenía (orden cronológico, por cartera)
+  var q={};ops.slice().sort(function(a,b){var x=_phIso(a.fecha)||'',y=_phIso(b.fecha)||'';return x<y?-1:x>y?1:(a.tipo==='compra'?-1:1);}).forEach(function(m){
+    if(m.owner==='cristian')return;var k=(m.cartera||'principal')+'|'+m.ticker,n=+m.qty||0;
+    if(m.tipo==='compra')q[k]=(q[k]||0)+n;else{var ten=q[k]||0;if(n>ten*1.0001+0.0001)add(m,'vende '+n+' y a esa fecha tenías '+Math.round(ten*10000)/10000);q[k]=ten-n;}});
+  // precio muy distinto a las otras operaciones del mismo activo (±180 días)
+  var byT={};ops.forEach(function(m){var u=_movUnitUSD(m),i=_phIso(m.fecha);if(u>0&&i)(byT[m.ticker]=byT[m.ticker]||[]).push({m:m,u:u,t:Date.parse(i)});});
+  Object.keys(byT).forEach(function(t){var L=byT[t];if(L.length<3)return;
+    L.forEach(function(a){var o=L.filter(function(b){return b!==a&&Math.abs(b.t-a.t)<=180*86400000;}).map(function(b){return b.u;}).sort(function(x,y){return x-y;});if(o.length<2)return;
+      var med=o[Math.floor(o.length/2)],r=a.u/med;
+      if(r>2.5||r<0.4)add(a.m,'precio USD '+a.u.toFixed(a.u<10?3:2)+' muy distinto a tus otras operaciones de '+t+' (en torno a '+med.toFixed(med<10?3:2)+'): ¿tipo de cambio, precio por 100 o split?');});});
+  _movProbCache=P;_movProbKey=key;return P;
+}
+function _movProbIcon(m){var p=movProblemas()[m.id];if(!p)return '';return ' <span title="'+p.join('\n').replace(/"/g,'&quot;')+'" style="color:var(--amber,#eab308);cursor:help">⚠️</span>';}
+function movProbBanner(){
+  var wrap=document.getElementById('mov-wrap');if(!wrap)return;var el=document.getElementById('mov-prob');
+  if(!el){el=document.createElement('div');el.id='mov-prob';wrap.parentNode.insertBefore(el,wrap);}
+  var n=Object.keys(movProblemas()).length;
+  if(!n){el.innerHTML='';_movSoloProb=false;return;}
+  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 8px;padding:7px 12px;border:1px solid rgba(234,179,8,.4);background:rgba(234,179,8,.08);border-radius:8px;font-size:.74rem;color:var(--amber,#eab308)">⚠️ <b>'+n+' movimiento'+(n>1?'s':'')+' para revisar</b><span style="color:var(--text3)">(pasá el mouse por el ⚠️ de cada uno para ver el motivo)</span>'+
+    '<button class="btn btn-sm" style="margin-left:auto" onclick="_movSoloProb=!_movSoloProb;renderMovimientos()">'+(_movSoloProb?'Ver todos':'Ver solo esos')+'</button></div>';
+}
+
 function checkMovSinTC(){
   var warn=document.getElementById('warn-sin-tc');
   if(!warn) return;
@@ -3323,7 +3371,9 @@ function renderMovimientos(){
     return !getMEP(m.fecha);
   });
 
-  var anyFilter=filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterCartera||filterNoCCL||filterNoMEP;
+  _movProbCache=null;try{movProbBanner();}catch(e){}
+  if(_movSoloProb){var _pp=movProblemas();lista=lista.filter(function(m){return !!_pp[m.id];});}
+  var anyFilter=_movSoloProb||filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterCartera||filterNoCCL||filterNoMEP;
   document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
   // Mostrar/ocultar botón "Borrar ticker" solo cuando hay filtro exacto de ticker
   var btnPurgar=document.getElementById('btn-purgar-ticker');
@@ -3368,7 +3418,7 @@ function renderMovimientos(){
       '<td class="mono">'+m.fecha+'</td>'+
       '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
       '<td><span class="mkt">'+mLabel+'</span></td>'+
-      '<td style="font-weight:600">'+m.ticker+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':(m.cartera==='vetajeep')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2b2410;color:#e0c674;border:1px solid #5c4a1f">VETAJEEP</span>':'')+'</td>'+
+      '<td style="font-weight:600">'+m.ticker+_movProbIcon(m)+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':(m.cartera==='vetajeep')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2b2410;color:#e0c674;border:1px solid #5c4a1f">VETAJEEP</span>':'')+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
       '<td class="mono">'+(m.precioARS?'$'+(_mEsBonoON?m.precioARS*100:m.precioARS).toLocaleString('es-AR'):'')+'</td>'+
       '<td class="mono muted">'+_mCCLstr+'</td>'+
