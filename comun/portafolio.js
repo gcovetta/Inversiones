@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=145, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=146, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v146 | 2026-10-08 | Feat: ⏳ Ciclo de vida de bonos y ONs al final de Próximos Cobros (cobrado / falta cobrar / pagaste y % manteniéndolo hasta el final).',
   'v145 | 2026-10-08 | Revert: se sacan los cortes de cupón, el ciclo de vida y los datos de renta fija del resumen (v144). Queda solo el filtro Todo / R. Fija / R. Variable de la tabla del portafolio.',
   'v144 | 2026-10-08 | Feat: ✂️ próximos cortes de cupón y ⏳ ciclo de vida de bonos/ONs en Próximos Cobros; filtro Todo / R. Fija / R. Variable en la tabla del portafolio; el resumen manda TIR, vencimiento, próximo pago, corte y cobros 12 meses de cada bono/ON (para 🏦 Renta fija del index) y el corte en los avisos.',
   'v143 | 2026-10-07 | UI: la Inv. Inicial pide confirmación (antes → ahora) al cambiarla y se ve distinta de la Liquidez (🔒, color ámbar).',
@@ -1128,6 +1129,7 @@ function renderFlujosPage(){
     elWarn.style.display=cal.sinFlujo.length?'':'none';
     if(cal.sinFlujo.length) elWarn.textContent='Tenés bonos/ON en cartera sin flujo cargado todavía: '+cal.sinFlujo.join(', ')+'. Pasame el flujo (formato Bull, 100 nominales) y lo agrego.';
   }
+  try{renderCicloVida();}catch(e){console.warn('ciclo',e);}
 }
 
 
@@ -11733,6 +11735,35 @@ function b100RefBg(){
   },9000);
 }
 
+// ─── ⏳ Ciclo de vida de bonos y ONs (en Próximos Cobros) ─────────────────
+function renderCicloVida(){
+  var el=document.getElementById('flujo-ciclo');
+  if(!el){var sc=document.getElementById('flujos-scroll');if(!sc)return;el=document.createElement('div');el.id='flujo-ciclo';el.style.marginTop='1rem';sc.appendChild(el);}
+  var h=_flujosHoyStr(),tc=MEP_HOY||CCL_HOY||0,cart=(typeof CARTERA_ACTIVA==='undefined'||!CARTERA_ACTIVA)?'principal':CARTERA_ACTIVA;
+  var pos=(typeof getPositionsPrincipal==='function'?getPositionsPrincipal():getPositions()).filter(function(p){var s=getSector(p.ticker);return p.qty>0.000001&&(s==='bonos'||s==='on')&&flujoDe(p.ticker);});
+  if(!pos.length){el.innerHTML='';return;}
+  var tenidos={};pos.forEach(function(p){tenidos[p.ticker]=1;});
+  var L=pos.map(function(p){var t=p.ticker,tb=flujoDe(t),base=flujoBase(t),q=p.qty,usd=function(m){return tb.moneda==='USD'?m:(tc?m/tc:0);};
+    var fut=tb.flujos.filter(function(x){return x.f>h;}),falta=0;fut.forEach(function(x){falta+=usd(((x.r||0)+(x.a||0))*q/100);});
+    // cobros registrados: los del mismo ticker; si no hay y el bono base no está en cartera, los del base (ej. GD30 para GD30D)
+    var sumar=function(ok){var c=0,fs={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart)||!ok(x.ticker))return;var u=0;try{u=divUSD(x)||0;}catch(e){}if(u>0){c+=u;fs[_infISO(x.fecha)]=1;}});return {c:c,n:Object.keys(fs).length};};
+    var cc=sumar(function(k){return k===t;});
+    if(!cc.c&&base!==t&&!tenidos[base])cc=sumar(function(k){return k===base;});
+    var cob=cc.c,pas=cc.n;
+    var pag=p.costUSDpuro||0,tot=cob+falta;
+    return {t:t,vto:tb.flujos[tb.flujos.length-1].f,fut:fut,cob:cob,falta:falta,pag:pag,tot:tot,pct:pag>0?(tot/pag-1)*100:null,pas:pas};});
+  L.sort(function(a,b){return a.vto<b.vto?-1:1;});
+  var f0=function(x){return Math.round(x).toLocaleString('es-AR');},MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  el.innerHTML='<div class="card"><div class="card-header"><span class="card-title">⏳ Ciclo de vida</span><span style="font-size:.66rem;color:var(--text3);margin-left:8px">cuánto ya cobraste y cuánto falta de cada bono/ON</span></div><div class="card-body" style="padding:.8rem 1rem">'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">'+L.map(function(x){var w=x.tot>0?x.cob/x.tot*100:0;
+      return '<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:var(--mono)">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;font-family:var(--sans)"><b>'+x.t+'</b><span style="font-size:.64rem;color:var(--text3)">vence '+MES[+x.vto.slice(5,7)-1]+'-'+x.vto.slice(2,4)+'</span></div>'+
+        '<div style="height:11px;border-radius:6px;background:var(--bg);overflow:hidden;display:flex;margin:8px 0 5px"><span style="width:'+w+'%;background:var(--accent)"></span><span style="width:'+(100-w)+'%;background:rgba(56,189,248,.55)"></span></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--accent)" class="port-sensitive">cobrado USD '+f0(x.cob)+'</span><span style="color:#38bdf8" class="port-sensitive">falta USD '+f0(x.falta)+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text2);margin-top:2px"><span class="port-sensitive">pagaste USD '+f0(x.pag)+'</span><span>'+(x.pct!=null?'<b style="color:'+(x.pct>=0?'var(--accent)':'var(--red)')+'">'+(x.pct>=0?'+':'−')+Math.abs(x.pct).toFixed(0)+'%</b>':'')+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:.66rem;color:var(--text3);margin-top:2px"><span>'+(x.pas?x.pas+' cobro'+(x.pas>1?'s':'')+' registrado'+(x.pas>1?'s':'')+' · ':'')+(x.fut.length?x.fut.length+' por cobrar':'')+'</span><span>'+(x.fut.length?'próximo '+x.fut[0].f.slice(8,10)+'/'+x.fut[0].f.slice(5,7):'terminado')+'</span></div></div>';}).join('')+'</div>'+
+    '<div style="font-size:.64rem;color:var(--text3);margin-top:8px;line-height:1.5">Cobrado = cobros registrados de ese bono (incluye los de nominales que ya vendiste). Falta = renta + amortización futuras del flujo cargado para la cantidad que tenés hoy (bonos en pesos, pasados al MEP de hoy). Pagaste = costo de lo que tenés hoy. El % compara cobrado + falta contra lo pagado: es lo que ganarías manteniéndolo hasta el final, sin contar lo que pueda pasar con el precio si vendés antes.</div></div></div>';
+}
 // Filtro de la tabla del portafolio: Ambas / Renta fija / Renta variable (FCI cuenta como renta fija)
 function tipoVista(){try{return localStorage.getItem(PFX+'tipo_vista')||'ambas';}catch(e){return 'ambas';}}
 function tipoVistaPasa(sector){var v=tipoVista();if(v==='ambas')return true;var rf=(sector==='bonos'||sector==='on'||sector==='fci');return v==='rf'?rf:!rf;}
