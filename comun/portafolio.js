@@ -11,8 +11,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=150, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=152, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v152 | 2026-10-08 | Feat: Ciclo de vida suma % anual sobre lo pagado, lo que cobrás en el año, valor de hoy y TIR desde hoy, con aviso 🔁 si conviene vender (vale hoy más que lo que falta cobrar o rinde menos de 6% anual).',
+  'v151 | 2026-10-08 | Fix: Ciclo de vida — "pagaste" vuelve a sumar los cobros aplicados al PPC, así la renta no se cuenta dos veces (en cobrado y achicando el costo).',
   'v150 | 2026-10-08 | UI: Vigilancia simplificada — solo Ticker, Δ%, objetivo con distancia y Nota (precio de hoy al pasar el mouse por el ticker); sin cantidad, precios, valores ni totales.',
   'v149 | 2026-10-08 | Fix: Vigilancia ahora cotiza los activos que no están en cartera (data912: bonos, letras, ONs, acciones y Cedears) y los bonos C/D se muestran en dólares directos.',
   'v148 | 2026-10-08 | Feat: Vigilancia se guarda en Supabase (igual en todos los dispositivos), con precio de compra objetivo (distancia en %, 🎯 al llegar y aviso push) y una nota por activo.',
@@ -11827,6 +11829,15 @@ function b100RefBg(){
 }
 
 // ─── ⏳ Ciclo de vida de bonos y ONs (en Próximos Cobros) ─────────────────
+// TIR con fechas (flujos [{d:'AAAA-MM-DD', m}], el primero negativo). Bisección; null si no hay raíz.
+function _xirrFechas(fl){
+  if(!fl.length)return null;var t0=Date.parse(fl[0].d);
+  var npv=function(r){var s=0;fl.forEach(function(x){s+=x.m/Math.pow(1+r,(Date.parse(x.d)-t0)/31557600000);});return s;};
+  var lo=-0.95,hi=3,a=npv(lo),b=npv(hi);if(!isFinite(a)||!isFinite(b)||a*b>0)return null;
+  for(var i=0;i<100;i++){var mid=(lo+hi)/2,v=npv(mid);if(Math.abs(v)<1e-7)return mid;if(a*v<0){hi=mid;b=v;}else{lo=mid;a=v;}}
+  return (lo+hi)/2;
+}
+var CICLO_TIR_BAJA=6; // % anual desde hoy por debajo del cual conviene evaluar vender y rotar
 function renderCicloVida(){
   var el=document.getElementById('flujo-ciclo');
   if(!el){var sc=document.getElementById('flujos-scroll');if(!sc)return;el=document.createElement('div');el.id='flujo-ciclo';el.style.marginTop='1rem';sc.appendChild(el);}
@@ -11841,8 +11852,22 @@ function renderCicloVida(){
     var cc=sumar(function(k){return k===t;});
     if(!cc.c&&base!==t&&!tenidos[base])cc=sumar(function(k){return k===base;});
     var cob=cc.c,pas=cc.n;
-    var pag=p.costUSDpuro||0,tot=cob+falta;
-    return {t:t,vto:tb.flujos[tb.flujos.length-1].f,fut:fut,cob:cob,falta:falta,pag:pag,tot:tot,pct:pag>0?(tot/pag-1)*100:null,pas:pas};});
+    // costUSDpuro ya viene con los cobros aplicados al PPC restados: se los vuelve a sumar para tener lo que pagaste
+    // de verdad y no contar la renta dos veces (una en "cobrado" y otra achicando el costo)
+    var aplic=0;(TRK.divs||[]).forEach(function(d){if(d.ticker!==t||!d.pncApplied||d.pncTarget!=='ppc')return;var m=(d.montoPPC!=null)?d.montoPPC:d.montoUSD;if(m>0)aplic+=m;});
+    var pag=(p.costUSDpuro||0)+aplic,tot=cob+falta;
+    // % anual sobre lo que pagaste: compras (fecha promedio ponderada) → cobros registrados → flujos futuros
+    var anual=null;try{var sq=0,sd=0;movimientos.forEach(function(m){if(m&&m.tipo==='compra'&&m.ticker===t&&(m.cartera||'principal')===cart&&+m.qty>0){var i=_phIso(m.fecha);if(i){sq+=+m.qty;sd+=+m.qty*Date.parse(i);}}});
+      if(sq>0&&pag>0){var d0=new Date(sd/sq).toISOString().slice(0,10),fl=[{d:d0,m:-pag}];
+        (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart)||x.ticker!==t)return;var u=0;try{u=divUSD(x)||0;}catch(e){}var f=_infISO(x.fecha);if(u>0&&f)fl.push({d:f<d0?d0:f,m:u});});
+        fut.forEach(function(x){fl.push({d:x.f,m:usd(((x.r||0)+(x.a||0))*q/100)});});
+        var r=_xirrFechas(fl);if(r!=null)anual=r*100;}}catch(e){}
+    // lo que cobrás en lo que queda del año
+    var anio=0,y=h.slice(0,4);fut.forEach(function(x){if(x.f.slice(0,4)===y)anio+=usd(((x.r||0)+(x.a||0))*q/100);});
+    // ¿vender o mantener? valor de mercado hoy vs lo que falta cobrar, y TIR desde hoy
+    var hoyV=null,qt=quotes[t];if(qt&&qt.price>0&&tb.moneda==='USD'){var rt=getRatio(t)||1,p100=isBonoUSDDirecto(t)?qt.price*rt:(tc?qt.price*rt/tc:null);if(p100)hoyV=p100*q/100;}
+    var tirHoy=null;try{var tr=calcularTIRReal(t);if(tr&&isFinite(tr.tir))tirHoy=tr.tir;}catch(e){}
+    return {t:t,vto:tb.flujos[tb.flujos.length-1].f,fut:fut,cob:cob,falta:falta,pag:pag,tot:tot,pct:pag>0?(tot/pag-1)*100:null,pas:pas,anual:anual,anio:anio,hoyV:hoyV,tirHoy:tirHoy,mon:tb.moneda};});
   L.sort(function(a,b){return a.vto<b.vto?-1:1;});
   var f0=function(x){return Math.round(x).toLocaleString('es-AR');},MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   el.innerHTML='<div class="card"><div class="card-header"><span class="card-title">⏳ Ciclo de vida</span><span style="font-size:.66rem;color:var(--text3);margin-left:8px">cuánto ya cobraste y cuánto falta de cada bono/ON</span></div><div class="card-body" style="padding:.8rem 1rem">'+
@@ -11852,8 +11877,13 @@ function renderCicloVida(){
         '<div style="height:11px;border-radius:6px;background:var(--bg);overflow:hidden;display:flex;margin:8px 0 5px"><span style="width:'+w+'%;background:var(--accent)"></span><span style="width:'+(100-w)+'%;background:rgba(56,189,248,.55)"></span></div>'+
         '<div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--accent)" class="port-sensitive">cobrado USD '+f0(x.cob)+'</span><span style="color:#38bdf8" class="port-sensitive">falta USD '+f0(x.falta)+'</span></div>'+
         '<div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text2);margin-top:2px"><span class="port-sensitive">pagaste USD '+f0(x.pag)+'</span><span>'+(x.pct!=null?'<b style="color:'+(x.pct>=0?'var(--accent)':'var(--red)')+'">'+(x.pct>=0?'+':'−')+Math.abs(x.pct).toFixed(0)+'%</b>':'')+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text2);margin-top:2px"><span>'+(x.anual!=null?'≈ <b style="color:'+(x.anual>=0?'var(--accent)':'var(--red)')+'">'+(x.anual>=0?'+':'−')+Math.abs(x.anual).toFixed(1).replace('.',',')+'% anual</b>':'')+'</span><span class="port-sensitive">'+(x.anio>0?'en '+h.slice(0,4)+' cobrás USD '+f0(x.anio):'')+'</span></div>'+
+        (function(){var v='';if(x.hoyV!=null||x.tirHoy!=null){
+          var vende=x.hoyV!=null&&x.mon==='USD'&&x.hoyV>=x.falta,baja=!vende&&x.tirHoy!=null&&x.tirHoy<CICLO_TIR_BAJA;
+          v='<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);font-size:.68rem;color:var(--text2)">'+(x.hoyV!=null?'<span class="port-sensitive">Hoy vale USD '+f0(x.hoyV)+'</span>':'')+(x.tirHoy!=null?(x.hoyV!=null?' · ':'')+'desde hoy rinde '+x.tirHoy.toFixed(1).replace('.',',')+'% anual':'')+
+            (vende?'<div style="margin-top:4px;color:var(--red);font-weight:700;font-family:var(--sans)">🔁 Venderlo hoy te da más que todo lo que falta cobrar</div>':baja?'<div style="margin-top:4px;color:#eab308;font-weight:700;font-family:var(--sans)">🔁 Rinde poco si lo mantenés: evaluá venderlo y rotar</div>':'')+'</div>';}return v;})()+
         '<div style="display:flex;justify-content:space-between;font-size:.66rem;color:var(--text3);margin-top:2px"><span>'+(x.pas?x.pas+' cobro'+(x.pas>1?'s':'')+' registrado'+(x.pas>1?'s':'')+' · ':'')+(x.fut.length?x.fut.length+' por cobrar':'')+'</span><span>'+(x.fut.length?'próximo '+x.fut[0].f.slice(8,10)+'/'+x.fut[0].f.slice(5,7):'terminado')+'</span></div></div>';}).join('')+'</div>'+
-    '<div style="font-size:.64rem;color:var(--text3);margin-top:8px;line-height:1.5">Cobrado = cobros registrados de ese bono (incluye los de nominales que ya vendiste). Falta = renta + amortización futuras del flujo cargado para la cantidad que tenés hoy (bonos en pesos, pasados al MEP de hoy). Pagaste = costo de lo que tenés hoy. El % compara cobrado + falta contra lo pagado: es lo que ganarías manteniéndolo hasta el final, sin contar lo que pueda pasar con el precio si vendés antes.</div></div></div>';
+    '<div style="font-size:.64rem;color:var(--text3);margin-top:8px;line-height:1.5">Cobrado = cobros registrados de ese bono (incluye los de nominales que ya vendiste). Falta = renta + amortización futuras del flujo cargado para la cantidad que tenés hoy (bonos en pesos, pasados al MEP de hoy). Pagaste = lo que pagaste por lo que tenés hoy (sin restarle los cobros que achican el PPC, para no contarlos dos veces). El % compara cobrado + falta contra lo pagado: es lo que ganarías manteniéndolo hasta el final; "anual" es ese resultado por año, desde tus compras hasta el vencimiento. Abajo, "hoy vale" es lo que recibirías vendiendo hoy y "desde hoy rinde" es la TIR de mantenerlo desde el precio actual: si vender hoy da más que lo que falta cobrar, o si rinde menos de '+CICLO_TIR_BAJA+'% anual, se marca para que evalúes venderlo y rotar a algo que rinda más.</div></div></div>';
 }
 // Filtro de la tabla del portafolio: Ambas / Renta fija / Renta variable (FCI cuenta como renta fija)
 function tipoVista(){try{return localStorage.getItem(PFX+'tipo_vista')||'ambas';}catch(e){return 'ambas';}}
