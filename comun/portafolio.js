@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=148, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=149, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v149 | 2026-10-08 | Fix: Vigilancia ahora cotiza los activos que no están en cartera (data912: bonos, letras, ONs, acciones y Cedears) y los bonos C/D se muestran en dólares directos.',
   'v148 | 2026-10-08 | Feat: Vigilancia se guarda en Supabase (igual en todos los dispositivos), con precio de compra objetivo (distancia en %, 🎯 al llegar y aviso push) y una nota por activo.',
   'v147 | 2026-10-08 | Feat: ⚠️ errores de carga en Movimientos — marca sin cantidad/precio, fecha inválida o futura, posibles duplicados, ventas de más de lo que se tenía y precios muy distintos a las otras operaciones del activo; aviso arriba con "ver solo esos".',
   'v146 | 2026-10-08 | Feat: ⏳ Ciclo de vida de bonos y ONs al final de Próximos Cobros (cobrado / falta cobrar / pagaste y % manteniéndolo hasta el final).',
@@ -4471,8 +4472,26 @@ async function vigLoad(){
 function vigSet(t,campo,val){var v=vigItems.find(function(x){return x.ticker===t;});if(!v)return;
   if(campo==='obj'){var n=parseFloat(String(val).replace(',','.'));if(n>0)v.obj=n;else delete v.obj;}else if(campo==='nota'){val=String(val||'').trim();if(val)v.nota=val.slice(0,120);else delete v.nota;}
   vigSave();vigRender();}
+// Cotización de los activos de Vigilancia que no están en cartera (las cotizaciones normales solo bajan lo que tenés).
+// data912: bonos, letras, ONs, acciones y Cedears. El panel donde aparece define el tipo si el ticker no es conocido.
+var VIG_SECT={},_vigQts=0,_vigQBusy=false;
+function _vigSect(t){return SECTOR_MAP[t]||VIG_SECT[t]||getSector(t);}
+async function vigCotizar(forzar){
+  if(_vigQBusy||!vigItems.length)return false;
+  var falta=vigItems.filter(function(v){return !quotes[v.ticker]||VIG_SECT[v.ticker];});if(!falta.length)return false;
+  if(!forzar&&Date.now()-_vigQts<5*60000)return false;
+  _vigQBusy=true;_vigQts=Date.now();var hubo=false;
+  try{
+    var panels=[['arg_bonds','bonos'],['arg_notes','bonos'],['arg_corp','on'],['arg_stocks','argentina'],['arg_cedears','nyse']];
+    var res=await Promise.all(panels.map(function(pn){return fetchWithTimeout('https://data912.com/live/'+pn[0],{headers:{'Accept':'application/json'}},9000).then(function(r){return r.ok?r.json():null;}).then(function(j){return j?parseData912Response(j):{};}).catch(function(){return {};});}));
+    falta.forEach(function(v){var t=v.ticker.toUpperCase();
+      for(var i=0;i<panels.length;i++){var q=res[i][t];if(q&&q.price>0){if(!SECTOR_MAP[t])VIG_SECT[t]=panels[i][1];
+        quotes[v.ticker]={price:q.price,prevClose:q.prevClose,changePct:q.changePct,fromByma:true};hubo=true;break;}}});
+  }catch(e){}finally{_vigQBusy=false;}
+  return hubo;
+}
 // Precio en USD tal como se muestra en Vigilancia (bonos: cada 100 VN)
-function _vigPrecioUSD(t){var q=quotes[t];if(!q||q.price==null)return null;var s=getSector(t),bo=(s==='bonos'||s==='on'),fci=s==='fci',ars=(s==='argentina'||bo||fci),tc=(bo||fci)?(MEP_HOY||CCL_HOY):CCL_HOY;
+function _vigPrecioUSD(t){var q=quotes[t];if(!q||q.price==null)return null;var s=_vigSect(t),bo=(s==='bonos'||s==='on'),fci=s==='fci',ars=(s==='argentina'||bo||fci),tc=(bo||fci)?(MEP_HOY||CCL_HOY):CCL_HOY;
   if(bo&&isBonoUSDDirecto(t))return q.price;if(ars)return tc>0?q.price/tc:null;return q.fromByma?q.price/(CCL_HOY||1):q.price/(getRatio(t)||1);}
 function vigAdd(){
   var ticker=document.getElementById('vig-ticker').value.trim().toUpperCase();
@@ -4480,7 +4499,7 @@ function vigAdd(){
   if(!ticker)return;
   var ex=vigItems.find(function(v){return v.ticker===ticker;});
   if(ex){ex.qty=qty;}else{vigItems.push({ticker:ticker,qty:qty});}
-  vigSave();
+  vigSave();_vigQts=0;
   document.getElementById('vig-ticker').value='';
   document.getElementById('vig-qty').value='';
   vigRender();
@@ -4497,13 +4516,14 @@ function vigRender(){
   var empty=document.getElementById('vig-empty');
   var table=document.getElementById('vig-table');
   if(!_vigLoaded){vigLoad().then(function(){if(_vigLoaded)vigRender();});}
+  vigCotizar().then(function(h){if(h)vigRender();});
   if(!vigItems.length){empty.style.display='';table.style.display='none';return;}
   empty.style.display='none';table.style.display='';
   var totARS=0,totUSD=0;
   body.innerHTML=vigItems.map(function(v){
     var q=quotes[v.ticker];
     var price=q?q.price:null;
-    var sector=getSector(v.ticker);
+    var sector=_vigSect(v.ticker);
     var ratio=getRatio(v.ticker);
     var isBonoON=(sector==='bonos'||sector==='on');
     var isFci=(sector==='fci');
@@ -4511,7 +4531,10 @@ function vigRender(){
     var _vTc=(isBonoON||isFci)?(MEP_HOY||CCL_HOY):CCL_HOY;
     var priceARS=null,priceUSD=null,valARS=null,valUSD=null;
     if(price!=null){
-      if(isARS){
+      if(isBonoON&&isBonoUSDDirecto(v.ticker)){
+        priceUSD=price;priceARS=_vTc>0?price*_vTc:null;
+        if(v.qty){valUSD=price*v.qty/100;valARS=_vTc>0?valUSD*_vTc:null;}
+      }else if(isARS){
         priceARS=price;
         priceUSD=_vTc>0?price/_vTc:null;
         if(v.qty){valARS=isBonoON?price*v.qty/100:price*v.qty;valUSD=_vTc>0?valARS/_vTc:null;}
@@ -11902,7 +11925,7 @@ async function pushWatchPublicar(d){
     var cortes=[];try{var c=histUltimoCorte();if(c)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:(parseInt(c.slice(0,4),10)+1)+c.slice(4)});
       if(c&&HIST&&!HIST.cierres.some(function(x){return x.d===c;})&&_aporDias(c,_hHoy())<=1)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:c});}catch(e){}
     var pos=(d.pos||[]).filter(function(p){return p.v>0;}).map(function(p){return {t:p.t,sym:p.t,v:Math.round(p.v)};});
-    var compras=[];try{await vigLoad();vigItems.forEach(function(v){if(!(v.obj>0))return;var s=getSector(v.ticker),k=((s==='bonos'||s==='on')&&isBonoUSDDirecto(v.ticker))?'usd':(s==='bonos'||s==='on'||s==='fci')?'bono':'ccl';var u=_vigPrecioUSD(v.ticker);
+    var compras=[];try{await vigLoad();vigItems.forEach(function(v){if(!(v.obj>0))return;var s=_vigSect(v.ticker),k=((s==='bonos'||s==='on')&&isBonoUSDDirecto(v.ticker))?'usd':(s==='bonos'||s==='on'||s==='fci')?'bono':'ccl';var u=_vigPrecioUSD(v.ticker);
       compras.push({t:v.ticker,sym:v.ticker,k:k,r:1,obj:v.obj,last:u?Math.round(u*1000)/1000:null});});}catch(e){}
     await sbSetConfig('push_watch',{ts:Date.now(),cartera:CFG.nombre,url:location.href.split('#')[0],targets:tg,cobros:cob,cortes:cortes,compras:compras,pos:pos,liq:Math.round(d.liqTotalUSD||0)});
   }catch(e){console.warn('pushWatchPublicar',e);}
