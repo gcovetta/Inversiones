@@ -4462,7 +4462,7 @@ try{vigItems=JSON.parse(localStorage.getItem(VIG_KEY))||[];}catch(e){vigItems=[]
 var _vigLoaded=false;
 function vigSave(){try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}try{sbSetConfig('vigilancia',vigItems);}catch(e){}}
 async function vigLoad(){
-  if(_vigLoaded)return;
+  if(_vigLoaded||!document.getElementById('page-vigilancia'))return; // solo GDC tiene Vigilancia
   try{var c=await sbGetConfig('vigilancia');if(typeof c==='string'){try{c=JSON.parse(c);}catch(e){c=null;}}
     if(Array.isArray(c)&&c.length){vigItems=c;try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}}
     else if(vigItems.length){await sbSetConfig('vigilancia',vigItems);}
