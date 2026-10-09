@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=144, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=145, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v145 | 2026-10-08 | Revert: se sacan los cortes de cupón, el ciclo de vida y los datos de renta fija del resumen (v144). Queda solo el filtro Todo / R. Fija / R. Variable de la tabla del portafolio.',
   'v144 | 2026-10-08 | Feat: ✂️ próximos cortes de cupón y ⏳ ciclo de vida de bonos/ONs en Próximos Cobros; filtro Todo / R. Fija / R. Variable en la tabla del portafolio; el resumen manda TIR, vencimiento, próximo pago, corte y cobros 12 meses de cada bono/ON (para 🏦 Renta fija del index) y el corte en los avisos.',
   'v143 | 2026-10-07 | UI: la Inv. Inicial pide confirmación (antes → ahora) al cambiarla y se ve distinta de la Liquidez (🔒, color ámbar).',
   'v142 | 2026-10-07 | Feat: el resumen manda la serie base 100 de la cartera (cortes de períodos anteriores + un punto por día del historial diario, con aportes/retiros descontados) para la tarjeta 📊 Comparar carteras del index; GDC además manda el S&P 500 de referencia.',
@@ -1127,8 +1128,6 @@ function renderFlujosPage(){
     elWarn.style.display=cal.sinFlujo.length?'':'none';
     if(cal.sinFlujo.length) elWarn.textContent='Tenés bonos/ON en cartera sin flujo cargado todavía: '+cal.sinFlujo.join(', ')+'. Pasame el flujo (formato Bull, 100 nominales) y lo agrego.';
   }
-  try{renderCortes(cal);}catch(e){console.warn('cortes',e);}
-  try{renderCicloVida();}catch(e){console.warn('ciclo',e);}
 }
 
 
@@ -3976,7 +3975,7 @@ function renderPortfolio(){
     totalCost:open.reduce(function(a,p){return a+(p._valueUSD!=null?(p.costUSDpuro||0):0);},0),
     pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null,pv:p._pv!=null?p._pv:null,up:p._upside!=null?Math.round(p._upside*10)/10:null,ch:(quotes[p.ticker]&&quotes[p.ticker].changePct!=null&&isFinite(quotes[p.ticker].changePct))?Math.round(quotes[p.ticker].changePct*100)/100:null};}),
     sinPrecio:open.filter(function(p){return p._valueUSD==null;}).map(function(p){return p.ticker;}),
-    cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total,c:(typeof corteDe==='function'?corteDe(it.fecha):null)};})
+    cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
   });}catch(_e){console.warn('famQueueSnapshot',_e);}
   if(CFG.simRetiro){_simrCapHoy=valConLiq;try{simrRender();}catch(_e){}}
   try{mobRender({open:open,valConLiq:valConLiq,rendPct:rendPct,liq:liqTotalUSD,dolzPct:dolzPct,sectorVal:sectorVal,cobros:(_calCobros&&_calCobros.items)||[],pv:(typeof _pvAlerts!=='undefined'?_pvAlerts:[])});}catch(_e){console.warn('mobRender',_e);}
@@ -5874,7 +5873,6 @@ async function famSaveSnapshot(d){
     doc.ccl=CCL_HOY;doc.mep=MEP_HOY;
     doc.liq={usd:d.liqUSD||0,ars:d.liqARS||0,totalUSD:d.liqTotalUSD||0};
     if(cart==='principal'||!doc.cobros)doc.cobros=d.cobros;
-    try{(d.pos||[]).forEach(function(p){if(p.s!=='bonos'&&p.s!=='on')return;var i=rfInfo(p.t,p.q);for(var k in i)p[k]=i[k];});}catch(e){}
     doc.carteras[cart]={ts:now,totalVal:d.totalVal,totalCost:d.totalCost,sectorVal:d.sectorVal,dolzPct:d.dolzPct,pos:d.pos,rend:d.rendPct};
     if(cart==='principal'||doc.rend==null){doc.rend=d.rendPct;doc.invInicial=d.invInicial||null;}
     doc.periodoInicio=CFG.periodoInicio||null;
@@ -11735,72 +11733,6 @@ function b100RefBg(){
   },9000);
 }
 
-// ─── ✂️ Cortes de cupón · ⏳ Ciclo de vida · filtro RF/RV ─────────────────────
-// Corte (fecha de registro) aproximado: CORTE_HABILES días hábiles antes del pago. Para cobrar
-// hay que tener el bono ese día; conviene confirmarlo en el broker para cada pago.
-var CORTE_HABILES=2;
-function corteDe(fPago){
-  if(!fPago)return null;var d=new Date(fPago+'T12:00:00'),n=0,g=0;
-  while(n<CORTE_HABILES&&g++<15){d.setDate(d.getDate()-1);var iso=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);if(esDiaHabil(iso))n++;}
-  return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
-}
-function _habilesHasta(iso){var h=_flujosHoyStr();if(iso<=h)return 0;var d=new Date(h+'T12:00:00'),n=0,g=0;while(g++<60){d.setDate(d.getDate()+1);var s=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);if(esDiaHabil(s))n++;if(s>=iso)break;}return n;}
-// Info de renta fija de una posición (para el resumen del index): TIR, vencimiento, próximo pago y cobros a 12 meses
-function rfInfo(t,q){
-  var o={},tabla=flujoDe(t),h=_flujosHoyStr();
-  try{var r=calcularTIRReal(t);if(r&&isFinite(r.tir))o.tir=Math.round(r.tir*10)/10;else if(TIR_CACHE[t]&&isFinite(+TIR_CACHE[t].value))o.tir=Math.round(+TIR_CACHE[t].value*10)/10;}catch(e){}
-  if(tabla&&tabla.flujos&&tabla.flujos.length){
-    var fut=tabla.flujos.filter(function(x){return x.f>h;});o.vto=tabla.flujos[tabla.flujos.length-1].f;
-    var tc=MEP_HOY||CCL_HOY||0,lim=new Date();lim.setFullYear(lim.getFullYear()+1);var limS=lim.toISOString().slice(0,10),c12=0;
-    fut.forEach(function(x){if(x.f<=limS){var m=((x.r||0)+(x.a||0))*q/100;c12+=tabla.moneda==='USD'?m:(tc?m/tc:0);}});
-    o.c12=Math.round(c12*100)/100;
-    if(fut.length){o.npf=fut[0].f;o.npx=Math.round(((fut[0].r||0)+(fut[0].a||0))*q/100*100)/100;o.npm=tabla.moneda;o.cor=corteDe(fut[0].f);}
-  }
-  return o;
-}
-function _rfFmtD(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'—';}
-function _rfFmtM(m,x){return (m==='USD'?'USD ':'$ ')+Math.round(x||0).toLocaleString('es-AR');}
-function _rfCont(id,despuesDe){var el=document.getElementById(id);if(el)return el;var ref=document.getElementById(despuesDe);if(!ref)return null;el=document.createElement('div');el.id=id;ref.parentNode.insertBefore(el,ref.nextSibling);return el;}
-function renderCortes(cal){
-  var el=_rfCont('flujo-cortes','flujo-page-sinflujo');if(!el)return;
-  var h=_flujosHoyStr(),lim=_flujosFechaLimiteStr(30);
-  var it=(cal.items||[]).filter(function(x){return x.fecha<=lim;}).map(function(x){return Object.assign({c:corteDe(x.fecha)},x);});
-  if(!it.length){el.innerHTML='';return;}
-  var rows=it.map(function(x){var st;
-    if(h>x.c)st='<span style="color:var(--accent)">ya cortó: cobrás el '+_rfFmtD(x.fecha)+'</span>';
-    else{var n=_habilesHasta(x.c);st=n<=3?'<span style="font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(234,179,8,.13);color:var(--amber,#eab308);border:1px solid rgba(234,179,8,.4)">no vender antes del '+_rfFmtD(x.c)+'</span>':'<span style="color:var(--text3)">corte en '+n+' días hábiles</span>';}
-    return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 10px;font-weight:700">'+x.ticker+'</td><td style="padding:6px 10px;color:var(--amber,#eab308)">'+_rfFmtD(x.c)+'</td><td style="padding:6px 10px">'+_rfFmtD(x.fecha)+'</td><td style="padding:6px 10px;color:var(--text3)">'+(x.amort>0?'renta + amortización':'renta')+'</td><td style="padding:6px 10px;color:var(--accent)" class="port-sensitive">'+_rfFmtM(x.moneda,x.total)+'</td><td style="padding:6px 10px;font-family:var(--sans)">'+st+'</td></tr>';}).join('');
-  el.innerHTML='<div class="card" style="margin-bottom:1rem"><div class="card-header"><span class="card-title">✂️ Próximos cortes de cupón</span><span style="font-size:.66rem;color:var(--text3);margin-left:8px">30 días</span></div><div class="card-body" style="padding:.6rem 1rem"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.76rem"><thead><tr style="border-bottom:2px solid var(--border2);color:var(--text3);font-size:.63rem;text-transform:uppercase"><th style="text-align:left;padding:6px 10px">Bono</th><th style="text-align:left;padding:6px 10px">Corte</th><th style="text-align:left;padding:6px 10px">Pago</th><th style="text-align:left;padding:6px 10px">Qué paga</th><th style="text-align:left;padding:6px 10px">Cobro</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<div style="font-size:.64rem;color:var(--text3);margin-top:6px">Para cobrar hay que tener el bono el día del corte. La fecha es aproximada ('+CORTE_HABILES+' días hábiles antes del pago): confirmala en el broker si pensás vender cerca.</div></div></div>';
-}
-function renderCicloVida(){
-  var el=document.getElementById('flujo-ciclo');
-  if(!el){var sc=document.getElementById('flujos-scroll');if(!sc)return;el=document.createElement('div');el.id='flujo-ciclo';el.style.marginTop='1rem';sc.appendChild(el);}
-  var h=_flujosHoyStr(),tc=MEP_HOY||CCL_HOY||0,cart=(typeof CARTERA_ACTIVA==='undefined'||!CARTERA_ACTIVA)?'principal':CARTERA_ACTIVA;
-  var pos=(typeof getPositionsPrincipal==='function'?getPositionsPrincipal():getPositions()).filter(function(p){var s=getSector(p.ticker);return p.qty>0.000001&&(s==='bonos'||s==='on')&&flujoDe(p.ticker);});
-  if(!pos.length){el.innerHTML='';return;}
-  var tenidos={};pos.forEach(function(p){tenidos[p.ticker]=1;});
-  var L=pos.map(function(p){var t=p.ticker,tb=flujoDe(t),base=flujoBase(t),q=p.qty,usd=function(m){return tb.moneda==='USD'?m:(tc?m/tc:0);};
-    var fut=tb.flujos.filter(function(x){return x.f>h;}),falta=0;fut.forEach(function(x){falta+=usd(((x.r||0)+(x.a||0))*q/100);});
-    // cobros registrados: los del mismo ticker; si no hay y el bono base no está en cartera, los del base (ej. GD30 para GD30D)
-    var sumar=function(ok){var c=0,fs={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart)||!ok(x.ticker))return;var u=0;try{u=divUSD(x)||0;}catch(e){}if(u>0){c+=u;fs[_infISO(x.fecha)]=1;}});return {c:c,n:Object.keys(fs).length};};
-    var cc=sumar(function(k){return k===t;});
-    if(!cc.c&&base!==t&&!tenidos[base])cc=sumar(function(k){return k===base;});
-    var cob=cc.c,pas=cc.n;
-    var pag=p.costUSDpuro||0,tot=cob+falta;
-    return {t:t,vto:tb.flujos[tb.flujos.length-1].f,fut:fut,cob:cob,falta:falta,pag:pag,tot:tot,pct:pag>0?(tot/pag-1)*100:null,pas:pas};});
-  L.sort(function(a,b){return a.vto<b.vto?-1:1;});
-  var f0=function(x){return Math.round(x).toLocaleString('es-AR');},MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  el.innerHTML='<div class="card"><div class="card-header"><span class="card-title">⏳ Ciclo de vida</span><span style="font-size:.66rem;color:var(--text3);margin-left:8px">cuánto ya cobraste y cuánto falta de cada bono/ON</span></div><div class="card-body" style="padding:.8rem 1rem">'+
-    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">'+L.map(function(x){var w=x.tot>0?x.cob/x.tot*100:0;
-      return '<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:var(--mono)">'+
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;font-family:var(--sans)"><b>'+x.t+'</b><span style="font-size:.64rem;color:var(--text3)">vence '+MES[+x.vto.slice(5,7)-1]+'-'+x.vto.slice(2,4)+'</span></div>'+
-        '<div style="height:11px;border-radius:6px;background:var(--bg);overflow:hidden;display:flex;margin:8px 0 5px"><span style="width:'+w+'%;background:var(--accent)"></span><span style="width:'+(100-w)+'%;background:rgba(56,189,248,.55)"></span></div>'+
-        '<div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:var(--accent)" class="port-sensitive">cobrado USD '+f0(x.cob)+'</span><span style="color:#38bdf8" class="port-sensitive">falta USD '+f0(x.falta)+'</span></div>'+
-        '<div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text2);margin-top:2px"><span class="port-sensitive">pagaste USD '+f0(x.pag)+'</span><span>'+(x.pct!=null?'<b style="color:'+(x.pct>=0?'var(--accent)':'var(--red)')+'">'+(x.pct>=0?'+':'−')+Math.abs(x.pct).toFixed(0)+'%</b>':'')+'</span></div>'+
-        '<div style="display:flex;justify-content:space-between;font-size:.66rem;color:var(--text3);margin-top:2px"><span>'+(x.pas?x.pas+' cobro'+(x.pas>1?'s':'')+' registrado'+(x.pas>1?'s':'')+' · ':'')+(x.fut.length?x.fut.length+' por cobrar':'')+'</span><span>'+(x.fut.length?'próximo '+_rfFmtD(x.fut[0].f):'terminado')+'</span></div></div>';}).join('')+'</div>'+
-    '<div style="font-size:.64rem;color:var(--text3);margin-top:8px;line-height:1.5">Cobrado = cobros registrados de ese bono (incluye los de nominales que ya vendiste). Falta = renta + amortización futuras del flujo cargado para la cantidad que tenés hoy (bonos en pesos, pasados al MEP de hoy). Pagaste = costo de lo que tenés hoy. El % compara cobrado + falta contra lo pagado: es lo que ganarías manteniéndolo hasta el final, sin contar lo que pueda pasar con el precio si vendés antes.</div></div></div>';
-}
 // Filtro de la tabla del portafolio: Ambas / Renta fija / Renta variable (FCI cuenta como renta fija)
 function tipoVista(){try{return localStorage.getItem(PFX+'tipo_vista')||'ambas';}catch(e){return 'ambas';}}
 function tipoVistaPasa(sector){var v=tipoVista();if(v==='ambas')return true;var rf=(sector==='bonos'||sector==='on'||sector==='fci');return v==='rf'?rf:!rf;}
@@ -11862,7 +11794,7 @@ async function pushWatchPublicar(d){
       var last=(p.up!=null&&isFinite(p.up))?p.pv/(1+p.up/100):null;
       tg.push({t:p.t,sym:p.t,k:k,r:(typeof getRatio==='function'?getRatio(p.t):1)||1,pv:p.pv,last:last?Math.round(last*1000)/1000:null});});
     var lim=new Date();lim.setDate(lim.getDate()+10);var limS=lim.getFullYear()+'-'+('0'+(lim.getMonth()+1)).slice(-2)+'-'+('0'+lim.getDate()).slice(-2);
-    var cob=[];try{cob=(calcularCalendarioCobros().items||[]).filter(function(it){return it.fecha<=limS;}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:Math.round(it.total*100)/100,c:corteDe(it.fecha)};});}catch(e){}
+    var cob=[];try{cob=(calcularCalendarioCobros().items||[]).filter(function(it){return it.fecha<=limS;}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:Math.round(it.total*100)/100};});}catch(e){}
     var cortes=[];try{var c=histUltimoCorte();if(c)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:(parseInt(c.slice(0,4),10)+1)+c.slice(4)});
       if(c&&HIST&&!HIST.cierres.some(function(x){return x.d===c;})&&_aporDias(c,_hHoy())<=1)cortes.push({nombre:CFG.persona||CFG.nombre,fecha:c});}catch(e){}
     var pos=(d.pos||[]).filter(function(p){return p.v>0;}).map(function(p){return {t:p.t,sym:p.t,v:Math.round(p.v)};});
