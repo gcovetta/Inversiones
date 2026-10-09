@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conciliación con el broker — propuesta</title>
+<style>
+:root{--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#3d5a80;--g:#00e676;--r:#ff5252;--a:#eab308;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:20px 14px}
+.wrap{max-width:900px;margin:0 auto}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin-bottom:14px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:700}.sub{font-size:.72rem;color:var(--t3);font-weight:400}
+.step{font-size:.72rem;color:var(--t2);margin:12px 0 6px}
+textarea{width:100%;height:120px;background:var(--s2);border:1px solid var(--b2);border-radius:8px;color:var(--t);font-family:var(--mono);font-size:.72rem;padding:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+select,button{background:var(--s2);border:1px solid var(--b2);color:var(--t);border-radius:7px;padding:5px 10px;font-size:.75rem}
+button.p{background:var(--g);color:#04150b;border-color:var(--g);font-weight:700;cursor:pointer}
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 10px}
+.sum div{background:var(--s2);border-radius:10px;padding:8px 10px}.sum .v{font-family:var(--mono);font-size:1.2rem;font-weight:800}
+.sum .l{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th{color:var(--t3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--b);font-size:.66rem;text-transform:uppercase;letter-spacing:.04em}
+td{padding:7px 8px;text-align:right;font-family:var(--mono);border-bottom:1px solid #16233a;vertical-align:top}
+th:first-child,td:first-child,th:last-child,td:last-child{text-align:left}td:last-child{font-family:var(--sans);font-size:.74rem}
+.ok{color:var(--g)}.bad{color:var(--r)}.war{color:var(--a)}.m{color:var(--t3)}
+.hint{font-size:.68rem;color:var(--t2);margin-top:3px}
+.act{font-size:.68rem;margin-top:4px;display:inline-block;border:1px solid var(--b2);border-radius:6px;padding:2px 7px;color:var(--t2);cursor:pointer}
+.foot{font-size:.66rem;color:var(--t3);margin-top:10px;line-height:1.5}
+@media(max-width:600px){.sum{grid-template-columns:repeat(2,1fr)}td:nth-child(2),th:nth-child(2){display:none}}
+</style></head><body><div class="wrap">
+<div class="note">
+  <b>🔍 Conciliar con el broker</b>: una opción nueva en el menú de cada portafolio. Copiás la tabla de tenencia del broker (Bull, Cocos, IOL, Balanz…) tal cual, la pegás y la app la compara con las cantidades que calcula a partir de tus movimientos.<br>
+  Las diferencias casi siempre son <b>movimientos sin cargar, cargados dos veces o con la cantidad mal</b>. Para cada una te da una pista y un botón para ir a cargar o revisar.<br>
+  No cambia nada sola. <span style="color:var(--t3)">Ejemplo con GDC y datos inventados. Probá editar el texto pegado.</span>
+</div>
+<div class="card">
+  <div class="ch">🔍 Conciliar con el broker <span class="sub">GDC · cartera principal</span></div>
+  <div class="step">1. Pegá la tenencia del broker (copiar toda la tabla, con o sin encabezados):</div>
+  <textarea id="txt">Especie	Cantidad	Precio	Valorizado
+GD30	12.500	79.850	9.981.250
+AL30	8.000	76.200	6.096.000
+GD35	15.000	81.400	12.210.000
+GGAL	1.200	6.165	7.398.000
+YPFD	350	47.900	16.765.000
+AAPL	180	26.820	4.827.600
+MSFT	95	22.450	2.132.750
+NVDA	260	9.870	2.566.200
+SPY	140	20.940	2.931.600
+MELI	30	24.300	729.000
+TLC1O	3.000	1.452	4.356.000
+KO	0	—	—</textarea>
+  <div class="row"><select><option>Bull Market</option><option>Cocos</option><option>IOL</option><option>Balanz</option><option>Otro</option></select><button class="p" onclick="go()">Comparar</button><span class="sub">Toma la columna del ticker y la de cantidad; ignora precios y totales.</span></div>
+  <div class="sum" id="sum"></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>Activo</th><th>En la app</th><th>En el broker</th><th>Diferencia</th><th>Qué puede ser</th></tr></thead><tbody id="tb"></tbody></table></div>
+  <div class="foot">Solo compara cantidades (no precios). Los FCI y la liquidez se concilian aparte. Si tenés la cartera en dos brokers (como Omar), elegís cuál estás conciliando y compara solo esos movimientos. Las diferencias marcadas como "revisada" no vuelven a aparecer.</div>
+</div>
+</div>
+<script>
+// lo que la app calcula a partir de los movimientos (ejemplo)
+var APP={GD30:12500,AL30:8000,GD35:14000,GGAL:1200,YPFD:350,AAPL:180,MSFT:95,NVDA:130,SPY:140,MELI:30,AMZN:60,TLC1O:3000,KO:50};
+var ULT={GD35:'compra de 1.000 el 03/10',NVDA:'split 2×1 de NVDA (jun-24)',AMZN:'venta de 60 el 18/09',KO:'venta de 50 el 22/09 (está cargada como 40)'};
+function num(s){s=String(s).trim();if(!s||s==='—')return 0;if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(',','.');return parseFloat(s)||0;}
+function fm(x){return x.toLocaleString('es-AR',{maximumFractionDigits:2});}
+function go(){
+  var B={};document.getElementById('txt').value.split(/\n/).forEach(function(l){var c=l.split(/\t|;|\s{2,}/).map(function(x){return x.trim();}).filter(Boolean);if(c.length<2)return;var t=c[0].toUpperCase();if(!/^[A-Z][A-Z0-9]{1,6}$/.test(t))return;B[t]=num(c[1]);});
+  var ks={};Object.keys(APP).concat(Object.keys(B)).forEach(function(k){ks[k]=1;});
+  var R=Object.keys(ks).map(function(t){var a=APP[t]||0,b=B[t]!=null?B[t]:null,d=(b==null?0:b)-a;return {t:t,a:a,b:b,d:d};});
+  var ok=R.filter(function(r){return r.b!=null&&Math.abs(r.d)<1e-6;}),dif=R.filter(function(r){return r.b!=null&&Math.abs(r.d)>=1e-6;}),soloApp=R.filter(function(r){return r.b==null&&r.a>0;});
+  document.getElementById('sum').innerHTML='<div><div class="l">Coinciden</div><div class="v ok">'+ok.length+'</div></div><div><div class="l">Con diferencia</div><div class="v bad">'+dif.length+'</div></div><div><div class="l">Solo en la app</div><div class="v war">'+soloApp.length+'</div></div><div><div class="l">Controlados</div><div class="v">'+R.length+'</div></div>';
+  R.sort(function(x,y){var px=x.b==null?1:Math.abs(x.d)>0?0:2,py=y.b==null?1:Math.abs(y.d)>0?0:2;return px-py||x.t.localeCompare(y.t);});
+  document.getElementById('tb').innerHTML=R.map(function(r){var q,cls;
+    if(r.b==null){cls='war';q='<b class="war">No figura en el broker.</b><div class="hint">¿La vendiste? Último movimiento: '+(ULT[r.t]||'—')+'. Si ya no la tenés, falta cargar la venta.</div><span class="act">+ Cargar venta</span>';}
+    else if(Math.abs(r.d)<1e-6){cls='ok';q='<span class="ok">✓ Coincide</span>';}
+    else if(r.b===0&&r.a>0){cls='bad';q='<b class="bad">El broker dice 0.</b><div class="hint">Pista: '+(ULT[r.t]||'falta cargar una venta')+'.</div><span class="act">Ver movimientos de '+r.t+'</span>';}
+    else if(r.b===r.a*2||r.a===r.b*2){cls='bad';q='<b class="bad">El doble / la mitad.</b><div class="hint">Suele ser un split o un movimiento cargado dos veces. Pista: '+(ULT[r.t]||'—')+'.</div><span class="act">Ver movimientos de '+r.t+'</span>';}
+    else{cls='bad';q='<b class="bad">'+(r.d>0?'El broker tiene '+fm(r.d)+' más':'El broker tiene '+fm(-r.d)+' menos')+'.</b><div class="hint">'+(r.d>0?'¿Falta cargar una compra? ':'¿Falta cargar una venta? ')+'Pista: '+(ULT[r.t]||'—')+'.</div><span class="act">'+(r.d>0?'+ Cargar compra':'+ Cargar venta')+'</span> <span class="act">Revisada, está bien</span>';}
+    return '<tr><td><b>'+r.t+'</b></td><td>'+fm(r.a)+'</td><td>'+(r.b==null?'<span class="m">—</span>':fm(r.b))+'</td><td class="'+cls+'">'+(r.b==null?'−'+fm(r.a):Math.abs(r.d)<1e-6?'0':(r.d>0?'+':'−')+fm(Math.abs(r.d)))+'</td><td>'+q+'</td></tr>';}).join('');
+}
+go();
+</script></body></html>

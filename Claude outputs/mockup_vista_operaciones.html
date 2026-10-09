@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vista familiar — operaciones</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--t:#e8f0ff;--t2:#7a9cc5;--t3:#3d5a80;--g:#00e676;--r:#ff5252;--om:#facc15;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:22px 14px}
+.wrap{display:flex;gap:30px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+.note{max-width:340px;font-size:.82rem;color:var(--t2);line-height:1.55}.note h1{font-size:1.05rem;color:var(--t);margin:0 0 8px}.note b{color:var(--t)}.note li{margin-bottom:5px}
+.phone{width:370px;background:var(--bg);border:1px solid var(--b);border-radius:28px;padding:18px 14px 22px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.hd{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.av{width:46px;height:46px;border-radius:50%;border:3px solid var(--om);background:#3a3410;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--om)}
+.hd h1{font-size:1.1rem;margin:0}.hd .s{font-size:.7rem;color:var(--t2)}
+.blk{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+.lbl{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+.big{font-family:var(--mono);font-size:1.7rem;font-weight:800;margin-top:2px}
+.fade{opacity:.35}
+.new{border:1.5px solid var(--om);box-shadow:0 0 0 4px rgba(250,204,21,.08)}
+.tot{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0 12px}
+.tot div{background:var(--s2);border-radius:10px;padding:8px 6px;text-align:center}
+.tot .v{font-family:var(--mono);font-weight:800;font-size:.95rem;margin-top:2px}
+.op{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #16233a}
+.ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.ic.c{background:rgba(0,230,118,.12);color:var(--g)}.ic.v{background:rgba(255,82,82,.12);color:var(--r)}.ic.k{background:rgba(56,189,248,.12);color:#38bdf8}
+.op .m{flex:1;min-width:0}.op .t{font-weight:700;font-size:.85rem}.op .d{font-size:.68rem;color:var(--t2);margin-top:1px}
+.op .u{font-family:var(--mono);font-size:.85rem;font-weight:700;text-align:right}.op .u small{display:block;font-weight:400;color:var(--t3);font-size:.62rem}
+.why{font-size:.7rem;color:var(--t2);background:var(--s2);border-radius:8px;padding:6px 8px;margin-top:6px;line-height:1.4}
+.more{text-align:center;font-size:.74rem;color:var(--t2);margin-top:8px}
+</style></head><body><div class="wrap">
+<div class="note">
+  <h1>🔄 "Lo que se movió este mes"</h1>
+  <p>Un bloque nuevo en la vista de cada familiar (resaltado en amarillo), debajo de "Tu cartera hoy".</p>
+  <ul>
+    <li><b>Arriba, tres totales:</b> cuánto se compró, cuánto se vendió y cuánto cobró en rentas/dividendos en los últimos 30 días, en USD.</li>
+    <li><b>Abajo, cada operación:</b> fecha, qué fue (compra / venta / cobro), el activo con su nombre fácil ("Bono Global 2035") y el monto en USD.</li>
+    <li><b>Opcional:</b> una línea corta de por qué, que escribís vos en la app al cargar la operación ("tomé ganancia", "pasé a algo que paga más renta"). Si no la escribís, no aparece.</li>
+    <li>Se muestran las últimas 6; "ver todas" despliega el resto del mes.</li>
+  </ul>
+  <p>No muestra cantidades ni precios por unidad, solo montos: es lo que un familiar entiende.</p>
+  <p style="color:var(--t3)">Ejemplo con Omar y números de ejemplo.</p>
+</div>
+<div class="phone">
+  <div class="hd"><div class="av">O</div><div><h1>Hola, Omar</h1><div class="s">Tu cartera · actualizada 07/10 18:20</div></div></div>
+  <div class="blk fade"><div class="lbl">Tu cartera hoy</div><div class="big">USD 108.420</div></div>
+  <div class="blk new">
+    <div class="lbl">🔄 Lo que se movió en los últimos 30 días</div>
+    <div class="tot">
+      <div><div class="lbl">Compras</div><div class="v" style="color:var(--g)">12.350</div></div>
+      <div><div class="lbl">Ventas</div><div class="v" style="color:var(--r)">9.800</div></div>
+      <div><div class="lbl">Cobraste</div><div class="v" style="color:#38bdf8">1.142</div></div>
+    </div>
+    <div class="op"><div class="ic c">▲</div><div class="m"><div class="t">Compra · GD35</div><div class="d">03/10 · Bono Global 2035</div></div><div class="u">USD 6.200<small>bonos</small></div></div>
+    <div class="why" style="margin:-2px 0 4px 40px">Paga más renta que el GD30 que se vendió.</div>
+    <div class="op"><div class="ic v">▼</div><div class="m"><div class="t">Venta · GD30</div><div class="d">03/10 · Bono Global 2030</div></div><div class="u">USD 6.150<small>bonos</small></div></div>
+    <div class="op"><div class="ic k">$</div><div class="m"><div class="t">Cobro · BPY26</div><div class="d">26/09 · renta + amortización</div></div><div class="u" style="color:#38bdf8">USD 812<small>a tu cuenta</small></div></div>
+    <div class="op"><div class="ic c">▲</div><div class="m"><div class="t">Compra · BRKB</div><div class="d">22/09 · Berkshire Hathaway</div></div><div class="u">USD 3.650<small>Cedear</small></div></div>
+    <div class="op"><div class="ic v">▼</div><div class="m"><div class="t">Venta · KO</div><div class="d">22/09 · Coca-Cola</div></div><div class="u">USD 3.650<small>Cedear</small></div></div>
+    <div class="why" style="margin:-2px 0 4px 40px">Tomé ganancia: subió 18% desde la compra.</div>
+    <div class="op"><div class="ic c">▲</div><div class="m"><div class="t">Compra · TLC1O</div><div class="d">15/09 · ON Telecom</div></div><div class="u">USD 2.500<small>ON</small></div></div>
+    <div class="more">ver las 3 operaciones restantes ▾</div>
+  </div>
+  <div class="blk fade"><div class="lbl">Ganaste desde que empezaste</div><div class="big" style="color:var(--g)">+USD 8.420</div></div>
+</div>
+</div></body></html>
