@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=152, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=153, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v153 | 2026-10-08 | Fix: el motivo de los ⚠️ de Movimientos se ve tocando el ícono (el tooltip no aparecía) y siempre con "Ver solo esos".',
   'v152 | 2026-10-08 | Feat: Ciclo de vida suma % anual sobre lo pagado, lo que cobrás en el año, valor de hoy y TIR desde hoy, con aviso 🔁 si conviene vender (vale hoy más que lo que falta cobrar o rinde menos de 6% anual).',
   'v151 | 2026-10-08 | Fix: Ciclo de vida — "pagaste" vuelve a sumar los cobros aplicados al PPC, así la renta no se cuenta dos veces (en cobrado y achicando el costo).',
   'v150 | 2026-10-08 | UI: Vigilancia simplificada — solo Ticker, Δ%, objetivo con distancia y Nota (precio de hoy al pasar el mouse por el ticker); sin cantidad, precios, valores ni totales.',
@@ -3310,13 +3311,15 @@ function movProblemas(){
       if(r>2.5||r<0.4)add(a.m,'precio USD '+a.u.toFixed(a.u<10?3:2)+' muy distinto a tus otras operaciones de '+t+' (en torno a '+med.toFixed(med<10?3:2)+'): ¿tipo de cambio, precio por 100 o split?');});});
   _movProbCache=P;_movProbKey=key;return P;
 }
-function _movProbIcon(m){var p=movProblemas()[m.id];if(!p)return '';return ' <span title="'+p.join('\n').replace(/"/g,'&quot;')+'" style="color:var(--amber,#eab308);cursor:help">⚠️</span>';}
+function _movProbIcon(m){var p=movProblemas()[m.id];if(!p)return '';var txt=p.join(' · ').replace(/</g,'&lt;');
+  return ' <span onclick="event.stopPropagation();var n=this.nextElementSibling;n.style.display=n.style.display===\'none\'?\'block\':\'none\'" title="Tocá para ver el motivo" style="color:var(--amber,#eab308);cursor:pointer">⚠️</span>'+
+    '<span style="display:'+(_movSoloProb?'block':'none')+';font-weight:400;font-size:.66rem;color:var(--amber,#eab308);white-space:normal;max-width:320px;margin-top:3px;line-height:1.35">'+txt+'</span>';}
 function movProbBanner(){
   var wrap=document.getElementById('mov-wrap');if(!wrap)return;var el=document.getElementById('mov-prob');
   if(!el){el=document.createElement('div');el.id='mov-prob';wrap.parentNode.insertBefore(el,wrap);}
   var n=Object.keys(movProblemas()).length;
   if(!n){el.innerHTML='';_movSoloProb=false;return;}
-  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 8px;padding:7px 12px;border:1px solid rgba(234,179,8,.4);background:rgba(234,179,8,.08);border-radius:8px;font-size:.74rem;color:var(--amber,#eab308)">⚠️ <b>'+n+' movimiento'+(n>1?'s':'')+' para revisar</b><span style="color:var(--text3)">(pasá el mouse por el ⚠️ de cada uno para ver el motivo)</span>'+
+  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 8px;padding:7px 12px;border:1px solid rgba(234,179,8,.4);background:rgba(234,179,8,.08);border-radius:8px;font-size:.74rem;color:var(--amber,#eab308)">⚠️ <b>'+n+' movimiento'+(n>1?'s':'')+' para revisar</b><span style="color:var(--text3)">(tocá el ⚠️ de cada uno para ver el motivo; con "Ver solo esos" se muestran todos)</span>'+
     '<button class="btn btn-sm" style="margin-left:auto" onclick="_movSoloProb=!_movSoloProb;renderMovimientos()">'+(_movSoloProb?'Ver todos':'Ver solo esos')+'</button></div>';
 }
 
