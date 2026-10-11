@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=188, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=189, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v189 | 2026-10-11 | Vista nueva: el aviso "Desde tu última visita" se muestra arriba, entre los recuadros de totales y los filtros (antes quedaba abajo, sobre Distribución/Evolución).',
   'v188 | 2026-10-11 | Ana, Hilda, Juli y Omar pasan a la vista nueva del portafolio (vistaNueva en cada HTML). Si la cartera no tiene % USD (Omar), ese recuadro no se muestra.',
   'v187 | 2026-10-11 | GDC pasa a la vista nueva del portafolio (PortafolioGDC.html con vistaNueva); la página de prueba ya no hace falta. Ana, Hilda, Juli y Omar siguen con la vista anterior.',
   'v186 | 2026-10-11 | Fix vista nueva: las teclas C / V cambian el panel Comprar/Vender en vez de mostrar los dos recuadros juntos; la tecla / va al buscador de ticker nuevo.',
@@ -10590,7 +10591,7 @@ function uvActualizar(d){
   if(prev&&!_uvCerrado)uvMostrar(prev,tot,pr);
 }
 function uvMostrar(prev,tot,pr){
-  var ref=document.getElementById('pventa-alert')||document.getElementById('top-cards-row');if(!ref||!ref.parentNode)return;
+  var ref=(CFG.vistaNueva&&document.querySelector('#nv-root .nvdist'))||document.getElementById('pventa-alert')||document.getElementById('top-cards-row');if(!ref||!ref.parentNode)return;
   var cuando=(function(){var s=(Date.now()-prev.ts)/1000;if(s<86400){var h=Math.round(s/3600);return h<=1?'hace un rato':'hace '+h+' horas';}var dd=Math.round(s/86400);
     if(dd===1)return 'ayer';if(dd<7)return 'el '+['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][new Date(prev.ts).getDay()];return 'hace '+dd+' días';})();
   var dv=prev.tot>0?(tot/prev.tot-1)*100:null,du=tot-prev.tot;
@@ -12004,6 +12005,7 @@ function _nvMover(){try{
  if(CFG.simRetiro&&!document.getElementById('page-simretiro')){var pp=document.getElementById('page-portafolio');if(pp){var sp=document.createElement('div');sp.className='page';sp.id='page-simretiro';pp.parentNode.appendChild(sp);
    var rb=document.querySelector('.nav-item[onclick*="recomendaciones"]');if(rb){var nb=document.createElement('button');nb.className='nav-item';nb.setAttribute('onclick',"showPage('simretiro',this)");nb.innerHTML='<span>🏖️</span>Simulador de retiro';rb.parentNode.insertBefore(nb,rb.nextSibling);}}}
  var sc=document.getElementById('simr-card'),spg=document.getElementById('page-simretiro');if(sc&&spg&&sc.parentNode!==spg){spg.appendChild(sc);sc.classList.remove('card-collapsed');var tg=sc.querySelector('.card-toggle');if(tg)tg.textContent='▾';}
+ var uvb=document.getElementById('uv-banner'),nvd=document.querySelector('#nv-root .nvdist');if(uvb&&nvd&&uvb.nextSibling!==nvd)nvd.parentNode.insertBefore(uvb,nvd);
  var cw=document.getElementById('nv-cards'),tr=document.getElementById('top-cards-row');if(cw&&tr&&tr.parentNode!==cw)cw.appendChild(tr);
  var pie=document.getElementById('m-pie-sector'),db=document.getElementById('db-scroll');
  if(pie&&db&&!document.getElementById('nv-pies')){var box=pie.parentNode.parentNode.parentNode;var c=document.createElement('div');c.className='card';c.id='nv-pies';c.style.cssText='margin-bottom:1rem';
