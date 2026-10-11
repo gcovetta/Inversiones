@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=186, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=187, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v187 | 2026-10-11 | GDC pasa a la vista nueva del portafolio (PortafolioGDC.html con vistaNueva); la página de prueba ya no hace falta. Ana, Hilda, Juli y Omar siguen con la vista anterior.',
   'v186 | 2026-10-11 | Fix vista nueva: las teclas C / V cambian el panel Comprar/Vender en vez de mostrar los dos recuadros juntos; la tecla / va al buscador de ticker nuevo.',
   'v185 | 2026-10-11 | Vista nueva: Comprar/Vender desde la fila dejan el cursor en el Precio. Todas las carteras: en el precio de Comprar y Vender las flechas ↑/↓ suman o restan de a 5.',
   'v184 | 2026-10-11 | Vista nueva: botón 🛒 Comprar en la fila desplegada (carga mercado y ticker en Comprar). Todas las carteras: en Vender, al elegir el ticker se completa la cantidad con todas las nominales.',
