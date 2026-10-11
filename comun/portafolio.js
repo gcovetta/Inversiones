@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=161, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=162, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v162 | 2026-10-11 | Prueba vista nueva: se quita la opción "más de 30%" del filtro por distancia al P. Venta.',
   'v161 | 2026-10-11 | Prueba vista nueva: % del tipo vuelve a la fila (debajo de la Inversión, ordenable); buscador de ticker en la barra de filtros que encuentra el activo ignorando todos los filtros.',
   'v160 | 2026-10-11 | Prueba vista nueva: la barra de Liquidez/Inv. Inicial/cotizaciones va arriba de la foto; el filtro por Tipo queda en la misma línea, al lado de R. Fija.',
   'v159 | 2026-10-11 | Prueba vista nueva: tabla con fila que se despliega — cerrada muestra Ticker, Δ%/ΔUp, Precio/PPC e Inversión; tocándola se abre con % del tipo, P. Venta, Nominales, RSI/TIR y botón Vender.',
@@ -11938,9 +11939,10 @@ function tipoVistaPintar(){var w=document.getElementById('tipo-vista');if(!w)ret
 // (distancia al P. Venta, ganancia, peso en su tipo) y la tabla de celdas dobles ordenable.
 // Los datos salen de la misma pasada de renderPortfolio (NV_ROWS); la vista clásica queda abajo.
 var NV_ROWS=[],NV_K={};
-var NV=(function(){var d={tipo:'ambas',ts:{},df:{},dg:{},dm:{},sk:'inv',sd:-1,modo:'c',op:{}};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
+var NV=(function(){var d={tipo:'ambas',ts:{},df:{},dg:{},dm:{},sk:'inv',sd:-1,modo:'c',op:{},dfv:0};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
+if(NV.dfv!==2){(function(){var o=NV.df||{},n={};[0,1,2].forEach(function(i){if(o[i])n[i]=1;});if(o[4])n[3]=1;NV.df=n;NV.dfv=2;})();}
 function nvSave(){try{localStorage.setItem(PFX+'nv',JSON.stringify(NV));}catch(e){}}
-var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['más de 30%',function(o){return o.up>30;},'#64779c'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
+var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
 var NV_GD=[['Ganando',function(o){return o.d!=null&&o.d>0;},'#5cc06e'],['0% a −2%',function(o){return o.d!=null&&o.d<=0&&o.d>-2;},'#8a94a6'],['Pérdida',function(o){return o.d!=null&&o.d<=-2;},'#e05a52']];
 var NV_MD=[['más de 3%',function(o){return o.pt>3;},'#e05a52'],['2% a 3%',function(o){return o.pt>2&&o.pt<=3;},'#e3b341'],['menos de 2%',function(o){return o.pt<=2;},'#5b8def']];
 function _nvSel(m){return Object.keys(m||{}).filter(function(k){return m[k];}).map(Number);}
