@@ -394,7 +394,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
 <script>document.documentElement.classList.add('nv-pre');setTimeout(function(){document.documentElement.classList.remove('nv-pre');},20000);</script>
 </head>
 <body>
-<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v192 · 11/10/2026</div>
+<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v193 · 11/10/2026</div>
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
   <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;font-family:var(--mono)">Omar</div>
@@ -538,7 +538,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
 
     <!-- PORTAFOLIO -->
     <div class="page active" id="page-portafolio">
-      <!-- PIN overlay portafolio -->
       <div id="port-pin-overlay" style="display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.7); z-index: 8000; align-items: center; justify-content: center;">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:220px">
           <div id="port-pin-title" style="font-size:.85rem;font-weight:600;color:var(--text)">🔒 Ingresá tu PIN</div>
@@ -556,106 +555,11 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
           <div class="pin-action" onclick="portPinReset()">Cambiar PIN</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:.5rem">
-        <span id="cartera-activa-badge" style="font-family:var(--mono);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:20px;background:#0a2218;color:var(--accent);border:1px solid #143a24">Principal</span>
-        <div style="display:flex;align-items:center;gap:8px">
-        <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
-        <button id="port-summary-toggle-btn" onclick="portToggleSummary()" title="Colapsar/expandir resumen" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar resumen</button>
-        <button id="port-watchzone-toggle-btn" onclick="portToggleWatchzone()" title="Colapsar/expandir zona de seguimiento" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text2);font-size:.65rem;padding:2px 8px;cursor:pointer;line-height:1.4;font-family:var(--mono)">▲ Ocultar mira</button>
-        </div>
-      </div>
-      <div id="port-content" class="">
-      <!-- Elemento oculto para mantener el cálculo de dividendos -->
-      <div style="display:none"><div id="m-divs">—</div></div>
-      <div id="port-summary-section" style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:1.2rem">
-        <!-- Izquierda: 2 filas de métricas -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
-          <div class="metric"><div class="metric-label">Valor Total USD</div><div class="metric-value port-sensitive" id="m-val">—</div></div>
-          <div class="metric"><div class="metric-label">Rendimiento</div><div class="metric-value" id="m-rend">—</div></div>
-          <div class="metric"><div class="metric-label">Ganancia Neta USD</div><div class="metric-value port-sensitive" id="m-ganancia">—</div></div>
-          <div class="metric"><div class="metric-label">Posiciones</div><div class="metric-value" id="m-count">—</div></div>
-        </div>
-        <!-- Gráficos de torta -->
-        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0">
-          <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
-            <div style="position:relative;height:190px"><canvas id="m-pie-sector" width="420" height="190"></canvas></div>
-          </div>
-          <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
-            <div style="position:relative;height:190px"><canvas id="m-pie-rv" width="420" height="190"></canvas></div>
-          </div>
-        </div>
-        <!-- Stat cards: mayor posición / mejor / peor rendimiento -->
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;width:155px">
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--blue)">
-            <div class="metric-label">↑ posición</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-pos-ticker">—</span>
-              <span class="port-sensitive" style="font-family:var(--mono);font-size:.63rem;color:var(--text2)" id="stat-pos-val">—</span>
-            </div>
-          </div>
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--accent)">
-            <div class="metric-label">↑ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-best-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-best-val">—</span>
-            </div>
-          </div>
-          <div class="metric" style="padding:.5rem .75rem;border-left:3px solid var(--red)">
-            <div class="metric-label">↓ rendimiento</div>
-            <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-top:.14rem">
-              <span style="font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.01em" id="stat-worst-ticker">—</span>
-              <span style="font-family:var(--mono);font-size:.68rem;font-weight:700" id="stat-worst-val">—</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Tickers cerca del objetivo + CCL implícito -->
-      <div id="port-watchzone-section" style="display:flex;gap:12px;align-items:stretch;margin-bottom:1rem">
-        <div class="nt-card" id="near-target-card" style="flex:3;margin-bottom:0">
-          <div class="nt-header">
-            <span class="nt-title">🎯 Tickers cerca del objetivo</span>
-            <span class="nt-label">Faltan menos de</span>
-            <input type="range" min="0.5" max="30" step="0.5" value="4" id="nt-slider" class="nt-slider" oninput="ntOnSlider(this.value)">
-            <input type="number" min="0" max="100" step="0.5" value="4" id="nt-input" class="nt-input" oninput="ntOnInput(this.value)">
-            <span class="nt-pct" id="nt-pct-label">2.5%</span>
-          </div>
-          <div class="nt-grid" id="nt-grid"><div class="nt-ticker-card"><span class="nt-tk-sym">PARP</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:98.5%"></div></div><span class="nt-tk-falta">Falta 1.5%</span></div></div></div><div class="nt-ticker-card"><span class="nt-tk-sym">TX31</span><div class="nt-tk-body"><div class="nt-tk-progress"><div class="nt-tk-pbar"><div class="nt-tk-pbar-fill" style="width:97.6%"></div></div><span class="nt-tk-falta">Falta 2.5%</span></div></div></div></div>
-        </div>
-        <!-- CCL implícito -->
-        <div class="card" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;padding:.6rem .9rem;gap:.45rem">
-          <div style="font-size:.68rem;font-weight:700;color:var(--text2);white-space:nowrap">💱 CCL Implícito</div>
-          <div style="display:flex;align-items:flex-end;gap:.6rem">
-            <div style="display:flex;flex-direction:column;gap:2px">
-              <label style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">Precio $</label>
-              <input type="text" id="ccli-ars" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:8ch;padding:3px 6px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:2px">
-              <label style="font-size:.6rem;color:var(--text3);font-family:var(--mono)">Precio u$s</label>
-              <input type="text" id="ccli-usd" inputmode="decimal" placeholder="000000" oninput="calcCCLI()" style="font-family:var(--mono);font-size:.8rem;width:8ch;padding:3px 6px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);outline:none">
-            </div>
-            <div style="padding:.3rem .55rem;background:var(--surface2);border-radius:var(--rsm);text-align:center;white-space:nowrap">
-              <div style="font-size:.52rem;color:var(--text3);font-family:var(--mono);letter-spacing:.05em">CCL</div>
-              <div id="ccli-resultado" style="font-size:1rem;font-weight:800;font-family:var(--mono);color:var(--accent)">—</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Inversiones Pequeñas -->
-      <div id="port-smallinv-section" style="margin-bottom:1rem">
-        <div class="nt-card" id="small-inv-card" style="margin-bottom:0">
-          <div class="nt-header">
-            <span class="nt-title">🔎 Inversiones Pequeñas</span>
-            <span class="nt-label">Inversión ≤</span>
-            <input type="range" min="0" max="3" step="0.1" value="0.5" id="si-slider" class="nt-slider" oninput="siOnSlider(this.value)">
-            <input type="number" min="0" max="3" step="0.1" value="0.5" id="si-input" class="nt-input" oninput="siOnInput(this.value)">
-            <span class="nt-pct" id="si-pct-label">0.5%</span>
-            <span class="nt-label">del valor de la cartera en RV</span>
-          </div>
-          <div class="nt-grid" id="si-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))"></div>
-        </div>
-      </div>
-        <div id="pventa-alert" style="display:none;margin-bottom:.7rem;padding:.45rem .8rem;border:1px solid var(--accent);border-radius:var(--rsm);background:rgba(0,230,118,.07);font-size:.74rem;color:var(--text);font-family:var(--mono);max-width:720px"></div>
-      <div class="card" id="dist-card" style="display:none;margin-bottom:1rem;max-width:720px">
+      <!-- Vista nueva: piezas de la vista anterior que se reubican al cargar (el resto se borró en v193) -->
+      <div id="nv-legacy" style="display:none">
+<button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
+<div class="metric-value" id="m-count">—</div>
+<div class="card" id="dist-card" style="display:none;margin-bottom:1rem;max-width:720px">
         <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span class="card-title">📊 Distribución de la cartera</span>
           <label class="qty-toggle" title="Objetivos de perfil moderado"><input type="checkbox" id="dist-perfil-moderado" onchange="distSetPerfil('moderado')"> Moderado</label>
@@ -664,48 +568,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
         <div id="dist-body" style="padding:.8rem 1rem 1rem"></div>
       </div>
-            <div class="panels-grid hide-qty hide-pventa hide-ptipo hide-rebal hide-panual" id="panels-grid" style="align-items:start">
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card" id="panel-nyse" style="display:none">
-            <div class="card-header"><span class="card-title">🇺🇸 USA</span><span id="panel-nyse-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-nyse"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-brasil" style="display:none">
-            <div class="card-header"><span class="card-title">🇧🇷 Brasil</span><span id="panel-brasil-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-brasil"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-europa" style="display:none">
-            <div class="card-header"><span class="card-title">🇪🇺 Europa</span><span id="panel-europa-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-europa"></tbody></table></div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card" id="panel-bonos" style="display:none">
-            <div class="card-header"><span class="card-title">🏦 Bonos</span><span id="panel-bonos-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-bonos"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-on" style="display:none">
-            <div class="card-header"><span class="card-title">🏢 ON</span><span id="panel-on-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-on"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-china" style="display:none">
-            <div class="card-header"><span class="card-title">🇨🇳 China / Asia</span><span id="panel-china-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-china"></tbody></table></div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card" id="panel-argentina" style="display:none">
-            <div class="card-header"><span class="card-title">🇦🇷 Argentina</span><span id="panel-argentina-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-argentina"></tbody></table></div>
-          </div>
-          <div class="card" id="panel-cripto" style="display:none">
-            <div class="card-header"><span class="card-title">₿ Cripto ETF</span><span id="panel-cripto-meta" class="tag"></span></span></div>
-            <div class="tw panel-table"><table><thead><tr><th>Ticker</th><th>Δ% / ΔUP</th><th class="col-panual" title="Rendimiento anualizado en USD (TIR) con compras, ventas, dividendos y valor de hoy. Click en el % para ver el detalle">% Anual</th><th>Inversión $</th><th>Mercado $</th><th>PPC $</th><th class="col-pventa">P. Venta</th><th class="col-ptipo" title="% sobre el total de su tipo (renta variable o renta fija), a valor de mercado">% Tipo</th><th class="col-rebal" title="Cuánto vender para volver al 2% de su tipo, o cuánto comprar para llegar al umbral de inversiones chicas">Rebalanceo</th><th>Cant.</th></tr></thead><tbody id="body-cripto"></tbody></table></div>
-          </div>
-        </div>
-      </div>
-</div>
-      <div class="card" id="vbuy-card" style="display:inline-block;width:auto;max-width:100%;margin-right:10px;vertical-align:top">
+<div class="card" id="vbuy-card" style="display:inline-block;width:auto;max-width:100%;margin-right:10px;vertical-align:top">
         <div class="card-header">
           <span class="card-title">🛒 Comprar</span>
         </div>
@@ -755,7 +618,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
           </div>
         </div>
       </div>
-      <div class="card" id="vsell-card" style="display:inline-block;width:auto;max-width:100%;vertical-align:top">
+<div class="card" id="vsell-card" style="display:inline-block;width:auto;max-width:100%;vertical-align:top">
         <div class="card-header">
           <span class="card-title">💸 Vender</span>
           <span style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-left:6px">mismos campos que el simulador de ventas</span>
@@ -790,36 +653,19 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <button class="btn" id="vsell-btn-confirmar" onclick="vsellConfirmar()" disabled style="background:var(--red);border-color:var(--red);color:#fff;font-weight:600">✔ Confirmar venta</button>
           </div>
         </div>
-      </div>      <div style="width:100%"></div>
-      <div class="card" style="overflow:visible;display:inline-block;width:fit-content;max-width:100%">
-        <div class="card-header"><span class="card-title">📅 Próximos Cobros</span><span style="font-size:.65rem;color:var(--text3);margin-left:8px">bonos/ON — ver solapa Flujos para el detalle</span></div>
-        <div id="flujo-mini-content" style="padding:.6rem 1rem;font-family:var(--mono);font-size:.78rem;display:flex;gap:22px;flex-wrap:wrap"></div>
       </div>
-      <div id="pos-footer-bar" style="position:sticky;bottom:.6rem;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.35);padding:.5rem .9rem;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap;overflow:hidden;margin:1.2rem auto 0 auto;width:fit-content;max-width:100%">
-        <span class="card-title">Posiciones abiertas</span>
-        <div class="gap-row">
-          <label class="qty-toggle" title="Mostrar/ocultar columna Cantidad">
-            <input type="checkbox" id="qty-toggle" onchange="toggleQtyCol(this.checked)"> Mostrar Cant.
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna P. Venta">
-            <input type="checkbox" id="pventa-toggle" onchange="togglePVentaCol(this.checked)"> Mostrar P. Venta
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna % Tipo (peso del activo sobre su renta variable o renta fija, a valor de mercado)">
-            <input type="checkbox" id="ptipo-toggle" onchange="togglePTipoCol(this.checked)"> Mostrar % Tipo
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna Rebalanceo (cuánto vender para volver al 2% o comprar para llegar al umbral de inversiones chicas)">
-            <input type="checkbox" id="rebal-toggle" onchange="toggleRebalCol(this.checked)"> Mostrar Rebalanceo
-          </label>
-          <label class="qty-toggle" title="Mostrar/ocultar columna % Anual (rendimiento anualizado en USD de cada posición)">
-            <input type="checkbox" id="panual-toggle" onchange="togglePAnualCol(this.checked)"> Mostrar % Anual
-          </label>
-          <span id="ref-status" class="emsg"></span>
-          <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
+<div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0">
+          <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
+            <div style="position:relative;height:190px"><canvas id="m-pie-sector" width="420" height="190"></canvas></div>
+          </div>
+          <div style="flex:1 1 220px;min-width:200px;padding:.7rem .85rem">
+            <div style="position:relative;height:190px"><canvas id="m-pie-rv" width="420" height="190"></canvas></div>
+          </div>
         </div>
-        <div id="pos-prog" style="position:absolute;bottom:0;left:0;right:0;line-height:0"><div class="pbar" style="border-radius:0;height:3px;background:var(--border)"><div class="pfill" id="pfill" style="width:0%"></div></div></div>
-      <div id="pos-empty" class="empty-state" style="display: none;">Cargando posiciones...</div>
+<button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
+<span id="cartera-activa-badge" style="font-family:var(--mono);font-size:.68rem;font-weight:600;padding:3px 10px;border-radius:20px;background:#0a2218;color:var(--accent);border:1px solid #143a24">Principal</span>
       </div>
-      </div><!-- /port-content -->
+    </div><!-- /port-content -->
     </div>
 
     <!-- MOVIMIENTOS -->
@@ -1496,7 +1342,7 @@ window.PORTFOLIO_CONFIG={"vistaNueva": true, "persona": "Omar", "vistaFamiliar":
  "supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng"
 };
 </script>
-<script src="../comun/portafolio.js?v=192"></script>
+<script src="../comun/portafolio.js?v=193"></script>
 <script>
 // ─── Funciones propias de Omar (pisan las del código común) ───
 // carteras Principal / Cocos / VetaJeep (selector, filtro y badge en Movimientos, Próximos Cobros siempre de Principal) y comparación con Bull
