@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=173, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=174, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v174 | 2026-10-11 | Prueba vista nueva: en pantallas anchas (≥1100px) la tabla se parte en dos mitades lado a lado (se lee de arriba abajo la izquierda y sigue en la derecha); en el celular sigue en una sola.',
   'v173 | 2026-10-11 | Prueba vista nueva: Δ% más llamativo — más grande, en negrita y con fondo de color (verde ≥10%, amarillo 0–10%, rojo negativo, como la vista clásica).',
   'v172 | 2026-10-11 | Prueba vista nueva: se quitan el mail y Salir de la barra de arriba; en Portafolio esa barra ya no se muestra (en las otras páginas queda solo con el ☰).',
   'v171 | 2026-10-11 | Fix vista nueva: Rendimiento del período y ganancia ahora descuentan aportes y retiros (Dietz modificado, igual que la vista clásica); antes tomaban el cálculo simple contra la Inv. Inicial.',
@@ -11965,6 +11966,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root small.ptb{font-size:.78rem;font-weight:700;margin-top:2px}#nv-root small.ptb .b{width:52px;height:6px}#nv-root #nv-cards #top-cards-row{margin-bottom:0}'+
  'body.nv-port #sidebar-toggle-btn{display:none!important}body.nv-on #auth-user-box{display:none!important}body.nv-port .topbar:not(.nvtb){display:none!important}#nv-root .nvtb{justify-content:center}'+
  '#nv-root .dp{font-size:.92rem;font-weight:800;color:var(--dc);background:color-mix(in srgb,var(--dc) 14%,transparent);border:1px solid color-mix(in srgb,var(--dc) 35%,transparent);border-radius:6px;padding:1px 7px;margin-bottom:2px;min-width:62px;text-align:right}'+
+ '#nv-root .nv2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}#nv-root .nv2col .nvtw{max-height:78vh}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -11990,7 +11992,7 @@ function nvRender(){
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
   root.innerHTML='<div class="topbar nvtb" id="nv-tb0"></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s" id="nv-khs"></div></div><div class="nvk" id="nv-kd" style="position:relative"><div class="nvlbl" style="display:flex;justify-content:space-between;gap:8px"><span>% USD</span><span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;opacity:.7">⚙️</span></div></div><div class="nvk" id="nv-kc"><div class="nvlbl">Posiciones</div></div></div>'+
    '<div class="nvbar"><span id="nv-fbar" style="display:contents"></span><span style="flex:1"></span><span style="display:flex;align-items:center;gap:4px"><input id="nv-q" type="text" placeholder="🔍 Ticker" autocomplete="off" oninput="nvBuscar(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';nvBuscar(\'\')}" style="width:110px;background:var(--surface);border:1px solid var(--border2);border-radius:999px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 10px;outline:none;text-transform:uppercase"><span id="nv-qx" class="nvclr" style="display:none" onclick="var i=document.getElementById(\'nv-q\');i.value=\'\';nvBuscar(\'\')">✕</span></span></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
-   '<div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div><div id="nv-cards" style="margin-top:14px"></div>';
+   '<div id="nv-tw2"></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div><div id="nv-cards" style="margin-top:14px"></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
   // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
   try{var tb0=document.querySelector('.topbar'),nb=document.getElementById('nv-tb0');if(tb0&&nb)Array.prototype.slice.call(tb0.children).forEach(function(c){if(c.id!=='auth-user-box'&&c.id!=='tb-right')nb.appendChild(c);});}catch(e){}
@@ -12028,10 +12030,10 @@ function nvRender(){
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
  if(['pais','t','d','up','px','ppc','inv','pt'].indexOf(NV.sk)<0){NV.sk='inv';NV.sd=-1;}
  var op=NV.op||(NV.op={});
- var h='<thead><tr><th class="l">'+sh('pais','País')+'<span class="sep"> / </span>'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'<span class="sep"> / </span>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'<span class="sep"> / </span>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'<span class="sep"> / </span>'+sh('pt','% tipo')+'</th></tr></thead><tbody>';
+ var it=[],h='<thead><tr><th class="l">'+sh('pais','País')+'<span class="sep"> / </span>'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'<span class="sep"> / </span>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'<span class="sep"> / </span>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'<span class="sep"> / </span>'+sh('pt','% tipo')+'</th></tr></thead><tbody>';
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
-  h+='<tr class="sec"><td colspan="4">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';
-  h+=X.map(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
+  var sh0='<tr class="sec"><td colspan="4">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
+  X.forEach(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
    var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><div class="c2"><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+_nvP(o.d)+'</span><small>'+upC(o.up)+'</small></div></td>'+
     '<td><div class="c2"><span>'+_nvF(o.px,o)+(o.qh||'')+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
@@ -12042,8 +12044,15 @@ function nvRender(){
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
     '<div style="margin-left:auto;align-self:center"><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
     '</div></td></tr>';
-   return r;}).join('');});
- document.getElementById('nv-tb').innerHTML=h+'</tbody>';
+   it.push({r:r});});});
+ var tb=function(arr){return '<div class="nvtw"><table>'+h+arr.join('')+'</tbody></table></div>';},nA=it.filter(function(x){return x.r;}).length;
+ var dos=window.innerWidth>=1100&&nA>12,out;
+ if(!dos)out=tb(it.map(function(x){return x.s||x.r;}));
+ else{var half=Math.ceil(nA/2),A=[],B=[],c=0,curS=null;it.forEach(function(x){if(x.s){curS=x;(c<half?A:B).push(x.s);return;}
+   if(c<half)A.push(x.r);else{if(!B.length&&curS)B.push(curS.s.replace(curS.n,curS.n+' (cont.)'));B.push(x.r);}c++;});
+  out='<div class="nv2col">'+tb(A)+tb(B)+'</div>';}
+ document.getElementById('nv-tw2').innerHTML=out;
+ if(!window._nvRz){window._nvRz=1;var _w=window.innerWidth>=1100;window.addEventListener('resize',function(){var w=window.innerWidth>=1100;if(w!==_w){_w=w;nvRender();}});}
 }
 
 // ─── 🔔 Avisos push (CFG.push) ─────────────────────────────────────────────────
