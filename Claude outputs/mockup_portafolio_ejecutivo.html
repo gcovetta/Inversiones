@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portafolio GDC — vistas ejecutivas</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#9db4d6;--t3:#5a789e;--g:#22c55e;--r:#f05252;--a:#eab308;--bl:#448aff;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:18px 14px}
+.wrap{max-width:1060px;margin:0 auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:9px;padding:6px 12px;font-size:.8rem;cursor:pointer}
+.tab.on{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}
+.pane{display:none}.pane.on{display:block}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin:0 0 12px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.lbl{font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+.g{color:var(--g)}.r{color:var(--r)}.a{color:var(--a)}.m{color:var(--t3)}.t2{color:var(--t2)}
+.mono{font-family:var(--mono)}
+.head{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:12px}
+.head .v{font-family:var(--mono);font-weight:800;font-size:1.3rem;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{color:var(--t3);font-weight:600;text-align:right;padding:7px 8px;border-bottom:1px solid var(--b);font-size:.64rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+td{padding:7px 8px;text-align:right;font-family:var(--mono);border-bottom:1px solid #16233a;white-space:nowrap}
+th.l,td.l{text-align:left}
+tr.grp td{background:#0f1726;font-family:var(--sans);font-weight:700;border-bottom:1px solid var(--b)}
+.wbar{display:inline-block;height:8px;border-radius:0 4px 4px 0;background:var(--bl);vertical-align:middle;margin-right:6px}
+.pv{position:relative;display:inline-block;width:70px;height:6px;background:#0b1120;border-radius:3px;vertical-align:middle;overflow:hidden}.pv span{position:absolute;left:0;top:0;bottom:0;background:var(--a);border-radius:3px}
+.map{position:relative;width:100%;height:470px;border-radius:10px;overflow:hidden;background:var(--bg)}
+.tile{position:absolute;border:1px solid var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.tile b{font-size:.78rem}.tile span{font-family:var(--mono);font-size:.68rem;opacity:.9}
+.gl{position:absolute;left:5px;top:2px;font-size:.58rem;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;z-index:2}
+.leg{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.66rem;color:var(--t3);font-family:var(--mono)}
+.leg .bar{height:8px;width:220px;border-radius:4px;background:linear-gradient(90deg,#b71c1c,#5c2328,#2a3142,#1f5133,#0f8a45)}
+.ctr{display:grid;grid-template-columns:70px 1fr 1fr 90px;gap:0;align-items:center;font-size:.78rem;padding:3px 0}
+.ctr .neg{display:flex;justify-content:flex-end;border-right:1px solid var(--t3)}.ctr .pos{display:flex;justify-content:flex-start}
+.ctr .neg span,.ctr .pos span{height:12px}.ctr .neg span{background:var(--r);border-radius:4px 0 0 4px}.ctr .pos span{background:var(--g);border-radius:0 4px 4px 0}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.col h4{margin:0 0 8px;font-size:.8rem;display:flex;justify-content:space-between}
+.it{background:var(--s2);border-radius:9px;padding:8px 10px;margin-bottom:7px;font-size:.78rem}
+.it .why{font-size:.68rem;color:var(--t2);margin-top:3px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.ac{background:var(--s2);border-radius:11px;padding:10px 12px}
+.ac .t{display:flex;justify-content:space-between;align-items:baseline}.ac .t b{font-size:.95rem}
+.ac .v{font-family:var(--mono);font-size:1.05rem;font-weight:800;margin-top:6px}
+.ac .row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.7rem;color:var(--t2);margin-top:3px}
+@media(max-width:760px){.cols{grid-template-columns:1fr 1fr}.hm{display:none}.map{height:380px}}
+</style></head><body><div class="wrap">
+<div class="tabs">
+  <span class="tab on" data-p="p1">1 · Tabla ejecutiva</span>
+  <span class="tab" data-p="p2">2 · Mapa de la cartera</span>
+  <span class="tab" data-p="p3">3 · Qué me hizo ganar</span>
+  <span class="tab" data-p="p4">4 · Semáforo de acción</span>
+  <span class="tab" data-p="p5">5 · Tarjetas por activo</span>
+</div>
+<div class="card" style="margin-bottom:12px"><div class="head" id="head"></div></div>
+
+<div class="pane on" id="p1"><p class="note"><b>1 · Tabla ejecutiva</b>: la misma tabla de hoy pero solo con lo que sirve para decidir. Agrupada por tipo con subtotales, una barra con el peso de cada activo, la ganancia en % y en USD, la variación de hoy y cuánto falta para el P. Venta. Sin cantidades, PPC, precios en pesos ni columnas técnicas (siguen estando en la vista completa). <span class="m">Datos de ejemplo.</span></p>
+  <div class="card" style="overflow-x:auto"><table><thead><tr><th class="l">Activo</th><th class="l">Peso</th><th>USD</th><th>Ganancia</th><th class="hm">Ganancia USD</th><th>Hoy</th><th class="l hm">P. Venta</th></tr></thead><tbody id="t1"></tbody></table></div></div>
+
+<div class="pane" id="p2"><p class="note"><b>2 · Mapa de la cartera</b>: cada cuadrado es un activo. El <b>tamaño</b> es cuánto pesa y el <b>color</b> cuánto ganó o perdió <b>desde que lo compraste</b> (no en el día). De un vistazo ves dónde está la plata y qué está en rojo. <span class="m">Datos de ejemplo.</span></p>
+  <div class="card"><div class="map" id="map"></div><div class="leg">−30%<div class="bar"></div>+30% · ganancia desde la compra</div></div></div>
+
+<div class="pane" id="p3"><p class="note"><b>3 · Qué me hizo ganar</b>: cada activo con su aporte en dólares al resultado, ordenado de mayor a menor. A la derecha en verde lo que sumó, a la izquierda en rojo lo que restó. Contesta "¿de dónde salió la ganancia?". <span class="m">Datos de ejemplo.</span></p>
+  <div class="card" id="ctr"></div></div>
+
+<div class="pane" id="p4"><p class="note"><b>4 · Semáforo de acción</b>: los activos ordenados por lo que hay que hacer con ellos, según reglas que ya tiene la app (P. Venta, rebalanceo, pérdida grande, TIR baja, Vigilancia). Cada uno dice el porqué en una línea. <span class="m">Datos de ejemplo.</span></p>
+  <div class="cols">
+    <div class="col card"><h4><span class="r">● Vender / tomar ganancia</span><span class="m">2</span></h4>
+      <div class="it"><b>GD35</b> <span class="mono g">+31%</span><div class="why">Llegó al P. Venta (USD 74).</div></div>
+      <div class="it"><b>NVDA</b> <span class="mono g">+142%</span><div class="why">Pesa 4,8% de la RV, el tope es 3%.</div></div></div>
+    <div class="col card"><h4><span class="a">● Revisar</span><span class="m">3</span></h4>
+      <div class="it"><b>MELI</b> <span class="mono r">−18%</span><div class="why">Pérdida de más de 15% desde la compra.</div></div>
+      <div class="it"><b>BMA</b> <span class="mono r">−9%</span><div class="why">Bajó 3,4% hoy y 12% en el mes.</div></div>
+      <div class="it"><b>MRCAO</b> <span class="mono">+3%</span><div class="why">Rinde 4,2% anual si lo mantenés: poco.</div></div></div>
+    <div class="col card"><h4><span class="g">● Mantener</span><span class="m">14</span></h4>
+      <div class="it"><b>AO29</b> <span class="mono">+1%</span><div class="why">TIR 12% · cobra el 30/10.</div></div>
+      <div class="it"><b>SPY</b> <span class="mono g">+21%</span><div class="why">Dentro del peso objetivo.</div></div>
+      <div class="it m" style="text-align:center">+ 12 más</div></div>
+    <div class="col card"><h4><span class="bl" style="color:var(--bl)">● Comprar</span><span class="m">2</span></h4>
+      <div class="it"><b>GGAL</b> <span class="mono">Vigilancia</span><div class="why">A 3% del precio objetivo (USD 3,50).</div></div>
+      <div class="it"><b>KO</b> <span class="mono">rebalanceo</span><div class="why">Debajo del umbral de inversiones chicas.</div></div></div>
+  </div></div>
+
+<div class="pane" id="p5"><p class="note"><b>5 · Tarjetas por activo</b>: una tarjeta chica por activo con lo esencial, ordenadas por peso. Reemplaza la tabla en el celular, donde las columnas no entran. <span class="m">Datos de ejemplo.</span></p>
+  <div class="card"><div class="cards" id="cards"></div></div></div>
+</div>
+<script>
+// [ticker, tipo, USD, ganancia %, hoy %, P. Venta alcanzado %]
+var D=[['AO29','Bonos',19056,1.2,0.5,null],['GD35','Bonos',14200,31,0.4,100],['TX31','Bonos',11800,8.5,0.2,null],['BC37D','Bonos',6890,22.5,-0.3,62],['BB37D','Bonos',2429,-3,0.1,null],
+ ['MRCAO','ONs',780,3.4,0,null],['SNEAO','ONs',470,4,0.1,null],
+ ['SPY','Cedears',9500,21,0.9,58],['NVDA','Cedears',7200,142,3.8,88],['AAPL','Cedears',6100,34,1.4,71],['MSFT','Cedears',5400,18,0.7,40],['MELI','Cedears',5600,-18,-2.1,null],['GOOGL','Cedears',4300,27,-0.6,55],['UBER','Cedears',2200,9,-1.1,null],
+ ['GGAL','Acciones AR',8200,46,-2.8,64],['YPFD','Acciones AR',7600,12,-1.9,null],['VIST','Acciones AR',6300,38,3.1,80],['BMA','Acciones AR',3800,-9,-3.4,null],['PAMP','Acciones AR',5100,25,-1.2,47],
+ ['Liquidez','Liquidez',3200,0,0,null]];
+var TOT=D.reduce(function(s,x){return s+x[2];},0);
+function n0(x){return Math.round(x).toLocaleString('es-AR');}
+function pc(x,d){return (x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(d==null?1:d).replace('.',',')+'%';}
+function pw(x){return x.toFixed(1).replace('.',',')+'%';}
+function cls(x){return x>0?'g':x<0?'r':'m';}
+function gus(x){return x[2]-x[2]/(1+x[3]/100);}
+var G=0,H=0;D.forEach(function(x){G+=gus(x);H+=x[2]-x[2]/(1+x[4]/100);});
+document.getElementById('head').innerHTML=[['Valor','USD '+n0(TOT),''],['Ganancia desde la compra','+USD '+n0(G),'g'],['Hoy',(H>=0?'+':'−')+'USD '+n0(Math.abs(H)),cls(H)],['Activos',String(D.length-1),''],['Mayor posición','AO29 · '+pw(19056/TOT*100),'']].map(function(k){return '<div><div class="lbl">'+k[0]+'</div><div class="v '+k[2]+'">'+k[1]+'</div></div>';}).join('');
+// 1
+(function(){var gr={};D.forEach(function(x){(gr[x[1]]=gr[x[1]]||[]).push(x);});var h='',mx=Math.max.apply(null,D.map(function(x){return x[2];}));
+ Object.keys(gr).forEach(function(k){var L=gr[k].sort(function(a,b){return b[2]-a[2];}),v=0,g=0;L.forEach(function(x){v+=x[2];g+=gus(x);});
+  h+='<tr class="grp"><td class="l">'+k+'</td><td class="l mono t2">'+pw(v/TOT*100)+'</td><td>'+n0(v)+'</td><td class="'+cls(g)+'">'+(k==='Liquidez'?'':pc(g/(v-g)*100))+'</td><td class="hm '+cls(g)+'">'+(k==='Liquidez'?'':(g>=0?'+':'−')+n0(Math.abs(g)))+'</td><td></td><td class="hm"></td></tr>';
+  if(k==='Liquidez')return;
+  L.forEach(function(x){var w=x[2]/mx*90,gu=gus(x);h+='<tr><td class="l"><b style="font-family:var(--sans)">'+x[0]+'</b></td><td class="l"><span class="wbar" style="width:'+w+'px"></span><span class="t2">'+pw(x[2]/TOT*100)+'</span></td><td>'+n0(x[2])+'</td><td class="'+cls(x[3])+'">'+pc(x[3])+'</td><td class="hm '+cls(gu)+'">'+(gu>=0?'+':'−')+n0(Math.abs(gu))+'</td><td class="'+cls(x[4])+'">'+pc(x[4])+'</td><td class="l hm">'+(x[5]==null?'<span class="m">—</span>':x[5]>=100?'<span class="a" style="font-family:var(--sans);font-weight:700">🎯 llegó</span>':'<span class="pv"><span style="width:'+x[5]+'%"></span></span> <span class="m">'+x[5]+'%</span>')+'</td></tr>';});});
+ document.getElementById('t1').innerHTML=h;})();
+// 2 treemap
+function sq(items,x,y,w,h){var out=[];items=items.slice().sort(function(a,b){return b.v-a.v;});var tot=items.reduce(function(s,i){return s+i.v;},0);if(!tot)return out;var sc=w*h/tot;items.forEach(function(i){i.a=i.v*sc;});
+ var worst=function(row,side){var s=0,mx=0,mn=1e18;row.forEach(function(r){s+=r.a;mx=Math.max(mx,r.a);mn=Math.min(mn,r.a);});return Math.max(side*side*mx/(s*s),(s*s)/(side*side*mn));};
+ var lay=function(row,b){var s=row.reduce(function(t,r){return t+r.a;},0);if(b.w>=b.h){var cw=s/b.h,cy=b.y;row.forEach(function(r){var hh=r.a/cw;out.push({i:r,x:b.x,y:cy,w:cw,h:hh});cy+=hh;});return {x:b.x+cw,y:b.y,w:b.w-cw,h:b.h};}var rh=s/b.w,cx=b.x;row.forEach(function(r){var ww=r.a/rh;out.push({i:r,x:cx,y:b.y,w:ww,h:rh});cx+=ww;});return {x:b.x,y:b.y+rh,w:b.w,h:b.h-rh};};
+ var b={x:x,y:y,w:w,h:h},row=[],rest=items.slice();while(rest.length){var it=rest[0],side=Math.min(b.w,b.h);if(!row.length||worst(row.concat([it]),side)<=worst(row,side)){row.push(it);rest.shift();}else{b=lay(row,b);row=[];}}if(row.length)lay(row,b);return out;}
+function col(p){var t=Math.max(-1,Math.min(1,p/30)),g=[42,49,66],e=t>=0?[15,138,69]:[183,28,28],a=Math.pow(Math.abs(t),.7);return 'rgb('+g.map(function(v,i){return Math.round(v+(e[i]-v)*a);}).join(',')+')';}
+function drawMap(){var m=document.getElementById('map'),W=m.clientWidth,H2=m.clientHeight;if(!W)return;m.innerHTML='';var gs={};D.forEach(function(x){if(x[1]==='Liquidez')return;(gs[x[1]]=gs[x[1]]||[]).push({t:x[0],v:x[2],p:x[3]});});
+ sq(Object.keys(gs).map(function(k){return {k:k,v:gs[k].reduce(function(s,i){return s+i.v;},0)};}),0,0,W,H2).forEach(function(g){var gd=document.createElement('div');gd.style.cssText='position:absolute;border:2px solid var(--bg);left:'+g.x+'px;top:'+g.y+'px;width:'+g.w+'px;height:'+g.h+'px';gd.innerHTML='<div class="gl">'+g.i.k+'</div>';m.appendChild(gd);
+  sq(gs[g.i.k],0,12,g.w-4,g.h-16).forEach(function(r){var d=document.createElement('div');d.className='tile';d.style.cssText='left:'+(r.x+1)+'px;top:'+(r.y+1)+'px;width:'+(r.w-1)+'px;height:'+(r.h-1)+'px;background:'+col(r.i.p);d.title=r.i.t+': USD '+n0(r.i.v)+' · '+pc(r.i.p)+' desde la compra';d.innerHTML=(r.w>46&&r.h>30)?'<b>'+r.i.t+'</b><span>'+pc(r.i.p,0)+'</span>':(r.w>28&&r.h>14?'<b style="font-size:.58rem">'+r.i.t+'</b>':'');gd.appendChild(d);});});}
+// 3 contribución
+(function(){var L=D.filter(function(x){return x[1]!=='Liquidez';}).map(function(x){return {t:x[0],g:gus(x),p:x[3]};}).sort(function(a,b){return b.g-a.g;}),mx=Math.max.apply(null,L.map(function(x){return Math.abs(x.g);}));
+ document.getElementById('ctr').innerHTML='<div class="ctr" style="color:var(--t3);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;font-family:var(--mono)"><span></span><span style="text-align:right;padding-right:6px">restó</span><span style="padding-left:6px">sumó</span><span style="text-align:right">USD</span></div>'+L.map(function(x){var w=Math.abs(x.g)/mx*100;
+  return '<div class="ctr"><b>'+x.t+'</b><div class="neg">'+(x.g<0?'<span style="width:'+w+'%"></span>':'')+'</div><div class="pos">'+(x.g>0?'<span style="width:'+w+'%"></span>':'')+'</div><span class="mono '+cls(x.g)+'" style="text-align:right">'+(x.g>=0?'+':'−')+n0(Math.abs(x.g))+'</span></div>';}).join('')+
+  '<div class="t2" style="font-size:.74rem;margin-top:10px;border-top:1px solid var(--b);padding-top:8px">Los 3 que más sumaron (NVDA, GGAL, GD35) explican el '+Math.round((L[0].g+L[1].g+L[2].g)/G*100)+'% de la ganancia total.</div>';})();
+// 5 tarjetas
+document.getElementById('cards').innerHTML=D.filter(function(x){return x[1]!=='Liquidez';}).sort(function(a,b){return b[2]-a[2];}).map(function(x){var gu=gus(x);
+ return '<div class="ac"><div class="t"><b>'+x[0]+'</b><span class="lbl">'+x[1]+'</span></div><div class="v">USD '+n0(x[2])+'</div><div class="row"><span>'+pw(x[2]/TOT*100)+' del total</span><span class="'+cls(x[4])+'">hoy '+pc(x[4])+'</span></div><div class="row"><span class="'+cls(x[3])+'">'+pc(x[3])+' · '+(gu>=0?'+':'−')+n0(Math.abs(gu))+'</span><span>'+(x[5]>=100?'<span class="a">🎯 P.Venta</span>':x[5]!=null?'P.V. '+x[5]+'%':'')+'</span></div></div>';}).join('');
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.id===t.dataset.p);});if(t.dataset.p==='p2')drawMap();};});
+addEventListener('resize',drawMap);
+</script></body></html>

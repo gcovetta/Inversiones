@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tabla de activos — propuestas con tus campos</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#9db4d6;--t3:#5a789e;--g:#22c55e;--r:#f05252;--a:#eab308;--bl:#448aff;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:18px 14px}
+.wrap{max-width:1120px;margin:0 auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:9px;padding:6px 12px;font-size:.8rem;cursor:pointer}
+.tab.on{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}
+.pane{display:none}.pane.on{display:block}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin:0 0 10px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:12px 14px}
+.lbl{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+.g{color:var(--g)}.r{color:var(--r)}.a{color:var(--a)}.m{color:var(--t3)}.t2{color:var(--t2)}
+.mono{font-family:var(--mono)}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:7px 8px;background:var(--s2);border-radius:10px;margin-bottom:8px;font-size:.76rem}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--b2);color:var(--t2);border-radius:999px;padding:3px 10px;font-size:.72rem;cursor:pointer;user-select:none}
+.chip.on{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}
+.sw{display:inline-flex;align-items:center;gap:6px;font-size:.74rem;color:var(--t2);cursor:pointer;padding:3px 8px;border-radius:8px;border:1px solid var(--b2);background:var(--bg)}
+.sw i{width:24px;height:13px;border-radius:7px;background:var(--b2);position:relative;display:inline-block}
+.sw i::after{content:'';position:absolute;left:2px;top:2px;width:9px;height:9px;border-radius:50%;background:var(--t3)}
+.sw.on{color:var(--t);border-color:var(--r)}.sw.on i{background:rgba(240,82,82,.6)}.sw.on i::after{left:13px;background:#fff}
+.tw{max-height:560px;overflow:auto;border:1px solid var(--b);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:.77rem}
+th{position:sticky;top:0;background:#0f1726;color:var(--t3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--b);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;z-index:1}
+td{padding:4px 8px;text-align:right;font-family:var(--mono);border-bottom:1px solid #141f33;white-space:nowrap;height:30px}
+th.l,td.l{text-align:left}
+tr.sec td{background:#131d30;font-family:var(--sans);font-weight:700;text-align:left;height:30px}
+tr.sec td .m{font-weight:400}
+.nm{font-family:var(--sans);font-size:.66rem;color:var(--t3);display:block;line-height:1.1;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.tk{font-family:var(--sans);font-weight:700;font-size:.82rem}
+.inv-r{color:var(--r);font-weight:700}.inv-a{color:var(--a);font-weight:700}
+.dd{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}.dd small{font-size:.66rem}
+.pt{display:inline-flex;align-items:center;gap:5px}.pt .b{width:42px;height:5px;background:#0b1120;border-radius:3px;overflow:hidden}.pt .b span{display:block;height:100%}
+.rsi{display:inline-block;min-width:30px;text-align:center;border-radius:5px;padding:1px 5px;font-size:.7rem}
+.opt{background:rgba(68,138,255,.05)}
+th.opt{background:#121e33}
+.exp{cursor:pointer}.exp:hover td{background:#141e31}
+tr.det td{background:#0d1525;height:auto;padding:8px 12px;text-align:left;font-family:var(--sans)}
+.dgrid{display:grid;grid-template-columns:repeat(5,auto) 1fr;gap:4px 22px;align-items:center;font-size:.76rem}
+.dgrid .v{font-family:var(--mono);font-size:.82rem}
+.lad{position:relative;height:14px;min-width:240px}.lad .base{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--b2)}
+.lad .k{position:absolute;top:1px;width:2px;height:12px}.lad .dot{position:absolute;top:1px;width:12px;height:12px;border-radius:50%;margin-left:-6px;background:var(--t);border:2px solid var(--s)}
+.legend{font-size:.68rem;color:var(--t3);margin-top:6px;line-height:1.5}
+.cell2{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}.cell2 small{color:var(--t3);font-size:.64rem}
+@media(max-width:760px){.hm{display:none}}
+</style></head><body><div class="wrap">
+<div class="tabs">
+  <span class="tab on" data-p="p1">1 · Columnas a pedido</span>
+  <span class="tab" data-p="p2">2 · Fila que se despliega</span>
+  <span class="tab" data-p="p3">3 · Modos de vista</span>
+  <span class="tab" data-p="p4">4 · Celdas dobles (compacta)</span>
+</div>
+<div class="bar" id="fbar"></div>
+
+<div class="pane on" id="p1"><p class="note"><b>1 · Columnas a pedido</b>: siempre a la vista tus campos fijos (Activo, Δ% / ΔUp, Inversión, Precio, PPC, % del tipo). <b>P. Venta, Nominales y RSI</b> aparecen solo cuando prendés su botón (se ven con fondo levemente azul). La elección queda recordada. <span class="m">Datos de ejemplo.</span></p>
+  <div class="bar" id="cols1"></div><div class="tw"><table id="t1"></table></div>
+  <div class="legend">Inversión en <span class="inv-r">rojo</span> si pesa más de 3% de su tipo (RV o RF) y en <span class="inv-a">amarillo</span> si pasa 2%, como hoy. "% tipo" = peso dentro de la renta variable (acciones y Cedears) o dentro de la renta fija (bonos y ONs).</div></div>
+
+<div class="pane" id="p2"><p class="note"><b>2 · Fila que se despliega</b>: la tabla muestra solo los campos fijos y queda corta. <b>Tocando una fila</b> se abre debajo el detalle: P. Venta, nominales, RSI y una línea PPC → precio → P. Venta. Ideal para muchos activos: mirás el resumen y abrís solo el que te interesa. <span class="m">Tocá cualquier fila.</span></p>
+  <div class="tw"><table id="t2"></table></div></div>
+
+<div class="pane" id="p3"><p class="note"><b>3 · Modos de vista</b>: tres juegos de columnas con un toque. <b>Operar</b> = tus campos fijos + P. Venta; <b>Análisis técnico</b> = fijos + RSI; <b>Completo</b> = todo, incluidos nominales. Cada modo recuerda su orden. <span class="m">Datos de ejemplo.</span></p>
+  <div class="bar" id="modo3"></div><div class="tw"><table id="t3"></table></div></div>
+
+<div class="pane" id="p4"><p class="note"><b>4 · Celdas dobles</b>: para que entren todos los campos sin scroll lateral, cada celda tiene dos datos: <b>Δ% arriba y ΔUp abajo</b>, <b>Precio arriba y PPC abajo</b>, <b>Inversión arriba y % del tipo abajo</b> con una mini barra, y <b>P. Venta arriba con nominales abajo</b>. El RSI va como pastilla de color. Es la más densa: entra todo en una pantalla de notebook. <span class="m">Datos de ejemplo.</span></p>
+  <div class="tw"><table id="t4"></table></div></div>
+</div>
+<script>
+// [ticker, nombre, tipo, precio ARS, PPC ARS, nominales, P.Venta ARS (null), RSI]
+var D=[
+['GGAL','Grupo Fin. Galicia','argentina',5950,4100,1200,7200,38],['YPFD','YPF','argentina',47900,42700,180,56000,44],['PAMP','Pampa Energía','argentina',3810,3050,1600,4400,52],['VIST','Vista Energy','argentina',18300,13200,410,20500,63],['BMA','Banco Macro','argentina',9850,10800,520,13500,31],['TXAR','Ternium Argentina','argentina',890,820,4200,null,47],['LOMA','Loma Negra','argentina',3227,3900,700,null,29],
+['SPY','S&P 500 ETF','nyse',20940,17300,140,25500,66],['AAPL','Apple','nyse',26820,20000,180,29800,71],['MSFT','Microsoft','nyse',22450,19000,95,27000,58],['NVDA','Nvidia','nyse',9870,4080,260,10300,77],['GOOGL','Alphabet','nyse',8820,6950,160,11200,54],['MELI','Mercado Libre','nyse',24300,29600,30,31500,35],['KO','Coca-Cola','nyse',23900,22400,60,null,49],['UBER','Uber','nyse',2130,1950,240,2600,42],['PLTR','Palantir','nyse',11400,6800,90,12000,74],['IBIT','iShares Bitcoin','cripto',7620,5980,310,9000,61],['NU','Nu Holdings','brasil',8450,5200,330,null,68],
+['AO29','Bonar Mendoza 2029','bonos',133230,130100,22103,null,null],['GD35','Global 2035','bonos',114700,87500,9500,115000,null],['TX31','Boncer 2031','bonos',1720,1585,5948878,null,null],['BC37D','Bono Córdoba 2037 D','bonos',76.4,62.4,10226,92,null],['BB37D','Bono Bs.As. 2037 D','bonos',70.8,73,3432,95,null],['GD30','Global 2030','bonos',88600,81200,7400,96000,null],
+['MRCAO','ON Mercado Libre','on',148000,143200,754,null,null],['YMCJO','ON YPF 2031','on',155970,149800,5300,170000,null],['TLC1O','ON Telecom','on',160300,162900,3100,null,null]];
+var CCL=1613,MEP=1543;
+var RV={argentina:1,nyse:1,cripto:1,brasil:1},A=D.map(function(x){var bono=x[2]==='bonos'||x[2]==='on',usdD=/D$/.test(x[0])&&bono;var inv=bono?(usdD?x[3]*x[5]/100*MEP:x[3]*x[5]/100):x[3]*x[5];
+ return {t:x[0],nom:x[1],s:x[2],rv:!!RV[x[2]],bono:bono,usdD:usdD,px:x[3],ppc:x[4],q:x[5],pv:x[6],rsi:x[7],inv:inv,d:(x[3]/x[4]-1)*100,up:x[6]?(x[6]/x[3]-1)*100:null};});
+var TOT={rv:0,rf:0};A.forEach(function(o){TOT[o.rv?'rv':'rf']+=o.inv;});A.forEach(function(o){o.pt=o.inv/TOT[o.rv?'rv':'rf']*100;});
+function n0(x){return Math.round(x).toLocaleString('es-AR');}
+function fp(x,o){return (o&&o.usdD?'US$ ':'$ ')+(x<200?x.toLocaleString('es-AR',{maximumFractionDigits:2}):n0(x));}
+function pc(x){return x==null?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
+function cls(x){return x>0?'g':x<0?'r':'m';}
+function invC(o){return o.pt>3?'inv-r':o.pt>2?'inv-a':'';}
+function ptCell(o,mini){var c=o.pt>3?'var(--r)':o.pt>2?'var(--a)':'var(--bl)';return mini?'<span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+c+'"></span></span>'+o.pt.toFixed(1).replace('.',',')+'%</span>':'<span style="color:'+(o.pt>3?'var(--r)':o.pt>2?'var(--a)':'var(--t2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span>';}
+function upC(u){return u==null?'<span class="m">—</span>':u<=0?'<span class="a" style="font-weight:700">🎯</span>':'<span style="color:'+(u<=5?'var(--a)':u<=15?'var(--bl)':'var(--t3)')+'">'+pc(u).replace('+','↑ ')+'</span>';}
+function rsiC(r){if(r==null)return '<span class="m">—</span>';var bg=r>=70?'rgba(240,82,82,.18)':r<=30?'rgba(34,197,94,.18)':'transparent',c=r>=70?'#ff9b9b':r<=30?'#7ee2a3':'var(--t2)';return '<span class="rsi" style="background:'+bg+';color:'+c+'" title="'+(r>=70?'sobrecomprado':r<=30?'sobrevendido':'neutral')+'">'+r+'</span>';}
+function nomC(o){return o.q.toLocaleString('es-AR',{maximumFractionDigits:2});}
+// filtros comunes
+var F={oar:true,rf:'ambas'};
+function vis(){return A.filter(function(o){if(F.oar&&o.s==='argentina')return false;if(F.rf==='rv'&&!o.rv)return false;if(F.rf==='rf'&&o.rv)return false;return true;});}
+function fbar(){var n=A.filter(function(o){return o.s==='argentina';}).length;document.getElementById('fbar').innerHTML=['ambas','rv','rf'].map(function(k){return '<span class="chip'+(F.rf===k?' on':'')+'" onclick="F.rf=\''+k+'\';todo()">'+({ambas:'Todo',rv:'R. Variable',rf:'R. Fija'})[k]+'</span>';}).join('')+'<span style="flex:1"></span><span class="lbl">Ocultar</span><span class="sw'+(F.oar?' on':'')+'" onclick="F.oar=!F.oar;todo()"><i></i>🇦🇷 acciones argentinas <span class="m mono" style="font-size:.64rem">'+n+'</span></span><span class="m" style="font-size:.7rem">(filtros de la opción anterior que te gustó, comunes a las 4)</span>';}
+function secs(L,fnRow,ncol){var h='';[['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var S=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(function(a,b){return b.inv-a.inv;});if(!S.length)return;
+ h+='<tr class="sec"><td colspan="'+ncol+'">'+sg[1]+' <span class="m">· '+S.length+' activos · $ '+n0(S.reduce(function(s,o){return s+o.inv;},0))+' · el % es sobre el total de '+sg[1].toLowerCase()+'</span></td></tr>'+S.map(fnRow).join('');});return h;}
+// 1 columnas a pedido
+var C1={pv:true,q:false,rsi:false};
+function d1(){document.getElementById('cols1').innerHTML='<span class="lbl">Mostrar también</span>'+[['pv','P. Venta'],['q','Nominales'],['rsi','RSI']].map(function(c){return '<span class="chip'+(C1[c[0]]?' on':'')+'" onclick="C1.'+c[0]+'=!C1.'+c[0]+';d1()">'+(C1[c[0]]?'✓ ':'+ ')+c[1]+'</span>';}).join('');
+ var hd='<tr><th class="l">Activo</th><th>Δ%</th><th>ΔUp</th><th>Inversión</th><th>Precio</th><th>PPC</th><th>% tipo</th>'+(C1.pv?'<th class="opt">P. Venta</th>':'')+(C1.q?'<th class="opt">Nominales</th>':'')+(C1.rsi?'<th class="opt">RSI</th>':'')+'</tr>';
+ var nc=7+(C1.pv?1:0)+(C1.q?1:0)+(C1.rsi?1:0);
+ document.getElementById('t1').innerHTML='<thead>'+hd+'</thead><tbody>'+secs(vis(),function(o){return '<tr><td class="l"><span class="tk">'+o.t+'</span><span class="nm">'+o.nom+'</span></td><td class="'+cls(o.d)+'">'+pc(o.d)+'</td><td>'+upC(o.up)+'</td><td class="'+invC(o)+'">$ '+n0(o.inv)+'</td><td>'+fp(o.px,o)+'</td><td class="t2">'+fp(o.ppc,o)+'</td><td>'+ptCell(o)+'</td>'+(C1.pv?'<td class="opt">'+(o.pv?fp(o.pv,o):'<span class="m">—</span>')+'</td>':'')+(C1.q?'<td class="opt t2">'+nomC(o)+'</td>':'')+(C1.rsi?'<td class="opt">'+rsiC(o.rsi)+'</td>':'')+'</tr>';},nc)+'</tbody>';}
+// 2 fila desplegable
+var O2={};
+function d2(){document.getElementById('t2').innerHTML='<thead><tr><th class="l">Activo</th><th>Δ% / ΔUp</th><th>Inversión</th><th>Precio</th><th class="hm">PPC</th><th>% tipo</th><th></th></tr></thead><tbody>'+secs(vis(),function(o){
+ var r='<tr class="exp" onclick="O2[\''+o.t+'\']=!O2[\''+o.t+'\'];d2()"><td class="l"><span class="tk">'+o.t+'</span><span class="nm">'+o.nom+'</span></td><td><div class="dd"><span class="'+cls(o.d)+'">'+pc(o.d)+'</span><small>'+upC(o.up)+'</small></div></td><td class="'+invC(o)+'">$ '+n0(o.inv)+'</td><td>'+fp(o.px,o)+'</td><td class="t2 hm">'+fp(o.ppc,o)+'</td><td>'+ptCell(o,true)+'</td><td class="m">'+(O2[o.t]?'▴':'▾')+'</td></tr>';
+ if(O2[o.t]){var lo=Math.min(o.ppc,o.px)*0.95,hi=Math.max(o.pv||o.px,o.px)*1.05,X=function(v){return (v-lo)/(hi-lo)*100;};
+  r+='<tr class="det"><td colspan="7"><div class="dgrid"><div><div class="lbl">P. Venta</div><div class="v">'+(o.pv?fp(o.pv,o):'—')+'</div></div><div><div class="lbl">Nominales</div><div class="v">'+nomC(o)+'</div></div><div><div class="lbl">RSI (14)</div><div class="v">'+rsiC(o.rsi)+'</div></div><div><div class="lbl">Ganancia $</div><div class="v '+cls(o.d)+'">'+(o.d>=0?'+':'−')+'$ '+n0(Math.abs(o.inv-o.inv/(1+o.d/100)))+'</div></div><div><div class="lbl">Falta al P. Venta</div><div class="v">'+upC(o.up)+'</div></div>'+
+   '<div><div class="lbl">PPC → precio → P. Venta</div><div class="lad"><div class="base"></div><div class="k" style="left:'+X(o.ppc)+'%;background:var(--t3)" title="PPC"></div>'+(o.pv?'<div class="k" style="left:'+X(o.pv)+'%;background:var(--a)" title="P. Venta"></div>':'')+'<div class="dot" style="left:'+X(o.px)+'%"></div></div></div></div></td></tr>';}
+ return r;},7)+'</tbody>';}
+// 3 modos
+var M3='operar';var MODOS={operar:['pv'],tecnico:['rsi'],completo:['pv','q','rsi']};
+function d3(){document.getElementById('modo3').innerHTML=[['operar','🎯 Operar','fijos + P. Venta'],['tecnico','📈 Análisis técnico','fijos + RSI'],['completo','☰ Completo','todo']].map(function(m){return '<span class="chip'+(M3===m[0]?' on':'')+'" onclick="M3=\''+m[0]+'\';d3()">'+m[1]+' <span style="font-size:.64rem;opacity:.7">'+m[2]+'</span></span>';}).join('');
+ var ex=MODOS[M3],has=function(k){return ex.indexOf(k)>=0;},nc=7+ex.length;
+ document.getElementById('t3').innerHTML='<thead><tr><th class="l">Activo</th><th>Δ%</th><th>ΔUp</th><th>Inversión</th><th>Precio</th><th>PPC</th><th>% tipo</th>'+(has('pv')?'<th>P. Venta</th>':'')+(has('q')?'<th>Nominales</th>':'')+(has('rsi')?'<th>RSI</th>':'')+'</tr></thead><tbody>'+secs(vis(),function(o){return '<tr><td class="l"><span class="tk">'+o.t+'</span><span class="nm">'+o.nom+'</span></td><td class="'+cls(o.d)+'">'+pc(o.d)+'</td><td>'+upC(o.up)+'</td><td class="'+invC(o)+'">$ '+n0(o.inv)+'</td><td>'+fp(o.px,o)+'</td><td class="t2">'+fp(o.ppc,o)+'</td><td>'+ptCell(o)+'</td>'+(has('pv')?'<td>'+(o.pv?fp(o.pv,o):'<span class="m">—</span>')+'</td>':'')+(has('q')?'<td class="t2">'+nomC(o)+'</td>':'')+(has('rsi')?'<td>'+rsiC(o.rsi)+'</td>':'')+'</tr>';},nc)+'</tbody>';}
+// 4 celdas dobles
+function d4(){document.getElementById('t4').innerHTML='<thead><tr><th class="l">Activo</th><th>Δ% <span style="opacity:.6">/ ΔUp</span></th><th>Precio <span style="opacity:.6">/ PPC</span></th><th>Inversión <span style="opacity:.6">/ % tipo</span></th><th>P. Venta <span style="opacity:.6">/ nominales</span></th><th>RSI</th></tr></thead><tbody>'+secs(vis(),function(o){
+ return '<tr style="height:40px"><td class="l"><span class="tk">'+o.t+'</span><span class="nm">'+o.nom+'</span></td><td><div class="cell2"><span class="'+cls(o.d)+'">'+pc(o.d)+'</span><small>'+upC(o.up)+'</small></div></td><td><div class="cell2"><span>'+fp(o.px,o)+'</span><small>'+fp(o.ppc,o)+'</small></div></td><td><div class="cell2"><span class="'+invC(o)+'">$ '+n0(o.inv)+'</span><small>'+ptCell(o,true)+'</small></div></td><td><div class="cell2"><span>'+(o.pv?fp(o.pv,o):'<span class="m">—</span>')+'</span><small>'+nomC(o)+' nom.</small></div></td><td>'+rsiC(o.rsi)+'</td></tr>';},6)+'</tbody>';}
+function todo(){fbar();d1();d2();d3();d4();}todo();
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.id===t.dataset.p);});};});
+</script></body></html>

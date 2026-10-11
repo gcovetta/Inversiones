@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Operar con muchos activos — propuestas</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#9db4d6;--t3:#5a789e;--g:#22c55e;--r:#f05252;--a:#eab308;--bl:#448aff;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:18px 14px}
+.wrap{max-width:1080px;margin:0 auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab,.chip{background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:9px;padding:6px 12px;font-size:.8rem;cursor:pointer}
+.tab.on,.chip.on{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}
+.chip{font-size:.72rem;padding:4px 10px}
+.pane{display:none}.pane.on{display:block}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin:0 0 12px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.lbl{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+.g{color:var(--g)}.r{color:var(--r)}.a{color:var(--a)}.m{color:var(--t3)}.t2{color:var(--t2)}.bl{color:var(--bl)}
+.mono{font-family:var(--mono)}
+/* bandeja */
+.sec{margin-bottom:12px}
+.sec h3{margin:0 0 6px;font-size:.84rem;display:flex;align-items:center;gap:8px}
+.sec h3 .n{font-family:var(--mono);font-size:.7rem;color:var(--t3);font-weight:400}
+.rowd{display:grid;grid-template-columns:72px 90px 70px 80px 70px 1fr;gap:8px;align-items:center;font-size:.78rem;padding:5px 6px;border-bottom:1px solid #16233a;font-family:var(--mono)}
+.rowd b{font-family:var(--sans)}
+.rowd .why{font-family:var(--sans);font-size:.72rem;color:var(--t2)}
+.quiet{background:var(--s2);border-radius:10px;padding:10px 12px;font-size:.78rem;color:var(--t2);display:flex;justify-content:space-between;align-items:center}
+/* tabla densa */
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.tools input{background:var(--s2);border:1px solid var(--b2);color:var(--t);border-radius:8px;padding:5px 9px;font-size:.78rem;width:150px}
+.tw{max-height:520px;overflow:auto;border:1px solid var(--b);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+th{position:sticky;top:0;background:#0f1726;color:var(--t3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--b);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;cursor:pointer;z-index:1}
+td{padding:3px 8px;text-align:right;font-family:var(--mono);border-bottom:1px solid #141f33;white-space:nowrap;height:26px}
+th.l,td.l{text-align:left}
+tr.grp td{background:#131d30;font-family:var(--sans);font-weight:700;cursor:pointer;height:30px}
+.fb{display:inline-block;width:56px;height:5px;background:#0b1120;border-radius:3px;vertical-align:middle;margin-left:6px;overflow:hidden}.fb span{display:block;height:100%}
+/* grilla */
+.gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:4px}
+.ch{border-radius:6px;padding:5px 6px;font-size:.66rem;line-height:1.25;cursor:default;border:1px solid transparent}
+.ch b{display:block;font-size:.76rem}
+.ch .mono{font-size:.64rem;opacity:.9}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:.68rem;color:var(--t2);margin:8px 0}.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+/* distribución */
+.dist{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bk{display:grid;grid-template-columns:110px 1fr 40px;gap:8px;align-items:center;padding:5px 6px;border-radius:7px;cursor:pointer;font-size:.78rem}
+.bk:hover,.bk.on{background:var(--s2)}
+.bk .tr{height:14px;background:#0b1120;border-radius:4px;overflow:hidden}.bk .tr span{display:block;height:100%;border-radius:0 4px 4px 0}
+.bk .c{font-family:var(--mono);text-align:right;color:var(--t2)}
+#tip{position:fixed;pointer-events:none;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:7px 10px;font-size:.74rem;display:none;z-index:9;font-family:var(--mono)}
+@media(max-width:760px){.rowd{grid-template-columns:62px 70px 60px 1fr}.rowd .hm{display:none}.dist{grid-template-columns:1fr}.hm{display:none}}
+</style></head><body><div class="wrap">
+<div class="tabs">
+  <span class="tab on" data-p="p1">A · Bandeja de pendientes</span>
+  <span class="tab" data-p="p2">B · Tabla densa</span>
+  <span class="tab" data-p="p3">C · Grilla de fichas</span>
+  <span class="tab" data-p="p4">D · Distribución</span>
+</div>
+<p class="note" id="tot"></p>
+
+<div class="pane on" id="p1"><p class="note"><b>A · Bandeja de pendientes</b>: en vez de mostrar los 70, muestra <b>solo los que necesitan algo</b>, agrupados por motivo y con el porqué. Todo lo demás queda resumido en una sola línea ("50 sin novedades") y se abre si querés. Con muchos activos es lo que más tiempo ahorra: abrís, mirás 20 filas y listo. <span class="m">Datos de ejemplo.</span></p>
+  <div class="card" id="bandeja"></div></div>
+
+<div class="pane" id="p2"><p class="note"><b>B · Tabla densa</b>: tu tabla de siempre pero pensada para 70 filas: renglones bajos (entran ~20 por pantalla), encabezado fijo al hacer scroll, grupos que se pliegan con su subtotal, buscador y filtros rápidos. La columna "Falta" trae una mini barra para leerla sin mirar el número. <span class="m">Datos de ejemplo.</span></p>
+  <div class="card"><div class="tools"><input id="q" placeholder="🔎 Ticker..." oninput="d2()"><span id="f2"></span><span class="chip" onclick="colAll()">Plegar / abrir grupos</span></div>
+  <div class="tw"><table><thead><tr><th class="l" data-k="t">Activo</th><th data-k="inv">Invertido</th><th data-k="gan">Ganancia</th><th data-k="falta">Falta P.V.</th><th class="hm" data-k="pv">P. Venta</th></tr></thead><tbody id="t2"></tbody></table></div></div></div>
+
+<div class="pane" id="p3"><p class="note"><b>C · Grilla de fichas</b>: los 70 activos en una sola pantalla, como fichas chicas ordenadas por lo que falta para el P. Venta. El <b>color de fondo</b> dice qué tan cerca está de vender y el <b>número</b> la ganancia. Sirve para ver todo de un vistazo y encontrar rápido los amarillos. Pasá el mouse para el detalle. <span class="m">Datos de ejemplo.</span></p>
+  <div class="card"><div class="leg"><span><i style="background:#8a6d0a"></i>🎯 llegó</span><span><i style="background:#5c4a10"></i>falta ≤5%</span><span><i style="background:#1d3566"></i>5–15%</span><span><i style="background:#1a2438"></i>más de 15%</span><span><i style="background:#111927;border:1px dashed #264070"></i>sin P. Venta</span><span>· número rojo = en pérdida</span></div><div class="gr" id="gr"></div></div></div>
+
+<div class="pane" id="p4"><p class="note"><b>D · Distribución</b>: primero ves <b>cuántos</b> activos hay en cada rango (de ganancia y de distancia al P. Venta), y tocando una barra se listan solo esos. Sirve para preguntas como "¿cuántos tengo en pérdida de más de 20%?" sin recorrer la lista. <span class="m">Datos de ejemplo.</span></p>
+  <div class="dist"><div class="card"><div class="lbl" style="margin-bottom:8px">Por distancia al P. Venta</div><div id="dF"></div></div><div class="card"><div class="lbl" style="margin-bottom:8px">Por ganancia desde la compra</div><div id="dG"></div></div></div>
+  <div class="card" style="margin-top:12px"><div class="lbl" id="selT" style="margin-bottom:6px">Tocá una barra</div><div id="selL"></div></div></div>
+</div>
+<div id="tip"></div>
+<script>
+// 70 activos de ejemplo: [ticker, tipo]
+var T=[['AO29','Bonos'],['GD35','Bonos'],['GD30','Bonos'],['AL30','Bonos'],['GD38','Bonos'],['AE38','Bonos'],['TX31','Bonos'],['BC37D','Bonos'],['BB37D','Bonos'],['TZXM7','Bonos'],['TZX28','Bonos'],['AO27','Bonos'],['BPY26','Bonos'],['GD41','Bonos'],
+ ['MRCAO','ONs'],['SNEAO','ONs'],['YMCJO','ONs'],['TLC1O','ONs'],['MR43O','ONs'],['CLSIO','ONs'],['DNC3O','ONs'],
+ ['GGAL','Acciones AR'],['YPFD','Acciones AR'],['PAMP','Acciones AR'],['VIST','Acciones AR'],['BMA','Acciones AR'],['TXAR','Acciones AR'],['CEPU','Acciones AR'],['ALUA','Acciones AR'],['TGSU2','Acciones AR'],['LOMA','Acciones AR'],['BBAR','Acciones AR'],['SUPV','Acciones AR'],['CRES','Acciones AR'],['EDN','Acciones AR'],
+ ['SPY','Cedears'],['QQQ','Cedears'],['AAPL','Cedears'],['MSFT','Cedears'],['NVDA','Cedears'],['GOOGL','Cedears'],['AMZN','Cedears'],['META','Cedears'],['MELI','Cedears'],['TSLA','Cedears'],['KO','Cedears'],['PEP','Cedears'],['JPM','Cedears'],['V','Cedears'],['MA','Cedears'],
+ ['UBER','Cedears'],['PLTR','Cedears'],['NU','Cedears'],['SPOT','Cedears'],['GLOB','Cedears'],['DEO','Cedears'],['STLA','Cedears'],['PAGS','Cedears'],['BIOX','Cedears'],['TEAM','Cedears'],['XP','Cedears'],['LAC','Cedears'],['SID','Cedears'],['EMBJ','Cedears'],['IBIT','Cedears'],['XLE','Cedears'],['BRKB','Cedears'],['DIA','Cedears'],['EWZ','Cedears'],['AMD','Cedears']];
+var seed=11;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+var A=T.map(function(x,i){var inv=Math.round(300+Math.pow(rnd(),2)*12000),gan=Math.round((rnd()*1.2-0.3)*100*(x[1]==='Bonos'||x[1]==='ONs'?0.4:1));var hasPV=rnd()>0.18,falta=hasPV?Math.round((rnd()*55-2.5)*10)/10:null;
+ return {t:x[0],tipo:x[1],inv:inv,gan:gan,falta:falta,pv:hasPV?Math.round((5+rnd()*90)*100)/100:null};});
+function n0(x){return Math.round(x).toLocaleString('es-AR');}
+function pc(x,d){return x==null?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(d==null?1:d).replace('.',',')+'%';}
+function cls(x){return x>0?'g':x<0?'r':'m';}
+function fT(f){return f==null?'<span class="m">sin PV</span>':f<=0?'<span class="a" style="font-weight:700">🎯 llegó</span>':'<span style="color:'+(f<=5?'var(--a)':f<=15?'var(--bl)':'var(--t3)')+'">'+f.toFixed(1).replace('.',',')+'%</span>';}
+var TOT=A.reduce(function(s,o){return s+o.inv;},0);
+document.getElementById('tot').innerHTML='<b>'+A.length+' activos</b> · USD '+n0(TOT)+' invertidos. Mismo ejemplo en las cuatro vistas.';
+// A bandeja
+(function(){var R=[
+ ['🎯 Llegaron al P. Venta','a',function(o){return o.falta!=null&&o.falta<=0;},function(o){return 'vender o subir el P. Venta';}],
+ ['A punto (falta ≤5%)','a',function(o){return o.falta!=null&&o.falta>0&&o.falta<=5;},function(o){return 'preparar la orden';}],
+ ['Pérdida fuerte (más de −20%)','r',function(o){return o.gan<=-20;},function(o){return 'revisar si sigue teniendo sentido';}],
+ ['Ganancia grande sin P. Venta','bl',function(o){return o.falta==null&&o.gan>=30;},function(o){return 'cargar un P. Venta para no olvidarlo';}]];
+ var usado={},h='';
+ R.forEach(function(r){var L=A.filter(function(o){return !usado[o.t]&&r[2](o);}).sort(function(a,b){return (a.falta||0)-(b.falta||0)||a.gan-b.gan;});if(!L.length)return;L.forEach(function(o){usado[o.t]=1;});
+  h+='<div class="sec"><h3><span class="'+r[1]+'">'+r[0]+'</span><span class="n">'+L.length+' · USD '+n0(L.reduce(function(s,o){return s+o.inv;},0))+'</span></h3>'+L.map(function(o){return '<div class="rowd"><b>'+o.t+'</b><span>inv. '+n0(o.inv)+'</span><span class="'+cls(o.gan)+'">'+pc(o.gan,0)+'</span><span>'+fT(o.falta)+'</span><span class="hm t2">'+(o.pv?'PV '+o.pv.toFixed(2).replace('.',','):'')+'</span><span class="why hm">→ '+r[3](o)+'</span></div>';}).join('')+'</div>';});
+ var resto=A.filter(function(o){return !usado[o.t];});
+ h+='<div class="quiet"><span>✓ <b style="color:var(--t)">'+resto.length+' activos sin novedades</b> · USD '+n0(resto.reduce(function(s,o){return s+o.inv;},0))+' · el más cercano al P. Venta: '+resto.filter(function(o){return o.falta!=null;}).sort(function(a,b){return a.falta-b.falta;})[0].t+'</span><span class="chip">Ver todos ▾</span></div>';
+ document.getElementById('bandeja').innerHTML=h;})();
+// B tabla densa
+var S2={k:'falta',d:1,f:'todos',col:{}};
+var FL=[['todos','Todos'],['cerca','Falta ≤5%'],['perd','En pérdida'],['sinpv','Sin PV']];
+function pasa(o,f){return f==='todos'||(f==='cerca'&&o.falta!=null&&o.falta<=5)||(f==='perd'&&o.gan<0)||(f==='sinpv'&&o.falta==null);}
+function d2(){var q=(document.getElementById('q').value||'').toUpperCase();
+ document.getElementById('f2').innerHTML=FL.map(function(f){return '<span class="chip'+(S2.f===f[0]?' on':'')+'" onclick="S2.f=\''+f[0]+'\';d2()">'+f[1]+' · '+A.filter(function(o){return pasa(o,f[0]);}).length+'</span>';}).join(' ');
+ var gs={};A.filter(function(o){return pasa(o,S2.f)&&(!q||o.t.indexOf(q)>=0);}).forEach(function(o){(gs[o.tipo]=gs[o.tipo]||[]).push(o);});var h='';
+ Object.keys(gs).forEach(function(k){var L=gs[k],inv=0,gv=0;L.forEach(function(o){inv+=o.inv;gv+=o.inv*o.gan/100;});
+  L.sort(function(a,b){var x=a[S2.k],y=b[S2.k];if(x==null)return 1;if(y==null)return -1;return (typeof x==='string'?x.localeCompare(y):x-y)*S2.d;});
+  h+='<tr class="grp" onclick="S2.col[\''+k+'\']=!S2.col[\''+k+'\'];d2()"><td class="l">'+(S2.col[k]?'▸ ':'▾ ')+k+' <span class="m" style="font-weight:400">('+L.length+')</span></td><td>'+n0(inv)+'</td><td class="'+cls(gv)+'">'+pc(gv/inv*100)+'</td><td></td><td class="hm"></td></tr>';
+  if(S2.col[k])return;
+  h+=L.map(function(o){var w=o.falta==null?0:o.falta<=0?100:Math.max(4,100-Math.min(o.falta,40)/40*100);return '<tr><td class="l"><b style="font-family:var(--sans)">'+o.t+'</b></td><td>'+n0(o.inv)+'</td><td class="'+cls(o.gan)+'">'+pc(o.gan,0)+'</td><td>'+fT(o.falta)+(o.falta!=null?'<span class="fb"><span style="width:'+w+'%;background:'+(o.falta<=5?'var(--a)':o.falta<=15?'var(--bl)':'var(--t3)')+'"></span></span>':'')+'</td><td class="hm t2">'+(o.pv?o.pv.toFixed(2).replace('.',','):'—')+'</td></tr>';}).join('');});
+ document.getElementById('t2').innerHTML=h;}
+function colAll(){var any=Object.keys(S2.col).some(function(k){return S2.col[k];});['Bonos','ONs','Acciones AR','Cedears'].forEach(function(k){S2.col[k]=!any;});d2();}
+document.querySelectorAll('#p2 th').forEach(function(th){th.onclick=function(){var k=th.dataset.k;S2.d=S2.k===k?-S2.d:1;S2.k=k;d2();};});d2();
+// C grilla
+(function(){var tip=document.getElementById('tip');var bg=function(f){return f==null?'#111927':f<=0?'#8a6d0a':f<=5?'#5c4a10':f<=15?'#1d3566':'#1a2438';};
+ var L=A.slice().sort(function(a,b){return (a.falta==null?999:a.falta)-(b.falta==null?999:b.falta);});
+ document.getElementById('gr').innerHTML=L.map(function(o,i){return '<div class="ch" data-i="'+A.indexOf(o)+'" style="background:'+bg(o.falta)+';'+(o.falta==null?'border:1px dashed #264070':'')+'"><b>'+o.t+'</b><span class="mono '+(o.gan<0?'r':'')+'" style="'+(o.gan>=0?'color:#cfe9d8':'')+'">'+pc(o.gan,0)+'</span> <span class="mono" style="color:#9db4d6">'+(o.falta==null?'':o.falta<=0?'🎯':'·'+Math.round(o.falta)+'%')+'</span></div>';}).join('');
+ document.querySelectorAll('.ch').forEach(function(c){var o=A[+c.dataset.i];c.onmousemove=function(e){tip.innerHTML='<b style="font-family:var(--sans)">'+o.t+'</b> <span class="m">'+o.tipo+'</span><br>invertido USD '+n0(o.inv)+'<br>ganancia '+pc(o.gan,0)+'<br>falta '+(o.falta==null?'— (sin P. Venta)':o.falta<=0?'nada: llegó':o.falta.toFixed(1).replace('.',',')+'%')+(o.pv?'<br>P. Venta '+o.pv.toFixed(2).replace('.',','):'');tip.style.display='block';tip.style.left=Math.min(e.clientX+14,innerWidth-200)+'px';tip.style.top=(e.clientY+14)+'px';};c.onmouseleave=function(){tip.style.display='none';};});})();
+// D distribución
+(function(){var BF=[['🎯 llegó',function(o){return o.falta!=null&&o.falta<=0;},'var(--a)'],['≤5%',function(o){return o.falta>0&&o.falta<=5;},'var(--a)'],['5–15%',function(o){return o.falta>5&&o.falta<=15;},'var(--bl)'],['15–30%',function(o){return o.falta>15&&o.falta<=30;},'var(--bl)'],['más de 30%',function(o){return o.falta>30;},'var(--t3)'],['sin P. Venta',function(o){return o.falta==null;},'var(--t3)']];
+ var BG=[['más de +50%',function(o){return o.gan>50;},'var(--g)'],['+20 a +50%',function(o){return o.gan>20&&o.gan<=50;},'var(--g)'],['0 a +20%',function(o){return o.gan>=0&&o.gan<=20;},'var(--g)'],['0 a −20%',function(o){return o.gan<0&&o.gan>-20;},'var(--r)'],['peor que −20%',function(o){return o.gan<=-20;},'var(--r)']];
+ var mk=function(id,B,tit){var mx=Math.max.apply(null,B.map(function(b){return A.filter(b[1]).length;}));document.getElementById(id).innerHTML=B.map(function(b,i){var n=A.filter(b[1]).length;return '<div class="bk" data-g="'+id+'" data-i="'+i+'"><span>'+b[0]+'</span><div class="tr"><span style="width:'+(n/mx*100)+'%;background:'+b[2]+'"></span></div><span class="c">'+n+'</span></div>';}).join('');
+  document.querySelectorAll('#'+id+' .bk').forEach(function(el){el.onclick=function(){document.querySelectorAll('.bk').forEach(function(x){x.classList.toggle('on',x===el);});var b=B[+el.dataset.i],L=A.filter(b[1]).sort(function(a,c){return (a.falta==null?999:a.falta)-(c.falta==null?999:c.falta);});
+   document.getElementById('selT').textContent=tit+': '+b[0]+' · '+L.length+' activos · USD '+n0(L.reduce(function(s,o){return s+o.inv;},0));
+   document.getElementById('selL').innerHTML=L.map(function(o){return '<div class="rowd"><b>'+o.t+'</b><span>inv. '+n0(o.inv)+'</span><span class="'+cls(o.gan)+'">'+pc(o.gan,0)+'</span><span>'+fT(o.falta)+'</span><span class="hm t2">'+(o.pv?'PV '+o.pv.toFixed(2).replace('.',','):'')+'</span><span class="why hm">'+o.tipo+'</span></div>';}).join('');};});};
+ mk('dF',BF,'Distancia al P. Venta');mk('dG',BG,'Ganancia');document.querySelector('#dF .bk').click();})();
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.id===t.dataset.p);});};});
+</script></body></html>

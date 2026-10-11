@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Filtros con país y exclusiones — propuestas</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#9db4d6;--t3:#5a789e;--g:#22c55e;--r:#f05252;--a:#eab308;--bl:#448aff;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:18px 14px}
+.wrap{max-width:1080px;margin:0 auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:9px;padding:6px 12px;font-size:.8rem;cursor:pointer}
+.tab.on{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}
+.pane{display:none}.pane.on{display:block}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin:0 0 12px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.lbl{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+.g{color:var(--g)}.r{color:var(--r)}.a{color:var(--a)}.m{color:var(--t3)}.t2{color:var(--t2)}
+.mono{font-family:var(--mono)}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:999px;padding:4px 11px;font-size:.74rem;cursor:pointer;user-select:none;margin:0 4px 6px 0}
+.chip .n{font-family:var(--mono);font-size:.66rem;color:var(--t3)}
+.chip.inc{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}.chip.inc .n{color:#334}
+.chip.exc{background:rgba(240,82,82,.12);color:#ff9b9b;border-color:rgba(240,82,82,.5);text-decoration:line-through}.chip.exc .n{color:#ff9b9b}
+.chip.off{opacity:.35}
+.facet{margin-bottom:8px}.facet .lbl{margin-bottom:5px}
+.sum{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 6px;font-size:.78rem;color:var(--t2)}
+.sum b{color:var(--t)}
+.clr{font-size:.72rem;color:var(--bl);cursor:pointer}
+.rowd{display:grid;grid-template-columns:24px 70px 86px 58px 78px 76px 1fr;gap:8px;align-items:center;font-size:.78rem;padding:5px 6px;border-bottom:1px solid #16233a;font-family:var(--mono)}
+.rowd b{font-family:var(--sans)}
+.rowd .fl{font-size:.9rem}
+.rowd .tp{font-family:var(--sans);font-size:.7rem;color:var(--t3)}
+.list{max-height:380px;overflow:auto}
+.hint{font-size:.7rem;color:var(--t3);margin:-2px 0 10px}
+/* barra compacta */
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;background:var(--s2);border-radius:10px;margin-bottom:8px}
+.sw{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;color:var(--t2);cursor:pointer;padding:3px 8px;border-radius:8px;border:1px solid var(--b2);background:var(--bg)}
+.sw i{width:26px;height:14px;border-radius:7px;background:var(--b2);position:relative;display:inline-block;transition:.15s}
+.sw i::after{content:'';position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--t3);transition:.15s}
+.sw.on{color:var(--t);border-color:var(--r)}.sw.on i{background:rgba(240,82,82,.6)}.sw.on i::after{left:14px;background:#fff}
+select{background:var(--bg);border:1px solid var(--b2);color:var(--t);border-radius:8px;padding:4px 8px;font-size:.76rem}
+.tag{display:inline-block;font-size:.62rem;font-family:var(--sans);padding:1px 6px;border-radius:5px;background:rgba(68,138,255,.15);color:#8db4ff;margin-left:4px}
+.pin{cursor:pointer;opacity:.4;font-size:.85rem}.pin.on{opacity:1}
+/* por país */
+.pais{border:1px solid var(--b);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.pais .ph{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s2);cursor:pointer;font-size:.82rem}
+.pais .ph .eye{margin-left:auto;font-size:.75rem;padding:2px 9px;border-radius:999px;border:1px solid var(--b2)}
+.pais.hid .ph{opacity:.5}.pais.hid .body{display:none}
+.pais .body{padding:2px 6px}
+.minibar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;width:120px}
+@media(max-width:760px){.rowd{grid-template-columns:22px 60px 60px 1fr}.hm{display:none}}
+</style></head><body><div class="wrap">
+<div class="tabs">
+  <span class="tab on" data-p="p1">1 · Incluir / excluir</span>
+  <span class="tab" data-p="p2">2 · Barra compacta con interruptores</span>
+  <span class="tab" data-p="p3">3 · Marcar "largo plazo"</span>
+  <span class="tab" data-p="p4">4 · Agrupado por país</span>
+</div>
+
+<div class="pane on" id="p1"><p class="note"><b>1 · Incluir / excluir</b>: los filtros combinables de antes, con el grupo <b>País</b> y cada filtro en tres estados: <b>un toque = solo esos</b> (blanco), <b>dos toques = excluir</b> (rojo tachado), tres = neutro. Así armás "acciones, sin Argentina, cerca del P. Venta" en tres toques. El país sale del dato que ya tenés en Ratios. <span class="m">70 activos de ejemplo.</span></p>
+  <div class="card"><div class="hint">Tocá un filtro una vez para quedarte solo con eso, dos veces para excluirlo.</div><div id="fc"></div><div class="sum" id="s1"></div><div class="list" id="l1"></div></div></div>
+
+<div class="pane" id="p2"><p class="note"><b>2 · Barra compacta con interruptores</b>: una sola línea arriba de la tabla. A la izquierda, desplegables (distancia, ganancia, tipo); a la derecha, <b>interruptores para ocultar</b> lo que no querés ver al operar: "Ocultar acciones argentinas", "Ocultar sin P. Venta", "Ocultar posiciones chicas". Quedan recordados. <span class="m">70 activos de ejemplo.</span></p>
+  <div class="card"><div class="bar" id="b2"></div><div class="sum" id="s2"></div><div class="list" id="l2"></div></div></div>
+
+<div class="pane" id="p3"><p class="note"><b>3 · Marcar "largo plazo"</b>: en vez de excluir por país, marcás cada activo que vas a mantener aunque esté en pérdida (📌). Los marcados <b>no aparecen en las vistas para operar</b> (vender, perdedores, etc.) pero siguen en la tabla completa. Sirve para acciones argentinas y también para cualquier otro que no quieras tocar. Hay un botón para marcar de una vez todas las acciones de un país. <span class="m">70 activos de ejemplo.</span></p>
+  <div class="card"><div class="bar" id="b3"></div><div class="sum" id="s3"></div><div class="list" id="l3"></div></div></div>
+
+<div class="pane" id="p4"><p class="note"><b>4 · Agrupado por país</b>: la cartera separada por país, cada grupo con cantidad, monto y cómo viene (ganancia y cuántos están cerca del P. Venta). Con el <b>ojo</b> ocultás un país entero de la lista y de los totales de arriba. <span class="m">70 activos de ejemplo.</span></p>
+  <div class="card"><div class="sum" id="s4"></div><div id="l4"></div></div></div>
+</div>
+<script>
+var T=['AO29','GD35','GD30','AL30','GD38','AE38','TX31','BC37D','BB37D','TZXM7','TZX28','AO27','BPY26','GD41','MRCAO','SNEAO','YMCJO','TLC1O','MR43O','CLSIO','DNC3O','GGAL','YPFD','PAMP','VIST','BMA','TXAR','CEPU','ALUA','TGSU2','LOMA','BBAR','SUPV','CRES','EDN','SPY','QQQ','AAPL','MSFT','NVDA','GOOGL','AMZN','META','MELI','TSLA','KO','PEP','JPM','V','MA','UBER','PLTR','NU','SPOT','GLOB','DEO','STLA','PAGS','BIOX','TEAM','XP','LAC','SID','EMBJ','IBIT','XLE','BRKB','DIA','EWZ','AMD'];
+var TIPO=function(i){return i<14?'Bonos':i<21?'ONs':i<35?'Acciones AR':'Cedears';};
+var PAIS_ESP={MELI:'Argentina',GLOB:'Argentina',BIOX:'Argentina',NU:'Brasil',PAGS:'Brasil',XP:'Brasil',SID:'Brasil',EMBJ:'Brasil',EWZ:'Brasil',SPOT:'Europa',DEO:'Europa',STLA:'Europa',IBIT:'Cripto',LAC:'Canadá'};
+var FLAG={'Argentina':'🇦🇷','Estados Unidos':'🇺🇸','Brasil':'🇧🇷','Europa':'🇪🇺','Cripto':'₿','Canadá':'🇨🇦'};
+var seed=11;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+var A=T.map(function(t,i){var tp=TIPO(i),inv=Math.round(300+Math.pow(rnd(),2)*12000),gan=Math.round((rnd()*1.2-0.3)*100*(tp==='Bonos'||tp==='ONs'?0.4:1));var hasPV=rnd()>0.18,falta=hasPV?Math.round((rnd()*55-2.5)*10)/10:null;
+ var pais=i<35?'Argentina':(PAIS_ESP[t]||'Estados Unidos');if(tp==='Acciones AR')gan=Math.round(gan*0.6-25);
+ return {t:t,tipo:tp,pais:pais,inv:inv,gan:gan,falta:falta,pv:hasPV?Math.round((5+rnd()*90)*100)/100:null};});
+function n0(x){return Math.round(x).toLocaleString('es-AR');}
+function pc(x){return (x>0?'+':x<0?'−':'')+Math.abs(x)+'%';}
+function cls(x){return x>0?'g':x<0?'r':'m';}
+function fT(f){return f==null?'<span class="m">sin PV</span>':f<=0?'<span class="a" style="font-weight:700">🎯 llegó</span>':'<span style="color:'+(f<=5?'var(--a)':f<=15?'var(--bl)':'var(--t3)')+'">'+f.toFixed(1).replace('.',',')+'%</span>';}
+var LP={};['GGAL','YPFD','PAMP','BMA','TXAR','ALUA','LOMA','CRES','EDN','SUPV'].forEach(function(t){LP[t]=1;});
+function fila(o,pin){return '<div class="rowd"><span class="fl">'+(FLAG[o.pais]||'')+'</span><b>'+o.t+(pin&&LP[o.t]?'<span class="tag">largo plazo</span>':'')+'</b><span>inv. '+n0(o.inv)+'</span><span class="'+cls(o.gan)+'">'+pc(o.gan)+'</span><span>'+fT(o.falta)+'</span><span class="hm t2">'+(o.pv?'PV '+o.pv.toFixed(2).replace('.',','):'')+'</span><span class="tp hm">'+(pin?'<span class="pin'+(LP[o.t]?' on':'')+'" onclick="LP[\''+o.t+'\']=!LP[\''+o.t+'\'];d3()" title="Marcar como largo plazo">📌</span> ':'')+o.tipo+' · '+o.pais+'</span></div>';}
+function lista(L,idS,idL,extra,pin){L=L.slice().sort(function(a,b){return (a.falta==null?999:a.falta)-(b.falta==null?999:b.falta);});
+ document.getElementById(idS).innerHTML='<span><b>'+L.length+'</b> de '+A.length+' activos · USD '+n0(L.reduce(function(s,o){return s+o.inv;},0))+'</span>'+(extra||'');
+ document.getElementById(idL).innerHTML=L.map(function(o){return fila(o,pin);}).join('')||'<div class="m" style="padding:10px;font-size:.78rem">Ningún activo con esa combinación.</div>';}
+// rangos
+var FD=[['🎯 llegó',function(o){return o.falta!=null&&o.falta<=0;}],['≤5%',function(o){return o.falta>0&&o.falta<=5;}],['5–15%',function(o){return o.falta>5&&o.falta<=15;}],['15–30%',function(o){return o.falta>15&&o.falta<=30;}],['+30%',function(o){return o.falta>30;}],['sin PV',function(o){return o.falta==null;}]];
+var GD=[['más de +50',function(o){return o.gan>50;}],['+20 a +50',function(o){return o.gan>20&&o.gan<=50;}],['0 a +20',function(o){return o.gan>=0&&o.gan<=20;}],['0 a −20',function(o){return o.gan<0&&o.gan>-20;}],['peor que −20',function(o){return o.gan<=-20;}]];
+var TD=['Bonos','ONs','Acciones AR','Cedears'].map(function(k){return [k,function(o){return o.tipo===k;}];});
+var PD=['Argentina','Estados Unidos','Brasil','Europa','Canadá','Cripto'].map(function(k){return [FLAG[k]+' '+k,function(o){return o.pais===k;}];});
+// 1 incluir/excluir (0 neutro, 1 incluir, 2 excluir)
+var GR=[['p','País',PD],['t','Tipo',TD],['d','Distancia al P. Venta',FD],['g','Ganancia',GD]];
+var F1={p:{0:2},t:{},d:{},g:{}};
+function pasa1(o,excepto){return GR.every(function(gr){if(gr[0]===excepto)return true;var st=F1[gr[0]],inc=[],exc=[];Object.keys(st).forEach(function(i){if(st[i]===1)inc.push(+i);if(st[i]===2)exc.push(+i);});
+ if(exc.some(function(i){return gr[2][i][1](o);}))return false;if(inc.length&&!inc.some(function(i){return gr[2][i][1](o);}))return false;return true;});}
+function d1(){document.getElementById('fc').innerHTML=GR.map(function(gr){return '<div class="facet"><div class="lbl">'+gr[1]+'</div>'+gr[2].map(function(f,i){var st=F1[gr[0]][i]||0,n=A.filter(function(o){return pasa1(o,gr[0])&&f[1](o);}).length;
+  return '<span class="chip'+(st===1?' inc':st===2?' exc':'')+(n||st?'':' off')+'" onclick="F1.'+gr[0]+'['+i+']=((F1.'+gr[0]+'['+i+']||0)+1)%3;d1()">'+(st===1?'✓ ':st===2?'✕ ':'')+f[0]+' <span class="n">'+n+'</span></span>';}).join('')+'</div>';}).join('');
+ var desc=[];GR.forEach(function(gr){Object.keys(F1[gr[0]]).forEach(function(i){var st=F1[gr[0]][i];if(st)desc.push((st===1?'solo ':'sin ')+gr[2][i][0].replace(/^[^ ]+ (?=[A-Z])/,''));});});
+ lista(A.filter(function(o){return pasa1(o);}),'s1','l1',desc.length?'<span class="t2" style="font-size:.72rem">'+desc.join(' · ')+' <span class="clr" onclick="F1={p:{},t:{},d:{},g:{}};d1()">limpiar ✕</span></span>':'');}
+d1();
+// 2 barra compacta
+var S2={d:'',g:'',t:'',oar:true,osin:false,ochi:false};
+function d2(){var opt=function(id,L,lab){return '<select onchange="S2.'+id+'=this.value;d2()"><option value="">'+lab+': todos</option>'+L.map(function(f,i){return '<option value="'+i+'"'+(S2[id]===String(i)?' selected':'')+'>'+f[0]+'</option>';}).join('')+'</select>';};
+ var sw=function(id,txt,n){return '<span class="sw'+(S2[id]?' on':'')+'" onclick="S2.'+id+'=!S2.'+id+';d2()"><i></i>'+txt+' <span class="m mono" style="font-size:.66rem">'+n+'</span></span>';};
+ var nAR=A.filter(function(o){return o.tipo==='Acciones AR';}).length,nS=A.filter(function(o){return o.falta==null;}).length,nC=A.filter(function(o){return o.inv<1000;}).length;
+ document.getElementById('b2').innerHTML=opt('d',FD,'Distancia')+opt('g',GD,'Ganancia')+opt('t',TD,'Tipo')+'<span style="flex:1"></span><span class="lbl">Ocultar</span>'+sw('oar','🇦🇷 acciones argentinas',nAR)+sw('osin','sin P. Venta',nS)+sw('ochi','chicas (&lt;USD 1.000)',nC);
+ var L=A.filter(function(o){if(S2.d!==''&&!FD[+S2.d][1](o))return false;if(S2.g!==''&&!GD[+S2.g][1](o))return false;if(S2.t!==''&&!TD[+S2.t][1](o))return false;if(S2.oar&&o.tipo==='Acciones AR')return false;if(S2.osin&&o.falta==null)return false;if(S2.ochi&&o.inv<1000)return false;return true;});
+ var ocultos=A.length-A.filter(function(o){return !(S2.oar&&o.tipo==='Acciones AR')&&!(S2.osin&&o.falta==null)&&!(S2.ochi&&o.inv<1000);}).length;
+ lista(L,'s2','l2',ocultos?'<span class="m" style="font-size:.72rem">'+ocultos+' ocultos por los interruptores</span>':'');}
+d2();
+// 3 largo plazo
+var S3={modo:'operar'};
+function d3(){var nLP=Object.keys(LP).filter(function(k){return LP[k];}).length;
+ document.getElementById('b3').innerHTML='<span class="chip'+(S3.modo==='operar'?' inc':'')+'" onclick="S3.modo=\'operar\';d3()">Para operar (sin 📌)</span><span class="chip'+(S3.modo==='lp'?' inc':'')+'" onclick="S3.modo=\'lp\';d3()">📌 Solo largo plazo <span class="n">'+nLP+'</span></span><span class="chip'+(S3.modo==='todos'?' inc':'')+'" onclick="S3.modo=\'todos\';d3()">Todos</span><span style="flex:1"></span>'+
+  '<span class="chip" onclick="A.forEach(function(o){if(o.tipo===\'Acciones AR\')LP[o.t]=1;});d3()">📌 Marcar todas las acciones 🇦🇷</span><span class="chip" onclick="LP={};d3()">Desmarcar todo</span>';
+ var L=A.filter(function(o){return S3.modo==='todos'||(S3.modo==='lp'?LP[o.t]:!LP[o.t]);});
+ var lpInv=A.filter(function(o){return LP[o.t];}),g=lpInv.reduce(function(s,o){return s+o.inv*o.gan/100;},0);
+ lista(L,'s3','l3','<span class="m" style="font-size:.72rem">📌 largo plazo: '+nLP+' activos · USD '+n0(lpInv.reduce(function(s,o){return s+o.inv;},0))+' · resultado <span class="'+cls(g)+'">'+(g>=0?'+':'−')+'USD '+n0(Math.abs(g))+'</span> (tocá 📌 en cada fila)</span>',true);}
+d3();
+// 4 por país
+var OJO={};
+function d4(){var ps=['Argentina','Estados Unidos','Brasil','Europa','Canadá','Cripto'];var vis=A.filter(function(o){return !OJO[o.pais];});
+ document.getElementById('s4').innerHTML='<span>Visible: <b>'+vis.length+'</b> activos · USD '+n0(vis.reduce(function(s,o){return s+o.inv;},0))+(Object.keys(OJO).some(function(k){return OJO[k];})?' · <span class="m">ocultos: '+Object.keys(OJO).filter(function(k){return OJO[k];}).join(', ')+'</span>':'')+'</span>';
+ document.getElementById('l4').innerHTML=ps.map(function(p){var L=A.filter(function(o){return o.pais===p;}).sort(function(a,b){return (a.falta==null?999:a.falta)-(b.falta==null?999:b.falta);});if(!L.length)return '';
+  var inv=L.reduce(function(s,o){return s+o.inv;},0),g=L.reduce(function(s,o){return s+o.inv*o.gan/100;},0),cerca=L.filter(function(o){return o.falta!=null&&o.falta<=5;}).length;
+  var tps={};L.forEach(function(o){tps[o.tipo]=(tps[o.tipo]||0)+o.inv;});var colT={'Bonos':'#448aff','ONs':'#7aa7ff','Acciones AR':'#a78bfa','Cedears':'#22c55e'};
+  return '<div class="pais'+(OJO[p]?' hid':'')+'"><div class="ph" onclick="this.parentNode.querySelector(\'.body\').style.display=this.parentNode.querySelector(\'.body\').style.display===\'none\'?\'\':\'none\'"><span style="font-size:1.1rem">'+FLAG[p]+'</span><b>'+p+'</b><span class="mono t2" style="font-size:.74rem">'+L.length+' · USD '+n0(inv)+' · <span class="'+cls(g)+'">'+pc(Math.round(g/inv*100))+'</span>'+(cerca?' · <span class="a">'+cerca+' cerca del PV</span>':'')+'</span><span class="minibar hm">'+Object.keys(tps).map(function(k){return '<span style="width:'+(tps[k]/inv*100)+'%;background:'+colT[k]+'" title="'+k+'"></span>';}).join('')+'</span>'+
+   '<span class="eye" onclick="event.stopPropagation();OJO[\''+p+'\']=!OJO[\''+p+'\'];d4()">'+(OJO[p]?'🙈 oculto':'👁 visible')+'</span></div><div class="body" style="display:none">'+L.map(function(o){return fila(o);}).join('')+'</div></div>';}).join('');}
+OJO['Argentina']=false;d4();
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.id===t.dataset.p);});};});
+</script></body></html>

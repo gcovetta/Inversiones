@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Filtros rápidos — propuestas</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#9db4d6;--t3:#5a789e;--g:#22c55e;--r:#f05252;--a:#eab308;--bl:#448aff;--mono:ui-monospace,"JetBrains Mono",monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#05080f;color:var(--t);font-family:var(--sans);padding:18px 14px}
+.wrap{max-width:1080px;margin:0 auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:9px;padding:6px 12px;font-size:.8rem;cursor:pointer}
+.tab.on{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}
+.pane{display:none}.pane.on{display:block}
+.note{font-size:.8rem;color:var(--t2);line-height:1.5;margin:0 0 12px}.note b{color:var(--t)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.lbl{font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+.g{color:var(--g)}.r{color:var(--r)}.a{color:var(--a)}.m{color:var(--t3)}.t2{color:var(--t2)}
+.mono{font-family:var(--mono)}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--b2);color:var(--t2);border-radius:999px;padding:4px 11px;font-size:.74rem;cursor:pointer;user-select:none;margin:0 4px 6px 0}
+.chip .n{font-family:var(--mono);font-size:.66rem;color:var(--t3)}
+.chip.on{background:var(--t);color:var(--bg);border-color:var(--t);font-weight:700}.chip.on .n{color:#334}
+.chip.off{opacity:.35;cursor:default}
+.facet{margin-bottom:8px}.facet .lbl{margin-bottom:5px}
+.sum{display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px;font-size:.78rem;color:var(--t2)}
+.sum b{color:var(--t)}
+.clr{font-size:.72rem;color:var(--bl);cursor:pointer}
+.rowd{display:grid;grid-template-columns:72px 90px 60px 80px 80px 1fr;gap:8px;align-items:center;font-size:.78rem;padding:5px 6px;border-bottom:1px solid #16233a;font-family:var(--mono)}
+.rowd b{font-family:var(--sans)}
+.list{max-height:360px;overflow:auto}
+/* matriz */
+.mx{display:grid;grid-template-columns:120px repeat(6,1fr);gap:3px;font-size:.74rem}
+.mx .hd{font-family:var(--mono);font-size:.6rem;color:var(--t3);text-transform:uppercase;text-align:center;padding:4px 2px}
+.mx .rh{font-size:.72rem;color:var(--t2);display:flex;align-items:center}
+.mx .c{border-radius:6px;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:1px solid transparent;font-family:var(--mono)}
+.mx .c b{font-size:.95rem}.mx .c span{font-size:.6rem;opacity:.75}
+.mx .c.on{border-color:var(--t)}
+/* rangos */
+.rg{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;margin-bottom:12px;font-size:.78rem}
+.hist{display:flex;align-items:flex-end;gap:2px;height:46px}
+.hist span{flex:1;background:var(--b2);border-radius:2px 2px 0 0}.hist span.in{background:var(--bl)}
+input[type=range]{width:100%;accent-color:#448aff}
+.dual{position:relative;height:22px}.dual input{position:absolute;left:0;right:0;top:0;pointer-events:none;background:none;-webkit-appearance:none;appearance:none}
+.dual input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--t);border:2px solid var(--bl);cursor:pointer}
+.dual .trk{position:absolute;left:0;right:0;top:9px;height:4px;background:var(--b2);border-radius:2px}
+/* vistas guardadas */
+.vg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.vc{background:var(--s2);border:1px solid var(--b2);border-radius:11px;padding:10px 12px;cursor:pointer}
+.vc.on{border-color:var(--t);box-shadow:0 0 0 1px var(--t) inset}
+.vc .t{font-size:.8rem;font-weight:700}.vc .n{font-family:var(--mono);font-size:1.3rem;font-weight:800;margin-top:4px}.vc .d{font-size:.66rem;color:var(--t3);margin-top:2px}
+@media(max-width:760px){.rowd{grid-template-columns:62px 70px 54px 1fr}.hm{display:none}.mx{grid-template-columns:80px repeat(6,1fr)}.vg{grid-template-columns:1fr 1fr}.rg{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<div class="tabs">
+  <span class="tab on" data-p="p1">1 · Filtros combinables</span>
+  <span class="tab" data-p="p2">2 · Matriz ganancia × distancia</span>
+  <span class="tab" data-p="p3">3 · Rangos deslizables</span>
+  <span class="tab" data-p="p4">4 · Vistas guardadas</span>
+</div>
+
+<div class="pane on" id="p1"><p class="note"><b>1 · Filtros combinables</b>: como los filtros de una tienda online. Cuatro grupos (distancia al P. Venta, ganancia, tipo y tamaño de la posición); tocás uno o varios y la lista se achica. Los <b>números de cada filtro se recalculan</b> según lo ya elegido, así sabés antes de tocar cuántos quedan (y los que darían 0 se apagan). <span class="m">70 activos de ejemplo.</span></p>
+  <div class="card"><div id="fc"></div><div class="sum" id="s1"></div><div class="list" id="l1"></div></div></div>
+
+<div class="pane" id="p2"><p class="note"><b>2 · Matriz ganancia × distancia</b>: cruza los dos datos que más mirás. Cada casillero dice cuántos activos hay con esa ganancia y esa distancia al P. Venta (más fuerte el color, más activos). Tocás un casillero, una fila o una columna y se listan. Arriba a la izquierda queda "ganando mucho y a punto de vender". <span class="m">70 activos de ejemplo.</span></p>
+  <div class="card"><div class="mx" id="mx"></div><div class="sum" id="s2"></div><div class="list" id="l2"></div></div></div>
+
+<div class="pane" id="p3"><p class="note"><b>3 · Rangos deslizables</b>: en vez de rangos fijos, movés dos perillas para elegir exactamente el rango de distancia, ganancia y monto. Arriba de cada barra, un mini histograma muestra dónde están los activos (en azul los que entran). <span class="m">70 activos de ejemplo.</span></p>
+  <div class="card"><div id="rgs"></div><div class="sum" id="s3"></div><div class="list" id="l3"></div></div></div>
+
+<div class="pane" id="p4"><p class="note"><b>4 · Vistas guardadas</b>: combinaciones de filtros con nombre, como botones grandes con la cantidad. Vienen algunas armadas (las que usás para operar) y podés guardar las tuyas desde los filtros combinables. Un toque y ves la lista. <span class="m">70 activos de ejemplo.</span></p>
+  <div class="vg" id="vg"></div><div class="card"><div class="sum" id="s4"></div><div class="list" id="l4"></div></div></div>
+</div>
+<script>
+var T=['AO29','GD35','GD30','AL30','GD38','AE38','TX31','BC37D','BB37D','TZXM7','TZX28','AO27','BPY26','GD41','MRCAO','SNEAO','YMCJO','TLC1O','MR43O','CLSIO','DNC3O','GGAL','YPFD','PAMP','VIST','BMA','TXAR','CEPU','ALUA','TGSU2','LOMA','BBAR','SUPV','CRES','EDN','SPY','QQQ','AAPL','MSFT','NVDA','GOOGL','AMZN','META','MELI','TSLA','KO','PEP','JPM','V','MA','UBER','PLTR','NU','SPOT','GLOB','DEO','STLA','PAGS','BIOX','TEAM','XP','LAC','SID','EMBJ','IBIT','XLE','BRKB','DIA','EWZ','AMD'];
+var TIPO=function(i){return i<14?'Bonos':i<21?'ONs':i<35?'Acciones AR':'Cedears';};
+var seed=11;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+var A=T.map(function(t,i){var tp=TIPO(i),inv=Math.round(300+Math.pow(rnd(),2)*12000),gan=Math.round((rnd()*1.2-0.3)*100*(tp==='Bonos'||tp==='ONs'?0.4:1));var hasPV=rnd()>0.18,falta=hasPV?Math.round((rnd()*55-2.5)*10)/10:null;return {t:t,tipo:tp,inv:inv,gan:gan,falta:falta,pv:hasPV?Math.round((5+rnd()*90)*100)/100:null};});
+function n0(x){return Math.round(x).toLocaleString('es-AR');}
+function pc(x){return (x>0?'+':x<0?'−':'')+Math.abs(x)+'%';}
+function cls(x){return x>0?'g':x<0?'r':'m';}
+function fT(f){return f==null?'<span class="m">sin PV</span>':f<=0?'<span class="a" style="font-weight:700">🎯 llegó</span>':'<span style="color:'+(f<=5?'var(--a)':f<=15?'var(--bl)':'var(--t3)')+'">'+f.toFixed(1).replace('.',',')+'%</span>';}
+function lista(L,idS,idL,tit){L=L.slice().sort(function(a,b){return (a.falta==null?999:a.falta)-(b.falta==null?999:b.falta);});var inv=L.reduce(function(s,o){return s+o.inv;},0);
+ document.getElementById(idS).innerHTML='<span>'+(tit?tit+' · ':'')+'<b>'+L.length+'</b> de '+A.length+' activos · USD '+n0(inv)+'</span>';
+ document.getElementById(idL).innerHTML=L.map(function(o){return '<div class="rowd"><b>'+o.t+'</b><span>inv. '+n0(o.inv)+'</span><span class="'+cls(o.gan)+'">'+pc(o.gan)+'</span><span>'+fT(o.falta)+'</span><span class="hm t2">'+(o.pv?'PV '+o.pv.toFixed(2).replace('.',','):'')+'</span><span class="hm m" style="font-family:var(--sans);font-size:.7rem">'+o.tipo+'</span></div>';}).join('')||'<div class="m" style="padding:10px;font-size:.78rem">Ningún activo con esa combinación.</div>';}
+// definiciones de rangos
+var FD=[['🎯 llegó',function(o){return o.falta!=null&&o.falta<=0;}],['≤5%',function(o){return o.falta>0&&o.falta<=5;}],['5–15%',function(o){return o.falta>5&&o.falta<=15;}],['15–30%',function(o){return o.falta>15&&o.falta<=30;}],['+30%',function(o){return o.falta>30;}],['sin PV',function(o){return o.falta==null;}]];
+var GD=[['más de +50',function(o){return o.gan>50;}],['+20 a +50',function(o){return o.gan>20&&o.gan<=50;}],['0 a +20',function(o){return o.gan>=0&&o.gan<=20;}],['0 a −20',function(o){return o.gan<0&&o.gan>-20;}],['peor que −20',function(o){return o.gan<=-20;}]];
+var TD=['Bonos','ONs','Acciones AR','Cedears'].map(function(k){return [k,function(o){return o.tipo===k;}];});
+var MD=[['chica <1.000',function(o){return o.inv<1000;}],['1.000–5.000',function(o){return o.inv>=1000&&o.inv<5000;}],['grande 5.000+',function(o){return o.inv>=5000;}]];
+// 1 filtros combinables
+var F1={d:{},g:{},t:{},m:{}};var GR=[['d','Distancia al P. Venta',FD],['g','Ganancia',GD],['t','Tipo',TD],['m','Tamaño de la posición',MD]];
+function pasa1(o,excepto){return GR.every(function(gr){if(gr[0]===excepto)return true;var sel=Object.keys(F1[gr[0]]).filter(function(k){return F1[gr[0]][k];});if(!sel.length)return true;return sel.some(function(i){return gr[2][+i][1](o);});});}
+function d1(){document.getElementById('fc').innerHTML=GR.map(function(gr){return '<div class="facet"><div class="lbl">'+gr[1]+'</div>'+gr[2].map(function(f,i){var n=A.filter(function(o){return pasa1(o,gr[0])&&f[1](o);}).length,on=!!F1[gr[0]][i];return '<span class="chip'+(on?' on':'')+(n||on?'':' off')+'" onclick="'+(n||on?'F1.'+gr[0]+'['+i+']=!F1.'+gr[0]+'['+i+'];d1()':'')+'">'+f[0]+' <span class="n">'+n+'</span></span>';}).join('')+'</div>';}).join('');
+ lista(A.filter(function(o){return pasa1(o);}),'s1','l1');var any=GR.some(function(g){return Object.keys(F1[g[0]]).some(function(k){return F1[g[0]][k];});});
+ if(any)document.getElementById('s1').innerHTML+='<span class="clr" onclick="F1={d:{},g:{},t:{},m:{}};d1()">limpiar filtros ✕</span>';}
+d1();
+// 2 matriz
+var M2={r:null,c:null};
+function d2(){var mx=0,cnt=GD.map(function(g){return FD.map(function(f){var n=A.filter(function(o){return g[1](o)&&f[1](o);}).length;mx=Math.max(mx,n);return n;});});
+ var h='<div class="hd"></div>'+FD.map(function(f,j){return '<div class="hd" style="cursor:pointer" onclick="M2={r:null,c:'+j+'};d2()">'+f[0]+'</div>';}).join('');
+ GD.forEach(function(g,i){h+='<div class="rh" style="cursor:pointer" onclick="M2={r:'+i+',c:null};d2()">'+g[0]+'%</div>';
+  FD.forEach(function(f,j){var n=cnt[i][j],a=n?0.15+n/mx*0.7:0,warm=(j<=1&&i<=1),col=warm?'234,179,8':(i>=3?'240,82,82':'68,138,255');var on=(M2.r===i&&M2.c===j)||(M2.r===i&&M2.c==null)||(M2.c===j&&M2.r==null);
+   var inv=A.filter(function(o){return g[1](o)&&f[1](o);}).reduce(function(s,o){return s+o.inv;},0);
+   h+='<div class="c'+(on?' on':'')+'" style="background:rgba('+col+','+a+')" onclick="M2={r:'+i+',c:'+j+'};d2()" title="'+n+' activos · USD '+n0(inv)+'"><b>'+(n||'·')+'</b>'+(n?'<span>'+n0(inv/1000)+'k</span>':'')+'</div>';});});
+ document.getElementById('mx').innerHTML=h;
+ var L=A.filter(function(o){return (M2.r==null||GD[M2.r][1](o))&&(M2.c==null||FD[M2.c][1](o));});
+ lista(L,'s2','l2',(M2.r!=null?'ganancia '+GD[M2.r][0]+'%':'')+(M2.r!=null&&M2.c!=null?' y ':'')+(M2.c!=null?'distancia '+FD[M2.c][0]:'')||'todos');
+ if(M2.r!=null||M2.c!=null)document.getElementById('s2').innerHTML+='<span class="clr" onclick="M2={r:null,c:null};d2()">ver todos ✕</span>';}
+M2={r:0,c:1};d2();
+// 3 rangos
+var R3={f:[-5,15],g:[-50,200],m:[0,13000],sinpv:false};
+var RD=[['f','Falta para el P. Venta','%',-5,60,1,function(o){return o.falta;}],['g','Ganancia desde la compra','%',-50,200,5,function(o){return o.gan;}],['m','Monto invertido','USD',0,13000,250,function(o){return o.inv;}]];
+function fmtR(d,v){return d[2]==='USD'?n0(v):(v>0?'+':'')+v+'%';}
+function d3(build){if(build){document.getElementById('rgs').innerHTML=RD.map(function(d){return '<div class="rg"><div><div style="font-weight:600">'+d[1]+'</div><div class="m mono" style="font-size:.7rem" id="rv_'+d[0]+'"></div></div><div><div class="hist" id="h_'+d[0]+'"></div><div class="dual"><div class="trk"></div><input type="range" min="'+d[3]+'" max="'+d[4]+'" step="'+d[5]+'" value="'+R3[d[0]][0]+'" oninput="R3.'+d[0]+'[0]=Math.min(+this.value,R3.'+d[0]+'[1]);d3()"><input type="range" min="'+d[3]+'" max="'+d[4]+'" step="'+d[5]+'" value="'+R3[d[0]][1]+'" oninput="R3.'+d[0]+'[1]=Math.max(+this.value,R3.'+d[0]+'[0]);d3()"></div></div><div class="mono t2" id="rc_'+d[0]+'" style="text-align:right;font-size:.74rem"></div></div>';}).join('')+'<label style="font-size:.76rem;color:var(--t2);display:flex;gap:6px;align-items:center"><input type="checkbox" onchange="R3.sinpv=this.checked;d3()"> incluir los que no tienen P. Venta</label>';}
+ var ok=function(o){return RD.every(function(d){var v=d[6](o);if(v==null)return d[0]==='f'&&R3.sinpv;return v>=R3[d[0]][0]&&v<=R3[d[0]][1];});};
+ RD.forEach(function(d){var nb=24,w=(d[4]-d[3])/nb,bs=[];for(var i=0;i<nb;i++)bs.push({n:0,lo:d[3]+i*w});A.forEach(function(o){var v=d[6](o);if(v==null)return;var i=Math.max(0,Math.min(nb-1,Math.floor((v-d[3])/w)));bs[i].n++;});var mx=Math.max.apply(null,bs.map(function(b){return b.n;}))||1;
+  document.getElementById('h_'+d[0]).innerHTML=bs.map(function(b){var inR=b.lo+w>R3[d[0]][0]&&b.lo<=R3[d[0]][1];return '<span class="'+(inR?'in':'')+'" style="height:'+(b.n/mx*100)+'%"></span>';}).join('');
+  document.getElementById('rv_'+d[0]).textContent=fmtR(d,R3[d[0]][0])+' a '+fmtR(d,R3[d[0]][1]);
+  document.getElementById('rc_'+d[0]).textContent=A.filter(function(o){var v=d[6](o);return v!=null&&v>=R3[d[0]][0]&&v<=R3[d[0]][1];}).length+' activos';});
+ lista(A.filter(ok),'s3','l3');}
+d3(true);
+// 4 vistas guardadas
+var V=[['Para vender hoy','llegó o falta ≤3%',function(o){return o.falta!=null&&o.falta<=3;},'var(--a)'],['Ganadores sin P. Venta','ganancia +20% y sin PV',function(o){return o.falta==null&&o.gan>=20;},'var(--bl)'],['Perdedores','pérdida peor que −15%',function(o){return o.gan<=-15;},'var(--r)'],['Posiciones chicas','menos de USD 1.000',function(o){return o.inv<1000;},'var(--t2)'],
+ ['Cedears cerca de vender','Cedears, falta ≤10%',function(o){return o.tipo==='Cedears'&&o.falta!=null&&o.falta<=10;},'var(--a)'],['Bonos lejos del P. Venta','bonos y ONs, falta +20%',function(o){return (o.tipo==='Bonos'||o.tipo==='ONs')&&o.falta>20;},'var(--t2)'],['Grandes en pérdida','USD 5.000+ y en pérdida',function(o){return o.inv>=5000&&o.gan<0;},'var(--r)'],['+ Guardar vista actual','desde filtros combinables',null,'var(--t3)']];
+var S4=0;function d4(){document.getElementById('vg').innerHTML=V.map(function(v,i){var n=v[2]?A.filter(v[2]).length:'';return '<div class="vc'+(S4===i?' on':'')+'" onclick="'+(v[2]?'S4='+i+';d4()':'')+'"'+(v[2]?'':' style="border-style:dashed"')+'><div class="t" style="color:'+v[3]+'">'+v[0]+'</div><div class="n">'+n+'</div><div class="d">'+v[1]+'</div></div>';}).join('');lista(A.filter(V[S4][2]),'s4','l4',V[S4][0]);}
+d4();
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.id===t.dataset.p);});};});
+</script></body></html>
