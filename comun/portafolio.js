@@ -11,8 +11,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=179, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=181, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v181 | 2026-10-11 | Prueba vista nueva: sin los títulos "Rendimiento del período" y "Hoy" en los recuadros de arriba.',
+  'v180 | 2026-10-11 | Prueba vista nueva: el menú ☰ se abre encima de la página en vez de empujarla (no recalcula tablas ni gráficos al abrirse, abre al instante); se cierra al elegir una página o tocar afuera.',
   'v179 | 2026-10-11 | Prueba vista nueva: al recargar ya no aparece un instante la vista vieja — el HTML la oculta desde el arranque ("Cargando cartera…") hasta que se arma la nueva.',
   'v178 | 2026-10-11 | Prueba vista nueva: se quitan los títulos de los tres cuadros de filtros.',
   'v177 | 2026-10-11 | Prueba vista nueva: los tres cuadros de filtros (distancia, ganancia, monto) más angostos (máx. 270px cada uno).',
@@ -9090,7 +9092,7 @@ function toggleSidebar(){
 }
 // En el celular (vertical) el ☰ abre el menú como lista; al elegir una solapa o tocar afuera se cierra
 document.addEventListener('click',function(e){
-  if(window.innerWidth>680)return;var main=document.getElementById('main')||document.querySelector('.main');if(!main||!main.classList.contains('sidebar-open'))return;
+  if(window.innerWidth>680&&!document.body.classList.contains('nv-on'))return;var main=document.getElementById('main')||document.querySelector('.main');if(!main||!main.classList.contains('sidebar-open'))return;
   if(e.target.closest('.nav-item')){setTimeout(function(){main.classList.remove('sidebar-open');window.scrollTo(0,0);},50);return;}
   if(!e.target.closest('.sidebar')&&!e.target.closest('#sidebar-toggle-btn')&&!e.target.closest('#nv-menu-btn'))main.classList.remove('sidebar-open');
 },true);
@@ -11971,7 +11973,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .nvcv{display:flex;flex-direction:column;gap:3px}#nv-root .nvcv span{width:26px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:var(--mono);font-weight:800;font-size:.74rem;cursor:pointer;border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}#nv-root .nvcv span.v{border-color:var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 10%,transparent)}#nv-root .nvcv span:hover{filter:brightness(1.3)}'+
  '#nv-root .flg{display:inline-block;width:20px;font-size:.9rem;font-family:var(--sans)}'+
  '#nv-root small.ptb{font-size:.78rem;font-weight:700;margin-top:2px}#nv-root small.ptb .b{width:52px;height:6px}#nv-root #nv-cards #top-cards-row{margin-bottom:0}'+
- 'body.nv-on #page-portafolio>*:not(#nv-root):not(#port-pin-overlay){display:none!important}body.nv-port #sidebar-toggle-btn{display:none!important}body.nv-on #auth-user-box{display:none!important}body.nv-port .topbar:not(.nvtb){display:none!important}#nv-root .nvtb{justify-content:center}'+
+ 'body.nv-on #page-portafolio>*:not(#nv-root):not(#port-pin-overlay){display:none!important}body.nv-port #sidebar-toggle-btn{display:none!important}@media(min-width:681px){body.nv-on .main{position:relative}body.nv-on .sidebar{position:absolute;top:0;left:0;bottom:0;z-index:950;will-change:width;box-shadow:6px 0 24px rgba(0,0,0,.45)}}body.nv-on #auth-user-box{display:none!important}body.nv-port .topbar:not(.nvtb){display:none!important}#nv-root .nvtb{justify-content:center}'+
  '#nv-root .dp{font-size:.92rem;font-weight:800;color:var(--dc);background:color-mix(in srgb,var(--dc) 14%,transparent);border:1px solid color-mix(in srgb,var(--dc) 35%,transparent);border-radius:6px;padding:1px 7px;margin-bottom:2px;min-width:62px;text-align:right}'+
  '#nv-root .nv2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}#nv-root .nv2col .nvtw{max-height:78vh}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
@@ -12000,7 +12002,7 @@ function nvRender(){
  var root=document.getElementById('nv-root');
  if(!root){root=document.createElement('div');root.id='nv-root';var ov=document.getElementById('port-pin-overlay');pg.insertBefore(root,ov?ov.nextSibling:pg.firstChild);
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
-  root.innerHTML='<div class="topbar nvtb" id="nv-tb0"></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v port-sensitive" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s port-sensitive" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s port-sensitive" id="nv-khs"></div></div><div class="nvk" id="nv-kd" style="position:relative"><div class="nvlbl" style="display:flex;justify-content:space-between;gap:8px"><span>% USD</span><span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;opacity:.7">⚙️</span></div></div><div class="nvk" id="nv-kc"><div class="nvlbl">Posiciones</div></div></div>'+
+  root.innerHTML='<div class="topbar nvtb" id="nv-tb0"></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v port-sensitive" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="v" id="nv-kr"></div><div class="s port-sensitive" id="nv-krs"></div></div><div class="nvk"><div class="v" id="nv-kh"></div><div class="s port-sensitive" id="nv-khs"></div></div><div class="nvk" id="nv-kd" style="position:relative"><div class="nvlbl" style="display:flex;justify-content:space-between;gap:8px"><span>% USD</span><span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;opacity:.7">⚙️</span></div></div><div class="nvk" id="nv-kc"><div class="nvlbl">Posiciones</div></div></div>'+
    '<div class="nvbar"><span id="nv-fbar" style="display:contents"></span><span style="flex:1"></span><span style="display:flex;align-items:center;gap:4px"><input id="nv-q" type="text" placeholder="🔍 Ticker" autocomplete="off" oninput="nvBuscar(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';nvBuscar(\'\')}" style="width:110px;background:var(--surface);border:1px solid var(--border2);border-radius:999px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 10px;outline:none;text-transform:uppercase"><span id="nv-qx" class="nvclr" style="display:none" onclick="var i=document.getElementById(\'nv-q\');i.value=\'\';nvBuscar(\'\')">✕</span></span></div><div class="nvdist"><div class="nvbox"><div id="nv-dF"></div></div><div class="nvbox"><div id="nv-dG"></div></div><div class="nvbox"><div id="nv-dM"></div></div></div>'+
    '<div id="nv-tw2"></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div><div id="nv-cards" style="margin-top:14px"></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
