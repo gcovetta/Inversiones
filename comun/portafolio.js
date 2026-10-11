@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=199, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=200, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v200 | 2026-10-11 | Vista nueva: etiqueta 🏷 al lado de cada ticker para marcar 🟢 Comprar / 🔴 Vender / ⭐ Seguir y/o dejar una nota (se ve al lado del ticker; completa al pasar el mouse). Se guarda en Supabase. Filtro 🏷 Marcados. Ahora se puede guardar solo la nota, sin tipo (📝).',
   'v199 | 2026-10-11 | Vista nueva: selector $ / US$ junto al buscador para ver la tabla (precio, PPC, inversión y totales de sección) en pesos o en dólares (CCL para acciones/Cedears, MEP para bonos/ON/FCI).',
   'v198 | 2026-10-11 | Vista nueva: marcas D (dividendo estimado en 30 días según tu historial) y 🏁 (A finish) al lado del ticker, con explicación al pasar el mouse o tocar.',
   'v197 | 2026-10-11 | Vista nueva: columna Hoy con la variación del día de cada activo (▲ verde / ▼ rojo), ordenable.',
@@ -1718,7 +1719,7 @@ function confirmMark(){
   if(!pop||!_markPopTicker) return;
   var type=pop.dataset.type||(MARKS[_markPopTicker]&&MARKS[_markPopTicker].type)||'';
   var note=(document.getElementById('mark-note-input')||{}).value||'';
-  if(type){ MARKS[_markPopTicker]={type:type,note:note.trim()}; }
+  if(type||note.trim()){ MARKS[_markPopTicker]={type:type||'note',note:note.trim()}; }
   else { delete MARKS[_markPopTicker]; }
   saveMarks();
   closeMarkPopover();
@@ -11627,7 +11628,7 @@ var _nvFlag={nyse:'🇺🇸',argentina:'🇦🇷',brasil:'🇧🇷',europa:'🇪
 function _nvPaisI(s){for(var i=0;i<NV_TS.length;i++)if(NV_TS[i][0]===s)return i;return 99;}
 function _nvTsSel(){return Object.keys(NV.ts||{}).filter(function(k){return NV.ts[k];});}
 function nvTs(k){if(!NV.ts)NV.ts={};NV.ts[k]=!NV.ts[k];nvSave();nvRender();}
-function _nvBase(o){NV.tipo='ambas';var ts=_nvTsSel();if(ts.length&&ts.indexOf(o.s)<0)return false;if(NV.tipo==='rv'&&!o.rv)return false;if(NV.tipo==='rf'&&o.rv)return false;return true;}
+function _nvBase(o){NV.tipo='ambas';if(NV.mk&&!MARKS[o.t])return false;var ts=_nvTsSel();if(ts.length&&ts.indexOf(o.s)<0)return false;if(NV.tipo==='rv'&&!o.rv)return false;if(NV.tipo==='rf'&&o.rv)return false;return true;}
 function _nvOk(o,sin){if(NV.q)return o.t.indexOf(NV.q)>=0;return _nvBase(o)&&(sin==='f'||_nvEn(NV.df,NV_FD,o))&&(sin==='g'||_nvEn(NV.dg,NV_GD,o))&&(sin==='m'||_nvEn(NV.dm,NV_MD,o));}
 function _nvN(x){return Math.round(x||0).toLocaleString('es-AR');}
 function _nvP(x){return x==null||!isFinite(x)?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
@@ -11663,6 +11664,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .nvf{display:inline-block;margin-left:5px;color:var(--accent);font-size:.66rem;font-weight:800;font-family:var(--mono);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:4px;padding:0 4px;line-height:1.35;cursor:help;vertical-align:1px}'+
  '#nv-root .nvf.nvd{color:var(--blue);border-color:color-mix(in srgb,var(--blue) 45%,transparent)}#nv-root .nvf.nvfin{border:none;padding:0;font-size:.74rem}'+
  '#nv-root .nvmon{display:inline-flex;margin-left:6px;border:1px solid var(--border2);border-radius:999px;overflow:hidden;cursor:pointer;font-family:var(--mono);font-size:.68rem}#nv-root .nvmon b{padding:2px 8px;color:var(--text3);font-weight:700}#nv-root .nvmon b.on{background:var(--accent);color:#04120a}'+
+ '#nv-root .mark-btn{font-size:.78rem;margin-right:3px}#nv-root .nvnote{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;margin-left:6px;font-size:.66rem;font-style:italic;color:var(--text2);font-family:var(--sans);cursor:help}'+
  '#nv-root td.hoy{font-size:.74rem;font-weight:700}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
@@ -11698,8 +11700,8 @@ function nvSetPV(t,v){var o=NV_ROWS.filter(function(x){return x.t===t;})[0];if(!
 function nvTip(el,tog){var t=document.getElementById('nv-tipbox');if(!t){t=document.createElement('div');t.id='nv-tipbox';t.style.cssText='position:fixed;z-index:9999;background:#0d1420;border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:.7rem;font-family:var(--mono);color:var(--text);box-shadow:0 4px 16px rgba(0,0,0,.5);pointer-events:none;white-space:nowrap;display:none';document.body.appendChild(t);}
  if(!el||(tog&&t.style.display!=='none'&&t._el===el)){t.style.display='none';t._el=null;return;}
  t.textContent=el.getAttribute('data-tip');t.style.display='block';t._el=el;var r=el.getBoundingClientRect();t.style.left=Math.max(6,Math.min(window.innerWidth-t.offsetWidth-6,r.left+r.width/2-t.offsetWidth/2))+'px';t.style.top=(r.top-t.offsetHeight-6<4?r.bottom+6:r.top-t.offsetHeight-6)+'px';}
-document.addEventListener('mouseover',function(e){var f=e.target.closest&&e.target.closest('.nvf');if(f)nvTip(f);});
-document.addEventListener('mouseout',function(e){var f=e.target.closest&&e.target.closest('.nvf');if(f&&!(e.relatedTarget&&f.contains(e.relatedTarget)))nvTip(null);});
+document.addEventListener('mouseover',function(e){var f=e.target.closest&&e.target.closest('.nvf,.nvnote');if(f)nvTip(f);});
+document.addEventListener('mouseout',function(e){var f=e.target.closest&&e.target.closest('.nvf,.nvnote');if(f&&!(e.relatedTarget&&f.contains(e.relatedTarget)))nvTip(null);});
 document.addEventListener('scroll',function(){nvTip(null);},true);
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'||k==='pais'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
@@ -11735,7 +11737,7 @@ function nvRender(){
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
  // filtros
  var tsel=_nvTsSel(),tl=NV_ROWS.filter(function(o){return NV.tipo==='rv'?o.rv:NV.tipo==='rf'?!o.rv:true;});
- document.getElementById('nv-fbar').innerHTML=NV_TS.map(function(x){var n=tl.filter(function(o){return o.s===x[0];}).length;if(!n&&!(NV.ts||{})[x[0]])return '';var on=!!(NV.ts||{})[x[0]];return '<span class="nvchip'+(on?' on':'')+'"'+(tsel.length&&!on?' style="opacity:.5"':'')+' onclick="nvTs(\''+x[0]+'\')">'+x[1]+' <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+n+'</span></span>';}).join('')+'';
+ var _nmk=NV_ROWS.filter(function(o){return MARKS[o.t];}).length;document.getElementById('nv-fbar').innerHTML=(_nmk||NV.mk?'<span class="nvchip'+(NV.mk?' on':'')+'" onclick="NV.mk=!NV.mk;nvSave();nvRender()" title="Ver solo los activos marcados">🏷 Marcados <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+_nmk+'</span></span>':'')+NV_TS.map(function(x){var n=tl.filter(function(o){return o.s===x[0];}).length;if(!n&&!(NV.ts||{})[x[0]])return '';var on=!!(NV.ts||{})[x[0]];return '<span class="nvchip'+(on?' on':'')+'"'+(tsel.length&&!on?' style="opacity:.5"':'')+' onclick="nvTs(\''+x[0]+'\')">'+x[1]+' <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+n+'</span></span>';}).join('')+'';
  var dist=function(id,B,key,sin){var L=NV_ROWS.filter(function(o){return _nvOk(o,sin);}),cnt=B.map(function(b){return L.filter(b[1]).length;}),mx=Math.max.apply(null,cnt)||1,anySel=_nvSel(NV[key]).length;
   document.getElementById(id).innerHTML=B.map(function(b,i){var on=!!NV[key][i];return '<div class="nvbk'+(on?' on':'')+(anySel&&!on?' dim':'')+'" onclick="nvTog(\''+key+'\','+i+')"><span>'+b[0]+'</span><div class="tr"><span style="width:'+(cnt[i]/mx*100)+'%;background:'+b[2]+'"></span></div><span class="c">'+cnt[i]+'</span></div>';}).join('');};
  dist('nv-dF',NV_FD,'df','f');dist('nv-dG',NV_GD,'dg','g');dist('nv-dM',NV_MD,'dm','m');
@@ -11752,7 +11754,8 @@ function nvRender(){
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
   var sh0='<tr class="sec"><td colspan="8">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">'+_nvM()+_nvN(X.reduce(function(s,o){return s+(_nvInv(o)||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
   X.forEach(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
-   var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.dh?'<span class="nvf nvd" data-tip="Por tu historial, estimamos un dividendo dentro de 30 días" onclick="event.stopPropagation();nvTip(this,true)">D</span>':'')+(o.fin?'<span class="nvf nvfin" data-tip="A finish" onclick="event.stopPropagation();nvTip(this,true)">🏁</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
+   var mk=MARKS[o.t],mki=mk?({sell:'🔴',buy:'🟢',watch:'⭐',note:'📝'})[mk.type]||'🏷':'🏷';
+   var r='<tr class="pick'+(ab?' abierta':'')+(mk&&mk.type!=='note'?' marked-'+mk.type:'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<button class="mark-btn'+(mk?' active':'')+'" data-ticker="'+o.t+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar: Comprar, Vender, Seguir o nota">'+mki+'</button><b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(mk&&mk.note?'<span class="nvnote" data-tip="'+mk.note.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'+mk.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>':'')+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.dh?'<span class="nvf nvd" data-tip="Por tu historial, estimamos un dividendo dentro de 30 días" onclick="event.stopPropagation();nvTip(this,true)">D</span>':'')+(o.fin?'<span class="nvf nvfin" data-tip="A finish" onclick="event.stopPropagation();nvTip(this,true)">🏁</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span></td>'+
     '<td class="up">'+upC(o.up)+'</td>'+
     '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
