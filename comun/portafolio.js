@@ -11,8 +11,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=170, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=172, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v172 | 2026-10-11 | Prueba vista nueva: se quitan el mail y Salir de la barra de arriba; en Portafolio esa barra ya no se muestra (en las otras páginas queda solo con el ☰).',
+  'v171 | 2026-10-11 | Fix vista nueva: Rendimiento del período y ganancia ahora descuentan aportes y retiros (Dietz modificado, igual que la vista clásica); antes tomaban el cálculo simple contra la Inv. Inicial.',
   'v170 | 2026-10-11 | Prueba vista nueva: se oculta el encabezado original (la hora de actualización y 💾 Backups pasan a la vista nueva; el ☰ queda en la barra de arriba para las otras páginas); barra de Liquidez/cotizaciones centrada y con el botón ? de atajos.',
   'v169 | 2026-10-11 | Prueba vista nueva: % del tipo más grande; recuadros % USD (con ⚙️ para editar) y Posiciones al lado de Hoy; Valor total solo en USD; Actualizar en verde; los dos gráficos de torta pasan a DashBoard; abajo Distribución de la cartera, Evolución, Rendimiento por período y Aportes.',
   'v168 | 2026-10-11 | Prueba vista nueva: botón ☰ del menú al lado de la foto de la vista nueva (el del encabezado sigue, para las otras páginas).',
@@ -4040,13 +4042,13 @@ function renderPortfolio(){
   var invInicial=getRawNum('inv-sidebar-usd');
   var baseRend=invInicial>0?invInicial:totalCost;
   var rendPct=baseRend>0?(valConLiq-baseRend)/baseRend*100:null;
-  if(CFG.vistaNueva){try{var _hoy=0,_base=0;NV_ROWS.forEach(function(r){if(r.ch!=null&&r.usd>0){var b=r.usd/(1+r.ch/100);_hoy+=r.usd-b;_base+=b;}});
-    NV_K={val:valConLiq,valARS:valConLiq*(CCL_HOY||0),rend:rendPct,gan:baseRend>0?valConLiq-baseRend:null,hoy:_hoy,hoyP:_base>0?_hoy/_base*100:null};
-    nvRender();}catch(_e){console.warn('nvRender',_e);}}
   // CFG.aportes: ganancia sin aportes/retiros y rendimiento ponderado por días (Dietz modificado)
   var _apc=(CFG.aportes&&typeof aporCalc==='function')?aporCalc(valConLiq,invInicial):null;
   if(CFG.aportes){_aporUlt=_apc?Object.assign({inv:invInicial},_apc):null;try{aporSumRender();}catch(e){}}
   if(_apc&&_apc.rend!=null)rendPct=_apc.rend;
+  if(CFG.vistaNueva){try{var _hoy=0,_base=0;NV_ROWS.forEach(function(r){if(r.ch!=null&&r.usd>0){var b=r.usd/(1+r.ch/100);_hoy+=r.usd-b;_base+=b;}});
+    NV_K={val:valConLiq,valARS:valConLiq*(CCL_HOY||0),rend:rendPct,gan:(_apc&&_apc.gan!=null)?_apc.gan:(baseRend>0?valConLiq-baseRend:null),hoy:_hoy,hoyP:_base>0?_hoy/_base*100:null};
+    nvRender();}catch(_e){console.warn('nvRender',_e);}}
   var rendEl=document.getElementById('m-rend');
   if(rendPct!==null){
     var rendColor=rendPct<0?'var(--red)':rendPct<10?'#eab308':'var(--accent)';
@@ -11960,7 +11962,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .nvcv{display:flex;flex-direction:column;gap:3px}#nv-root .nvcv span{width:26px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:var(--mono);font-weight:800;font-size:.74rem;cursor:pointer;border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}#nv-root .nvcv span.v{border-color:var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 10%,transparent)}#nv-root .nvcv span:hover{filter:brightness(1.3)}'+
  '#nv-root .flg{display:inline-block;width:20px;font-size:.9rem;font-family:var(--sans)}'+
  '#nv-root small.ptb{font-size:.78rem;font-weight:700;margin-top:2px}#nv-root small.ptb .b{width:52px;height:6px}#nv-root #nv-cards #top-cards-row{margin-bottom:0}'+
- 'body.nv-port #sidebar-toggle-btn{display:none!important}#nv-root .nvtb{justify-content:center}'+
+ 'body.nv-port #sidebar-toggle-btn{display:none!important}body.nv-on #auth-user-box{display:none!important}body.nv-port .topbar:not(.nvtb){display:none!important}#nv-root .nvtb{justify-content:center}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -12000,7 +12002,7 @@ function nvRender(){
    mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
   // encabezado original fuera: el ☰ original pasa a la barra de arriba (visible fuera de Portafolio)
   try{var stb0=document.getElementById('sidebar-toggle-btn'),tbo=document.querySelector('.topbar');if(stb0&&tbo){stb0.style.marginRight='10px';tbo.insertBefore(stb0,tbo.firstChild);}
-   var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');}catch(e){}
+   var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');}catch(e){}
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
