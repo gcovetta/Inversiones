@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=168, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=169, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v169 | 2026-10-11 | Prueba vista nueva: % del tipo más grande; recuadros % USD (con ⚙️ para editar) y Posiciones al lado de Hoy; Valor total solo en USD; Actualizar en verde; los dos gráficos de torta pasan a DashBoard; abajo Distribución de la cartera, Evolución, Rendimiento por período y Aportes.',
   'v168 | 2026-10-11 | Prueba vista nueva: botón ☰ del menú al lado de la foto de la vista nueva (el del encabezado sigue, para las otras páginas).',
   'v167 | 2026-10-11 | Prueba vista nueva: se quitan los botones C / V de la foto; Actualizar precios queda compacto, solo con el ícono ⟳.',
   'v166 | 2026-10-11 | Prueba vista nueva: banderita del país a la izquierda del ticker (solo renta variable) y orden por País desde el encabezado (agrupa por país y dentro por ticker).',
@@ -11956,6 +11957,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .car{display:inline-block;width:14px;color:var(--text3);font-size:.7rem}#nv-root tr.abierta td{background:var(--surface2);border-bottom:none}#nv-root tr.det td{background:var(--surface2);text-align:left;font-family:var(--sans);height:auto;padding:6px 10px 10px 30px}#nv-root .nvdet{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}#nv-root .nvdet b{font-family:var(--mono);font-size:.86rem}#nv-root .nvdet td{all:unset}'+
  '#nv-root .nvcv{display:flex;flex-direction:column;gap:3px}#nv-root .nvcv span{width:26px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:var(--mono);font-weight:800;font-size:.74rem;cursor:pointer;border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}#nv-root .nvcv span.v{border-color:var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 10%,transparent)}#nv-root .nvcv span:hover{filter:brightness(1.3)}'+
  '#nv-root .flg{display:inline-block;width:20px;font-size:.9rem;font-family:var(--sans)}'+
+ '#nv-root small.ptb{font-size:.78rem;font-weight:700;margin-top:2px}#nv-root small.ptb .b{width:52px;height:6px}#nv-root #nv-cards #top-cards-row{margin-bottom:0}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -11964,6 +11966,14 @@ function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')
 function nvBuscar(v){NV.q=(v||'').toUpperCase().trim();nvRender();}
 function nvAbrir(t){if(!NV.op)NV.op={};if(NV.op[t])delete NV.op[t];else NV.op[t]=1;nvSave();nvRender();}
 function nvIr(m){nvModo(m);var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
+function _nvMover(){try{
+ var kd=document.getElementById('nv-kd'),kc=document.getElementById('nv-kc');
+ [['m-dolz',kd],['dolz-popover',kd],['m-count',kc]].forEach(function(x){var e=document.getElementById(x[0]);if(e&&x[1]&&e.parentNode!==x[1]){x[1].appendChild(e);if(x[0]!=='dolz-popover'){e.className='v';e.style.cssText='';}}});
+ var cw=document.getElementById('nv-cards'),tr=document.getElementById('top-cards-row');if(cw&&tr&&tr.parentNode!==cw)cw.appendChild(tr);
+ var pie=document.getElementById('m-pie-sector'),db=document.getElementById('db-scroll');
+ if(pie&&db&&!document.getElementById('nv-pies')){var box=pie.parentNode.parentNode.parentNode;var c=document.createElement('div');c.className='card';c.id='nv-pies';c.style.cssText='margin-bottom:1rem';
+  c.innerHTML='<div class="card-header"><span class="card-title">🥧 Composición de la cartera</span></div>';c.appendChild(box);db.insertBefore(c,db.firstChild);}
+}catch(e){console.warn('nv mover',e);}}
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'||k==='pais'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
 function nvRender(){
@@ -11971,9 +11981,9 @@ function nvRender(){
  var root=document.getElementById('nv-root');
  if(!root){root=document.createElement('div');root.id='nv-root';var ov=document.getElementById('port-pin-overlay');pg.insertBefore(root,ov?ov.nextSibling:pg.firstChild);
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
-  root.innerHTML='<div class="topbar nvtb" id="nv-tb0"></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s" id="nv-khs"></div></div></div>'+
+  root.innerHTML='<div class="topbar nvtb" id="nv-tb0"></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s" id="nv-khs"></div></div><div class="nvk" id="nv-kd" style="position:relative"><div class="nvlbl" style="display:flex;justify-content:space-between;gap:8px"><span>% USD</span><span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;opacity:.7">⚙️</span></div></div><div class="nvk" id="nv-kc"><div class="nvlbl">Posiciones</div></div></div>'+
    '<div class="nvbar"><span id="nv-fbar" style="display:contents"></span><span style="flex:1"></span><span style="display:flex;align-items:center;gap:4px"><input id="nv-q" type="text" placeholder="🔍 Ticker" autocomplete="off" oninput="nvBuscar(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';nvBuscar(\'\')}" style="width:110px;background:var(--surface);border:1px solid var(--border2);border-radius:999px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 10px;outline:none;text-transform:uppercase"><span id="nv-qx" class="nvclr" style="display:none" onclick="var i=document.getElementById(\'nv-q\');i.value=\'\';nvBuscar(\'\')">✕</span></span></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
-   '<div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div>';
+   '<div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div><div id="nv-cards" style="margin-top:14px"></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
   // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
   try{var tb0=document.querySelector('.topbar'),nb=document.getElementById('nv-tb0');if(tb0&&nb)Array.prototype.slice.call(tb0.children).forEach(function(c){if(c.id!=='auth-user-box'&&c.id!=='tb-right')nb.appendChild(c);});}catch(e){}
@@ -11982,13 +11992,14 @@ function nvRender(){
   try{var nt=root.querySelector('.nvtop'),tw=document.createElement('div');tw.id='nv-tools';tw.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap';nt.appendChild(tw);
    var mv=function(){['sb-status','push-btn','sync-btn'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode!==tw)tw.appendChild(e);});
     var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);
-    var ab=document.querySelector('button[onclick="fetchAllQuotes()"]');if(ab&&ab.parentNode!==tw){tw.appendChild(ab);Array.prototype.slice.call(ab.childNodes).forEach(function(n){if(n.nodeType===3)n.remove();});ab.title='Actualizar precios';ab.className='btn';ab.style.cssText='padding:0 9px;font-size:.95rem;min-width:0';}};
+    var ab=document.querySelector('button[onclick="fetchAllQuotes()"]');if(ab&&ab.parentNode!==tw){tw.appendChild(ab);Array.prototype.slice.call(ab.childNodes).forEach(function(n){if(n.nodeType===3)n.remove();});ab.title='Actualizar precios';ab.className='btn btn-a';ab.style.cssText='padding:0 9px;font-size:.95rem;min-width:0';}};
    mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
+ _nvMover();
  // KPIs
- var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';document.getElementById('nv-kva').textContent=k.valARS?'$ '+_nvN(k.valARS):'';
+ var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))+' en el período'):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
  // filtros
@@ -12013,7 +12024,7 @@ function nvRender(){
    var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><div class="c2"><span style="color:'+(o.d==null?'var(--text3)':o.d>=0?'var(--accent)':'var(--red)')+'">'+_nvP(o.d)+'</span><small>'+upC(o.up)+'</small></div></td>'+
     '<td><div class="c2"><span>'+_nvF(o.px,o)+(o.qh||'')+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
-    '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span>'+o.pt.toFixed(1).replace('.',',')+'%</span></small></div></td></tr>';
+    '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></small></div></td></tr>';
    if(ab)r+='<tr class="det"><td colspan="4"><div class="nvdet">'+
     '<div><div class="nvlbl">P. Venta</div><b>'+_nvF(o.pv,o)+'</b></div>'+
     '<div title="Vender todos los nominales" style="cursor:pointer" onclick="event.stopPropagation();nvVender(\''+o.t+'\')"><div class="nvlbl">Nominales ↓</div><b class="port-sensitive" style="text-decoration:underline dotted;text-underline-offset:3px">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
