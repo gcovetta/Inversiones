@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=187, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=188, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v188 | 2026-10-11 | Ana, Hilda, Juli y Omar pasan a la vista nueva del portafolio (vistaNueva en cada HTML). Si la cartera no tiene % USD (Omar), ese recuadro no se muestra.',
   'v187 | 2026-10-11 | GDC pasa a la vista nueva del portafolio (PortafolioGDC.html con vistaNueva); la página de prueba ya no hace falta. Ana, Hilda, Juli y Omar siguen con la vista anterior.',
   'v186 | 2026-10-11 | Fix vista nueva: las teclas C / V cambian el panel Comprar/Vender en vez de mostrar los dos recuadros juntos; la tecla / va al buscador de ticker nuevo.',
   'v185 | 2026-10-11 | Vista nueva: Comprar/Vender desde la fila dejan el cursor en el Precio. Todas las carteras: en el precio de Comprar y Vender las flechas ↑/↓ suman o restan de a 5.',
@@ -11998,7 +11999,7 @@ function nvBuscar(v){NV.q=(v||'').toUpperCase().trim();nvRender();}
 function nvAbrir(t){if(!NV.op)NV.op={};if(NV.op[t])delete NV.op[t];else NV.op[t]=1;nvSave();nvRender();}
 function nvIr(m){nvModo(m);var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
 function _nvMover(){try{
- var kd=document.getElementById('nv-kd'),kc=document.getElementById('nv-kc');
+ var kd=document.getElementById('nv-kd'),kc=document.getElementById('nv-kc');if(kd&&!document.getElementById('m-dolz'))kd.style.display='none';
  [['m-dolz',kd],['dolz-popover',kd],['m-count',kc]].forEach(function(x){var e=document.getElementById(x[0]);if(e&&x[1]&&e.parentNode!==x[1]){x[1].appendChild(e);if(x[0]!=='dolz-popover'){e.className='v';e.style.cssText='';}}});
  if(CFG.simRetiro&&!document.getElementById('page-simretiro')){var pp=document.getElementById('page-portafolio');if(pp){var sp=document.createElement('div');sp.className='page';sp.id='page-simretiro';pp.parentNode.appendChild(sp);
    var rb=document.querySelector('.nav-item[onclick*="recomendaciones"]');if(rb){var nb=document.createElement('button');nb.className='nav-item';nb.setAttribute('onclick',"showPage('simretiro',this)");nb.innerHTML='<span>🏖️</span>Simulador de retiro';rb.parentNode.insertBefore(nb,rb.nextSibling);}}}

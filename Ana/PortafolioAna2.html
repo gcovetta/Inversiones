@@ -430,9 +430,13 @@ tr:hover td{background:var(--surface2)}
 .ra-th-cell{background:#3a2200!important;color:rgba(255,255,255,.9)!important;border:1px solid #5c3800!important;font-size:.65rem!important;font-family:var(--mono)!important;font-weight:600!important;text-align:center!important;vertical-align:middle!important}
 .ra-no-border{border:none!important;background:transparent!important;vertical-align:middle;padding:.2rem .3rem!important}
 </style>
+<!-- Vista nueva: oculta la vista vieja desde el primer momento (evita que aparezca un instante al recargar) -->
+<style>html.nv-pre header,html.nv-pre .topbar,html.nv-pre #page-portafolio>*:not(#nv-root):not(#port-pin-overlay){display:none!important}
+html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block;padding:3rem 1rem;text-align:center;font-family:monospace;font-size:.8rem;color:#7a9cc5}</style>
+<script>document.documentElement.classList.add('nv-pre');setTimeout(function(){document.documentElement.classList.remove('nv-pre');},20000);</script>
 </head>
 <body>
-<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v187 · 11/10/2026</div>
+<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v188 · 11/10/2026</div>
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
   <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;font-family:var(--mono)">Ana</div>
@@ -1581,7 +1585,7 @@ tr:hover td{background:var(--surface2)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script>
-window.PORTFOLIO_CONFIG={"persona": "Ana", "vistaFamiliar": true, "capitalInicio": 6509, "periodoInicio": "08-15", "historial": true, "informe": true, "honorario": 0.2, "valuarMEP": true, "aportes": true, "histDesdeRA": true, 
+window.PORTFOLIO_CONFIG={"vistaNueva": true, "persona": "Ana", "vistaFamiliar": true, "capitalInicio": 6509, "periodoInicio": "08-15", "historial": true, "informe": true, "honorario": 0.2, "valuarMEP": true, "aportes": true, "histDesdeRA": true, 
  "id": "ana",
  "nombre": "Ana",
  "trkSuffix": "_ana",
@@ -1598,7 +1602,7 @@ window.PORTFOLIO_CONFIG={"persona": "Ana", "vistaFamiliar": true, "capitalInicio
  "supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg"
 };
 </script>
-<script src="../comun/portafolio.js?v=187"></script>
+<script src="../comun/portafolio.js?v=188"></script>
 <script>
 // ─── Funciones propias de Ana (pisan las del código común) ───
 // comparación de posiciones con Cocos e importador de dividendos de Veta con vista previa
