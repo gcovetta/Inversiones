@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=169, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=170, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v170 | 2026-10-11 | Prueba vista nueva: se oculta el encabezado original (la hora de actualización y 💾 Backups pasan a la vista nueva; el ☰ queda en la barra de arriba para las otras páginas); barra de Liquidez/cotizaciones centrada y con el botón ? de atajos.',
   'v169 | 2026-10-11 | Prueba vista nueva: % del tipo más grande; recuadros % USD (con ⚙️ para editar) y Posiciones al lado de Hoy; Valor total solo en USD; Actualizar en verde; los dos gráficos de torta pasan a DashBoard; abajo Distribución de la cartera, Evolución, Rendimiento por período y Aportes.',
   'v168 | 2026-10-11 | Prueba vista nueva: botón ☰ del menú al lado de la foto de la vista nueva (el del encabezado sigue, para las otras páginas).',
   'v167 | 2026-10-11 | Prueba vista nueva: se quitan los botones C / V de la foto; Actualizar precios queda compacto, solo con el ícono ⟳.',
@@ -1276,6 +1277,7 @@ function showPage(id,btn){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
+  if(CFG.vistaNueva)document.body.classList.toggle('nv-port',id==='portafolio');
   if(id==='tipocambio') tcRender();
   if(btn)btn.classList.add('active');
   if(id==='tracker') initTracker();
@@ -11958,6 +11960,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .nvcv{display:flex;flex-direction:column;gap:3px}#nv-root .nvcv span{width:26px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:var(--mono);font-weight:800;font-size:.74rem;cursor:pointer;border:1px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}#nv-root .nvcv span.v{border-color:var(--red);color:var(--red);background:color-mix(in srgb,var(--red) 10%,transparent)}#nv-root .nvcv span:hover{filter:brightness(1.3)}'+
  '#nv-root .flg{display:inline-block;width:20px;font-size:.9rem;font-family:var(--sans)}'+
  '#nv-root small.ptb{font-size:.78rem;font-weight:700;margin-top:2px}#nv-root small.ptb .b{width:52px;height:6px}#nv-root #nv-cards #top-cards-row{margin-bottom:0}'+
+ 'body.nv-port #sidebar-toggle-btn{display:none!important}#nv-root .nvtb{justify-content:center}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -11990,10 +11993,14 @@ function nvRender(){
   // estado Supabase, avisos, Sync y ⇔ Comparación: a la derecha de los KPIs
   try{var stb=document.getElementById('sidebar-toggle-btn'),nimg=document.getElementById('nv-img');if(stb&&nimg){var mb=stb.cloneNode(true);mb.id='nv-menu-btn';mb.style.width='34px';mb.style.height='34px';mb.style.fontSize='1.05rem';nimg.parentNode.insertBefore(mb,nimg);}}catch(e){}
   try{var nt=root.querySelector('.nvtop'),tw=document.createElement('div');tw.id='nv-tools';tw.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap';nt.appendChild(tw);
-   var mv=function(){['sb-status','push-btn','sync-btn'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode!==tw)tw.appendChild(e);});
+   var mv=function(){var kb=document.getElementById('kb-btn'),nb0=document.getElementById('nv-tb0');if(kb&&nb0&&kb.parentNode!==nb0){kb.style.marginLeft='6px';nb0.appendChild(kb);}
+    ['lupd','sb-status','push-btn','sync-btn','bk-btn'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode!==tw)tw.appendChild(e);});
     var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);
     var ab=document.querySelector('button[onclick="fetchAllQuotes()"]');if(ab&&ab.parentNode!==tw){tw.appendChild(ab);Array.prototype.slice.call(ab.childNodes).forEach(function(n){if(n.nodeType===3)n.remove();});ab.title='Actualizar precios';ab.className='btn btn-a';ab.style.cssText='padding:0 9px;font-size:.95rem;min-width:0';}};
    mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
+  // encabezado original fuera: el ☰ original pasa a la barra de arriba (visible fuera de Portafolio)
+  try{var stb0=document.getElementById('sidebar-toggle-btn'),tbo=document.querySelector('.topbar');if(stb0&&tbo){stb0.style.marginRight='10px';tbo.insertBefore(stb0,tbo.firstChild);}
+   var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');}catch(e){}
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
