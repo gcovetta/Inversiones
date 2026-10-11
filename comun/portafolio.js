@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=156, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=157, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v157 | 2026-10-11 | Prueba vista nueva: filtro por Tipo (USA, Argentina, Brasil, Europa, China, Cripto, Bonos, ONs, FCI) con selección múltiple; reemplaza "Ocultar acciones argentinas".',
   'v156 | 2026-10-11 | Prueba vista nueva: el panel Comprar/Vender pasa abajo de la tabla y sin título repetido; filtros de ganancia rotulados "Ganando" y "Pérdida".',
   'v155 | 2026-10-11 | Prueba: vista nueva del portafolio (CFG.vistaNueva, solo en GDC/PortafolioGDC_prueba.html) — foto y KPIs, panel único Comprar/Vender, filtros con distribuciones de selección múltiple y tabla de celdas dobles ordenable. La vista clásica sigue igual.',
   'v154 | 2026-10-08 | Feat: la importación de movimientos marca precios raros (contra el mercado si es de los últimos 7 días, o contra las otras filas del mismo activo) con pista de ceros/miles, y pide confirmación antes de importarlos.',
@@ -11929,18 +11930,21 @@ function tipoVistaPintar(){var w=document.getElementById('tipo-vista');if(!w)ret
 
 // ─── 🧪 Vista nueva del portafolio (CFG.vistaNueva, página de prueba) ─────────
 // Arriba: foto + Valor total / Rendimiento / Hoy; panel único Comprar/Vender (usa las tarjetas de siempre);
-// filtros Todo/RV/RF + ocultar acciones argentinas; tres distribuciones con selección múltiple
+// filtros Todo/RV/RF + Tipo (USA, Argentina, Brasil, Cripto, Bonos…); tres distribuciones con selección múltiple
 // (distancia al P. Venta, ganancia, peso en su tipo) y la tabla de celdas dobles ordenable.
 // Los datos salen de la misma pasada de renderPortfolio (NV_ROWS); la vista clásica queda abajo.
 var NV_ROWS=[],NV_K={};
-var NV=(function(){var d={tipo:'ambas',oar:true,df:{},dg:{},dm:{},sk:'pt',sd:-1,modo:'c'};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
+var NV=(function(){var d={tipo:'ambas',ts:{},df:{},dg:{},dm:{},sk:'pt',sd:-1,modo:'c'};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
 function nvSave(){try{localStorage.setItem(PFX+'nv',JSON.stringify(NV));}catch(e){}}
 var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['más de 30%',function(o){return o.up>30;},'#64779c'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
 var NV_GD=[['Ganando',function(o){return o.d!=null&&o.d>0;},'#5cc06e'],['0% a −2%',function(o){return o.d!=null&&o.d<=0&&o.d>-2;},'#8a94a6'],['Pérdida',function(o){return o.d!=null&&o.d<=-2;},'#e05a52']];
 var NV_MD=[['más de 3%',function(o){return o.pt>3;},'#e05a52'],['2% a 3%',function(o){return o.pt>2&&o.pt<=3;},'#e3b341'],['menos de 2%',function(o){return o.pt<=2;},'#5b8def']];
 function _nvSel(m){return Object.keys(m||{}).filter(function(k){return m[k];}).map(Number);}
 function _nvEn(m,B,o){var L=_nvSel(m);return !L.length||L.some(function(i){return B[i]&&B[i][1](o);});}
-function _nvBase(o){if(NV.oar&&o.s==='argentina')return false;if(NV.tipo==='rv'&&!o.rv)return false;if(NV.tipo==='rf'&&o.rv)return false;return true;}
+var NV_TS=[['nyse','🇺🇸 USA'],['argentina','🇦🇷 Argentina'],['brasil','🇧🇷 Brasil'],['europa','🇪🇺 Europa'],['china','🇨🇳 China'],['cripto','₿ Cripto'],['bonos','📜 Bonos'],['on','🏢 ONs'],['fci','📈 FCI']];
+function _nvTsSel(){return Object.keys(NV.ts||{}).filter(function(k){return NV.ts[k];});}
+function nvTs(k){if(!NV.ts)NV.ts={};NV.ts[k]=!NV.ts[k];nvSave();nvRender();}
+function _nvBase(o){var ts=_nvTsSel();if(ts.length&&ts.indexOf(o.s)<0)return false;if(NV.tipo==='rv'&&!o.rv)return false;if(NV.tipo==='rf'&&o.rv)return false;return true;}
 function _nvOk(o,sin){return _nvBase(o)&&(sin==='f'||_nvEn(NV.df,NV_FD,o))&&(sin==='g'||_nvEn(NV.dg,NV_GD,o))&&(sin==='m'||_nvEn(NV.dm,NV_MD,o));}
 function _nvN(x){return Math.round(x||0).toLocaleString('es-AR');}
 function _nvP(x){return x==null||!isFinite(x)?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
@@ -11984,14 +11988,15 @@ function nvRender(){
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))+' en el período'):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
  // filtros
- var nAR=NV_ROWS.filter(function(o){return o.s==='argentina';}).length;
- document.getElementById('nv-fbar').innerHTML=['ambas','rv','rf'].map(function(x){return '<span class="nvchip'+(NV.tipo===x?' on':'')+'" onclick="NV.tipo=\''+x+'\';nvSave();nvRender()">'+({ambas:'Todo',rv:'R. Variable',rf:'R. Fija'})[x]+'</span>';}).join('')+'<span style="flex:1"></span><span class="nvlbl">Ocultar</span><span class="nvsw'+(NV.oar?' on':'')+'" onclick="NV.oar=!NV.oar;nvSave();nvRender()"><i></i>🇦🇷 acciones argentinas <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+nAR+'</span></span>';
+  document.getElementById('nv-fbar').innerHTML=['ambas','rv','rf'].map(function(x){return '<span class="nvchip'+(NV.tipo===x?' on':'')+'" onclick="NV.tipo=\''+x+'\';nvSave();nvRender()">'+({ambas:'Todo',rv:'R. Variable',rf:'R. Fija'})[x]+'</span>';}).join('')+'<span style="flex:1"></span>';
+ var tsel=_nvTsSel(),tl=NV_ROWS.filter(function(o){return NV.tipo==='rv'?o.rv:NV.tipo==='rf'?!o.rv:true;});
+ document.getElementById('nv-fbar').innerHTML+='<div style="flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px"><span class="nvlbl">Tipo</span>'+NV_TS.map(function(x){var n=tl.filter(function(o){return o.s===x[0];}).length;if(!n&&!(NV.ts||{})[x[0]])return '';var on=!!(NV.ts||{})[x[0]];return '<span class="nvchip'+(on?' on':'')+'"'+(tsel.length&&!on?' style="opacity:.5"':'')+' onclick="nvTs(\''+x[0]+'\')">'+x[1]+' <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+n+'</span></span>';}).join('')+(tsel.length?'<span class="nvclr" onclick="NV.ts={};nvSave();nvRender()">todos ✕</span>':'')+'</div>';
  var dist=function(id,B,key,sin){var L=NV_ROWS.filter(function(o){return _nvOk(o,sin);}),cnt=B.map(function(b){return L.filter(b[1]).length;}),mx=Math.max.apply(null,cnt)||1,anySel=_nvSel(NV[key]).length;
   document.getElementById(id).innerHTML=B.map(function(b,i){var on=!!NV[key][i];return '<div class="nvbk'+(on?' on':'')+(anySel&&!on?' dim':'')+'" onclick="nvTog(\''+key+'\','+i+')"><span>'+b[0]+'</span><div class="tr"><span style="width:'+(cnt[i]/mx*100)+'%;background:'+b[2]+'"></span></div><span class="c">'+cnt[i]+'</span></div>';}).join('');};
  dist('nv-dF',NV_FD,'df','f');dist('nv-dG',NV_GD,'dg','g');dist('nv-dM',NV_MD,'dm','m');
  var L=NV_ROWS.filter(function(o){return _nvOk(o);}),desc=[],nom=function(m,B){return _nvSel(m).map(function(i){return B[i][0];}).join(' o ');};
- if(_nvSel(NV.df).length)desc.push('distancia '+nom(NV.df,NV_FD));if(_nvSel(NV.dg).length)desc.push('ganancia '+nom(NV.dg,NV_GD));if(_nvSel(NV.dm).length)desc.push('inversión '+nom(NV.dm,NV_MD));
- document.getElementById('nv-sum').innerHTML='<span><b style="color:var(--text)">'+L.length+'</b> de '+NV_ROWS.length+' activos · <span class="port-sensitive">$ '+_nvN(L.reduce(function(s,o){return s+(o.inv||0);},0))+'</span>'+(desc.length?' · '+desc.join(' y '):'')+'</span>'+(desc.length?'<span class="nvclr" onclick="NV.df={};NV.dg={};NV.dm={};nvSave();nvRender()">quitar filtros ✕</span>':'');
+ if(_nvTsSel().length)desc.push('tipo '+NV_TS.filter(function(x){return NV.ts[x[0]];}).map(function(x){return x[1];}).join(' o '));if(_nvSel(NV.df).length)desc.push('distancia '+nom(NV.df,NV_FD));if(_nvSel(NV.dg).length)desc.push('ganancia '+nom(NV.dg,NV_GD));if(_nvSel(NV.dm).length)desc.push('inversión '+nom(NV.dm,NV_MD));
+ document.getElementById('nv-sum').innerHTML='<span><b style="color:var(--text)">'+L.length+'</b> de '+NV_ROWS.length+' activos · <span class="port-sensitive">$ '+_nvN(L.reduce(function(s,o){return s+(o.inv||0);},0))+'</span>'+(desc.length?' · '+desc.join(' y '):'')+'</span>'+(desc.length?'<span class="nvclr" onclick="NV.ts={};NV.df={};NV.dg={};NV.dm={};nvSave();nvRender()">quitar filtros ✕</span>':'');
  var sh=function(k,t){return '<span class="s'+(NV.sk===k?' act':'')+'" onclick="nvSort(\''+k+'\')">'+t+(NV.sk===k?(NV.sd>0?' ▲':' ▼'):'')+'</span>';};
  var srt=function(a,b){var x=a[NV.sk],y=b[NV.sk];if(NV.sk==='up'){x=x==null?9999:x;y=y==null?9999:y;}else{if(x==null)return 1;if(y==null)return -1;}return (typeof x==='string'?x.localeCompare(y):x-y)*NV.sd;};
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
