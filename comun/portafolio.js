@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=163, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=164, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v164 | 2026-10-11 | Prueba vista nueva: botón Actualizar precios junto a Sync; sin "todos ✕" en el filtro por Tipo ni el resumen de filtros debajo. Se elimina la exportación a Excel (exportPortfolioXLS y botón XLS) en todas las carteras.',
   'v163 | 2026-10-11 | Prueba vista nueva: redondel de estado de la cotización junto al precio y botón 📈 de historial en cada ticker; estado de Supabase, 🔔 avisos, Sync y ⇔ Comparación al lado de los KPIs.',
   'v162 | 2026-10-11 | Prueba vista nueva: se quita la opción "más de 30%" del filtro por distancia al P. Venta.',
   'v161 | 2026-10-11 | Prueba vista nueva: % del tipo vuelve a la fila (debajo de la Inversión, ordenable); buscador de ticker en la barra de filtros que encuentra el activo ignorando todos los filtros.',
@@ -4113,32 +4114,6 @@ function renderPortfolio(){
   renderPerfilComparacion();
 }
 
-// ─── Exportar portafolio a XLS ───
-function exportPortfolioXLS(){
-  var all=getPositions();
-  var open=all.filter(function(p){return p.qty>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
-  var rows=[['Ticker','Sector','Cantidad','PPC ARS','Mercado ARS','Inversión ARS','Δ%']];
-  open.forEach(function(p){
-    var q=quotes[p.ticker];var price=q?q.price:null;
-    var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
-    var _isBonoON=(sector==='bonos'||sector==='on');
-    var _sectorIsARS=(sector==='argentina'||_isBonoON);
-    var _isBRL=BRL_TICKERS.has(p.ticker);
-    var fromByma=q&&q.fromByma;
-    var mktARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
-    var invARS=mktARS!=null?(_isBonoON?mktARS*p.qty/100:mktARS*p.qty):p.costARS;
-    var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
-    var _tc=_isBonoON?(MEP_HOY||CCL_HOY):CCL_HOY;
-    var ppcARS=_isBonoON?ppcUSD*_tc*100:(sector==='fci'?ppcUSD*(MEP_HOY||CCL_HOY):ppcUSD*CCL_HOY);
-    var pnl=mktARS!=null&&ppcARS>0?(mktARS-ppcARS)/ppcARS*100:null;
-    rows.push([p.ticker,sector,p.qty,ppcARS>0?Math.round(ppcARS):null,mktARS!=null?Math.round(mktARS):null,Math.round(invARS),pnl!=null?Math.round(pnl*10)/10:null]);
-  });
-  var ws=XLSX.utils.aoa_to_sheet(rows);
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Portafolio');
-  var d=new Date(),ds=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0');
-  XLSX.writeFile(wb,'Portafolio_'+ds+'.xlsx');
-}
 
 // ─── Comparación de portafolios ───
 // ─── Noticias de la cartera (v44) ─────────────────────────────────────────────
@@ -6112,7 +6087,7 @@ async function bkRestore(key){
 // Botón "Backups" en el encabezado
 document.addEventListener('DOMContentLoaded',function(){
   if(document.getElementById('bk-btn'))return;
-  var ref=document.querySelector('[onclick="exportPortfolioXLS()"]')||document.getElementById('sync-btn')||document.querySelector('[onclick*="EnComparacion()"]');
+  var ref=document.getElementById('sync-btn')||document.querySelector('[onclick*="EnComparacion()"]');
   if(!ref)return;
   var b=document.createElement('button');b.id='bk-btn';b.className='btn-sidebar-toggle';b.title='Backups diarios: descargar o restaurar';b.textContent='💾';
   b.style.cssText='width:auto;padding:0 8px;font-size:.72rem';b.onclick=bkOpen;ref.parentNode.insertBefore(b,ref.nextSibling);
@@ -11989,14 +11964,15 @@ function nvRender(){
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
   root.innerHTML='<div class="topbar nvtb" id="nv-tb0"></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s" id="nv-khs"></div></div></div>'+
    '<div class="nvbar"><span id="nv-fbar" style="display:contents"></span><span style="flex:1"></span><span style="display:flex;align-items:center;gap:4px"><input id="nv-q" type="text" placeholder="🔍 Ticker" autocomplete="off" oninput="nvBuscar(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';nvBuscar(\'\')}" style="width:110px;background:var(--surface);border:1px solid var(--border2);border-radius:999px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 10px;outline:none;text-transform:uppercase"><span id="nv-qx" class="nvclr" style="display:none" onclick="var i=document.getElementById(\'nv-q\');i.value=\'\';nvBuscar(\'\')">✕</span></span></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
-   '<div class="nvsum" id="nv-sum"></div><div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div>';
+   '<div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
   // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
   try{var tb0=document.querySelector('.topbar'),nb=document.getElementById('nv-tb0');if(tb0&&nb)Array.prototype.slice.call(tb0.children).forEach(function(c){if(c.id!=='auth-user-box'&&c.id!=='tb-right')nb.appendChild(c);});}catch(e){}
   // estado Supabase, avisos, Sync y ⇔ Comparación: a la derecha de los KPIs
   try{var nt=root.querySelector('.nvtop'),tw=document.createElement('div');tw.id='nv-tools';tw.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap';nt.appendChild(tw);
    var mv=function(){['sb-status','push-btn','sync-btn'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode!==tw)tw.appendChild(e);});
-    var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);};
+    var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);
+    var ab=document.querySelector('button[onclick="fetchAllQuotes()"]');if(ab&&ab.parentNode!==tw)tw.appendChild(ab);};
    mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
@@ -12008,14 +11984,13 @@ function nvRender(){
  // filtros
   document.getElementById('nv-fbar').innerHTML=['ambas','rv','rf'].map(function(x){return '<span class="nvchip'+(NV.tipo===x?' on':'')+'" onclick="NV.tipo=\''+x+'\';nvSave();nvRender()">'+({ambas:'Todo',rv:'R. Variable',rf:'R. Fija'})[x]+'</span>';}).join('')+'<span style="width:1px;height:18px;background:var(--border2);margin:0 4px"></span>';
  var tsel=_nvTsSel(),tl=NV_ROWS.filter(function(o){return NV.tipo==='rv'?o.rv:NV.tipo==='rf'?!o.rv:true;});
- document.getElementById('nv-fbar').innerHTML+='<span class="nvlbl">Tipo</span>'+NV_TS.map(function(x){var n=tl.filter(function(o){return o.s===x[0];}).length;if(!n&&!(NV.ts||{})[x[0]])return '';var on=!!(NV.ts||{})[x[0]];return '<span class="nvchip'+(on?' on':'')+'"'+(tsel.length&&!on?' style="opacity:.5"':'')+' onclick="nvTs(\''+x[0]+'\')">'+x[1]+' <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+n+'</span></span>';}).join('')+(tsel.length?'<span class="nvclr" onclick="NV.ts={};nvSave();nvRender()">todos ✕</span>':'');
+ document.getElementById('nv-fbar').innerHTML+='<span class="nvlbl">Tipo</span>'+NV_TS.map(function(x){var n=tl.filter(function(o){return o.s===x[0];}).length;if(!n&&!(NV.ts||{})[x[0]])return '';var on=!!(NV.ts||{})[x[0]];return '<span class="nvchip'+(on?' on':'')+'"'+(tsel.length&&!on?' style="opacity:.5"':'')+' onclick="nvTs(\''+x[0]+'\')">'+x[1]+' <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+n+'</span></span>';}).join('')+'';
  var dist=function(id,B,key,sin){var L=NV_ROWS.filter(function(o){return _nvOk(o,sin);}),cnt=B.map(function(b){return L.filter(b[1]).length;}),mx=Math.max.apply(null,cnt)||1,anySel=_nvSel(NV[key]).length;
   document.getElementById(id).innerHTML=B.map(function(b,i){var on=!!NV[key][i];return '<div class="nvbk'+(on?' on':'')+(anySel&&!on?' dim':'')+'" onclick="nvTog(\''+key+'\','+i+')"><span>'+b[0]+'</span><div class="tr"><span style="width:'+(cnt[i]/mx*100)+'%;background:'+b[2]+'"></span></div><span class="c">'+cnt[i]+'</span></div>';}).join('');};
  dist('nv-dF',NV_FD,'df','f');dist('nv-dG',NV_GD,'dg','g');dist('nv-dM',NV_MD,'dm','m');
  var qx=document.getElementById('nv-qx');if(qx)qx.style.display=NV.q?'':'none';
  var L=NV_ROWS.filter(function(o){return _nvOk(o);}),desc=[],nom=function(m,B){return _nvSel(m).map(function(i){return B[i][0];}).join(' o ');};
  if(NV.q)desc=['búsqueda "'+NV.q+'" (sin filtros)'];else if(_nvTsSel().length)desc.push('tipo '+NV_TS.filter(function(x){return NV.ts[x[0]];}).map(function(x){return x[1];}).join(' o '));if(_nvSel(NV.df).length)desc.push('distancia '+nom(NV.df,NV_FD));if(_nvSel(NV.dg).length)desc.push('ganancia '+nom(NV.dg,NV_GD));if(_nvSel(NV.dm).length)desc.push('inversión '+nom(NV.dm,NV_MD));
- document.getElementById('nv-sum').innerHTML='<span><b style="color:var(--text)">'+L.length+'</b> de '+NV_ROWS.length+' activos · <span class="port-sensitive">$ '+_nvN(L.reduce(function(s,o){return s+(o.inv||0);},0))+'</span>'+(desc.length?' · '+desc.join(' y '):'')+'</span>'+(desc.length?'<span class="nvclr" onclick="NV.ts={};NV.df={};NV.dg={};NV.dm={};nvSave();nvRender()">quitar filtros ✕</span>':'');
  var sh=function(k,t){return '<span class="s'+(NV.sk===k?' act':'')+'" onclick="nvSort(\''+k+'\')">'+t+(NV.sk===k?(NV.sd>0?' ▲':' ▼'):'')+'</span>';};
  var srt=function(a,b){var x=a[NV.sk],y=b[NV.sk];if(NV.sk==='up'){x=x==null?9999:x;y=y==null?9999:y;}else{if(x==null)return 1;if(y==null)return -1;}return (typeof x==='string'?x.localeCompare(y):x-y)*NV.sd;};
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
