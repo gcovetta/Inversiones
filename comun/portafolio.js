@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=167, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=168, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v168 | 2026-10-11 | Prueba vista nueva: botón ☰ del menú al lado de la foto de la vista nueva (el del encabezado sigue, para las otras páginas).',
   'v167 | 2026-10-11 | Prueba vista nueva: se quitan los botones C / V de la foto; Actualizar precios queda compacto, solo con el ícono ⟳.',
   'v166 | 2026-10-11 | Prueba vista nueva: banderita del país a la izquierda del ticker (solo renta variable) y orden por País desde el encabezado (agrupa por país y dentro por ticker).',
   'v165 | 2026-10-11 | Prueba vista nueva: botones C / V al lado de la foto que llevan a Comprar / Vender; tocar los nominales de un activo abierto lo carga en Vender con el total de nominales.',
@@ -9077,7 +9078,7 @@ function toggleSidebar(){
 document.addEventListener('click',function(e){
   if(window.innerWidth>680)return;var main=document.getElementById('main')||document.querySelector('.main');if(!main||!main.classList.contains('sidebar-open'))return;
   if(e.target.closest('.nav-item')){setTimeout(function(){main.classList.remove('sidebar-open');window.scrollTo(0,0);},50);return;}
-  if(!e.target.closest('.sidebar')&&!e.target.closest('#sidebar-toggle-btn'))main.classList.remove('sidebar-open');
+  if(!e.target.closest('.sidebar')&&!e.target.closest('#sidebar-toggle-btn')&&!e.target.closest('#nv-menu-btn'))main.classList.remove('sidebar-open');
 },true);
 
 
@@ -11977,6 +11978,7 @@ function nvRender(){
   // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
   try{var tb0=document.querySelector('.topbar'),nb=document.getElementById('nv-tb0');if(tb0&&nb)Array.prototype.slice.call(tb0.children).forEach(function(c){if(c.id!=='auth-user-box'&&c.id!=='tb-right')nb.appendChild(c);});}catch(e){}
   // estado Supabase, avisos, Sync y ⇔ Comparación: a la derecha de los KPIs
+  try{var stb=document.getElementById('sidebar-toggle-btn'),nimg=document.getElementById('nv-img');if(stb&&nimg){var mb=stb.cloneNode(true);mb.id='nv-menu-btn';mb.style.width='34px';mb.style.height='34px';mb.style.fontSize='1.05rem';nimg.parentNode.insertBefore(mb,nimg);}}catch(e){}
   try{var nt=root.querySelector('.nvtop'),tw=document.createElement('div');tw.id='nv-tools';tw.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap';nt.appendChild(tw);
    var mv=function(){['sb-status','push-btn','sync-btn'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode!==tw)tw.appendChild(e);});
     var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);
