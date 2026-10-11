@@ -11,8 +11,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=184, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=186, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v186 | 2026-10-11 | Fix vista nueva: las teclas C / V cambian el panel Comprar/Vender en vez de mostrar los dos recuadros juntos; la tecla / va al buscador de ticker nuevo.',
+  'v185 | 2026-10-11 | Vista nueva: Comprar/Vender desde la fila dejan el cursor en el Precio. Todas las carteras: en el precio de Comprar y Vender las flechas ↑/↓ suman o restan de a 5.',
   'v184 | 2026-10-11 | Vista nueva: botón 🛒 Comprar en la fila desplegada (carga mercado y ticker en Comprar). Todas las carteras: en Vender, al elegir el ticker se completa la cantidad con todas las nominales.',
   'v183 | 2026-10-11 | Prueba vista nueva: sin los filtros Todo / R. Variable / R. Fija; los filtros por país/tipo pasan al lado del recuadro Posiciones y el buscador de ticker a la barra de arriba, junto al ?. Una fila menos.',
   'v182 | 2026-10-11 | Prueba vista nueva: el recuadro de rendimiento muestra solo la ganancia en USD, sin "en el período".',
@@ -2160,6 +2162,9 @@ function movModalClose(){
 // Vender: al elegir un ticker en el combo se completa la cantidad con todas las nominales (si vendés menos, la cambiás)
 document.addEventListener('change',function(e){if(!e.target||e.target.id!=='vsell-ticker')return;var t=e.target.value,q=document.getElementById('vsell-qty');if(!t||!q)return;
   try{var p=getPositions().filter(function(x){return x.ticker===t&&x.qty>0;})[0];if(p){q.value=Math.round(p.qty*100)/100;vsellPreview();}}catch(err){}});
+// Precio de Comprar / Vender: flecha arriba/abajo suma o resta de a 5
+document.addEventListener('keydown',function(e){var el=e.target;if(!el||(el.id!=='vbuy-precio-ars'&&el.id!=='vsell-precio-ars'))return;if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
+  e.preventDefault();var v=parseFloat(String(el.value).replace(',','.'))||0;v=Math.max(0,Math.round((v+(e.key==='ArrowUp'?5:-5))*100)/100);el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));},true);
 // SIMULADOR DE VENTA
 // ════════════════════════════════════════════════════════
 function divPopulateSelect(){
@@ -10682,6 +10687,7 @@ function _kbFoco(id){setTimeout(function(){var e=document.getElementById(id);if(
 // plegado, lo centran en pantalla y dejan el cursor en el ticker (en Vender, el combo de tickers).
 function kbOperar(id){
   _kbIr(['portafolio']);
+  if(CFG.vistaNueva&&document.getElementById('nv-ops')&&typeof nvModo==='function')nvModo(id==='vsell-ticker'?'v':'c');
   setTimeout(function(){
     var el=document.getElementById(id);if(!el)return;
     if(id==='vsell-ticker'&&typeof vsellPopulateSelect==='function'){try{vsellPopulateSelect();}catch(e){}}
@@ -10726,7 +10732,7 @@ document.addEventListener('keydown',function(e){
   else if(k==='d'||k==='D'){_kbIr(['dividendos','tracker']);}
   else if(k==='t'||k==='T'){if(_kbIr(['tipocambio']))_kbFoco('tc-ccl-fecha');}
   else if(k==='r'||k==='R'){if(typeof fetchAllQuotes==='function')fetchAllQuotes();}
-  else if(k==='/'){if(_kbIr(['portafolio']))_kbFoco('port-ticker-filter');}
+  else if(k==='/'){if(_kbIr(['portafolio']))_kbFoco(CFG.vistaNueva&&document.getElementById('nv-q')?'nv-q':'port-ticker-filter');}
   else if((k==='i'||k==='I')&&CFG.informe&&typeof infAbrir==='function'){infAbrir();}
   else if(k==='h'||k==='H'){location.href='../index.html';}
   else hecho=false;
@@ -11986,7 +11992,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
 function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')vsellPopulateSelect();}catch(e){}var sel=document.getElementById('vsell-ticker');if(sel){sel.value=t;var o=NV_ROWS.filter(function(x){return x.t===t;})[0];var q=document.getElementById('vsell-qty');if(q&&o)q.value=o.q;try{vsellPreview();}catch(e){}}
- var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
+ var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});var pz=document.getElementById('vsell-precio-ars');if(pz)setTimeout(function(){try{pz.focus({preventScroll:true});pz.select();}catch(e){}},400);}
 function nvBuscar(v){NV.q=(v||'').toUpperCase().trim();nvRender();}
 function nvAbrir(t){if(!NV.op)NV.op={};if(NV.op[t])delete NV.op[t];else NV.op[t]=1;nvSave();nvRender();}
 function nvIr(m){nvModo(m);var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
@@ -12004,7 +12010,7 @@ function _nvMover(){try{
 var _NV_MKT={nyse:'USA',argentina:'ARGENTINA',bonos:'BONOS',on:'ON',fci:'FCI',brasil:'BRASIL',europa:'EUROPA',china:'CHINA',cripto:'CRIPTO'};
 function nvComprar(t){nvModo('c');var o=NV_ROWS.filter(function(x){return x.t===t;})[0],mk=document.getElementById('vbuy-mkt'),tk=document.getElementById('vbuy-ticker');
  if(mk&&o&&_NV_MKT[o.s]){mk.value=_NV_MKT[o.s];try{vbuyOnMktChange();}catch(e){}}if(tk)tk.value=t;
- var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});var q=document.getElementById('vbuy-qty');if(q)setTimeout(function(){try{q.focus({preventScroll:true});}catch(e){}},400);}
+ var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});var q=document.getElementById('vbuy-precio-ars');if(q)setTimeout(function(){try{q.focus({preventScroll:true});q.select();}catch(e){}},400);}
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'||k==='pais'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
 function nvRender(){
