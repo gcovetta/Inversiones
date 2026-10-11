@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=178, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=179, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v179 | 2026-10-11 | Prueba vista nueva: al recargar ya no aparece un instante la vista vieja — el HTML la oculta desde el arranque ("Cargando cartera…") hasta que se arma la nueva.',
   'v178 | 2026-10-11 | Prueba vista nueva: se quitan los títulos de los tres cuadros de filtros.',
   'v177 | 2026-10-11 | Prueba vista nueva: los tres cuadros de filtros (distancia, ganancia, monto) más angostos (máx. 270px cada uno).',
   'v176 | 2026-10-11 | Prueba vista nueva: se oculta la vista anterior del Portafolio (resumen, zona de seguimiento, tablas por mercado, próximos cobros, barra de columnas); el 👁 de ocultar montos pasa a la vista nueva y también difumina sus valores.',
@@ -12015,7 +12016,7 @@ function nvRender(){
    mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
   // encabezado original fuera: el ☰ original pasa a la barra de arriba (visible fuera de Portafolio)
   try{var stb0=document.getElementById('sidebar-toggle-btn'),tbo=document.querySelector('.topbar');if(stb0&&tbo){stb0.style.marginRight='10px';tbo.insertBefore(stb0,tbo.firstChild);}
-   var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');}catch(e){}
+   var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');document.documentElement.classList.remove('nv-pre');}catch(e){}
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
