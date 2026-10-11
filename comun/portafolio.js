@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=162, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=163, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v163 | 2026-10-11 | Prueba vista nueva: redondel de estado de la cotización junto al precio y botón 📈 de historial en cada ticker; estado de Supabase, 🔔 avisos, Sync y ⇔ Comparación al lado de los KPIs.',
   'v162 | 2026-10-11 | Prueba vista nueva: se quita la opción "más de 30%" del filtro por distancia al P. Venta.',
   'v161 | 2026-10-11 | Prueba vista nueva: % del tipo vuelve a la fila (debajo de la Inversión, ordenable); buscador de ticker en la barra de filtros que encuentra el activo ignorando todos los filtros.',
   'v160 | 2026-10-11 | Prueba vista nueva: la barra de Liquidez/Inv. Inicial/cotizaciones va arriba de la foto; el filtro por Tipo queda en la misma línea, al lado de R. Fija.',
@@ -3946,7 +3947,7 @@ function renderPortfolio(){
     if(CFG.vistaNueva){try{var _nvRv=['nyse','argentina','brasil','europa','china','cripto'].indexOf(sector)>=0,_nvDen=_nvRv?rvMktARS:rfMktARS,_nvRsi=null;
       if(!_isBonoON&&typeof _rsiEntry!=='undefined'&&_rsiEntry&&_rsiEntry.value!=null)_nvRsi=+_rsiEntry.value;
       NV_ROWS.push({t:p.ticker,s:sector,rv:_nvRv,usdD:isBonoUSDDirecto(p.ticker),d:pnlPct,up:upside,inv:inversionCedearARS||0,invCol:invColor,pt:_nvDen>0?(inversionCedearARS||0)/_nvDen*100:0,
-        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null});}catch(_e){}}
+        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
     // pueden clasificar en verde/amarillo/rojo, y ocultarlos los hacía desaparecer de la
     // tabla en vez de mostrarse con el precio vacío.
@@ -11992,6 +11993,11 @@ function nvRender(){
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
   // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
   try{var tb0=document.querySelector('.topbar'),nb=document.getElementById('nv-tb0');if(tb0&&nb)Array.prototype.slice.call(tb0.children).forEach(function(c){if(c.id!=='auth-user-box'&&c.id!=='tb-right')nb.appendChild(c);});}catch(e){}
+  // estado Supabase, avisos, Sync y ⇔ Comparación: a la derecha de los KPIs
+  try{var nt=root.querySelector('.nvtop'),tw=document.createElement('div');tw.id='nv-tools';tw.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap';nt.appendChild(tw);
+   var mv=function(){['sb-status','push-btn','sync-btn'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode!==tw)tw.appendChild(e);});
+    var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);};
+   mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
@@ -12019,9 +12025,9 @@ function nvRender(){
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
   h+='<tr class="sec"><td colspan="4">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';
   h+=X.map(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
-   var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span><b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b></td>'+
+   var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span><b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><div class="c2"><span style="color:'+(o.d==null?'var(--text3)':o.d>=0?'var(--accent)':'var(--red)')+'">'+_nvP(o.d)+'</span><small>'+upC(o.up)+'</small></div></td>'+
-    '<td><div class="c2"><span>'+_nvF(o.px,o)+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
+    '<td><div class="c2"><span>'+_nvF(o.px,o)+(o.qh||'')+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
     '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span>'+o.pt.toFixed(1).replace('.',',')+'%</span></small></div></td></tr>';
    if(ab)r+='<tr class="det"><td colspan="4"><div class="nvdet">'+
     '<div><div class="nvlbl">P. Venta</div><b>'+_nvF(o.pv,o)+'</b></div>'+
