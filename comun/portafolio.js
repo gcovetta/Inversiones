@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=196, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=197, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v197 | 2026-10-11 | Vista nueva: columna Hoy con la variación del día de cada activo (▲ verde / ▼ rojo), ordenable.',
   'v196 | 2026-10-11 | Vista nueva: marca F al lado del ticker para los bonos/ON que cobran en los próximos 30 días; pasando el mouse (o tocándola) muestra fecha y monto del próximo cobro.',
   'v195 | 2026-10-11 | Fix (v193): en las carteras sin lista "en la mira" guardada (Ana, Hilda, Juli, Omar) la carga se cortaba a mitad de camino (wlLoad vacío devolvía nada) — no cargaba liquidez, Inv. Inicial ni precios hasta tocar Actualizar.',
   'v194 | 2026-10-11 | Omar: recuadro % USD con ⚙️ para elegir activos dolarizados, como en las otras carteras.',
@@ -11655,6 +11656,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .nvpv{width:105px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:.86rem;font-weight:700;padding:3px 7px;outline:none}#nv-root .nvpv:focus{border-color:var(--accent)}'+
  '#nv-root td.mut{color:var(--text3)}#nv-root td.up{font-size:.74rem}#nv-root td.ptb .b{width:46px;height:6px}#nv-root td.ptb{font-size:.8rem;font-weight:700}#nv-root td{height:34px}'+
  '#nv-root .nvf{display:inline-block;margin-left:5px;color:var(--accent);font-size:.66rem;font-weight:800;font-family:var(--mono);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:4px;padding:0 4px;line-height:1.35;cursor:help;vertical-align:1px}'+
+ '#nv-root td.hoy{font-size:.74rem;font-weight:700}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -11736,20 +11738,21 @@ function nvRender(){
  var sh=function(k,t){return '<span class="s'+(NV.sk===k?' act':'')+'" onclick="nvSort(\''+k+'\')">'+t+(NV.sk===k?(NV.sd>0?' ▲':' ▼'):'')+'</span>';};
  var srt=function(a,b){if(NV.sk==='pais'){var ia=_nvPaisI(a.s),ib=_nvPaisI(b.s);return ia!==ib?(ia-ib)*NV.sd:a.t.localeCompare(b.t);}var x=a[NV.sk],y=b[NV.sk];if(NV.sk==='up'){x=x==null?9999:x;y=y==null?9999:y;}else{if(x==null)return 1;if(y==null)return -1;}return (typeof x==='string'?x.localeCompare(y):x-y)*NV.sd;};
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
- if(['pais','t','d','up','px','ppc','inv','pt'].indexOf(NV.sk)<0){NV.sk='inv';NV.sd=-1;}
+ if(['pais','t','d','up','px','ch','ppc','inv','pt'].indexOf(NV.sk)<0){NV.sk='inv';NV.sd=-1;}
  var op=NV.op||(NV.op={});
- var it=[],h='<thead><tr><th class="l">'+sh('pais','País')+'<span class="sep"> / </span>'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'</th><th>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'</th><th>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'</th><th>'+sh('pt','% tipo')+'</th></tr></thead><tbody>';
+ var it=[],h='<thead><tr><th class="l">'+sh('pais','País')+'<span class="sep"> / </span>'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'</th><th>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'</th><th>'+sh('ch','Hoy')+'</th><th>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'</th><th>'+sh('pt','% tipo')+'</th></tr></thead><tbody>';
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
-  var sh0='<tr class="sec"><td colspan="7">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
+  var sh0='<tr class="sec"><td colspan="8">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
   X.forEach(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
    var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span></td>'+
     '<td class="up">'+upC(o.up)+'</td>'+
     '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
+    '<td class="hoy">'+(o.ch==null||!isFinite(o.ch)?'<span style="color:var(--text3)">—</span>':'<span style="color:'+(o.ch>0?'var(--accent)':o.ch<0?'var(--red)':'var(--text3)')+'">'+(o.ch>0?'▲ ':o.ch<0?'▼ ':'')+Math.abs(o.ch).toFixed(1).replace('.',',')+'%</span>')+'</td>'+
     '<td class="mut">'+_nvF(o.ppc,o)+'</td>'+
     '<td><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span></td>'+
     '<td class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></td></tr>';
-   if(ab)r+='<tr class="det"><td colspan="7"><div class="nvdet">'+
+   if(ab)r+='<tr class="det"><td colspan="8"><div class="nvdet">'+
     '<div onclick="event.stopPropagation()"><div class="nvlbl">P. Venta USD ✎</div><input class="nvpv" type="text" inputmode="decimal" value="'+(o.pvU!=null&&isFinite(o.pvU)?String(o.pvU).replace('.',','):'')+'" placeholder="sin P. Venta" title="Escribí el nuevo P. Venta y Enter (vacío = sacarlo)" onkeydown="if(event.key===\'Enter\'){this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" onblur="if(this.value!==this.defaultValue)nvSetPV(\''+o.t+'\',this.value)"></div>'+
     '<div title="Vender todos los nominales" style="cursor:pointer" onclick="event.stopPropagation();nvVender(\''+o.t+'\')"><div class="nvlbl">Nominales ↓</div><b class="port-sensitive" style="text-decoration:underline dotted;text-underline-offset:3px">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
