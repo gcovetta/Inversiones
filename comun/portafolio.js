@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=201, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=202, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v202 | 2026-10-11 | Vista nueva: el Calendario de ganancias ocupa solo el ancho que necesita.',
   'v201 | 2026-10-11 | Vista nueva: 🌡 Termómetro de la cartera (eufórica / neutral / deprimida según % en verde hoy, cerca del P. Venta y RSI≥70); 🌙 Repaso nocturno (tarjetas de a un activo con marcas y nota, teclado → C V S N Esc); 📅 Calendario de ganancias de los últimos 12 meses (verde/rojo por día, descontando aportes y retiros).',
   'v200 | 2026-10-11 | Vista nueva: etiqueta 🏷 al lado de cada ticker para marcar 🟢 Comprar / 🔴 Vender / ⭐ Seguir y/o dejar una nota (se ve al lado del ticker; completa al pasar el mouse). Se guarda en Supabase. Filtro 🏷 Marcados. Ahora se puede guardar solo la nota, sin tipo (📝).',
   'v199 | 2026-10-11 | Vista nueva: selector $ / US$ junto al buscador para ver la tabla (precio, PPC, inversión y totales de sección) en pesos o en dólares (CCL para acciones/Cedears, MEP para bonos/ON/FCI).',
@@ -11801,7 +11802,7 @@ var _calKey='';
 function nvCalendario(){if(!CFG.historial||typeof histSerie!=='function'||!HIST)return;var cw=document.getElementById('nv-cards');if(!cw)return;
  var S=histSerie().filter(function(x){return !x.previo;});if(S.length<2)return;var key=S.length+'|'+S[S.length-1].d+'|'+S[S.length-1].v;
  var card=document.getElementById('nv-cal');if(card&&card.parentNode!==cw)cw.insertBefore(card,cw.firstChild);if(card&&key===_calKey)return;_calKey=key;
- if(!card){card=document.createElement('div');card.className='card';card.id='nv-cal';card.style.cssText='margin-bottom:1rem;overflow-x:auto';cw.insertBefore(card,cw.firstChild);}
+ if(!card){card=document.createElement('div');card.className='card';card.id='nv-cal';card.style.cssText='margin-bottom:1rem;overflow-x:auto;width:fit-content;max-width:100%';cw.insertBefore(card,cw.firstChild);}
  var D={};for(var i=1;i<S.length;i++){var a=S[i-1],b=S[i];if(!(a.v>0))continue;var flujo=(b.inv!=null&&a.inv!=null)?(b.inv-a.inv):0,g=(b.v-a.v)-flujo;D[b.d]={u:g,p:g/a.v*100};}
  var hoy=new Date(),ini=new Date(hoy),f0=new Date(S[0].d+'T12:00:00'),min=new Date(hoy);min.setDate(min.getDate()-90);ini.setDate(ini.getDate()-364);if(f0>ini)ini=f0<min?f0:min;while(ini.getDay()!==1)ini.setDate(ini.getDate()-1);
  var iso=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
