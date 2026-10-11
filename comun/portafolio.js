@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=181, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=182, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v182 | 2026-10-11 | Prueba vista nueva: el recuadro de rendimiento muestra solo la ganancia en USD, sin "en el período".',
   'v181 | 2026-10-11 | Prueba vista nueva: sin los títulos "Rendimiento del período" y "Hoy" en los recuadros de arriba.',
   'v180 | 2026-10-11 | Prueba vista nueva: el menú ☰ se abre encima de la página en vez de empujarla (no recalcula tablas ni gráficos al abrirse, abre al instante); se cierra al elegir una página o tocar afuera.',
   'v179 | 2026-10-11 | Prueba vista nueva: al recargar ya no aparece un instante la vista vieja — el HTML la oculta desde el arranque ("Cargando cartera…") hasta que se arma la nueva.',
@@ -12025,7 +12026,7 @@ function nvRender(){
  _nvMover();
  // KPIs
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
- var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))+' en el período'):'';
+ var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
  // filtros
   document.getElementById('nv-fbar').innerHTML=['ambas','rv','rf'].map(function(x){return '<span class="nvchip'+(NV.tipo===x?' on':'')+'" onclick="NV.tipo=\''+x+'\';nvSave();nvRender()">'+({ambas:'Todo',rv:'R. Variable',rf:'R. Fija'})[x]+'</span>';}).join('')+'<span style="width:1px;height:18px;background:var(--border2);margin:0 4px"></span>';
