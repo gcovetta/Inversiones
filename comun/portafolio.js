@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=158, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=159, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v159 | 2026-10-11 | Prueba vista nueva: tabla con fila que se despliega — cerrada muestra Ticker, Δ%/ΔUp, Precio/PPC e Inversión; tocándola se abre con % del tipo, P. Venta, Nominales, RSI/TIR y botón Vender.',
   'v158 | 2026-10-11 | Prueba vista nueva: la barra superior (Liquidez $/USD, Inv. Inicial, CCL, MEP, BTC, EWZ, IMV, S&P, QQQ) pasa adentro de la vista, debajo de los KPIs y en varias líneas si no entra; el mail y Salir quedan arriba.',
   'v157 | 2026-10-11 | Prueba vista nueva: filtro por Tipo (USA, Argentina, Brasil, Europa, China, Cripto, Bonos, ONs, FCI) con selección múltiple; reemplaza "Ocultar acciones argentinas".',
   'v156 | 2026-10-11 | Prueba vista nueva: el panel Comprar/Vender pasa abajo de la tabla y sin título repetido; filtros de ganancia rotulados "Ganando" y "Pérdida".',
@@ -11935,7 +11936,7 @@ function tipoVistaPintar(){var w=document.getElementById('tipo-vista');if(!w)ret
 // (distancia al P. Venta, ganancia, peso en su tipo) y la tabla de celdas dobles ordenable.
 // Los datos salen de la misma pasada de renderPortfolio (NV_ROWS); la vista clásica queda abajo.
 var NV_ROWS=[],NV_K={};
-var NV=(function(){var d={tipo:'ambas',ts:{},df:{},dg:{},dm:{},sk:'pt',sd:-1,modo:'c'};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
+var NV=(function(){var d={tipo:'ambas',ts:{},df:{},dg:{},dm:{},sk:'inv',sd:-1,modo:'c',op:{}};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
 function nvSave(){try{localStorage.setItem(PFX+'nv',JSON.stringify(NV));}catch(e){}}
 var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['más de 30%',function(o){return o.up>30;},'#64779c'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
 var NV_GD=[['Ganando',function(o){return o.d!=null&&o.d>0;},'#5cc06e'],['0% a −2%',function(o){return o.d!=null&&o.d<=0&&o.d>-2;},'#8a94a6'],['Pérdida',function(o){return o.d!=null&&o.d<=-2;},'#e05a52']];
@@ -11966,11 +11967,13 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root td{padding:4px 8px;text-align:right;font-family:var(--mono);border-bottom:1px solid var(--border);white-space:nowrap;height:40px}#nv-root th.l,#nv-root td.l{text-align:left}#nv-root tr.sec td{background:var(--surface2);font-family:var(--sans);font-weight:700;text-align:left;height:30px}#nv-root tr.pick{cursor:pointer}#nv-root tr.pick:hover td{background:var(--surface2)}'+
  '#nv-root .c2{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}#nv-root .c2 small{color:var(--text3);font-size:.66rem}#nv-root .pt{display:inline-flex;align-items:center;gap:5px}#nv-root .pt .b{width:40px;height:5px;background:var(--bg);border-radius:3px;overflow:hidden}#nv-root .pt .b span{display:block;height:100%}'+
  '#nv-root .nvtb{height:auto;min-height:0;flex-wrap:wrap;overflow:visible;padding:6px 10px;row-gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:0 0 10px;font-size:.68rem}#nv-root .nvtb>div{display:flex;flex-shrink:0;height:24px;margin-left:0!important}#nv-root .nvtb>div:last-child{border-right:none}'+
+ '#nv-root .car{display:inline-block;width:14px;color:var(--text3);font-size:.7rem}#nv-root tr.abierta td{background:var(--surface2);border-bottom:none}#nv-root tr.det td{background:var(--surface2);text-align:left;font-family:var(--sans);height:auto;padding:6px 10px 10px 30px}#nv-root .nvdet{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}#nv-root .nvdet b{font-family:var(--mono);font-size:.86rem}#nv-root .nvdet td{all:unset}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
 function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')vsellPopulateSelect();}catch(e){}var sel=document.getElementById('vsell-ticker');if(sel){sel.value=t;var o=NV_ROWS.filter(function(x){return x.t===t;})[0];var q=document.getElementById('vsell-qty');if(q&&o)q.value=o.q;try{vsellPreview();}catch(e){}}
  var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
+function nvAbrir(t){if(!NV.op)NV.op={};if(NV.op[t])delete NV.op[t];else NV.op[t]=1;nvSave();nvRender();}
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
 function nvRender(){
@@ -12004,16 +12007,24 @@ function nvRender(){
  var sh=function(k,t){return '<span class="s'+(NV.sk===k?' act':'')+'" onclick="nvSort(\''+k+'\')">'+t+(NV.sk===k?(NV.sd>0?' ▲':' ▼'):'')+'</span>';};
  var srt=function(a,b){var x=a[NV.sk],y=b[NV.sk];if(NV.sk==='up'){x=x==null?9999:x;y=y==null?9999:y;}else{if(x==null)return 1;if(y==null)return -1;}return (typeof x==='string'?x.localeCompare(y):x-y)*NV.sd;};
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
- var h='<thead><tr><th class="l">'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'<span class="sep"> / </span>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'<span class="sep"> / </span>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'<span class="sep"> / </span>'+sh('pt','% tipo')+'</th><th>'+sh('pv','P. Venta')+'<span class="sep"> / </span>'+sh('q','Nom.')+'</th><th>'+sh('rsi','RSI / TIR')+'</th></tr></thead><tbody>';
+ if(['t','d','up','px','ppc','inv'].indexOf(NV.sk)<0){NV.sk='inv';NV.sd=-1;}
+ var op=NV.op||(NV.op={});
+ var h='<thead><tr><th class="l">'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'<span class="sep"> / </span>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'<span class="sep"> / </span>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'</th></tr></thead><tbody>';
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
-  h+='<tr class="sec"><td colspan="6">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';
-  h+=X.map(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)';
-   return '<tr class="pick" onclick="nvVender(\''+o.t+'\')" title="Cargar en Vender"><td class="l"><b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b></td>'+
+  h+='<tr class="sec"><td colspan="4">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';
+  h+=X.map(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
+   var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span><b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b></td>'+
     '<td><div class="c2"><span style="color:'+(o.d==null?'var(--text3)':o.d>=0?'var(--accent)':'var(--red)')+'">'+_nvP(o.d)+'</span><small>'+upC(o.up)+'</small></div></td>'+
     '<td><div class="c2"><span>'+_nvF(o.px,o)+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
-    '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span>'+o.pt.toFixed(1).replace('.',',')+'%</span></small></div></td>'+
-    '<td><div class="c2"><span>'+_nvF(o.pv,o)+'</span><small class="port-sensitive">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+' nom.</small></div></td>'+
-    '<td>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</td></tr>';}).join('');});
+    '<td><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span></td></tr>';
+   if(ab)r+='<tr class="det"><td colspan="4"><div class="nvdet">'+
+    '<div><div class="nvlbl">% de '+(o.rv?'R. Variable':'R. Fija')+'</div><span class="pt" style="font-size:.86rem"><span class="b" style="width:70px"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><b style="color:'+(o.pt>2?pc:'var(--text)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</b></span></div>'+
+    '<div><div class="nvlbl">P. Venta</div><b>'+_nvF(o.pv,o)+'</b></div>'+
+    '<div><div class="nvlbl">Nominales</div><b class="port-sensitive">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
+    '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
+    '<div style="margin-left:auto;align-self:center"><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
+    '</div></td></tr>';
+   return r;}).join('');});
  document.getElementById('nv-tb').innerHTML=h+'</tbody>';
 }
 
