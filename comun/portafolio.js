@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=174, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=175, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v175 | 2026-10-11 | Prueba vista nueva: Δ% sin decimales; el Simulador de retiro pasa a su propia página en el menú ☰ (Herramientas → 🏖️ Simulador de retiro).',
   'v174 | 2026-10-11 | Prueba vista nueva: en pantallas anchas (≥1100px) la tabla se parte en dos mitades lado a lado (se lee de arriba abajo la izquierda y sigue en la derecha); en el celular sigue en una sola.',
   'v173 | 2026-10-11 | Prueba vista nueva: Δ% más llamativo — más grande, en negrita y con fondo de color (verde ≥10%, amarillo 0–10%, rojo negativo, como la vista clásica).',
   'v172 | 2026-10-11 | Prueba vista nueva: se quitan el mail y Salir de la barra de arriba; en Portafolio esa barra ya no se muestra (en las otras páginas queda solo con el ☰).',
@@ -11666,7 +11667,7 @@ function simrRender(force){
   if(!card){card=document.createElement('div');card.className='card';card.id='simr-card';card.style.marginBottom='1rem';
     card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px"><span class="card-title">🏖️ Simulador de retiro</span><span class="tag" style="margin-left:6px">¿cuánto dura tu capital?</span><button class="card-toggle" onclick="cardToggle(this)">▾</button></div><div id="simr-body" style="padding:.7rem 1rem 1rem"></div>';
     card.setAttribute('data-persist','1');try{if(localStorage.getItem(PFX+'col_simr-card')!=='0'){card.classList.add('card-collapsed');card.querySelector('.card-toggle').textContent='▸';}}catch(e){}
-    row.parentNode.insertBefore(card,row.nextSibling);force=true;}
+    var _sp=document.getElementById('page-simretiro');if(_sp){_sp.appendChild(card);card.classList.remove('card-collapsed');}else row.parentNode.insertBefore(card,row.nextSibling);force=true;}
   var b=document.getElementById('simr-body');
   if(!force&&document.getElementById('simr-cap')){if(_simrCapAuto){document.getElementById('simr-cap').value=Math.round(_simrCapHoy);simrResultado();}return;}
   var I=SIMR.in,mono='font-family:var(--mono)';
@@ -11978,6 +11979,9 @@ function nvIr(m){nvModo(m);var r=document.getElementById('nv-opw');if(r)r.scroll
 function _nvMover(){try{
  var kd=document.getElementById('nv-kd'),kc=document.getElementById('nv-kc');
  [['m-dolz',kd],['dolz-popover',kd],['m-count',kc]].forEach(function(x){var e=document.getElementById(x[0]);if(e&&x[1]&&e.parentNode!==x[1]){x[1].appendChild(e);if(x[0]!=='dolz-popover'){e.className='v';e.style.cssText='';}}});
+ if(CFG.simRetiro&&!document.getElementById('page-simretiro')){var pp=document.getElementById('page-portafolio');if(pp){var sp=document.createElement('div');sp.className='page';sp.id='page-simretiro';pp.parentNode.appendChild(sp);
+   var rb=document.querySelector('.nav-item[onclick*="recomendaciones"]');if(rb){var nb=document.createElement('button');nb.className='nav-item';nb.setAttribute('onclick',"showPage('simretiro',this)");nb.innerHTML='<span>🏖️</span>Simulador de retiro';rb.parentNode.insertBefore(nb,rb.nextSibling);}}}
+ var sc=document.getElementById('simr-card'),spg=document.getElementById('page-simretiro');if(sc&&spg&&sc.parentNode!==spg){spg.appendChild(sc);sc.classList.remove('card-collapsed');var tg=sc.querySelector('.card-toggle');if(tg)tg.textContent='▾';}
  var cw=document.getElementById('nv-cards'),tr=document.getElementById('top-cards-row');if(cw&&tr&&tr.parentNode!==cw)cw.appendChild(tr);
  var pie=document.getElementById('m-pie-sector'),db=document.getElementById('db-scroll');
  if(pie&&db&&!document.getElementById('nv-pies')){var box=pie.parentNode.parentNode.parentNode;var c=document.createElement('div');c.className='card';c.id='nv-pies';c.style.cssText='margin-bottom:1rem';
@@ -12035,7 +12039,7 @@ function nvRender(){
   var sh0='<tr class="sec"><td colspan="4">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
   X.forEach(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
    var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
-    '<td><div class="c2"><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+_nvP(o.d)+'</span><small>'+upC(o.up)+'</small></div></td>'+
+    '<td><div class="c2"><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span><small>'+upC(o.up)+'</small></div></td>'+
     '<td><div class="c2"><span>'+_nvF(o.px,o)+(o.qh||'')+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
     '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></small></div></td></tr>';
    if(ab)r+='<tr class="det"><td colspan="4"><div class="nvdet">'+
