@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=189, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=190, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v190 | 2026-10-11 | Vista nueva: P. Venta editable en la fila desplegada (en el mismo valor que se muestra; Enter guarda, Escape cancela, vacío lo saca). Se guarda igual que en la página P. Venta (localStorage + Supabase) y se recalculan ΔUp y filtros.',
   'v189 | 2026-10-11 | Vista nueva: el aviso "Desde tu última visita" se muestra arriba, entre los recuadros de totales y los filtros (antes quedaba abajo, sobre Distribución/Evolución).',
   'v188 | 2026-10-11 | Ana, Hilda, Juli y Omar pasan a la vista nueva del portafolio (vistaNueva en cada HTML). Si la cartera no tiene % USD (Omar), ese recuadro no se muestra.',
   'v187 | 2026-10-11 | GDC pasa a la vista nueva del portafolio (PortafolioGDC.html con vistaNueva); la página de prueba ya no hace falta. Ana, Hilda, Juli y Omar siguen con la vista anterior.',
@@ -3982,7 +3983,7 @@ function renderPortfolio(){
     if(CFG.vistaNueva){try{var _nvRv=['nyse','argentina','brasil','europa','china','cripto'].indexOf(sector)>=0,_nvDen=_nvRv?rvMktARS:rfMktARS,_nvRsi=null;
       if(!_isBonoON&&typeof _rsiEntry!=='undefined'&&_rsiEntry&&_rsiEntry.value!=null)_nvRsi=+_rsiEntry.value;
       NV_ROWS.push({t:p.ticker,s:sector,rv:_nvRv,usdD:isBonoUSDDirecto(p.ticker),d:pnlPct,up:upside,inv:inversionCedearARS||0,invCol:invColor,pt:_nvDen>0?(inversionCedearARS||0)/_nvDen*100:0,
-        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
+        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,rat:ratio,tc:_tcHoy,qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
     // pueden clasificar en verde/amarillo/rojo, y ocultarlos los hacía desaparecer de la
     // tabla en vez de mostrarse con el precio vacío.
@@ -11991,6 +11992,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  'body.nv-on #page-portafolio>*:not(#nv-root):not(#port-pin-overlay){display:none!important}body.nv-port #sidebar-toggle-btn{display:none!important}#nv-root .nvfb{display:flex;flex-wrap:wrap;gap:5px;align-items:center;max-width:430px}#nv-root .nvtb #nv-q{margin-left:4px}@media(min-width:681px){body.nv-on .main{position:relative}body.nv-on .sidebar{position:absolute;top:0;left:0;bottom:0;z-index:950;will-change:width;box-shadow:6px 0 24px rgba(0,0,0,.45)}}body.nv-on #auth-user-box{display:none!important}body.nv-port .topbar:not(.nvtb){display:none!important}#nv-root .nvtb{justify-content:center}'+
  '#nv-root .dp{font-size:.92rem;font-weight:800;color:var(--dc);background:color-mix(in srgb,var(--dc) 14%,transparent);border:1px solid color-mix(in srgb,var(--dc) 35%,transparent);border-radius:6px;padding:1px 7px;margin-bottom:2px;min-width:62px;text-align:right}'+
  '#nv-root .nv2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}#nv-root .nv2col .nvtw{max-height:78vh}'+
+ '#nv-root .nvpv{width:105px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:.86rem;font-weight:700;padding:3px 7px;outline:none}#nv-root .nvpv:focus{border-color:var(--accent)}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -12015,6 +12017,14 @@ var _NV_MKT={nyse:'USA',argentina:'ARGENTINA',bonos:'BONOS',on:'ON',fci:'FCI',br
 function nvComprar(t){nvModo('c');var o=NV_ROWS.filter(function(x){return x.t===t;})[0],mk=document.getElementById('vbuy-mkt'),tk=document.getElementById('vbuy-ticker');
  if(mk&&o&&_NV_MKT[o.s]){mk.value=_NV_MKT[o.s];try{vbuyOnMktChange();}catch(e){}}if(tk)tk.value=t;
  var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});var q=document.getElementById('vbuy-precio-ars');if(q)setTimeout(function(){try{q.focus({preventScroll:true});q.select();}catch(e){}},400);}
+function nvSetPV(t,v){var o=NV_ROWS.filter(function(x){return x.t===t;})[0];if(!o)return;
+ var s=String(v||'').trim(),n=null;if(s){n=parseFloat(s.replace(/\./g,'').replace(',','.'));if(!(n>0)){alert('P. Venta inválido');nvRender();return;}}
+ var usd=n==null?null:(o.tc>0&&o.rat>0?n*o.rat/o.tc:null);if(n!=null&&usd==null){alert('Falta el tipo de cambio para convertir el P. Venta');return;}
+ TARGET_TABLE[t]=usd==null?null:Math.round(usd*10000)/10000;
+ try{localStorage.setItem((PFX+'targets'),JSON.stringify(TARGET_TABLE));}catch(e){}
+ try{sbSetConfig('targets',TARGET_TABLE);}catch(e){}
+ try{if(typeof renderTargets==='function')renderTargets();}catch(e){}
+ renderPortfolio();}
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'||k==='pais'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
 function nvRender(){
@@ -12070,7 +12080,7 @@ function nvRender(){
     '<td><div class="c2"><span>'+_nvF(o.px,o)+(o.qh||'')+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
     '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></small></div></td></tr>';
    if(ab)r+='<tr class="det"><td colspan="4"><div class="nvdet">'+
-    '<div><div class="nvlbl">P. Venta</div><b>'+_nvF(o.pv,o)+'</b></div>'+
+    '<div onclick="event.stopPropagation()"><div class="nvlbl">P. Venta ✎</div><input class="nvpv" type="text" inputmode="decimal" value="'+(o.pv!=null&&isFinite(o.pv)?(o.pv<200?(Math.round(o.pv*100)/100).toLocaleString('es-AR'):_nvN(o.pv)):'')+'" placeholder="sin P. Venta" title="Escribí el nuevo P. Venta y Enter (vacío = sacarlo)" onkeydown="if(event.key===\'Enter\'){this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" onblur="if(this.value!==this.defaultValue)nvSetPV(\''+o.t+'\',this.value)"></div>'+
     '<div title="Vender todos los nominales" style="cursor:pointer" onclick="event.stopPropagation();nvVender(\''+o.t+'\')"><div class="nvlbl">Nominales ↓</div><b class="port-sensitive" style="text-decoration:underline dotted;text-underline-offset:3px">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
     '<div style="margin-left:auto;align-self:center;display:flex;gap:6px"><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
