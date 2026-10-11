@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=157, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=158, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v158 | 2026-10-11 | Prueba vista nueva: la barra superior (Liquidez $/USD, Inv. Inicial, CCL, MEP, BTC, EWZ, IMV, S&P, QQQ) pasa adentro de la vista, debajo de los KPIs y en varias líneas si no entra; el mail y Salir quedan arriba.',
   'v157 | 2026-10-11 | Prueba vista nueva: filtro por Tipo (USA, Argentina, Brasil, Europa, China, Cripto, Bonos, ONs, FCI) con selección múltiple; reemplaza "Ocultar acciones argentinas".',
   'v156 | 2026-10-11 | Prueba vista nueva: el panel Comprar/Vender pasa abajo de la tabla y sin título repetido; filtros de ganancia rotulados "Ganando" y "Pérdida".',
   'v155 | 2026-10-11 | Prueba: vista nueva del portafolio (CFG.vistaNueva, solo en GDC/PortafolioGDC_prueba.html) — foto y KPIs, panel único Comprar/Vender, filtros con distribuciones de selección múltiple y tabla de celdas dobles ordenable. La vista clásica sigue igual.',
@@ -11964,6 +11965,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root th{position:sticky;top:0;background:var(--surface2);color:var(--text3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;z-index:1}#nv-root th .s{cursor:pointer;padding:2px 3px;border-radius:4px}#nv-root th .s:hover,#nv-root th .s.act{color:var(--text)}#nv-root th .sep{opacity:.5}'+
  '#nv-root td{padding:4px 8px;text-align:right;font-family:var(--mono);border-bottom:1px solid var(--border);white-space:nowrap;height:40px}#nv-root th.l,#nv-root td.l{text-align:left}#nv-root tr.sec td{background:var(--surface2);font-family:var(--sans);font-weight:700;text-align:left;height:30px}#nv-root tr.pick{cursor:pointer}#nv-root tr.pick:hover td{background:var(--surface2)}'+
  '#nv-root .c2{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}#nv-root .c2 small{color:var(--text3);font-size:.66rem}#nv-root .pt{display:inline-flex;align-items:center;gap:5px}#nv-root .pt .b{width:40px;height:5px;background:var(--bg);border-radius:3px;overflow:hidden}#nv-root .pt .b span{display:block;height:100%}'+
+ '#nv-root .nvtb{height:auto;min-height:0;flex-wrap:wrap;overflow:visible;padding:6px 10px;row-gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:0 0 10px;font-size:.68rem}#nv-root .nvtb>div{display:flex;flex-shrink:0;height:24px;margin-left:0!important}#nv-root .nvtb>div:last-child{border-right:none}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -11977,9 +11979,11 @@ function nvRender(){
  if(!root){root=document.createElement('div');root.id='nv-root';var ov=document.getElementById('port-pin-overlay');pg.insertBefore(root,ov?ov.nextSibling:pg.firstChild);
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
   root.innerHTML='<div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s" id="nv-khs"></div></div></div>'+
-   '<div class="nvbar" id="nv-fbar"></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
+   '<div class="topbar nvtb" id="nv-tb0"></div><div class="nvbar" id="nv-fbar"></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
    '<div class="nvsum" id="nv-sum"></div><div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
+  // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
+  try{var tb0=document.querySelector('.topbar'),nb=document.getElementById('nv-tb0');if(tb0&&nb)Array.prototype.slice.call(tb0.children).forEach(function(c){if(c.id!=='auth-user-box'&&c.id!=='tb-right')nb.appendChild(c);});}catch(e){}
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
