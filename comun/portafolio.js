@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=190, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=191, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v191 | 2026-10-11 | Vista nueva: cada ticker en una sola línea — columnas separadas Δ% · ΔUp · Precio · PPC · Inversión · % tipo (cada una ordenable); el P. Venta de la fila desplegada se edita en USD (como en la página P. Venta). Dos mitades solo desde 1500px de ancho.',
   'v190 | 2026-10-11 | Vista nueva: P. Venta editable en la fila desplegada (en el mismo valor que se muestra; Enter guarda, Escape cancela, vacío lo saca). Se guarda igual que en la página P. Venta (localStorage + Supabase) y se recalculan ΔUp y filtros.',
   'v189 | 2026-10-11 | Vista nueva: el aviso "Desde tu última visita" se muestra arriba, entre los recuadros de totales y los filtros (antes quedaba abajo, sobre Distribución/Evolución).',
   'v188 | 2026-10-11 | Ana, Hilda, Juli y Omar pasan a la vista nueva del portafolio (vistaNueva en cada HTML). Si la cartera no tiene % USD (Omar), ese recuadro no se muestra.',
@@ -3983,7 +3984,7 @@ function renderPortfolio(){
     if(CFG.vistaNueva){try{var _nvRv=['nyse','argentina','brasil','europa','china','cripto'].indexOf(sector)>=0,_nvDen=_nvRv?rvMktARS:rfMktARS,_nvRsi=null;
       if(!_isBonoON&&typeof _rsiEntry!=='undefined'&&_rsiEntry&&_rsiEntry.value!=null)_nvRsi=+_rsiEntry.value;
       NV_ROWS.push({t:p.ticker,s:sector,rv:_nvRv,usdD:isBonoUSDDirecto(p.ticker),d:pnlPct,up:upside,inv:inversionCedearARS||0,invCol:invColor,pt:_nvDen>0?(inversionCedearARS||0)/_nvDen*100:0,
-        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,rat:ratio,tc:_tcHoy,qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
+        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,pvU:targetUSD,qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
     // pueden clasificar en verde/amarillo/rojo, y ocultarlos los hacía desaparecer de la
     // tabla en vez de mostrarse con el precio vacío.
@@ -11993,6 +11994,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .dp{font-size:.92rem;font-weight:800;color:var(--dc);background:color-mix(in srgb,var(--dc) 14%,transparent);border:1px solid color-mix(in srgb,var(--dc) 35%,transparent);border-radius:6px;padding:1px 7px;margin-bottom:2px;min-width:62px;text-align:right}'+
  '#nv-root .nv2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}#nv-root .nv2col .nvtw{max-height:78vh}'+
  '#nv-root .nvpv{width:105px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:.86rem;font-weight:700;padding:3px 7px;outline:none}#nv-root .nvpv:focus{border-color:var(--accent)}'+
+ '#nv-root td.mut{color:var(--text3)}#nv-root td.up{font-size:.74rem}#nv-root td.ptb .b{width:46px;height:6px}#nv-root td.ptb{font-size:.8rem;font-weight:700}#nv-root td{height:34px}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -12019,8 +12021,7 @@ function nvComprar(t){nvModo('c');var o=NV_ROWS.filter(function(x){return x.t===
  var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});var q=document.getElementById('vbuy-precio-ars');if(q)setTimeout(function(){try{q.focus({preventScroll:true});q.select();}catch(e){}},400);}
 function nvSetPV(t,v){var o=NV_ROWS.filter(function(x){return x.t===t;})[0];if(!o)return;
  var s=String(v||'').trim(),n=null;if(s){n=parseFloat(s.replace(/\./g,'').replace(',','.'));if(!(n>0)){alert('P. Venta inválido');nvRender();return;}}
- var usd=n==null?null:(o.tc>0&&o.rat>0?n*o.rat/o.tc:null);if(n!=null&&usd==null){alert('Falta el tipo de cambio para convertir el P. Venta');return;}
- TARGET_TABLE[t]=usd==null?null:Math.round(usd*10000)/10000;
+ TARGET_TABLE[t]=n;
  try{localStorage.setItem((PFX+'targets'),JSON.stringify(TARGET_TABLE));}catch(e){}
  try{sbSetConfig('targets',TARGET_TABLE);}catch(e){}
  try{if(typeof renderTargets==='function')renderTargets();}catch(e){}
@@ -12071,29 +12072,32 @@ function nvRender(){
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
  if(['pais','t','d','up','px','ppc','inv','pt'].indexOf(NV.sk)<0){NV.sk='inv';NV.sd=-1;}
  var op=NV.op||(NV.op={});
- var it=[],h='<thead><tr><th class="l">'+sh('pais','País')+'<span class="sep"> / </span>'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'<span class="sep"> / </span>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'<span class="sep"> / </span>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'<span class="sep"> / </span>'+sh('pt','% tipo')+'</th></tr></thead><tbody>';
+ var it=[],h='<thead><tr><th class="l">'+sh('pais','País')+'<span class="sep"> / </span>'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'</th><th>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'</th><th>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'</th><th>'+sh('pt','% tipo')+'</th></tr></thead><tbody>';
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
-  var sh0='<tr class="sec"><td colspan="4">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
+  var sh0='<tr class="sec"><td colspan="7">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
   X.forEach(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
    var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
-    '<td><div class="c2"><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span><small>'+upC(o.up)+'</small></div></td>'+
-    '<td><div class="c2"><span>'+_nvF(o.px,o)+(o.qh||'')+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
-    '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></small></div></td></tr>';
-   if(ab)r+='<tr class="det"><td colspan="4"><div class="nvdet">'+
-    '<div onclick="event.stopPropagation()"><div class="nvlbl">P. Venta ✎</div><input class="nvpv" type="text" inputmode="decimal" value="'+(o.pv!=null&&isFinite(o.pv)?(o.pv<200?(Math.round(o.pv*100)/100).toLocaleString('es-AR'):_nvN(o.pv)):'')+'" placeholder="sin P. Venta" title="Escribí el nuevo P. Venta y Enter (vacío = sacarlo)" onkeydown="if(event.key===\'Enter\'){this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" onblur="if(this.value!==this.defaultValue)nvSetPV(\''+o.t+'\',this.value)"></div>'+
+    '<td><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span></td>'+
+    '<td class="up">'+upC(o.up)+'</td>'+
+    '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
+    '<td class="mut">'+_nvF(o.ppc,o)+'</td>'+
+    '<td><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span></td>'+
+    '<td class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></td></tr>';
+   if(ab)r+='<tr class="det"><td colspan="7"><div class="nvdet">'+
+    '<div onclick="event.stopPropagation()"><div class="nvlbl">P. Venta USD ✎</div><input class="nvpv" type="text" inputmode="decimal" value="'+(o.pvU!=null&&isFinite(o.pvU)?String(o.pvU).replace('.',','):'')+'" placeholder="sin P. Venta" title="Escribí el nuevo P. Venta y Enter (vacío = sacarlo)" onkeydown="if(event.key===\'Enter\'){this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" onblur="if(this.value!==this.defaultValue)nvSetPV(\''+o.t+'\',this.value)"></div>'+
     '<div title="Vender todos los nominales" style="cursor:pointer" onclick="event.stopPropagation();nvVender(\''+o.t+'\')"><div class="nvlbl">Nominales ↓</div><b class="port-sensitive" style="text-decoration:underline dotted;text-underline-offset:3px">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
     '<div style="margin-left:auto;align-self:center;display:flex;gap:6px"><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
     '</div></td></tr>';
    it.push({r:r});});});
  var tb=function(arr){return '<div class="nvtw"><table>'+h+arr.join('')+'</tbody></table></div>';},nA=it.filter(function(x){return x.r;}).length;
- var dos=window.innerWidth>=1100&&nA>12,out;try{if(_portBlurred)root.classList.add('port-blurred');}catch(e){}
+ var dos=window.innerWidth>=1500&&nA>12,out;try{if(_portBlurred)root.classList.add('port-blurred');}catch(e){}
  if(!dos)out=tb(it.map(function(x){return x.s||x.r;}));
  else{var half=Math.ceil(nA/2),A=[],B=[],c=0,curS=null;it.forEach(function(x){if(x.s){curS=x;(c<half?A:B).push(x.s);return;}
    if(c<half)A.push(x.r);else{if(!B.length&&curS)B.push(curS.s.replace(curS.n,curS.n+' (cont.)'));B.push(x.r);}c++;});
   out='<div class="nv2col">'+tb(A)+tb(B)+'</div>';}
  document.getElementById('nv-tw2').innerHTML=out;
- if(!window._nvRz){window._nvRz=1;var _w=window.innerWidth>=1100;window.addEventListener('resize',function(){var w=window.innerWidth>=1100;if(w!==_w){_w=w;nvRender();}});}
+ if(!window._nvRz){window._nvRz=1;var _w=window.innerWidth>=1500;window.addEventListener('resize',function(){var w=window.innerWidth>=1500;if(w!==_w){_w=w;nvRender();}});}
 }
 
 // ─── 🔔 Avisos push (CFG.push) ─────────────────────────────────────────────────
