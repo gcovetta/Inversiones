@@ -394,7 +394,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
 <script>document.documentElement.classList.add('nv-pre');setTimeout(function(){document.documentElement.classList.remove('nv-pre');},20000);</script>
 </head>
 <body>
-<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v193 · 11/10/2026</div>
+<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v195 · 11/10/2026</div>
 
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
   <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;font-family:var(--mono)">Omar</div>
@@ -557,6 +557,12 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
       </div>
       <!-- Vista nueva: piezas de la vista anterior que se reubican al cargar (el resto se borró en v193) -->
       <div id="nv-legacy" style="display:none">
+<div class="metric-value" id="m-dolz">—</div>
+<div id="dolz-popover" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:300;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:.8rem;min-width:230px;box-shadow:0 8px 28px rgba(0,0,0,.45)">
+              <div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Activos extra dolarizados</div>
+              <div style="font-size:.6rem;color:var(--text3);margin-bottom:.55rem;line-height:1.4">NYSE · Brasil · Europa · Cripto se suman automáticamente. Marcá posiciones adicionales:</div>
+              <div id="dolz-list" style="display:flex;flex-direction:column;gap:5px;max-height:210px;overflow-y:auto"></div>
+            </div>
 <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
 <div class="metric-value" id="m-count">—</div>
 <div class="card" id="dist-card" style="display:none;margin-bottom:1rem;max-width:720px">
@@ -1342,7 +1348,7 @@ window.PORTFOLIO_CONFIG={"vistaNueva": true, "persona": "Omar", "vistaFamiliar":
  "supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng"
 };
 </script>
-<script src="../comun/portafolio.js?v=193"></script>
+<script src="../comun/portafolio.js?v=195"></script>
 <script>
 // ─── Funciones propias de Omar (pisan las del código común) ───
 // carteras Principal / Cocos / VetaJeep (selector, filtro y badge en Movimientos, Próximos Cobros siempre de Principal) y comparación con Bull

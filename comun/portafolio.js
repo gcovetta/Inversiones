@@ -11,8 +11,10 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=193, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=195, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v195 | 2026-10-11 | Fix (v193): en las carteras sin lista "en la mira" guardada (Ana, Hilda, Juli, Omar) la carga se cortaba a mitad de camino (wlLoad vacío devolvía nada) — no cargaba liquidez, Inv. Inicial ni precios hasta tocar Actualizar.',
+  'v194 | 2026-10-11 | Omar: recuadro % USD con ⚙️ para elegir activos dolarizados, como en las otras carteras.',
   'v193 | 2026-10-11 | Limpieza 2: se borra el HTML de la vista anterior del Portafolio en las 5 carteras (resumen, zona de seguimiento, inversiones chicas, tablas por mercado, barra de columnas); lo que el cálculo todavía usa se crea vacío y oculto al cargar (nv-sink). Las funciones que solo dibujaban esa vista quedan vacías. Omar: la etiqueta de cartera activa pasa junto a Supabase/Sync.',
   'v192 | 2026-10-11 | Limpieza 1: el historial de cambios viejo sale del código (comun/CHANGELOG.md); se quita el changelog en comentario de los 5 HTML.',
   'v191 | 2026-10-11 | Vista nueva: cada ticker en una sola línea — columnas separadas Δ% · ΔUp · Precio · PPC · Inversión · % tipo (cada una ordenable); el P. Venta de la fila desplegada se edita en USD (como en la página P. Venta). Dos mitades solo desde 1500px de ancho.',
@@ -9805,7 +9807,7 @@ function renderPerfChart() {
 
 /* ── Watchlist "Tickers en la mira" ─────────────────────────────── */
 const WL_KEY = CFG.wlKey;
-function wlLoad(){} // vista anterior (sin uso desde v193)
+function wlLoad(){return [];} // vista anterior (sin uso desde v193)
 function wlSave(arr){} // vista anterior (sin uso desde v193)
 function wlRender(){} // vista anterior (sin uso desde v193)
 function wlAdd(){} // vista anterior (sin uso desde v193)
