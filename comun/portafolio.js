@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=160, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=161, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v161 | 2026-10-11 | Prueba vista nueva: % del tipo vuelve a la fila (debajo de la Inversión, ordenable); buscador de ticker en la barra de filtros que encuentra el activo ignorando todos los filtros.',
   'v160 | 2026-10-11 | Prueba vista nueva: la barra de Liquidez/Inv. Inicial/cotizaciones va arriba de la foto; el filtro por Tipo queda en la misma línea, al lado de R. Fija.',
   'v159 | 2026-10-11 | Prueba vista nueva: tabla con fila que se despliega — cerrada muestra Ticker, Δ%/ΔUp, Precio/PPC e Inversión; tocándola se abre con % del tipo, P. Venta, Nominales, RSI/TIR y botón Vender.',
   'v158 | 2026-10-11 | Prueba vista nueva: la barra superior (Liquidez $/USD, Inv. Inicial, CCL, MEP, BTC, EWZ, IMV, S&P, QQQ) pasa adentro de la vista, debajo de los KPIs y en varias líneas si no entra; el mail y Salir quedan arriba.',
@@ -11948,7 +11949,7 @@ var NV_TS=[['nyse','🇺🇸 USA'],['argentina','🇦🇷 Argentina'],['brasil',
 function _nvTsSel(){return Object.keys(NV.ts||{}).filter(function(k){return NV.ts[k];});}
 function nvTs(k){if(!NV.ts)NV.ts={};NV.ts[k]=!NV.ts[k];nvSave();nvRender();}
 function _nvBase(o){var ts=_nvTsSel();if(ts.length&&ts.indexOf(o.s)<0)return false;if(NV.tipo==='rv'&&!o.rv)return false;if(NV.tipo==='rf'&&o.rv)return false;return true;}
-function _nvOk(o,sin){return _nvBase(o)&&(sin==='f'||_nvEn(NV.df,NV_FD,o))&&(sin==='g'||_nvEn(NV.dg,NV_GD,o))&&(sin==='m'||_nvEn(NV.dm,NV_MD,o));}
+function _nvOk(o,sin){if(NV.q)return o.t.indexOf(NV.q)>=0;return _nvBase(o)&&(sin==='f'||_nvEn(NV.df,NV_FD,o))&&(sin==='g'||_nvEn(NV.dg,NV_GD,o))&&(sin==='m'||_nvEn(NV.dm,NV_MD,o));}
 function _nvN(x){return Math.round(x||0).toLocaleString('es-AR');}
 function _nvP(x){return x==null||!isFinite(x)?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
 function _nvF(x,o){if(x==null||!isFinite(x))return '<span style="color:var(--text3)">—</span>';return (o.usdD?'US$ ':'$ ')+(x<200?x.toLocaleString('es-AR',{maximumFractionDigits:2}):_nvN(x));}
@@ -11974,6 +11975,7 @@ function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card')
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
 function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')vsellPopulateSelect();}catch(e){}var sel=document.getElementById('vsell-ticker');if(sel){sel.value=t;var o=NV_ROWS.filter(function(x){return x.t===t;})[0];var q=document.getElementById('vsell-qty');if(q&&o)q.value=o.q;try{vsellPreview();}catch(e){}}
  var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
+function nvBuscar(v){NV.q=(v||'').toUpperCase().trim();nvRender();}
 function nvAbrir(t){if(!NV.op)NV.op={};if(NV.op[t])delete NV.op[t];else NV.op[t]=1;nvSave();nvRender();}
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
@@ -11983,7 +11985,7 @@ function nvRender(){
  if(!root){root=document.createElement('div');root.id='nv-root';var ov=document.getElementById('port-pin-overlay');pg.insertBefore(root,ov?ov.nextSibling:pg.firstChild);
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
   root.innerHTML='<div class="topbar nvtb" id="nv-tb0"></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s" id="nv-khs"></div></div></div>'+
-   '<div class="nvbar" id="nv-fbar"></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
+   '<div class="nvbar"><span id="nv-fbar" style="display:contents"></span><span style="flex:1"></span><span style="display:flex;align-items:center;gap:4px"><input id="nv-q" type="text" placeholder="🔍 Ticker" autocomplete="off" oninput="nvBuscar(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';nvBuscar(\'\')}" style="width:110px;background:var(--surface);border:1px solid var(--border2);border-radius:999px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 10px;outline:none;text-transform:uppercase"><span id="nv-qx" class="nvclr" style="display:none" onclick="var i=document.getElementById(\'nv-q\');i.value=\'\';nvBuscar(\'\')">✕</span></span></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
    '<div class="nvsum" id="nv-sum"></div><div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
   // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
@@ -12002,24 +12004,24 @@ function nvRender(){
  var dist=function(id,B,key,sin){var L=NV_ROWS.filter(function(o){return _nvOk(o,sin);}),cnt=B.map(function(b){return L.filter(b[1]).length;}),mx=Math.max.apply(null,cnt)||1,anySel=_nvSel(NV[key]).length;
   document.getElementById(id).innerHTML=B.map(function(b,i){var on=!!NV[key][i];return '<div class="nvbk'+(on?' on':'')+(anySel&&!on?' dim':'')+'" onclick="nvTog(\''+key+'\','+i+')"><span>'+b[0]+'</span><div class="tr"><span style="width:'+(cnt[i]/mx*100)+'%;background:'+b[2]+'"></span></div><span class="c">'+cnt[i]+'</span></div>';}).join('');};
  dist('nv-dF',NV_FD,'df','f');dist('nv-dG',NV_GD,'dg','g');dist('nv-dM',NV_MD,'dm','m');
+ var qx=document.getElementById('nv-qx');if(qx)qx.style.display=NV.q?'':'none';
  var L=NV_ROWS.filter(function(o){return _nvOk(o);}),desc=[],nom=function(m,B){return _nvSel(m).map(function(i){return B[i][0];}).join(' o ');};
- if(_nvTsSel().length)desc.push('tipo '+NV_TS.filter(function(x){return NV.ts[x[0]];}).map(function(x){return x[1];}).join(' o '));if(_nvSel(NV.df).length)desc.push('distancia '+nom(NV.df,NV_FD));if(_nvSel(NV.dg).length)desc.push('ganancia '+nom(NV.dg,NV_GD));if(_nvSel(NV.dm).length)desc.push('inversión '+nom(NV.dm,NV_MD));
+ if(NV.q)desc=['búsqueda "'+NV.q+'" (sin filtros)'];else if(_nvTsSel().length)desc.push('tipo '+NV_TS.filter(function(x){return NV.ts[x[0]];}).map(function(x){return x[1];}).join(' o '));if(_nvSel(NV.df).length)desc.push('distancia '+nom(NV.df,NV_FD));if(_nvSel(NV.dg).length)desc.push('ganancia '+nom(NV.dg,NV_GD));if(_nvSel(NV.dm).length)desc.push('inversión '+nom(NV.dm,NV_MD));
  document.getElementById('nv-sum').innerHTML='<span><b style="color:var(--text)">'+L.length+'</b> de '+NV_ROWS.length+' activos · <span class="port-sensitive">$ '+_nvN(L.reduce(function(s,o){return s+(o.inv||0);},0))+'</span>'+(desc.length?' · '+desc.join(' y '):'')+'</span>'+(desc.length?'<span class="nvclr" onclick="NV.ts={};NV.df={};NV.dg={};NV.dm={};nvSave();nvRender()">quitar filtros ✕</span>':'');
  var sh=function(k,t){return '<span class="s'+(NV.sk===k?' act':'')+'" onclick="nvSort(\''+k+'\')">'+t+(NV.sk===k?(NV.sd>0?' ▲':' ▼'):'')+'</span>';};
  var srt=function(a,b){var x=a[NV.sk],y=b[NV.sk];if(NV.sk==='up'){x=x==null?9999:x;y=y==null?9999:y;}else{if(x==null)return 1;if(y==null)return -1;}return (typeof x==='string'?x.localeCompare(y):x-y)*NV.sd;};
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
- if(['t','d','up','px','ppc','inv'].indexOf(NV.sk)<0){NV.sk='inv';NV.sd=-1;}
+ if(['t','d','up','px','ppc','inv','pt'].indexOf(NV.sk)<0){NV.sk='inv';NV.sd=-1;}
  var op=NV.op||(NV.op={});
- var h='<thead><tr><th class="l">'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'<span class="sep"> / </span>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'<span class="sep"> / </span>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'</th></tr></thead><tbody>';
+ var h='<thead><tr><th class="l">'+sh('t','Ticker')+'</th><th>'+sh('d','Δ%')+'<span class="sep"> / </span>'+sh('up','ΔUp')+'</th><th>'+sh('px','Precio')+'<span class="sep"> / </span>'+sh('ppc','PPC')+'</th><th>'+sh('inv','Inversión')+'<span class="sep"> / </span>'+sh('pt','% tipo')+'</th></tr></thead><tbody>';
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
   h+='<tr class="sec"><td colspan="4">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';
   h+=X.map(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
    var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span><b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b></td>'+
     '<td><div class="c2"><span style="color:'+(o.d==null?'var(--text3)':o.d>=0?'var(--accent)':'var(--red)')+'">'+_nvP(o.d)+'</span><small>'+upC(o.up)+'</small></div></td>'+
     '<td><div class="c2"><span>'+_nvF(o.px,o)+'</span><small>'+_nvF(o.ppc,o)+'</small></div></td>'+
-    '<td><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span></td></tr>';
+    '<td><div class="c2"><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">$ '+_nvN(o.inv)+'</span><small><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span>'+o.pt.toFixed(1).replace('.',',')+'%</span></small></div></td></tr>';
    if(ab)r+='<tr class="det"><td colspan="4"><div class="nvdet">'+
-    '<div><div class="nvlbl">% de '+(o.rv?'R. Variable':'R. Fija')+'</div><span class="pt" style="font-size:.86rem"><span class="b" style="width:70px"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><b style="color:'+(o.pt>2?pc:'var(--text)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</b></span></div>'+
     '<div><div class="nvlbl">P. Venta</div><b>'+_nvF(o.pv,o)+'</b></div>'+
     '<div><div class="nvlbl">Nominales</div><b class="port-sensitive">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
