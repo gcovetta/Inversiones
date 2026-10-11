@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=183, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=184, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v184 | 2026-10-11 | Vista nueva: botón 🛒 Comprar en la fila desplegada (carga mercado y ticker en Comprar). Todas las carteras: en Vender, al elegir el ticker se completa la cantidad con todas las nominales.',
   'v183 | 2026-10-11 | Prueba vista nueva: sin los filtros Todo / R. Variable / R. Fija; los filtros por país/tipo pasan al lado del recuadro Posiciones y el buscador de ticker a la barra de arriba, junto al ?. Una fila menos.',
   'v182 | 2026-10-11 | Prueba vista nueva: el recuadro de rendimiento muestra solo la ganancia en USD, sin "en el período".',
   'v181 | 2026-10-11 | Prueba vista nueva: sin los títulos "Rendimiento del período" y "Hoy" en los recuadros de arriba.',
@@ -2156,6 +2157,9 @@ function movModalClose(){
 
 
 // ════════════════════════════════════════════════════════
+// Vender: al elegir un ticker en el combo se completa la cantidad con todas las nominales (si vendés menos, la cambiás)
+document.addEventListener('change',function(e){if(!e.target||e.target.id!=='vsell-ticker')return;var t=e.target.value,q=document.getElementById('vsell-qty');if(!t||!q)return;
+  try{var p=getPositions().filter(function(x){return x.ticker===t&&x.qty>0;})[0];if(p){q.value=Math.round(p.qty*100)/100;vsellPreview();}}catch(err){}});
 // SIMULADOR DE VENTA
 // ════════════════════════════════════════════════════════
 function divPopulateSelect(){
@@ -11997,6 +12001,10 @@ function _nvMover(){try{
  if(pie&&db&&!document.getElementById('nv-pies')){var box=pie.parentNode.parentNode.parentNode;var c=document.createElement('div');c.className='card';c.id='nv-pies';c.style.cssText='margin-bottom:1rem';
   c.innerHTML='<div class="card-header"><span class="card-title">🥧 Composición de la cartera</span></div>';c.appendChild(box);db.insertBefore(c,db.firstChild);}
 }catch(e){console.warn('nv mover',e);}}
+var _NV_MKT={nyse:'USA',argentina:'ARGENTINA',bonos:'BONOS',on:'ON',fci:'FCI',brasil:'BRASIL',europa:'EUROPA',china:'CHINA',cripto:'CRIPTO'};
+function nvComprar(t){nvModo('c');var o=NV_ROWS.filter(function(x){return x.t===t;})[0],mk=document.getElementById('vbuy-mkt'),tk=document.getElementById('vbuy-ticker');
+ if(mk&&o&&_NV_MKT[o.s]){mk.value=_NV_MKT[o.s];try{vbuyOnMktChange();}catch(e){}}if(tk)tk.value=t;
+ var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});var q=document.getElementById('vbuy-qty');if(q)setTimeout(function(){try{q.focus({preventScroll:true});}catch(e){}},400);}
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'||k==='pais'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
 function nvRender(){
@@ -12055,7 +12063,7 @@ function nvRender(){
     '<div><div class="nvlbl">P. Venta</div><b>'+_nvF(o.pv,o)+'</b></div>'+
     '<div title="Vender todos los nominales" style="cursor:pointer" onclick="event.stopPropagation();nvVender(\''+o.t+'\')"><div class="nvlbl">Nominales ↓</div><b class="port-sensitive" style="text-decoration:underline dotted;text-underline-offset:3px">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
-    '<div style="margin-left:auto;align-self:center"><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
+    '<div style="margin-left:auto;align-self:center;display:flex;gap:6px"><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
     '</div></td></tr>';
    it.push({r:r});});});
  var tb=function(arr){return '<div class="nvtw"><table>'+h+arr.join('')+'</tbody></table></div>';},nA=it.filter(function(x){return x.r;}).length;
