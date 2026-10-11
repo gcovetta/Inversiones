@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=195, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=196, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v196 | 2026-10-11 | Vista nueva: marca F al lado del ticker para los bonos/ON que cobran en los próximos 30 días; pasando el mouse (o tocándola) muestra fecha y monto del próximo cobro.',
   'v195 | 2026-10-11 | Fix (v193): en las carteras sin lista "en la mira" guardada (Ana, Hilda, Juli, Omar) la carga se cortaba a mitad de camino (wlLoad vacío devolvía nada) — no cargaba liquidez, Inv. Inicial ni precios hasta tocar Actualizar.',
   'v194 | 2026-10-11 | Omar: recuadro % USD con ⚙️ para elegir activos dolarizados, como en las otras carteras.',
   'v193 | 2026-10-11 | Limpieza 2: se borra el HTML de la vista anterior del Portafolio en las 5 carteras (resumen, zona de seguimiento, inversiones chicas, tablas por mercado, barra de columnas); lo que el cálculo todavía usa se crea vacío y oculto al cargar (nv-sink). Las funciones que solo dibujaban esa vista quedan vacías. Omar: la etiqueta de cartera activa pasa junto a Supabase/Sync.',
@@ -3856,7 +3857,7 @@ function renderPortfolio(){
     if(CFG.vistaNueva){try{var _nvRv=['nyse','argentina','brasil','europa','china','cripto'].indexOf(sector)>=0,_nvDen=_nvRv?rvMktARS:rfMktARS,_nvRsi=null;
       if(!_isBonoON&&typeof _rsiEntry!=='undefined'&&_rsiEntry&&_rsiEntry.value!=null)_nvRsi=+_rsiEntry.value;
       NV_ROWS.push({t:p.ticker,s:sector,rv:_nvRv,usdD:isBonoUSDDirecto(p.ticker),d:pnlPct,up:upside,inv:inversionCedearARS||0,invCol:invColor,pt:_nvDen>0?(inversionCedearARS||0)/_nvDen*100:0,
-        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,pvU:targetUSD,qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
+        px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,pvU:targetUSD,fl:_flujoTitle||'',qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
     // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
     // pueden clasificar en verde/amarillo/rojo, y ocultarlos los hacía desaparecer de la
     // tabla en vez de mostrarse con el precio vacío.
@@ -11653,6 +11654,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root .nv2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}#nv-root .nv2col .nvtw{max-height:78vh}'+
  '#nv-root .nvpv{width:105px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:.86rem;font-weight:700;padding:3px 7px;outline:none}#nv-root .nvpv:focus{border-color:var(--accent)}'+
  '#nv-root td.mut{color:var(--text3)}#nv-root td.up{font-size:.74rem}#nv-root td.ptb .b{width:46px;height:6px}#nv-root td.ptb{font-size:.8rem;font-weight:700}#nv-root td{height:34px}'+
+ '#nv-root .nvf{display:inline-block;margin-left:5px;color:var(--accent);font-size:.66rem;font-weight:800;font-family:var(--mono);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:4px;padding:0 4px;line-height:1.35;cursor:help;vertical-align:1px}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -11684,6 +11686,12 @@ function nvSetPV(t,v){var o=NV_ROWS.filter(function(x){return x.t===t;})[0];if(!
  try{sbSetConfig('targets',TARGET_TABLE);}catch(e){}
  try{if(typeof renderTargets==='function')renderTargets();}catch(e){}
  renderPortfolio();}
+function nvTip(el,tog){var t=document.getElementById('nv-tipbox');if(!t){t=document.createElement('div');t.id='nv-tipbox';t.style.cssText='position:fixed;z-index:9999;background:#0d1420;border:1px solid var(--border2);border-radius:6px;padding:5px 9px;font-size:.7rem;font-family:var(--mono);color:var(--text);box-shadow:0 4px 16px rgba(0,0,0,.5);pointer-events:none;white-space:nowrap;display:none';document.body.appendChild(t);}
+ if(!el||(tog&&t.style.display!=='none'&&t._el===el)){t.style.display='none';t._el=null;return;}
+ t.textContent=el.getAttribute('data-tip');t.style.display='block';t._el=el;var r=el.getBoundingClientRect();t.style.left=Math.max(6,Math.min(window.innerWidth-t.offsetWidth-6,r.left+r.width/2-t.offsetWidth/2))+'px';t.style.top=(r.top-t.offsetHeight-6<4?r.bottom+6:r.top-t.offsetHeight-6)+'px';}
+document.addEventListener('mouseover',function(e){var f=e.target.closest&&e.target.closest('.nvf');if(f)nvTip(f);});
+document.addEventListener('mouseout',function(e){var f=e.target.closest&&e.target.closest('.nvf');if(f&&!(e.relatedTarget&&f.contains(e.relatedTarget)))nvTip(null);});
+document.addEventListener('scroll',function(){nvTip(null);},true);
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'||k==='pais'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
 function nvRender(){
@@ -11734,7 +11742,7 @@ function nvRender(){
  [['rv','Renta variable'],['rf','Renta fija']].forEach(function(sg){var X=L.filter(function(o){return o.rv===(sg[0]==='rv');}).sort(srt);if(!X.length)return;
   var sh0='<tr class="sec"><td colspan="7">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">$ '+_nvN(X.reduce(function(s,o){return s+(o.inv||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
   X.forEach(function(o){var pc=o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)',ab=!!op[o.t];
-   var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
+   var r='<tr class="pick'+(ab?' abierta':'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<b style="font-family:var(--sans);font-size:.84rem">'+o.t+'</b>'+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span></td>'+
     '<td class="up">'+upC(o.up)+'</td>'+
     '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
