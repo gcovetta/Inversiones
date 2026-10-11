@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=155, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=156, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v156 | 2026-10-11 | Prueba vista nueva: el panel Comprar/Vender pasa abajo de la tabla y sin título repetido; filtros de ganancia rotulados "Ganando" y "Pérdida".',
   'v155 | 2026-10-11 | Prueba: vista nueva del portafolio (CFG.vistaNueva, solo en GDC/PortafolioGDC_prueba.html) — foto y KPIs, panel único Comprar/Vender, filtros con distribuciones de selección múltiple y tabla de celdas dobles ordenable. La vista clásica sigue igual.',
   'v154 | 2026-10-08 | Feat: la importación de movimientos marca precios raros (contra el mercado si es de los últimos 7 días, o contra las otras filas del mismo activo) con pista de ceros/miles, y pide confirmación antes de importarlos.',
   'v153 | 2026-10-08 | Fix: el motivo de los ⚠️ de Movimientos se ve tocando el ícono (el tooltip no aparecía) y siempre con "Ver solo esos".',
@@ -11935,7 +11936,7 @@ var NV_ROWS=[],NV_K={};
 var NV=(function(){var d={tipo:'ambas',oar:true,df:{},dg:{},dm:{},sk:'pt',sd:-1,modo:'c'};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
 function nvSave(){try{localStorage.setItem(PFX+'nv',JSON.stringify(NV));}catch(e){}}
 var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['más de 30%',function(o){return o.up>30;},'#64779c'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
-var NV_GD=[['ganando (> 0%)',function(o){return o.d!=null&&o.d>0;},'#5cc06e'],['0% a −2%',function(o){return o.d!=null&&o.d<=0&&o.d>-2;},'#8a94a6'],['pérdida (≤ −2%)',function(o){return o.d!=null&&o.d<=-2;},'#e05a52']];
+var NV_GD=[['Ganando',function(o){return o.d!=null&&o.d>0;},'#5cc06e'],['0% a −2%',function(o){return o.d!=null&&o.d<=0&&o.d>-2;},'#8a94a6'],['Pérdida',function(o){return o.d!=null&&o.d<=-2;},'#e05a52']];
 var NV_MD=[['más de 3%',function(o){return o.pt>3;},'#e05a52'],['2% a 3%',function(o){return o.pt>2&&o.pt<=3;},'#e3b341'],['menos de 2%',function(o){return o.pt<=2;},'#5b8def']];
 function _nvSel(m){return Object.keys(m||{}).filter(function(k){return m[k];}).map(Number);}
 function _nvEn(m,B,o){var L=_nvSel(m);return !L.length||L.some(function(i){return B[i]&&B[i][1](o);});}
@@ -11963,7 +11964,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
 function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')vsellPopulateSelect();}catch(e){}var sel=document.getElementById('vsell-ticker');if(sel){sel.value=t;var o=NV_ROWS.filter(function(x){return x.t===t;})[0];var q=document.getElementById('vsell-qty');if(q&&o)q.value=o.q;try{vsellPreview();}catch(e){}}
- var r=document.getElementById('nv-root');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
+ var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
 function nvSort(k){NV.sd=NV.sk===k?-NV.sd:(k==='t'?1:-1);NV.sk=k;nvSave();nvRender();}
 function nvTog(key,i){NV[key][i]=!NV[key][i];nvSave();nvRender();}
 function nvRender(){
@@ -11972,9 +11973,9 @@ function nvRender(){
  if(!root){root=document.createElement('div');root.id='nv-root';var ov=document.getElementById('port-pin-overlay');pg.insertBefore(root,ov?ov.nextSibling:pg.firstChild);
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
   root.innerHTML='<div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="nvlbl">Rendimiento del período</div><div class="v" id="nv-kr"></div><div class="s" id="nv-krs"></div></div><div class="nvk"><div class="nvlbl">Hoy</div><div class="v" id="nv-kh"></div><div class="s" id="nv-khs"></div></div></div>'+
-   '<div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div><div class="nvbar" id="nv-fbar"></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
-   '<div class="nvsum" id="nv-sum"></div><div class="nvtw"><table id="nv-tb"></table></div>';
-  var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c)ops.appendChild(c);});
+   '<div class="nvbar" id="nv-fbar"></div><div class="nvdist"><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por distancia al P. Venta</div><div id="nv-dF"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por ganancia desde la compra</div><div id="nv-dG"></div></div><div class="nvbox"><div class="nvlbl" style="margin-bottom:6px">Por monto invertido (peso en su tipo)</div><div id="nv-dM"></div></div></div>'+
+   '<div class="nvsum" id="nv-sum"></div><div class="nvtw"><table id="nv-tb"></table></div><div id="nv-opw" style="margin-top:14px"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div>';
+  var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
