@@ -1,0 +1,61 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Explicame este movimiento</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#4b6a92;--g:#22c55e;--r:#ef4444;--bl:#448aff;--am:#f59e0b;--mono:ui-monospace,Menlo,monospace}
+body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui,sans-serif;padding:24px}
+.wrap{max-width:1000px}
+h3{font-size:.8rem;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+table{width:100%;border-collapse:collapse;background:var(--s);border:1px solid var(--b);border-radius:10px;overflow:hidden;font-size:.8rem}
+th{background:var(--s2);color:var(--t3);font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;text-align:right;padding:6px 8px}
+td{padding:7px 8px;border-top:1px solid var(--b);text-align:right;font-family:var(--mono)}
+td.l,th.l{text-align:left}
+.dp{display:inline-block;font-weight:800;border-radius:6px;padding:1px 7px}
+.up{color:var(--g)}.dn{color:var(--r)}.mu{color:var(--t3)}
+.why{display:inline-flex;align-items:center;justify-content:center;margin-left:6px;width:18px;height:18px;border-radius:50%;border:1px solid var(--bl);color:var(--bl);font-size:.66rem;font-weight:800;cursor:pointer;vertical-align:1px}
+.why.on{background:var(--bl);color:#fff}
+.pop{position:relative}
+.box{position:absolute;right:-6px;top:26px;width:420px;z-index:5;background:#0d1420;border:1px solid var(--b2);border-radius:12px;padding:12px 14px;text-align:left;font-family:system-ui;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+.box .h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tagm{font-family:var(--mono);font-size:.62rem;border-radius:999px;padding:2px 8px;border:1px solid}
+.res{font-size:.86rem;line-height:1.45;margin:0 0 8px}
+.src{font-size:.72rem;color:var(--t2);border-left:2px solid var(--b2);padding-left:8px;margin:6px 0;line-height:1.4}
+.src small{display:block;color:var(--t3);font-family:var(--mono);font-size:.62rem;margin-top:2px}
+.ctx{font-size:.72rem;color:var(--t2);background:var(--s2);border-radius:8px;padding:6px 8px;margin-top:8px}
+.ft{display:flex;justify-content:space-between;margin-top:8px;font-size:.66rem;font-family:var(--mono);color:var(--t3)}
+.ft a{color:var(--bl);text-decoration:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}
+.card{background:var(--s);border:1px solid var(--b);border-radius:12px;padding:12px 14px}
+.note{font-size:.72rem;color:var(--t3);line-height:1.6;margin-top:18px}
+</style></head><body><div class="wrap">
+<h3>En la tabla: un "?" en los activos que se movieron 3% o más hoy</h3>
+<table>
+<tr><th class="l">País / Ticker</th><th>Δ%</th><th>ΔUp</th><th>Precio</th><th>Hoy</th><th>PPC</th><th>Inversión</th><th>% tipo</th></tr>
+<tr><td class="l">🇧🇷 <b>STNE</b></td><td><span class="dp up" style="background:rgba(34,197,94,.14)">+12%</span></td><td>↑ 18,4%</td><td>$ 19.520</td>
+<td class="pop"><span class="up">▲ 7,9%</span><span class="why on">?</span>
+ <div class="box">
+  <div class="h"><b>STNE ▲ 7,9% hoy</b><span class="tagm" style="color:var(--g);border-color:var(--g)">📊 Resultados</span><span class="tagm" style="color:var(--am);border-color:var(--am)">🇧🇷 Brasil sube</span></div>
+  <p class="res">Probablemente por <b>sus resultados trimestrales</b>, que superaron lo esperado, en un día en que <b>tus activos de Brasil subieron en bloque</b>.</p>
+  <div class="src">“StoneCo Q3 revenue tops estimates, raises full-year guidance”<small>Reuters · hace 3 h</small></div>
+  <div class="src">“Brazilian fintechs rally as Selic cut bets grow”<small>Bloomberg · hace 6 h</small></div>
+  <div class="ctx">Contexto: tus 7 activos de Brasil promediaron <b class="up">+2,8%</b> · EWZ <b class="up">+0,3%</b> · PAGS <span class="up">+4,7%</span>, SID <span class="up">+4,4%</span></div>
+  <div class="ft"><span>Fuente: Finnhub (noticias de las últimas 24 h)</span><a href="#">Ver todas las noticias →</a></div>
+ </div></td>
+<td class="mu">$ 15.400</td><td>$ 2.795.000</td><td>1,0%</td></tr>
+<tr><td class="l">🇧🇷 <b>PAGS</b></td><td><span class="dp up" style="background:rgba(34,197,94,.14)">+28%</span></td><td>🎯 llegó</td><td>$ 5.977</td><td><span class="up">▲ 4,7%</span><span class="why">?</span></td><td class="mu">$ 4.665</td><td>$ 4.201.516</td><td>1,6%</td></tr>
+<tr><td class="l">🇦🇷 <b>CARC</b></td><td><span class="dp dn" style="background:rgba(239,68,68,.14)">−31%</span></td><td>↑ 52,0%</td><td>$ 33,9</td><td><span class="dn">▼ 4,8%</span><span class="why">?</span></td><td class="mu">$ 49,2</td><td>$ 368.000</td><td>0,1%</td></tr>
+<tr><td class="l">🇺🇸 <b>MCD</b></td><td><span class="dp dn" style="background:rgba(239,68,68,.14)">−7%</span></td><td>↑ 42,9%</td><td>$ 15.880</td><td><span class="dn">▼ 0,4%</span></td><td class="mu">$ 17.083</td><td>$ 4.573.440</td><td>2,8%</td></tr>
+</table>
+
+<div class="grid">
+ <div class="card"><h3>Acción argentina (sin noticias en Finnhub)</h3>
+  <div class="h" style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><b>CARC ▼ 4,8% hoy</b><span class="tagm" style="color:var(--t2);border-color:var(--b2)">sin noticia propia</span></div>
+  <p class="res" style="font-size:.84rem">No encontré una noticia propia. El Merval/CCL bajó <b class="dn">1,2%</b> y es un papel de <b>poco volumen</b>: movimientos así suelen ser de mercado más que de la empresa.</p>
+  <div class="ft"><span>Merval/CCL −1,21% · tus 26 argentinas +0,2%</span><a href="#">Buscar en Google Noticias →</a></div>
+ </div>
+ <div class="card"><h3>También en "Cómo se movió hoy"</h3>
+  <p class="res" style="font-size:.84rem">🇧🇷 <b>Brasil +2,81%</b> <span class="why on" style="margin-left:4px">?</span></p>
+  <p class="res" style="font-size:.8rem;color:var(--t2)">Suben las fintech brasileñas (STNE, PAGS) con expectativas de baja de tasa en Brasil. El EWZ apenas +0,3%: tu suba vino de tus activos puntuales, no del índice.</p>
+ </div>
+</div>
+
+<div class="note"><b>Titulares de ejemplo</b> para mostrar el formato. En la versión real los busca la página Noticias que ya tenés (Finnhub, últimas 24 h, con el mismo filtro que descarta notas irrelevantes y prioriza balances, cambios de recomendación, fusiones, dividendos). La línea de "probablemente por…" se arma con reglas a partir del tipo de noticia y de si su grupo se movió igual — no usa IA (sin costo). Para acciones argentinas, bonos y ONs, que Finnhub no cubre, muestra el contexto del Merval/CCL y un link a Google Noticias.</div>
+</div></body></html>

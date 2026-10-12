@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=207, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=208, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v208 | 2026-10-12 | GDC: ❓ Explicame este movimiento — en los activos que se movieron ±3% o más hoy (columna Hoy) y en los grupos de "Cómo se movió hoy", un ? que muestra el motivo probable (resultados, recomendación, fusión, dividendo…) con los titulares de Finnhub de los últimos 3 días y el contexto del grupo e índice. Argentina/bonos/ON: contexto del Merval/CCL + Google Noticias. Sin IA.',
   'v207 | 2026-10-12 | Vista nueva: el Calendario de ganancias va al lado del panel Comprar/Vender (abajo si no entra).',
   'v206 | 2026-10-12 | Vista nueva: el panel Comprar/Vender ocupa solo el ancho que necesita.',
   'v205 | 2026-10-12 | Vista nueva: 🗺️ Cómo se movió hoy — un recuadro por grupo (USA, Brasil, Argentina, Bonos, ONs, Europa, China, Cripto, FCI) con su variación del día en USD ponderada, el monto, mini mapa de calor, el que más subió/bajó y su referencia (S&P/Nasdaq, EWZ, Merval/CCL, Bitcoin) con si le ganaste o no; tocando un grupo se abre la lista de sus activos. Va al final, arriba del Plan de salida. Solo GDC.',
@@ -11687,6 +11688,11 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-mov .heat{display:flex;gap:2px;height:10px;margin:8px 0 6px;border-radius:3px;overflow:hidden}#nv-mov .heat i{display:block;height:100%}#nv-mov .bw{display:flex;justify-content:space-between;gap:6px;font-family:var(--mono);font-size:.64rem;color:var(--text2)}'+
  '#nv-mov .bm{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:.64rem;color:var(--text2);border-top:1px dashed var(--border);margin-top:6px;padding-top:5px}#nv-mov .bm .vs{margin-left:auto;font-weight:700}'+
  '#nv-mov .det{margin:0 1rem 1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px}#nv-mov table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.76rem}#nv-mov td{padding:5px 4px;border-bottom:1px solid var(--border);text-align:left;height:auto}#nv-mov td.r{text-align:right}#nv-mov tr.hh td{color:var(--text3);font-size:.6rem;text-transform:uppercase}'+
+ '.nvwhy{display:inline-flex;align-items:center;justify-content:center;margin-left:5px;width:16px;height:16px;border-radius:50%;border:1px solid var(--blue);color:var(--blue);font-size:.6rem;font-weight:800;cursor:pointer;vertical-align:1px;font-family:var(--sans)}.nvwhy:hover{background:var(--blue);color:#fff}'+
+ '#nv-why{position:fixed;z-index:9500;display:none;background:#0d1420;border:1px solid var(--border2);border-radius:12px;padding:11px 13px;box-shadow:0 10px 30px rgba(0,0,0,.55);font-family:var(--sans);color:var(--text)}#nv-why .up{color:#22c55e}#nv-why .dn{color:#ef4444}'+
+ '#nv-why .wh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px;font-size:.88rem}#nv-why .wt{font-family:var(--mono);font-size:.6rem;border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:1px 8px}'+
+ '#nv-why .wr{font-size:.82rem;line-height:1.45;margin:0 0 7px}#nv-why .ws{display:block;font-size:.72rem;color:var(--text2);border-left:2px solid var(--border2);padding-left:8px;margin:6px 0;line-height:1.4;text-decoration:none}#nv-why .ws:hover{color:var(--text)}#nv-why .ws small{display:block;color:var(--text3);font-family:var(--mono);font-size:.6rem;margin-top:2px}'+
+ '#nv-why .wc{font-size:.7rem;color:var(--text2);background:var(--surface2);border-radius:8px;padding:6px 8px;margin-top:7px}#nv-why .wf{display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:.62rem;font-family:var(--mono);color:var(--text3)}#nv-why .wf a{color:var(--blue);text-decoration:none}'+
  '#nv-root td.hoy{font-size:.74rem;font-weight:700}'+
  '#nv-root #nv-ops>.card{margin:0;width:fit-content!important;max-width:100%;display:block}#nv-root #nv-opw{width:fit-content;max-width:100%}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
@@ -11781,7 +11787,7 @@ function nvRender(){
     '<td><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span></td>'+
     '<td class="up">'+upC(o.up)+'</td>'+
     '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
-    '<td class="hoy">'+(o.ch==null||!isFinite(o.ch)?'<span style="color:var(--text3)">—</span>':'<span style="color:'+(o.ch>0?'var(--accent)':o.ch<0?'var(--red)':'var(--text3)')+'">'+(o.ch>0?'▲ ':o.ch<0?'▼ ':'')+Math.abs(o.ch).toFixed(1).replace('.',',')+'%</span>')+'</td>'+
+    '<td class="hoy">'+(o.ch==null||!isFinite(o.ch)?'<span style="color:var(--text3)">—</span>':'<span style="color:'+(o.ch>0?'var(--accent)':o.ch<0?'var(--red)':'var(--text3)')+'">'+(o.ch>0?'▲ ':o.ch<0?'▼ ':'')+Math.abs(o.ch).toFixed(1).replace('.',',')+'%</span>'+(_whyOn()&&Math.abs(o.ch)>=3?'<span class="nvwhy" title="¿Por qué se movió?" onclick="event.stopPropagation();nvWhy(\''+o.t+'\',this)">?</span>':''))+'</td>'+
     '<td class="mut">'+_nvF(o.ppc,o)+'</td>'+
     '<td><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">'+_nvM()+_nvN(_nvInv(o))+'</span></td>'+
     '<td class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></td></tr>';
@@ -11852,6 +11858,65 @@ document.addEventListener('keydown',function(e){var ov=document.getElementById('
  var k=e.key.toLowerCase(),h=true;if(k==='arrowright'||k===' ')_rpIr(1);else if(k==='arrowleft')_rpIr(-1);else if(k==='c')_rpMarca('buy');else if(k==='v')_rpMarca('sell');else if(k==='s')_rpMarca('watch');else if(k==='n'){var t=document.getElementById('rp-nota');if(t)t.focus();}else h=false;
  if(h){e.preventDefault();e.stopPropagation();}},true);
 
+// ─── ❓ Explicame este movimiento (GDC): noticia probable + contexto del grupo, sin IA ─────────────────────
+var _whyC={},_WHY_BM={nyse:['spy','S&P 500'],brasil:['ewz','EWZ'],argentina:['imv','Merval/CCL'],cripto:['btc','Bitcoin']};
+var _WHY_PAIS={nyse:['🇺🇸','USA'],brasil:['🇧🇷','Brasil'],argentina:['🇦🇷','Argentina'],europa:['🇪🇺','Europa'],china:['🇨🇳','China'],cripto:['₿','Cripto'],bonos:['📜','Bonos'],on:['🏢','ONs'],fci:['📈','FCI']};
+function _whyOn(){return !!(CFG.simRetiro||CFG.explicame);}
+function _whyMotivo(h){h=h||'';
+ if(/(\bearnings\b|quarterly results|\bq[1-4]\b|revenue|profit|\bbeats?\b|\bmiss(es|ed)?\b|results)/i.test(h))return ['📊','resultados','sus resultados'];
+ if(/(upgrad|raises? .{0,25}target|lifts? .{0,25}target|boosts? .{0,25}target|outperform|\bbuy rating)/i.test(h))return ['⬆️','recomendación','una mejora de recomendación de analistas'];
+ if(/(downgrad|cuts? .{0,25}target|lowers? .{0,25}target|underperform|\bsell rating)/i.test(h))return ['⬇️','recomendación','una baja de recomendación de analistas'];
+ if(/(acquir|acquisition|merger|buyout|takeover|\bbid\b|to buy\b)/i.test(h))return ['🤝','fusión','una fusión o compra'];
+ if(/dividend|buyback|repurchase/i.test(h))return ['💵','dividendo','un anuncio de dividendo o recompra'];
+ if(/(guidance|outlook|forecast)/i.test(h))return ['🔮','perspectivas','un cambio en sus perspectivas'];
+ if(/(lawsuit|probe|investigation|\bsec\b|fine|regulat|ban\b|sanction)/i.test(h))return ['⚖️','regulación','un tema regulatorio o judicial'];
+ if(/(contract|deal|partner|launch|unveil|approv|agreement)/i.test(h))return ['📰','negocio','una noticia de negocio (acuerdo, lanzamiento o aprobación)'];
+ return ['📰','noticia','una noticia de la empresa'];}
+function _whyGrupo(sec,excl){var L=NV_ROWS.filter(function(o){return o.s===sec&&o.ch!=null&&isFinite(o.ch);}),d=0,b=0,up=0,dn=0;
+ L.forEach(function(o){var u=o.usd||0;if(u>0){var bb=u/(1+o.ch/100);d+=u-bb;b+=bb;}if(o.t!==excl){if(o.ch>=1)up++;else if(o.ch<=-1)dn++;}});
+ var bm=_WHY_BM[sec],bv=bm?_nvBm(bm[0]):null;return {n:L.length,p:b>0?d/b*100:null,up:up,dn:dn,bm:bm?bm[1]:null,bv:bv,L:L};}
+function _whyP(x){return x==null||!isFinite(x)?'—':'<b class="'+(x>=0?'up':'dn')+'">'+(x>=0?'+':'−')+Math.abs(x).toFixed(1).replace('.',',')+'%</b>';}
+function _whyBox(el,html){var b=document.getElementById('nv-why');if(!b){b=document.createElement('div');b.id='nv-why';document.body.appendChild(b);
+  document.addEventListener('click',function(e){var bx=document.getElementById('nv-why');if(bx&&bx.style.display!=='none'&&!bx.contains(e.target)&&!(e.target.closest&&e.target.closest('.nvwhy')))bx.style.display='none';},true);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){var bx=document.getElementById('nv-why');if(bx)bx.style.display='none';}});}
+ b.innerHTML=html;b.style.display='block';var r=el.getBoundingClientRect(),w=Math.min(440,window.innerWidth-16);b.style.width=w+'px';
+ b.style.left=Math.max(8,Math.min(window.innerWidth-w-8,r.right-w))+'px';var h=b.offsetHeight;b.style.top=(r.bottom+6+h>window.innerHeight&&r.top-h-6>4?r.top-h-6:Math.min(r.bottom+6,window.innerHeight-h-8))+'px';b._el=el;}
+function _whyEsc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function _whyAgo(ts){var m=Math.max(0,Math.round((Date.now()/1000-ts)/60));return m<60?'hace '+m+' min':m<1440?'hace '+Math.round(m/60)+' h':'hace '+Math.round(m/1440)+' d';}
+async function nvWhy(t,el){var o=NV_ROWS.filter(function(x){return x.t===t;})[0];if(!o)return;var bx=document.getElementById('nv-why');if(bx&&bx.style.display!=='none'&&bx._el===el){bx.style.display='none';return;}
+ var pais=_WHY_PAIS[o.s]||['',''],g=_whyGrupo(o.s,t),sube=o.ch>=0;
+ var head='<div class="wh"><b>'+t+' '+(sube?'▲':'▼')+' '+Math.abs(o.ch).toFixed(1).replace('.',',')+'% hoy</b>';
+ var ctx='<div class="wc">Contexto: tus '+g.n+' activos de '+pais[1]+' promediaron '+_whyP(g.p)+(g.bm&&g.bv!=null?' · '+g.bm+' '+_whyP(g.bv):'')+'</div>';
+ var bloque=(sube?g.up:g.dn)>=2&&(g.p!=null&&(sube?g.p>0.5:g.p<-0.5));
+ var cubre=NWS_SECTORS&&NWS_SECTORS[o.s];
+ if(!cubre){var bmTxt=g.bm&&g.bv!=null?'El '+g.bm+' '+(g.bv>=0?'subió':'bajó')+' '+Math.abs(g.bv).toFixed(1).replace('.',',')+'%':'';
+  _whyBox(el,head+'<span class="wt">sin noticias en la fuente</span></div><p class="wr">'+(bloque?'Se movió junto con tus otros activos de '+pais[1]+': parece un movimiento de mercado más que de la empresa. ':'No hay noticias de este activo en la fuente que usamos. ')+bmTxt+(bmTxt?'.':'')+'</p>'+ctx+
+   '<div class="wf"><span>Finnhub no cubre '+pais[1]+'</span><a href="'+nwsGLink(t+' '+(o.s==='argentina'?'acción':''))+'" target="_blank" rel="noopener">Buscar en Google Noticias →</a></div>');return;}
+ _whyBox(el,head+'</div><p class="wr" style="color:var(--text3)">Buscando noticias…</p>');
+ var arr=_whyC[t];
+ if(!arr){try{var to=new Date(),from=new Date(Date.now()-2*86400000),sym=(typeof NWS_SYM!=='undefined'&&NWS_SYM[t])||getFinnhubTicker(t);
+   var raw=await nwsFetchJSON(FBASE+'/company-news?symbol='+encodeURIComponent(sym)+'&from='+nwsYmd(from)+'&to='+nwsYmd(to)+'&token='+FKEY),seen={};
+   arr=(Array.isArray(raw)?raw:[]).filter(function(n){if(!n||!n.headline||!n.datetime)return false;var k=n.headline.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,60);if(seen[k])return false;seen[k]=1;return Date.now()/1000-n.datetime<72*3600;});
+   _whyC[t]=arr;}catch(e){arr=null;}}
+ if(document.getElementById('nv-why')._el!==el)return;
+ var rank={hi:0,md:1,lo:2},N=(arr||[]).map(function(n){return {h:n.headline,s:n.source,u:n.url,d:n.datetime,l:nwsClasif(n,Math.abs(o.ch),3)};}).filter(function(n){return n.l!=='lo';}).sort(function(a,b){return rank[a.l]-rank[b.l]||b.d-a.d;}).slice(0,2);
+ var res,tags='';
+ if(N.length){var m=_whyMotivo(N[0].h);tags='<span class="wt" style="color:var(--accent);border-color:var(--accent)">'+m[0]+' '+m[1]+'</span>';
+  res='Probablemente por <b>'+m[2]+'</b>'+(bloque?', en un día en que <b>tus activos de '+pais[1]+' '+(sube?'subieron':'bajaron')+' en bloque</b>':'')+'.';}
+ else res=arr==null?'No pude consultar las noticias ahora (límite de la fuente). Probá en un rato.':(bloque?'Sin noticia propia relevante: se movió junto con tus otros activos de '+pais[1]+', así que parece un movimiento del mercado.':'No encontré una noticia relevante en los últimos 3 días.');
+ if(bloque)tags+='<span class="wt" style="color:#f59e0b;border-color:#f59e0b">'+pais[0]+' '+pais[1]+' '+(sube?'sube':'baja')+'</span>';
+ _whyBox(el,head+tags+'</div><p class="wr">'+res+'</p>'+N.map(function(n){return '<a class="ws" href="'+_whyEsc(n.u)+'" target="_blank" rel="noopener">“'+_whyEsc(n.h)+'”<small>'+_whyEsc(n.s)+' · '+_whyAgo(n.d)+'</small></a>';}).join('')+ctx+
+  '<div class="wf"><span>Fuente: Finnhub · últimos 3 días</span><a href="'+nwsGLink(t)+'" target="_blank" rel="noopener">Google Noticias →</a></div>');}
+async function nvWhyG(sec,el){var bx=document.getElementById('nv-why');if(bx&&bx.style.display!=='none'&&bx._el===el){bx.style.display='none';return;}
+ var pais=_WHY_PAIS[sec]||['',''],g=_whyGrupo(sec,null),sube=(g.p||0)>=0,L=g.L.slice().sort(function(a,b){return sube?b.ch-a.ch:a.ch-b.ch;}).filter(function(o){return sube?o.ch>=1:o.ch<=-1;}).slice(0,4);
+ var head='<div class="wh"><b>'+pais[0]+' '+pais[1]+' '+_whyP(g.p)+' hoy</b></div>';
+ var res=(L.length?'Lo empujaron <b>'+L.map(function(o){return o.t+' '+(o.ch>=0?'+':'−')+Math.abs(o.ch).toFixed(1).replace('.',',')+'%';}).join(', ')+'</b>. ':'Ningún activo se movió más de 1%. ');
+ if(g.bm&&g.bv!=null&&g.p!=null){var df=g.p-g.bv;res+='El '+g.bm+' '+(g.bv>=0?'subió':'bajó')+' '+Math.abs(g.bv).toFixed(1).replace('.',',')+'%: '+(Math.abs(df)<0.5?'tu grupo acompañó al índice.':df>0?'te fue mejor que al índice por tus activos puntuales.':'te fue peor que al índice por tus activos puntuales.');}
+ var cfg=typeof NWS_PAIS!=='undefined'&&NWS_PAIS[sec],d=cfg&&nwsCache.sec&&nwsCache.sec[sec],N=[];
+ var pinta=function(){var rank={hi:0,md:1,lo:2};N=d?(d.news||[]).map(function(n){return {h:n.headline,s:n.source,u:n.url,d:n.datetime,l:nwsClasif(n,Math.abs(g.p||0),1)};}).filter(function(n){return n.l!=='lo';}).sort(function(a,b){return rank[a.l]-rank[b.l]||b.d-a.d;}).slice(0,2):[];
+  _whyBox(el,head+'<p class="wr">'+res+'</p>'+(cfg?(N.length?'<div class="wc" style="background:none;padding:0;margin-top:2px">Noticias del país:</div>'+N.map(function(n){return '<a class="ws" href="'+_whyEsc(n.u)+'" target="_blank" rel="noopener">“'+_whyEsc(n.h)+'”<small>'+_whyEsc(n.s)+' · '+_whyAgo(n.d)+'</small></a>';}).join(''):(d?'':'<p class="wr" style="color:var(--text3)">Buscando noticias del país…</p>')):'')+
+   '<div class="wf"><span>'+(cfg?'Fuente: Finnhub':'Sin fuente de noticias para este grupo')+'</span>'+(cfg?'<a href="'+nwsGLink(cfg.q)+'" target="_blank" rel="noopener">Google Noticias →</a>':'')+'</div>');};
+ pinta();if(cfg&&!d){try{await nwsLoadSector(sec);}catch(e){}d=nwsCache.sec&&nwsCache.sec[sec];var b2=document.getElementById('nv-why');if(b2&&b2._el===el&&b2.style.display!=='none')pinta();}}
 // ─── 🗺️ Cómo se movió hoy: resumen por grupo (en USD, ponderado por lo que tenés) con su índice de referencia ───
 var _NV_MOVG=[['nyse','🇺🇸','USA',[['spy','S&P 500'],['qqq','Nasdaq']]],['brasil','🇧🇷','Brasil',[['ewz','EWZ']]],['argentina','🇦🇷','Argentina',[['imv','Merval/CCL']]],['bonos','📜','Bonos',[]],['on','🏢','ONs',[]],['europa','🇪🇺','Europa',[]],['china','🇨🇳','China',[]],['cripto','₿','Cripto',[['btc','Bitcoin']]],['fci','📈','FCI',[]]];
 function _nvBm(k){var e=document.getElementById('tb-'+k+'-chg');if(!e)return null;var v=parseFloat(String(e.textContent||'').replace('%','').replace(',','.'));return isFinite(v)?v:null;}
@@ -11869,7 +11934,7 @@ function nvMov(){if(!CFG.simRetiro&&!CFG.movGrupos)return;var cw=document.getEle
    return '<i class="nvf-cal" style="flex:'+Math.max(o.usd||0,tot/400)+';background:'+col+'" data-tip="'+o.t+(c==null?'':' '+(c>0?'+':'')+c.toFixed(2).replace('.',',')+'%')+'"></i>';}).join('');
   var bw=L.length?'<div class="bw"><span>▲ '+L[0].t+' '+P(L[0].ch)+'</span>'+(L.length>1?'<span>▼ '+L[L.length-1].t+' '+P(L[L.length-1].ch)+'</span>':'')+'</div>':'';
   var bms=x[3].map(function(b){var v=_nvBm(b[0]);if(v==null)return '';var df=p==null?null:p-v;return '<div class="bm"><span>'+b[1]+'</span>'+P(v)+(df==null?'':'<span class="vs '+(df>=0?'up':'dn')+'">'+(df>=0?'▲ le ganás':'▼ te gana')+' por '+Math.abs(df).toFixed(2).replace('.',',')+' pts</span>')+'</div>';}).join('');
-  tiles+='<div class="mt'+(NV.movSel===x[0]?' sel':'')+'" onclick="nvMovSel(\''+x[0]+'\')"><div class="th"><span>'+x[1]+'</span><b>'+x[2]+'</b><span class="w">'+Math.round(w)+'% de la cartera</span></div><div class="tv">'+P(p)+'</div><div class="tu">'+(g.b>0?U(g.d):'<span class="mu">sin variación del día</span>')+'</div><div class="heat">'+heat+'</div>'+bw+bms+'</div>';});
+  tiles+='<div class="mt'+(NV.movSel===x[0]?' sel':'')+'" onclick="nvMovSel(\''+x[0]+'\')"><div class="th"><span>'+x[1]+'</span><b>'+x[2]+'</b>'+(p!=null&&Math.abs(p)>=0.5?'<span class="nvwhy" title="¿Por qué se movió?" onclick="event.stopPropagation();nvWhyG(\''+x[0]+'\',this)">?</span>':'')+'<span class="w">'+Math.round(w)+'% de la cartera</span></div><div class="tv">'+P(p)+'</div><div class="tu">'+(g.b>0?U(g.d):'<span class="mu">sin variación del día</span>')+'</div><div class="heat">'+heat+'</div>'+bw+bms+'</div>';});
  var det='';var sg=NV.movSel&&G[NV.movSel];if(sg){var gi=_NV_MOVG.filter(function(x){return x[0]===NV.movSel;})[0];
   det='<div class="det"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>'+gi[1]+' '+gi[2]+'</b><span class="tag">'+sg.L.length+' activos</span><span class="nvclr" style="margin-left:auto" onclick="nvMovSel(null)">cerrar ✕</span></div><table><tr class="hh"><td>Símbolo</td><td>Cambio</td><td class="r">Tenés</td><td class="r">Movió hoy</td></tr>'+
    sg.L.slice().sort(function(a,b){return (b.ch==null?-99:b.ch)-(a.ch==null?-99:a.ch);}).map(function(o){var m=o.ch!=null&&isFinite(o.ch)&&o.usd>0?o.usd-o.usd/(1+o.ch/100):null;return '<tr><td><b>'+o.t+'</b></td><td>'+P(o.ch)+'</td><td class="r mu"><span class="port-sensitive">USD '+_nvN(o.usd)+'</span></td><td class="r">'+(m==null?'<span class="mu">—</span>':'<span class="'+(m>=0?'up':'dn')+'">'+U(m)+'</span>')+'</td></tr>';}).join('')+'</table></div>';}
