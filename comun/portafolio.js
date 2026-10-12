@@ -1,18 +1,12 @@
 // ─── Ajustes para celular (sin scroll horizontal, menú compacto, todo un poco más chico) ───
 (function(){try{var st=document.createElement('style');st.id='mobile-fix-css';st.textContent="@media(max-width:680px){\n  html{font-size:14px}\n  .panels-grid{grid-template-columns:minmax(0,1fr)!important}\n  .panels-grid>*{min-width:0}\n  #panels-grid .panel-table table{min-width:0!important;width:100%!important}\n  #panels-grid .tw{overflow-x:hidden!important}\n  .main:not(.sidebar-open) .sidebar{display:none!important}\n  .main.sidebar-open .sidebar{display:flex!important;flex-direction:column!important;position:fixed!important;left:8px;right:8px;top:64px;max-height:72vh;overflow-y:auto!important;overflow-x:hidden!important;z-index:9000;border:1px solid var(--border2)!important;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.6);padding:.3rem 0!important;width:auto!important}\n  .sidebar>div:not(.nav-sec){display:none!important}\n  .main.sidebar-open .nav-item{width:100%!important;flex-direction:row!important;justify-content:flex-start!important;font-size:.85rem!important;padding:.7rem 1rem!important;gap:10px!important}\n  .nav-item>div{display:none!important}\n  #port-summary-section{gap:8px!important}\n  #port-summary-section>div{flex:1 1 100%!important;width:auto!important;min-width:0;max-width:100%}\n  #port-summary-section>div[style*=\"grid-template-columns:1fr 1fr 1fr\"]{grid-template-columns:repeat(3,minmax(0,1fr))!important}\n  #port-summary-section>div[style*=\"flex-direction:column\"][style*=\"width:155px\"]{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]{flex-wrap:nowrap!important}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]>div{flex:1 1 50%!important;min-width:0!important;padding:.3rem!important}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]>div>div{height:150px!important}\n  #port-summary-section .metric{padding:.5rem .6rem}\n  #top-cards-row>.card{flex:1 1 100%!important}\n  #port-watchzone-section{flex-direction:column!important}\n  #port-watchzone-section>*{flex:1 1 auto!important;width:auto!important;min-width:0!important}\n  #pos-footer-bar{position:static!important;box-shadow:none!important;padding:.35rem .6rem!important}\n  #pos-footer-bar .qty-toggle{font-size:.6rem!important}\n  #claude-version-badge{font-size:.55rem!important;padding:2px 6px!important;opacity:.75;bottom:4px!important;right:4px!important}\n}\n";(document.head||document.documentElement).appendChild(st);}catch(e){}})();
 // ═══════════════════════════════════════════════════════════════════════════
-// portafolio.js — código común de los portafolios (Etapa 1 de la unificación, 2026-10-03)
-// Por ahora contiene el script principal de GDC tal cual estaba inline en PortafolioGDC.html.
-// Etapa 2: Ana, Hilda, Juli y Omar pasan a usar este mismo archivo con una configuración
-// por portafolio (window.PORTFOLIO_CONFIG). Los cambios de versión se siguen anotando en el
-// changelog de cada HTML; el ?v= de la etiqueta <script> evita que el navegador use una copia vieja.
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-// En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
-// de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=215, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=216, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v216 | 2026-10-12 | Limpieza 3 (más liviana, sin cambios visibles): el cálculo del Portafolio ya no arma la tabla de la vista vieja que nadie veía (render ~20% más rápido, mismos datos), se borran 52 funciones sin uso (lista de seguimiento, toggles de columnas, PIN viejo del tracker, etc.), los comentarios del código, ~6,5 KB de CSS sin uso en cada HTML y la consulta a Supabase de la lista de seguimiento que se hacía en cada carga.',
   'v215 | 2026-10-12 | GDC Modo foco: recuadro Dividendos/Rentas cobrados desde que lo tenés (USD, % de lo invertido, cantidad y último cobro) y comparación con su referencia (S&P 500 o EWZ para Brasil): línea punteada en el gráfico en la misma escala y si le ganaste en el período elegido.',
   'v214 | 2026-10-12 | GDC: Modo foco suma "Lo tenés desde" (fecha de la primera compra de la tenencia actual, cuánto tiempo y promedio ponderado de tus compras). Las noticias de Modo foco y de Explicame se muestran traducidas al castellano (el original queda al pasar el mouse).',
   'v213 | 2026-10-12 | GDC: Tu cartera ideal se puede colapsar tocando el título y arranca colapsada (muestra solo el desvío y cuántos grupos están en rango).',
@@ -42,7 +36,6 @@ var APP_CHANGELOG=[
   'v189 | 2026-10-11 | Vista nueva: el aviso "Desde tu última visita" se muestra arriba, entre los recuadros de totales y los filtros (antes quedaba abajo, sobre Distribución/Evolución).',
   'v188 | 2026-10-11 | Ana, Hilda, Juli y Omar pasan a la vista nueva del portafolio (vistaNueva en cada HTML). Si la cartera no tiene % USD (Omar), ese recuadro no se muestra.',
   'v187 | 2026-10-11 | GDC pasa a la vista nueva del portafolio (PortafolioGDC.html con vistaNueva); la página de prueba ya no hace falta. Ana, Hilda, Juli y Omar siguen con la vista anterior.'
-  // (versiones anteriores: comun/CHANGELOG.md)
 ];
 (function(){
   function setBadge(){var b=document.getElementById('claude-version-badge');if(!b)return;b.textContent='v'+APP_VERSION+' · '+APP_VERSION_FECHA;b.title=APP_CHANGELOG[0].split(' | ').slice(2).join(' | ');}
@@ -50,31 +43,27 @@ var APP_CHANGELOG=[
 })();
 
 // ─── Compatibilidad con la vista anterior (v193) ──────────────────────────────
-// El HTML de la vista vieja del Portafolio se borró; el cálculo todavía escribe en algunos de esos elementos.
-// Se crean vacíos y ocultos para que no falle nada (no se ven: la vista nueva usa sus propios datos).
 (function(){var L=[["body-argentina","tbody"],["body-bonos","tbody"],["body-brasil","tbody"],["body-china","tbody"],["body-cripto","tbody"],["body-europa","tbody"],["body-fci","tbody"],["body-nyse","tbody"],["body-on","tbody"],["ccli-ars","input","text"],["ccli-resultado","div"],["ccli-usd","input","text"],["flujo-mini-content","div"],["m-divs","div"],["m-ganancia","div"],["m-rend","div"],["m-val","div"],["near-target-card","div"],["nt-grid","div"],["nt-input","input","number","4"],["nt-pct-label","span"],["nt-slider","input","range","4"],["panel-argentina","div"],["panel-argentina-meta","span"],["panel-bonos","div"],["panel-bonos-meta","span"],["panel-brasil","div"],["panel-brasil-meta","span"],["panel-china","div"],["panel-china-meta","span"],["panel-cripto","div"],["panel-cripto-meta","span"],["panel-europa","div"],["panel-europa-meta","span"],["panel-fci","div"],["panel-fci-meta","span"],["panel-nyse","div"],["panel-nyse-meta","span"],["panel-on","div"],["panel-on-meta","span"],["panels-grid","div"],["panual-toggle","input","checkbox"],["pfill","div"],["port-content","div"],["port-smallinv-section","div"],["port-summary-section","div"],["port-summary-toggle-btn","button"],["port-watchzone-section","div"],["port-watchzone-toggle-btn","button"],["pos-empty","div"],["pos-footer-bar","div"],["pos-prog","div"],["ptipo-toggle","input","checkbox"],["pventa-alert","div"],["pventa-toggle","input","checkbox"],["qty-toggle","input","checkbox"],["rebal-toggle","input","checkbox"],["ref-status","span"],["rsi-toggle","input","checkbox"],["si-grid","div"],["si-input","input","number","0.5"],["si-pct-label","span"],["si-slider","input","range","0.5"],["small-inv-card","div"],["stat-best-ticker","span"],["stat-best-val","span"],["stat-pos-ticker","span"],["stat-pos-val","span"],["stat-worst-ticker","span"],["stat-worst-val","span"],["watchlist-card","div"],["wl-comment","input","text"],["wl-list","div"],["wl-ticker","input","text"]];
  function mk(){if(!document.body)return;var box=document.getElementById('nv-sink');if(!box){box=document.createElement('div');box.id='nv-sink';box.style.display='none';document.body.appendChild(box);}var tb=null;
   L.forEach(function(x){if(document.getElementById(x[0]))return;var e;if(x[1]==='tbody'){if(!tb){tb=document.createElement('table');box.appendChild(tb);}e=document.createElement('tbody');tb.appendChild(e);}else{e=document.createElement(x[1]);if(x[2])e.type=x[2];if(x[3]!=null)e.value=x[3];box.appendChild(e);}e.id=x[0];});}
  if(document.body)mk();else document.addEventListener('DOMContentLoaded',mk);})();
 // ─── Configuración por portafolio ──────────────────────────────────────────
-// Cada HTML define window.PORTFOLIO_CONFIG antes de cargar este archivo. Los valores de abajo
-// son los de GDC (referencia); cada portafolio pisa los que le corresponden.
 var CFG=Object.assign({
   id:'gdc', nombre:'GDC',
-  lsPrefix:(PFX+''),            // prefijo de claves localStorage
-  trkSuffix:'_gdc',              // sufijo de claves del tracker de dividendos
+  lsPrefix:(PFX+''),
+  trkSuffix:'_gdc',
   supabaseUrl:'https://wstnseufzyavgdovrehu.supabase.co',
   supabaseKey:'',
-  auth:true, allowedEmail:'gcovetta@gmail.com',   // login con Google + RLS
+  auth:true, allowedEmail:'gcovetta@gmail.com',
   dataVersion:'v19_ghost_fix',
   perfilDefault:'agresivo',
-  sync:true,                     // botón Sync que empuja datos a los otros portafolios
-  rsi:true,                      // columna RSI/TIR en las tablas
-  broker:'veta',                 // comparación de posiciones: 'veta' (GDC) o 'bull'
+  sync:true,
+  rsi:true,
+  broker:'veta',
   brokerNombre:'Veta',
   wlKey:'wl_gdc_v1',
-  periodoInicio:'01-01',          // corte anual (MM-DD); null = sin corte
-  historial:true                  // muestra la card Evolución
+  periodoInicio:'01-01',
+  historial:true
 }, window.PORTFOLIO_CONFIG||{});
 var PFX=CFG.lsPrefix;
 
@@ -102,7 +91,6 @@ var PFX=CFG.lsPrefix;
   }).observe(document.documentElement,{childList:true,subtree:true});
 })();
 // ════════════════════════════════════════════════════════
-// GITHUB SYNC CONFIG
 // ════════════════════════════════════════════════════════
 var GH_TOKEN  = 'GITHUB_TOKEN_AQUI';
 var GH_REPO   = 'gcovetta/Inversiones';
@@ -120,8 +108,6 @@ var SYNC_OTHERS = [
 if(!CFG.sync)SYNC_OTHERS=[];
 document.addEventListener('DOMContentLoaded',function(){if(!CFG.sync){var b=document.getElementById('sync-btn');if(b)b.style.display='none';}});
 
-// Token de sesión de otro proyecto Supabase (si ya iniciaste sesión en ese portafolio en este
-// navegador — las sesiones de los 5 proyectos conviven en el mismo origen). Sin sesión → anon key.
 var _sbOtherClients={};
 async function sbTokenFor(url,key){
   try{
@@ -140,11 +126,9 @@ async function _sbSetOther(baseUrl, apiKey, configKey, value) {
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal'
     };
-    // Borrar entrada existente
     await fetch(baseUrl + '/rest/v1/config?key=eq.' + encodeURIComponent(configKey), {
       method: 'DELETE', headers: headers
     });
-    // Insertar nueva
     var r = await fetch(baseUrl + '/rest/v1/config', {
       method: 'POST',
       headers: headers,
@@ -155,18 +139,13 @@ async function _sbSetOther(baseUrl, apiKey, configKey, value) {
 }
 
 async function syncDataToOthers(statusCallback) {
-  // Lee los valores actuales en memoria de GDC
-  // También intenta leer ccl_override y mep_override de Supabase
   var cclOvr = await sbGetConfig('ccl_override');
   var mepOvr = await sbGetConfig('mep_override');
 
-  // Filtrar TARGET_TABLE: solo tickers con precio real (no null)
   var realTargets = {};
   Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null) realTargets[t]=TARGET_TABLE[t]; });
 
   var tables = [
-    // Los otros 4 portafolios ya leen 'ratios' de su propia Supabase en el init (sbGetConfig('ratios')) —
-    // sólo faltaba que GDC se lo empuje.
     { key: 'ratios',        value: Object.keys(RATIOS_TABLE).length ? RATIOS_TABLE : null },
     { key: 'targets',       value: Object.keys(realTargets).length ? realTargets : null },
     { key: 'rubros',        value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
@@ -188,10 +167,6 @@ async function syncDataToOthers(statusCallback) {
   return errors;
 }
 
-// El paso de "Sync HTML" (dispara un GitHub Action que reconstruye los 5 HTML) está
-// desactivado a propósito: GH_TOKEN es un placeholder sin reemplazar, así que ese paso
-// siempre tiraba error — y tapaba que el sync de datos (CCL/MEP/Ratios/Targets/Rubros)
-// SÍ funciona. Poné esto en true (y un token real en GH_TOKEN) para reactivarlo.
 var SYNC_HTML_ENABLED = false;
 
 async function syncPortfolios() {
@@ -200,7 +175,6 @@ async function syncPortfolios() {
   var icon  = document.getElementById('sync-icon');
   var label = document.getElementById('sync-label');
 
-  // Estado: cargando
   btn.disabled = true;
   icon.style.display = 'inline-block';
   icon.style.animation = 'spin360 1s linear infinite';
@@ -208,7 +182,6 @@ async function syncPortfolios() {
   btn.style.borderColor = 'var(--amber)';
   btn.style.color = 'var(--amber)';
 
-  // 1. Sincronizar datos (Ratios, Targets, Rubros, CCL, MEP) a Omar, Ana, Hilda y Juli
   var dataErrors = await syncDataToOthers(function(msg){ label.textContent = msg; });
   if (dataErrors.length) {
     console.warn('syncDataToOthers errores:', dataErrors);
@@ -285,19 +258,15 @@ async function syncPortfolios() {
 }
 
 // ════════════════════════════════════════════════════════
-// SUPABASE CONFIG
 // ════════════════════════════════════════════════════════
 var SUPABASE_URL = CFG.supabaseUrl;
 var SUPABASE_KEY = CFG.supabaseKey||'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU';
 
 // ════════════════════════════════════════════════════════
-// AUTH — login con Google, restringido a un email. La protección real
-// vive en las políticas RLS de Supabase (ver SQL aparte); esto es la
-// puerta de entrada + el token que hace que esas políticas te reconozcan.
 // ════════════════════════════════════════════════════════
 var ALLOWED_EMAIL = CFG.allowedEmail;
 var sbAuth = CFG.auth ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-window._sbAccessToken = null; // token del usuario logueado; sbHeaders() lo usa en vez de la anon key sola
+window._sbAccessToken = null;
 
 function authSignInGoogle(){
   sbAuth.auth.signInWithOAuth({
@@ -317,8 +286,6 @@ function authUpdateUI(user){
   if(emailEl) emailEl.textContent=user.email;
 }
 
-// Se llama al boot y cada vez que cambia el estado de auth. Devuelve true/false
-// según si el usuario logueado es el permitido. Muestra/oculta el gate visual.
 async function authEnsureSession(){
   if(!CFG.auth){var _g=document.getElementById('auth-gate');if(_g)_g.style.display='none';return true;}
   var gate=document.getElementById('auth-gate');
@@ -333,7 +300,6 @@ async function authEnsureSession(){
       return true;
     }
     if(session){
-      // Logueado pero con una cuenta que no es la permitida → afuera
       if(errEl){errEl.textContent='Esa cuenta de Google no tiene acceso a este portfolio.';errEl.style.display='block';}
       await sbAuth.auth.signOut();
       window._sbAccessToken=null;
@@ -354,13 +320,12 @@ if(sbAuth)sbAuth.auth.onAuthStateChange(function(_event,_session){
 // ── Helpers REST Supabase ─────────────────────────────────────────────────
 
 // ── Supabase Keepalive ─────────────────────────────────────────────────────
-// Hace un ping liviano cada 3 días para evitar que el proyecto se pause
 (function sbKeepalive(){
   var KEY = 'sb_keepalive_' + (SUPABASE_URL.match(/\/\/([^.]+)/)||[])[1];
   var last = 0;
   try{ last = parseInt(localStorage.getItem(KEY)||'0'); }catch(e){}
   var now = Date.now();
-  if(now - last < 3 * 24 * 60 * 60 * 1000) return; // menos de 3 días, no hacer nada
+  if(now - last < 3 * 24 * 60 * 60 * 1000) return;
   fetch(SUPABASE_URL + '/rest/v1/config?limit=1', {
     headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY}
   }).then(function(r){
@@ -369,14 +334,10 @@ if(sbAuth)sbAuth.auth.onAuthStateChange(function(_event,_session){
 })();
 
 function sbHeaders(){
-  // apikey siempre es la clave pública (anon); Authorization usa el token de la
-  // sesión logueada cuando existe, para que las políticas RLS te reconozcan.
-  // Sin sesión válida, cae a la anon key y RLS te bloquea (comportamiento correcto).
   var token = window._sbAccessToken || SUPABASE_KEY;
   return {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token};
 }
 
-// Upsert un registro en una tabla por PK "key" (tabla config)
 async function sbSetConfig(key, value){
   try{
     await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.'+encodeURIComponent(key),{
@@ -402,13 +363,11 @@ async function sbGetConfig(key){
   }catch(e){ return null; }
 }
 
-// Guardar array completo en tabla (borra todo y reinserta)
 async function sbSaveArray(table, arr){
   try{
     var delRes=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gte.0',{method:'DELETE',headers:sbHeaders()});
     if(!delRes.ok) throw new Error('DEL '+delRes.status);
     if(!arr||!arr.length) return true;
-    // Usar IDs secuenciales enteros para evitar problemas con bigint en Supabase
     var rows=arr.map(function(item,i){return{id:i+1,data:item,updated_at:new Date().toISOString()};});
     var insRes=await fetch(SUPABASE_URL+'/rest/v1/'+table,{
       method:'POST',
@@ -419,8 +378,6 @@ async function sbSaveArray(table, arr){
     return true;
   }catch(e){ console.warn('sbSaveArray error',table,e); return false; }
 }
-// Reintenta sbSaveArray hasta 3 veces (backoff 1.2s/2.4s) antes de darse por vencido —
-// mitiga cortes de red momentáneos o cierres de pestaña justo después de guardar.
 async function sbSaveArrayRetry(table, arr, tries){
   tries = tries || 3;
   for(var i=0;i<tries;i++){
@@ -432,19 +389,15 @@ async function sbSaveArrayRetry(table, arr, tries){
 }
 
 async function sbLoadArray(table){
-  // Retorna: array (ok, puede ser vacío), null (error de red/parse)
-  // El llamador puede distinguir: null → Supabase inalcanzable → usar localStorage
-  //                               []   → tabla vacía legítima → NO usar localStorage contaminado
   try{
     var r=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?select=data&order=id.asc',{headers:sbHeaders()});
-    if(!r.ok) return null; // error HTTP → tratar como inalcanzable
+    if(!r.ok) return null;
     var d=await r.json();
     if(!Array.isArray(d)) return null;
     return d.map(function(row){return row.data;});
   }catch(e){ return null; }
 }
 
-// Status de conexión
 var SB_STATUS = { ok: false };
 async function sbPing(){
   try{
@@ -459,11 +412,9 @@ async function sbPing(){
 }
 
 // ════════════════════════════════════════════════════════
-// PORTAFOLIO ORIGINAL
 // ════════════════════════════════════════════════════════
 var FKEY = 'd7ar4v9r01qtpbh9hs60d7ar4v9r01qtpbh9hs6g';
 var FBASE = 'https://finnhub.io/api/v1';
-
 
 var CCL_TABLE = {"19/04/2026": 1462.0, "20/04/2026": 1463.0, "21/04/2026": 1464.0, "22/04/2026": 1465.0, "23/04/2026": 1465.0, "24/04/2026": 1466.0, "25/04/2026": 1467.0, "26/04/2026": 1468.0, "27/04/2026": 1469.0, "28/04/2026": 1470.0, "29/04/2026": 1471.0, "30/04/2026": 1471.0, "01/05/2026": 1472.0, "02/05/2026": 1473.0, "03/05/2026": 1474.0, "04/05/2026": 1475.0, "05/05/2026": 1476.0, "06/05/2026": 1477.0, "07/05/2026": 1478.0, "08/05/2026": 1478.0, "09/05/2026": 1479.0, "10/05/2026": 1480.0, "11/05/2026": 1481.0, "12/05/2026": 1482.0, "13/05/2026": 1483.0, "14/05/2026": 1484.0, "15/05/2026": 1484.0, "16/05/2026": 1485.0, "17/05/2026": 1486.0, "18/05/2026": 1487.0, "27/12/2023": 973.0, "24/11/2025": 1518.0, "07/04/2026": 1483.0, "08/04/2026": 1475.0, "09/04/2026": 1475.0, "10/04/2026": 1473.0, "11/04/2026": 1473.0, "12/04/2026": 1473.0, "13/04/2026": 1467.0, "14/04/2026": 1467.0, "15/04/2026": 1466.0, "16/04/2026": 1460.0, "17/04/2026": 1453.0, "18/04/2026": 1453.0, "06/04/2026": 1483.0, "05/04/2026": 1495.0, "04/04/2026": 1495.0, "03/04/2026": 1495.0, "02/04/2026": 1495.0, "01/04/2026": 1486.0, "31/03/2026": 1473.0, "30/03/2026": 1483.0, "29/03/2026": 1476.0, "28/03/2026": 1476.0, "27/03/2026": 1476.0, "26/03/2026": 1448.0, "25/03/2026": 1449.0, "24/03/2026": 1463.0, "23/03/2026": 1465.0, "22/03/2026": 1473.0, "21/03/2026": 1473.0, "20/03/2026": 1473.0, "19/03/2026": 1469.0, "18/03/2026": 1469.0, "17/03/2026": 1469.0, "16/03/2026": 1469.0, "15/03/2026": 1467.0, "14/03/2026": 1467.0, "13/03/2026": 1467.0, "12/03/2026": 1460.0, "11/03/2026": 1453.0, "10/03/2026": 1464.0, "09/03/2026": 1474.0, "08/03/2026": 1482.0, "07/03/2026": 1482.0, "06/03/2026": 1482.0, "05/03/2026": 1462.0, "04/03/2026": 1464.0, "03/03/2026": 1484.0, "02/03/2026": 1456.0, "01/03/2026": 1455.0, "28/02/2026": 1455.0, "27/02/2026": 1455.0, "26/02/2026": 1478.0, "25/02/2026": 1464.0, "24/02/2026": 1444.0, "23/02/2026": 1436.0, "22/02/2026": 1442.0, "21/02/2026": 1442.0, "20/02/2026": 1442.0, "19/02/2026": 1451.0, "18/02/2026": 1449.0, "12/02/2026": 1486.0, "11/02/2026": 1478.0, "30/01/2026": 1502.0, "29/01/2026": 1505.0, "28/01/2026": 1513.0, "27/01/2026": 1511.0, "26/01/2026": 1516.0, "22/01/2026": 1508.0, "21/01/2026": 1516.0, "20/01/2026": 1523.0, "16/01/2026": 1519.0, "15/01/2026": 1523.0, "14/01/2026": 1522.0, "13/01/2026": 1528.0, "12/01/2026": 1534.0, "09/01/2026": 1527.0, "08/01/2026": 1526.0, "06/01/2026": 1536.0, "05/01/2026": 1536.0, "02/01/2026": 1550.0, "30/12/2025": 1522.0, "26/12/2025": 1520.0, "24/12/2025": 1528.0, "23/12/2025": 1529.0, "22/12/2025": 1548.0, "19/12/2025": 1545.0, "18/12/2025": 1550.0, "17/12/2025": 1564.0, "16/12/2025": 1549.0, "15/12/2025": 1523.0, "12/12/2025": 1515.0, "11/12/2025": 1508.0, "10/12/2025": 1496.0, "09/12/2025": 1514.0, "05/12/2025": 1516.0, "04/12/2025": 1510.0, "03/12/2025": 1518.0, "02/12/2025": 1528.0, "01/12/2025": 1516.0, "28/11/2025": 1518.0, "27/11/2025": 1524.0, "26/11/2025": 1534.0, "25/11/2025": 1523.0, "22/11/2025": 1510.0, "21/11/2025": 1510.0, "20/11/2025": 1513.0, "19/11/2025": 1466.0, "18/11/2025": 1485.0, "17/11/2025": 1480.0, "16/11/2025": 1502.0, "15/11/2025": 1502.0, "14/11/2025": 1502.0, "13/11/2025": 1475.0, "12/11/2025": 1477.0, "11/11/2025": 1480.0, "10/11/2025": 1481.0, "09/11/2025": 1473.0, "08/11/2025": 1473.0, "07/11/2025": 1473.0, "06/11/2025": 1506.0, "05/11/2025": 1500.0, "04/11/2025": 1522.0, "03/11/2025": 1518.0, "02/11/2025": 1502.0, "01/11/2025": 1502.0, "31/10/2025": 1502.0, "30/10/2025": 1494.0, "29/10/2025": 1474.0, "28/10/2025": 1474.0, "27/10/2025": 1458.0, "25/10/2025": 1568.0, "24/10/2025": 1568.0, "23/10/2025": 1551.0, "22/10/2025": 1608.0, "21/10/2025": 1608.0, "20/10/2025": 1570.0, "19/10/2025": 1540.0, "18/10/2025": 1540.0, "17/10/2025": 1540.0, "16/10/2025": 1484.0, "15/10/2025": 1455.0, "14/10/2025": 1469.0, "13/10/2025": 1440.0, "12/10/2025": 1497.0, "11/10/2025": 1497.0, "10/10/2025": 1497.0, "09/10/2025": 1451.0, "08/10/2025": 1545.0, "07/10/2025": 1558.0, "06/10/2025": 1516.0, "05/10/2025": 1523.0, "04/10/2025": 1523.0, "03/10/2025": 1523.0, "02/10/2025": 1554.0, "01/10/2025": 1571.0, "30/09/2025": 1538.0, "29/09/2025": 1489.0, "28/09/2025": 1468.0, "27/09/2025": 1468.0, "26/09/2025": 1468.0, "25/09/2025": 1399.0, "24/09/2025": 1394.0, "23/09/2025": 1418.0, "22/09/2025": 1438.0, "21/09/2025": 1557.0, "20/09/2025": 1557.0, "19/09/2025": 1557.0, "18/09/2025": 1552.0, "17/09/2025": 1494.0, "16/09/2025": 1475.0, "15/09/2025": 1495.0, "14/09/2025": 1478.0, "13/09/2025": 1478.0, "12/09/2025": 1478.0, "11/09/2025": 1447.0, "10/09/2025": 1435.0, "09/09/2025": 1438.0, "08/09/2025": 1446.0, "07/09/2025": 1388.0, "06/09/2025": 1388.0, "05/09/2025": 1388.0, "04/09/2025": 1379.0, "03/09/2025": 1373.0, "02/09/2025": 1370.0, "01/09/2025": 1351.0, "31/08/2025": 1354.0, "30/08/2025": 1354.0, "29/08/2025": 1354.0, "28/08/2025": 1346.0, "27/08/2025": 1355.0, "26/08/2025": 1358.0, "25/08/2025": 1362.0, "24/08/2025": 1335.0, "23/08/2025": 1335.0, "22/08/2025": 1335.0, "21/08/2025": 1321.0, "20/08/2025": 1308.0, "19/08/2025": 1302.0, "18/08/2025": 1303.0, "17/08/2025": 1319.0, "16/08/2025": 1319.0, "15/08/2025": 1319.0, "14/08/2025": 1306.0, "13/08/2025": 1319.0, "12/08/2025": 1320.0, "11/08/2025": 1324.0, "10/08/2025": 1331.0, "09/08/2025": 1331.0, "08/08/2025": 1331.0, "07/08/2025": 1327.0, "06/08/2025": 1334.0, "05/08/2025": 1346.0, "04/08/2025": 1356.0, "03/08/2025": 1365.0, "02/08/2025": 1365.0, "01/08/2025": 1365.0, "31/07/2025": 1359.0, "30/07/2025": 1316.0, "29/07/2025": 1293.0, "28/07/2025": 1299.0, "27/07/2025": 1289.0, "26/07/2025": 1289.0, "25/07/2025": 1289.0, "24/07/2025": 1276.0, "23/07/2025": 1266.0, "22/07/2025": 1263.0, "21/07/2025": 1286.0, "20/07/2025": 1295.0, "19/07/2025": 1295.0, "18/07/2025": 1295.0, "17/07/2025": 1283.0, "16/07/2025": 1277.0, "15/07/2025": 1279.0, "14/07/2025": 1295.0, "13/07/2025": 1273.0, "12/07/2025": 1273.0, "11/07/2025": 1273.0, "10/07/2025": 1270.0, "09/07/2025": 1272.0, "08/07/2025": 1260.0, "07/07/2025": 1277.0, "06/07/2025": 1237.0, "05/07/2025": 1237.0, "04/07/2025": 1237.0, "03/07/2025": 1234.0, "02/07/2025": 1237.0, "01/07/2025": 1235.0, "30/06/2025": 1210.0, "29/06/2025": 1202.0, "28/06/2025": 1202.0, "27/06/2025": 1202.0, "26/06/2025": 1201.0, "25/06/2025": 1203.0, "24/06/2025": 1188.0, "23/06/2025": 1189.0, "22/06/2025": 1182.0, "21/06/2025": 1182.0, "20/06/2025": 1182.0, "19/06/2025": 1172.0, "18/06/2025": 1175.0, "17/06/2025": 1183.0, "16/06/2025": 1182.0, "15/06/2025": 1192.0, "14/06/2025": 1192.0, "13/06/2025": 1192.0, "12/06/2025": 1191.0, "11/06/2025": 1196.0, "10/06/2025": 1195.0, "09/06/2025": 1200.0, "08/06/2025": 1199.0, "07/06/2025": 1199.0, "06/06/2025": 1199.0, "05/06/2025": 1195.0, "04/06/2025": 1202.0, "03/06/2025": 1200.0, "02/06/2025": 1194.0, "01/06/2025": 1203.0, "31/05/2025": 1203.0, "30/05/2025": 1203.0, "29/05/2025": 1196.0, "28/05/2025": 1177.0, "27/05/2025": 1175.0, "26/05/2025": 1169.0, "25/05/2025": 1165.0, "24/05/2025": 1165.0, "23/05/2025": 1165.0, "22/05/2025": 1161.0, "21/05/2025": 1166.0, "20/05/2025": 1170.0, "19/05/2025": 1163.0, "18/05/2025": 1175.0, "17/05/2025": 1175.0, "16/05/2025": 1175.0, "15/05/2025": 1165.0, "14/05/2025": 1153.0, "13/05/2025": 1161.0, "12/05/2025": 1161.0, "11/05/2025": 1155.0, "10/05/2025": 1155.0, "09/05/2025": 1155.0, "08/05/2025": 1160.0, "07/05/2025": 1167.0, "06/05/2025": 1212.0, "05/05/2025": 1217.0, "04/05/2025": 1219.0, "03/05/2025": 1219.0, "02/05/2025": 1219.0, "01/05/2025": 1214.0, "30/04/2025": 1194.0, "29/04/2025": 1187.0, "28/04/2025": 1193.0, "27/04/2025": 1198.0, "26/04/2025": 1198.0, "25/04/2025": 1198.0, "24/04/2025": 1200.0, "23/04/2025": 1181.0, "22/04/2025": 1159.0, "21/04/2025": 1132.0, "20/04/2025": 1169.0, "19/04/2025": 1169.0, "18/04/2025": 1169.0, "17/04/2025": 1169.0, "16/04/2025": 1183.0, "15/04/2025": 1248.0, "14/04/2025": 1258.0, "13/04/2025": 1339.0, "12/04/2025": 1339.0, "11/04/2025": 1339.0, "10/04/2025": 1364.0, "09/04/2025": 1343.0, "08/04/2025": 1374.0, "07/04/2025": 1361.0, "06/04/2025": 1338.0, "05/04/2025": 1338.0, "04/04/2025": 1338.0, "03/04/2025": 1322.0, "02/04/2025": 1301.0, "01/04/2025": 1310.0, "31/03/2025": 1316.0, "30/03/2025": 1305.0, "29/03/2025": 1305.0, "28/03/2025": 1305.0, "27/03/2025": 1297.0, "26/03/2025": 1296.0, "25/03/2025": 1297.0, "24/03/2025": 1264.0, "23/03/2025": 1292.0, "22/03/2025": 1292.0, "21/03/2025": 1292.0, "20/03/2025": 1289.0, "19/03/2025": 1293.0, "18/03/2025": 1301.0, "17/03/2025": 1258.0, "16/03/2025": 1241.0, "15/03/2025": 1241.0, "14/03/2025": 1241.0, "13/03/2025": 1235.0, "12/03/2025": 1230.0, "11/03/2025": 1229.0, "10/03/2025": 1228.0, "09/03/2025": 1220.0, "08/03/2025": 1220.0, "07/03/2025": 1220.0, "06/03/2025": 1235.0, "05/03/2025": 1234.0, "04/03/2025": 1250.0, "03/03/2025": 1232.0, "02/03/2025": 1215.0, "01/03/2025": 1215.0, "28/02/2025": 1215.0, "27/02/2025": 1231.0, "26/02/2025": 1211.0, "25/02/2025": 1216.0, "24/02/2025": 1223.0, "23/02/2025": 1217.0, "22/02/2025": 1217.0, "21/02/2025": 1217.0, "20/02/2025": 1211.0, "19/02/2025": 1214.0, "18/02/2025": 1213.0, "17/02/2025": 1184.0, "16/02/2025": 1201.0, "15/02/2025": 1201.0, "14/02/2025": 1201.0, "13/02/2025": 1197.0, "12/02/2025": 1196.0, "11/02/2025": 1197.0, "10/02/2025": 1191.0, "09/02/2025": 1205.0, "08/02/2025": 1205.0, "07/02/2025": 1205.0, "06/02/2025": 1192.0, "05/02/2025": 1205.0, "04/02/2025": 1193.0, "03/02/2025": 1194.0, "02/02/2025": 1191.0, "01/02/2025": 1191.0, "31/01/2025": 1191.0, "30/01/2025": 1186.0, "29/01/2025": 1179.0, "28/01/2025": 1177.0, "27/01/2025": 1166.0, "26/01/2025": 1173.0, "25/01/2025": 1173.0, "24/01/2025": 1173.0, "23/01/2025": 1192.0, "22/01/2025": 1198.0, "21/01/2025": 1181.0, "20/01/2025": 1201.0, "19/01/2025": 1188.0, "18/01/2025": 1188.0, "17/01/2025": 1188.0, "16/01/2025": 1196.0, "15/01/2025": 1189.0, "14/01/2025": 1191.0, "13/01/2025": 1190.0, "12/01/2025": 1195.0, "11/01/2025": 1195.0, "10/01/2025": 1195.0, "09/01/2025": 1208.0, "08/01/2025": 1193.0, "07/01/2025": 1191.0, "06/01/2025": 1190.0, "05/01/2025": 1180.0, "04/01/2025": 1180.0, "03/01/2025": 1180.0, "02/01/2025": 1174.0, "01/01/2025": 1197.0, "31/12/2024": 1197.0, "30/12/2024": 1189.0, "29/12/2024": 1186.0, "28/12/2024": 1186.0, "27/12/2024": 1186.0, "26/12/2024": 1190.0, "25/12/2024": 1173.0, "24/12/2024": 1173.0, "23/12/2024": 1171.0, "22/12/2024": 1172.0, "21/12/2024": 1172.0, "20/12/2024": 1172.0, "19/12/2024": 1157.0, "18/12/2024": 1188.0, "17/12/2024": 1150.0, "16/12/2024": 1115.0, "15/12/2024": 1090.0, "14/12/2024": 1090.0, "13/12/2024": 1090.0, "12/12/2024": 1073.0, "11/12/2024": 1066.0, "10/12/2024": 1077.0, "09/12/2024": 1071.0, "08/12/2024": 1070.0, "07/12/2024": 1070.0, "06/12/2024": 1070.0, "05/12/2024": 1088.0, "04/12/2024": 1102.0, "03/12/2024": 1106.0, "02/12/2024": 1101.0, "01/12/2024": 1111.0, "30/11/2024": 1111.0, "29/11/2024": 1111.0, "28/11/2024": 1112.0, "27/11/2024": 1107.0, "26/11/2024": 1109.0, "25/11/2024": 1113.0, "24/11/2024": 1113.0, "23/11/2024": 1113.0, "22/11/2024": 1113.0, "21/11/2024": 1113.0, "20/11/2024": 1111.0, "19/11/2024": 1113.0, "18/11/2024": 1090.0, "17/11/2024": 1129.0, "16/11/2024": 1129.0, "15/11/2024": 1129.0, "14/11/2024": 1155.0, "13/11/2024": 1157.0, "12/11/2024": 1164.0, "11/11/2024": 1160.0, "10/11/2024": 1157.0, "09/11/2024": 1157.0, "08/11/2024": 1157.0, "07/11/2024": 1167.0, "06/11/2024": 1165.0, "05/11/2024": 1181.0, "04/11/2024": 1185.0, "03/11/2024": 1177.0, "02/11/2024": 1177.0, "01/11/2024": 1177.0, "31/10/2024": 1158.0, "30/10/2024": 1159.0, "29/10/2024": 1155.0, "28/10/2024": 1158.0, "27/10/2024": 1165.0, "26/10/2024": 1165.0, "25/10/2024": 1165.0, "24/10/2024": 1181.0, "23/10/2024": 1188.0, "22/10/2024": 1194.0, "21/10/2024": 1195.0, "20/10/2024": 1197.0, "19/10/2024": 1197.0, "18/10/2024": 1197.0, "17/10/2024": 1194.0, "16/10/2024": 1190.0, "15/10/2024": 1179.0, "14/10/2024": 1181.0, "13/10/2024": 1175.0, "12/10/2024": 1175.0, "11/10/2024": 1175.0, "10/10/2024": 1179.0, "09/10/2024": 1195.0, "08/10/2024": 1213.0, "07/10/2024": 1222.0, "06/10/2024": 1226.0, "05/10/2024": 1226.0, "04/10/2024": 1226.0, "03/10/2024": 1230.0, "02/10/2024": 1239.0, "01/10/2024": 1246.0, "30/09/2024": 1239.0, "28/09/2024": 1229.0, "27/09/2024": 1229.0, "26/09/2024": 1228.0, "25/09/2024": 1228.0, "24/09/2024": 1224.0, "23/09/2024": 1227.0, "22/09/2024": 1224.0, "21/09/2024": 1224.0, "20/09/2024": 1224.0, "19/09/2024": 1219.0, "18/09/2024": 1235.0, "17/09/2024": 1242.0, "16/09/2024": 1244.0, "15/09/2024": 1252.0, "14/09/2024": 1252.0, "13/09/2024": 1252.0, "12/09/2024": 1256.0, "11/09/2024": 1252.0, "10/09/2024": 1251.0, "09/09/2024": 1244.0, "08/09/2024": 1263.0, "07/09/2024": 1263.0, "06/09/2024": 1263.0, "05/09/2024": 1274.0, "04/09/2024": 1295.0, "03/09/2024": 1309.0, "02/09/2024": 1311.0, "01/09/2024": 1296.0, "31/08/2024": 1296.0, "30/08/2024": 1296.0, "29/08/2024": 1288.0, "28/08/2024": 1295.0, "27/08/2024": 1297.0, "26/08/2024": 1291.0, "25/08/2024": 1290.0, "24/08/2024": 1290.0, "23/08/2024": 1290.0, "22/08/2024": 1291.0, "21/08/2024": 1292.0, "20/08/2024": 1295.0, "19/08/2024": 1287.0, "18/08/2024": 1288.0, "17/08/2024": 1288.0, "16/08/2024": 1288.0, "15/08/2024": 1270.0, "14/08/2024": 1269.0, "13/08/2024": 1267.0, "12/08/2024": 1284.0, "11/08/2024": 1287.0, "10/08/2024": 1287.0, "09/08/2024": 1287.0, "08/08/2024": 1295.0, "07/08/2024": 1319.0, "06/08/2024": 1332.0, "05/08/2024": 1337.0, "04/08/2024": 1324.0, "03/08/2024": 1324.0, "02/08/2024": 1324.0, "01/08/2024": 1299.0, "31/07/2024": 1282.0, "30/07/2024": 1258.0, "29/07/2024": 1289.0, "28/07/2024": 1312.0, "27/07/2024": 1312.0, "26/07/2024": 1312.0, "25/07/2024": 1322.0, "24/07/2024": 1333.0, "23/07/2024": 1331.0, "22/07/2024": 1330.0, "21/07/2024": 1326.0, "20/07/2024": 1326.0, "19/07/2024": 1326.0, "18/07/2024": 1322.0, "17/07/2024": 1303.0, "16/07/2024": 1283.0, "15/07/2024": 1306.0, "14/07/2024": 1427.0, "13/07/2024": 1427.0, "12/07/2024": 1427.0, "11/07/2024": 1411.0, "10/07/2024": 1388.0, "09/07/2024": 1376.0, "08/07/2024": 1383.0, "07/07/2024": 1389.0, "06/07/2024": 1398.0, "05/07/2024": 1398.0, "04/07/2024": 1398.0, "03/07/2024": 1382.0, "02/07/2024": 1435.0, "01/07/2024": 1413.0, "30/06/2024": 1359.0, "29/06/2024": 1359.0, "28/06/2024": 1359.0, "27/06/2024": 1355.0, "26/06/2024": 1353.0, "25/06/2024": 1322.0, "24/06/2024": 1310.0, "23/06/2024": 1295.0, "22/06/2024": 1295.0, "21/06/2024": 1295.0, "20/06/2024": 1295.0, "19/06/2024": 1295.0, "18/06/2024": 1269.0, "17/06/2024": 1272.0, "16/06/2024": 1272.0, "15/06/2024": 1272.0, "14/06/2024": 1272.0, "13/06/2024": 1278.0, "12/06/2024": 1309.0, "11/06/2024": 1311.0, "10/06/2024": 1308.0, "09/06/2024": 1307.0, "08/06/2024": 1307.0, "07/06/2024": 1307.0, "06/06/2024": 1301.0, "05/06/2024": 1307.0, "04/06/2024": 1313.0, "03/06/2024": 1291.0, "02/06/2024": 1247.0, "01/06/2024": 1247.0, "31/05/2024": 1247.0, "30/05/2024": 1213.0, "29/05/2024": 1214.0, "28/05/2024": 1239.0, "27/05/2024": 1266.0, "26/05/2024": 1235.0, "25/05/2024": 1235.0, "24/05/2024": 1235.0, "23/05/2024": 1256.0, "22/05/2024": 1253.0, "21/05/2024": 1194.0, "20/05/2024": 1137.0, "19/05/2024": 1104.0, "18/05/2024": 1104.0, "17/05/2024": 1104.0, "16/05/2024": 1100.0, "15/05/2024": 1094.0, "14/05/2024": 1086.0, "13/05/2024": 1076.0, "12/05/2024": 1079.0, "11/05/2024": 1079.0, "10/05/2024": 1079.0, "09/05/2024": 1083.0, "08/05/2024": 1078.0, "07/05/2024": 1096.0, "06/05/2024": 1111.0, "05/05/2024": 1121.0, "04/05/2024": 1121.0, "03/05/2024": 1121.0, "02/05/2024": 1122.0, "01/05/2024": 1104.0, "30/04/2024": 1095.0, "29/04/2024": 1093.0, "28/04/2024": 1086.0, "27/04/2024": 1086.0, "26/04/2024": 1086.0, "25/04/2024": 1082.0, "24/04/2024": 1058.0, "23/04/2024": 1055.0, "22/04/2024": 1060.0, "21/04/2024": 1068.0, "20/04/2024": 1068.0, "19/04/2024": 1068.0, "18/04/2024": 1070.0, "17/04/2024": 1065.0, "16/04/2024": 1076.0, "15/04/2024": 1074.0, "14/04/2024": 1052.0, "13/04/2024": 1052.0, "12/04/2024": 1052.0, "11/04/2024": 1050.0, "10/04/2024": 1047.0, "09/04/2024": 1043.0, "08/04/2024": 1039.0, "07/04/2024": 1050.0, "06/04/2024": 1050.0, "05/04/2024": 1050.0, "04/04/2024": 1057.0, "03/04/2024": 1074.0, "02/04/2024": 1113.0, "01/04/2024": 1095.0, "31/03/2024": 1098.0, "30/03/2024": 1098.0, "29/03/2024": 1098.0, "28/03/2024": 1098.0, "27/03/2024": 1085.0, "26/03/2024": 1101.0, "25/03/2024": 1083.0, "24/03/2024": 1096.0, "23/03/2024": 1096.0, "22/03/2024": 1096.0, "21/03/2024": 1101.0, "20/03/2024": 1098.0, "19/03/2024": 1084.0, "18/03/2024": 1080.0, "17/03/2024": 1074.0, "16/03/2024": 1074.0, "15/03/2024": 1074.0, "14/03/2024": 1059.0, "13/03/2024": 1054.0, "12/03/2024": 1073.0, "11/03/2024": 1025.0, "10/03/2024": 1053.0, "08/03/2024": 1053.0, "07/03/2024": 1030.0, "06/03/2024": 1022.0, "05/03/2024": 1043.0, "04/03/2024": 1070.0, "03/03/2024": 1085.0, "02/03/2024": 1085.0, "01/03/2024": 1085.0, "29/02/2024": 1066.0, "28/02/2024": 1071.0, "27/02/2024": 1090.0, "26/02/2024": 1097.0, "25/02/2024": 1121.0, "24/02/2024": 1121.0, "23/02/2024": 1121.0, "22/02/2024": 1105.0, "21/02/2024": 1108.0, "20/02/2024": 1127.0, "19/02/2024": 1134.0, "18/02/2024": 1118.0, "17/02/2024": 1118.0, "16/02/2024": 1118.0, "15/02/2024": 1161.0, "14/02/2024": 1178.0, "13/02/2024": 1252.0, "12/02/2024": 1240.0, "11/02/2024": 1235.0, "10/02/2024": 1235.0, "09/02/2024": 1235.0, "08/02/2024": 1255.0, "07/02/2024": 1263.0, "06/02/2024": 1253.0, "05/02/2024": 1294.0, "04/02/2024": 1298.0, "03/02/2024": 1298.0, "02/02/2024": 1298.0, "01/02/2024": 1286.0, "31/01/2024": 1267.0, "30/01/2024": 1273.0, "29/01/2024": 1260.0, "28/01/2024": 1235.0, "27/01/2024": 1235.0, "26/01/2024": 1264.0, "25/01/2024": 1323.0, "24/01/2024": 1294.0, "23/01/2024": 1290.0, "22/01/2024": 1314.0, "21/01/2024": 1304.0, "20/01/2024": 1304.0, "19/01/2024": 1304.0, "18/01/2024": 1282.0, "17/01/2024": 1272.0, "16/01/2024": 1212.0, "15/01/2024": 1171.0, "14/01/2024": 1148.0, "13/01/2024": 1148.0, "12/01/2024": 1148.0, "11/01/2024": 1164.0, "10/01/2024": 1190.0, "09/01/2024": 1206.0, "08/01/2024": 1201.0, "07/01/2024": 1144.0, "06/01/2024": 1144.0, "05/01/2024": 1144.0, "04/01/2024": 1099.0, "03/01/2024": 1052.0, "02/01/2024": 997.0, "01/01/2024": 973.0, "01/06/2026": 1490.0, "01/07/2026": 1567.0, "03/06/2026": 1514.0, "03/07/2026": 1596.0, "04/12/2023": 890.0, "05/06/2026": 1511.0, "05/12/2023": 909.0, "06/07/2026": 1572.0, "06/12/2023": 937.0, "07/12/2023": 991.0, "11/06/2026": 1493.0, "12/12/2023": 1032.0, "13/07/2026": 1568.0, "14/12/2023": 1016.0, "15/12/2023": 997.0, "18/12/2023": 946.0, "19/01/2026": 1512.0, "19/12/2023": 951.0, "20/07/2026": 1572.0, "20/12/2023": 945.0, "21/05/2026": 1478.0, "21/07/2026": 1565.0, "21/12/2023": 944.0, "22/05/2026": 1487.0, "22/06/2026": 1529.0, "22/07/2026": 1564.0, "22/12/2023": 941.0, "23/01/2026": 1507.0, "23/06/2026": 1553.0, "24/06/2026": 1580.0, "25/06/2026": 1546.0, "26/05/2026": 1488.0, "26/12/2023": 901.0, "27/05/2026": 1481.0, "27/11/2023": 858.0, "28/05/2026": 1485.0, "28/11/2023": 848.0, "28/12/2023": 945.0, "29/05/2026": 1487.0, "29/06/2026": 1554.0, "29/11/2023": 820.0, "29/12/2023": 973.0, "29/12/2025": 1508.0, "30/06/2026": 1557.0, "30/11/2023": 836.0};
 var MEP_TABLE = {"09/09/2026": 1531.0, "19/04/2026": 1412.0, "20/04/2026": 1411.0, "21/04/2026": 1410.0, "22/04/2026": 1409.0, "23/04/2026": 1408.0, "24/04/2026": 1407.0, "25/04/2026": 1406.0, "26/04/2026": 1405.0, "27/04/2026": 1405.0, "28/04/2026": 1404.0, "29/04/2026": 1403.0, "30/04/2026": 1402.0, "01/05/2026": 1401.0, "02/05/2026": 1400.0, "03/05/2026": 1399.0, "04/05/2026": 1398.0, "05/05/2026": 1397.0, "06/05/2026": 1396.0, "07/05/2026": 1395.0, "08/05/2026": 1394.0, "09/05/2026": 1393.0, "10/05/2026": 1392.0, "11/05/2026": 1392.0, "12/05/2026": 1391.0, "13/05/2026": 1390.0, "14/05/2026": 1389.0, "15/05/2026": 1388.0, "16/05/2026": 1387.0, "17/05/2026": 1386.0, "18/05/2026": 1385.0, "24/11/2025": 1470.0, "07/04/2026": 1429.0, "08/04/2026": 1425.0, "09/04/2026": 1422.0, "10/04/2026": 1422.0, "11/04/2026": 1420.0, "12/04/2026": 1412.0, "13/04/2026": 1412.0, "14/04/2026": 1412.0, "15/04/2026": 1412.0, "16/04/2026": 1408.0, "17/04/2026": 1404.0, "18/04/2026": 1404.0, "06/04/2026": 1429.0, "05/04/2026": 1434.0, "04/04/2026": 1434.0, "03/04/2026": 1434.0, "02/04/2026": 1434.0, "01/04/2026": 1434.0, "31/03/2026": 1423.0, "30/03/2026": 1432.0, "29/03/2026": 1428.0, "28/03/2026": 1428.0, "27/03/2026": 1428.0, "26/03/2026": 1399.0, "25/03/2026": 1403.0, "24/03/2026": 1415.0, "23/03/2026": 1415.0, "22/03/2026": 1418.0, "21/03/2026": 1418.0, "20/03/2026": 1418.0, "19/03/2026": 1421.0, "18/03/2026": 1419.0, "17/03/2026": 1417.0, "16/03/2026": 1424.0, "15/03/2026": 1422.0, "14/03/2026": 1422.0, "13/03/2026": 1422.0, "12/03/2026": 1410.0, "11/03/2026": 1413.0, "10/03/2026": 1420.0, "09/03/2026": 1430.0, "08/03/2026": 1436.0, "07/03/2026": 1436.0, "06/03/2026": 1436.0, "05/03/2026": 1433.0, "04/03/2026": 1428.0, "03/03/2026": 1434.0, "02/03/2026": 1418.0, "01/03/2026": 1418.0, "28/02/2026": 1418.0, "27/02/2026": 1418.0, "26/02/2026": 1438.0, "25/02/2026": 1425.0, "24/02/2026": 1403.0, "23/02/2026": 1394.0, "22/02/2026": 1402.0, "21/02/2026": 1402.0, "20/02/2026": 1402.0, "19/02/2026": 1408.0, "18/02/2026": 1412.0, "12/02/2026": 1414.0, "11/02/2026": 1430.0, "30/01/2026": 1460.0, "29/01/2026": 1458.0, "28/01/2026": 1463.0, "27/01/2026": 1463.0, "26/01/2026": 1469.0, "22/01/2026": 1459.0, "21/01/2026": 1468.0, "16/01/2026": 1472.0, "15/01/2026": 1472.0, "13/01/2026": 1487.0, "08/01/2026": 1494.0, "06/01/2026": 1497.0, "30/12/2025": 1481.0, "24/12/2025": 1481.0, "22/12/2025": 1493.0, "19/12/2025": 1494.0, "18/12/2025": 1498.0, "17/12/2025": 1514.0, "16/12/2025": 1504.0, "15/12/2025": 1492.0, "03/12/2025": 1470.0, "26/11/2025": 1487.0, "20/11/2025": 1452.0, "19/11/2025": 1441.0, "17/11/2025": 1448.0, "04/11/2025": 1495.0, "31/10/2025": 1477.0, "02/09/2025": 1365.0, "01/09/2025": 1376.0, "29/08/2025": 1357.0, "28/08/2025": 1344.0, "27/08/2025": 1358.0, "13/08/2025": 1310.0, "08/08/2025": 1332.0, "06/08/2025": 1336.0, "18/07/2025": 1292.0, "17/07/2025": 1280.0, "16/07/2025": 1269.0, "15/07/2025": 1276.0, "14/07/2025": 1295.0, "10/07/2025": 1267.0, "09/07/2025": 1259.0, "08/07/2025": 1259.0, "07/07/2025": 1276.0, "04/07/2025": 1246.0, "30/06/2025": 1211.0, "27/06/2025": 1198.0, "26/06/2025": 1199.0, "25/06/2025": 1196.0, "24/06/2025": 1184.0, "18/06/2025": 1167.0, "22/05/2025": 1143.0, "21/05/2025": 1148.0, "19/05/2025": 1148.0, "12/05/2025": 1141.0, "05/05/2025": 1202.0, "30/04/2025": 1183.0, "22/04/2025": 1140.0, "01/04/2025": 1314.0, "20/03/2025": 1287.0, "19/03/2025": 1286.0, "14/03/2025": 1237.0, "13/03/2025": 1233.0, "12/03/2025": 1229.0, "10/03/2025": 1228.0, "07/03/2025": 1221.0, "06/03/2025": 1237.0, "05/03/2025": 1235.0, "10/02/2025": 1184.0, "28/01/2025": 1161.0, "16/01/2025": 1166.0, "02/01/2025": 1162.0, "25/11/2024": 1077.0, "20/11/2024": 1074.0, "14/11/2024": 1105.0, "11/11/2024": 1131.0, "06/11/2024": 1145.0, "28/10/2024": 1134.0, "25/10/2024": 1141.0, "09/10/2024": 1147.0, "08/10/2024": 1169.0, "09/09/2024": 1226.0, "30/08/2024": 1279.0, "29/08/2024": 1271.0, "20/08/2024": 1287.0, "15/08/2024": 1276.0, "06/08/2024": 1336.0, "24/07/2024": 1337.0, "10/07/2024": 1377.0, "30/05/2024": 1182.0, "16/05/2024": 1062.0, "08/05/2024": 1038.0, "11/04/2024": 994.0, "09/04/2024": 1000.0, "26/03/2024": 1027.0, "01/02/2024": 1250.9, "01/03/2024": 1055.4, "01/06/2026": 1443.1, "01/07/2025": 1233.2, "01/07/2026": 1521.2, "01/08/2024": 1304.8, "01/08/2025": 1366.2, "01/10/2025": 1530.5, "01/11/2024": 1147.3, "01/12/2025": 1479, "02/01/2024": 991.77, "02/02/2024": 1244.3, "02/05/2024": 1069.1, "02/06/2025": 1185.3, "02/06/2026": 1450.7, "02/07/2025": 1238.6, "02/09/2024": 1289.4, "02/10/2024": 1210.8, "02/12/2025": 1481.3, "03/01/2024": 1032.2, "03/01/2025": 1167.1, "03/04/2024": 1001.5, "03/04/2025": 1315.2, "03/06/2026": 1462, "03/07/2024": 1402.5, "03/07/2025": 1238, "03/07/2026": 1532.4, "03/09/2024": 1292.3, "03/10/2024": 1192.5, "04/01/2024": 1047.6, "04/03/2024": 1033.9, "04/04/2024": 997.59, "04/06/2026": 1458.3, "04/07/2024": 1402.5, "04/08/2025": 1355.2, "04/09/2024": 1284.3, "04/09/2025": 1379.9, "04/10/2024": 1187.3, "04/12/2023": 913.0, "04/12/2025": 1473.4, "05/01/2024": 1116.1, "05/03/2024": 1012.8, "05/04/2024": 1004.9, "05/06/2024": 1281.4, "05/06/2025": 1193.6, "05/07/2024": 1397.2, "05/09/2024": 1253.6, "05/09/2025": 1388.6, "05/11/2024": 1150, "05/12/2023": 934.0, "06/01/2025": 1170, "06/02/2024": 1188.6, "06/02/2025": 1187.4, "06/03/2024": 989.32, "06/05/2024": 1064.5, "06/06/2024": 1280, "06/09/2024": 1246.6, "06/10/2025": 1507.9, "06/11/2025": 1481.7, "06/12/2023": 936.0, "07/01/2025": 1172.4, "07/02/2024": 1205.4, "07/02/2025": 1193.4, "07/03/2024": 996.58, "07/05/2024": 1052.2, "07/06/2024": 1283.9, "07/10/2024": 1185.4, "07/10/2025": 1541, "07/11/2024": 1136, "07/12/2023": 986.0, "08/01/2024": 1142.6, "08/02/2024": 1194.7, "08/03/2024": 1006.7, "08/04/2024": 982.9, "08/04/2025": 1373.4, "08/05/2025": 1147.1, "08/07/2024": 1390.4, "08/07/2026": 1531.3, "08/08/2024": 1307.7, "08/09/2025": 1436.5, "09/01/2024": 1160.5, "09/01/2025": 1167.6, "09/02/2024": 1172, "09/04/2025": 1363.8, "09/05/2024": 1048.4, "09/05/2025": 1147.5, "09/08/2024": 1303, "09/10/2025": 1458, "09/12/2024": 1048.5, "09/12/2025": 1472.7, "10/01/2024": 1147.6, "10/04/2025": 1359, "10/05/2024": 1039.8, "10/06/2024": 1272.8, "10/09/2024": 1233.6, "10/09/2025": 1427.7, "10/10/2024": 1131.2, "10/11/2023": 887.0, "10/11/2025": 1459.9, "10/12/2024": 1062.1, "10/12/2025": 1475, "11/01/2024": 1129.2, "11/02/2025": 1182.9, "11/03/2024": 985.03, "11/03/2025": 1229.7, "11/04/2025": 1326.8, "11/06/2026": 1454.2, "11/07/2024": 1399.3, "11/07/2025": 1269, "11/12/2024": 1056.2, "11/12/2025": 1480.8, "12/02/2025": 1186.1, "12/03/2024": 1030.3, "12/04/2024": 1000.6, "12/07/2024": 1417.7, "12/09/2024": 1239, "12/09/2025": 1476, "12/11/2024": 1127.2, "12/11/2025": 1454.7, "12/12/2023": 1011.0, "12/12/2024": 1059, "12/12/2025": 1480.2, "13/01/2025": 1162.5, "13/02/2025": 1187.4, "13/03/2024": 1016.9, "13/05/2024": 1036.3, "13/06/2024": 1244.3, "13/07/2026": 1523.3, "13/08/2024": 1270.4, "13/09/2024": 1225.9, "13/11/2024": 1119.6, "13/12/2023": 1037.0, "14/01/2025": 1162.7, "14/01/2026": 1482.7, "14/02/2024": 1122.6, "14/02/2025": 1185.2, "14/03/2024": 1012.6, "14/05/2024": 1045.4, "14/05/2025": 1139.7, "14/06/2024": 1245.5, "14/10/2024": 1140.1, "14/10/2025": 1474.1, "14/11/2025": 1456.1, "15/01/2024": 1129.6, "15/01/2025": 1162.6, "15/03/2024": 1031.3, "15/04/2024": 1000.6, "15/04/2025": 1255.3, "15/07/2024": 1305.3, "15/10/2024": 1140.2, "15/12/2023": 993.0, "16/01/2024": 1167.5, "16/02/2024": 1064.2, "16/04/2024": 1038.5, "16/04/2025": 1175.4, "16/07/2024": 1279.1, "16/09/2024": 1218.8, "16/10/2024": 1164.9, "17/01/2024": 1226.8, "17/02/2025": 1209.5, "17/03/2025": 1252.7, "17/04/2024": 1030.7, "17/09/2024": 1223.5, "17/10/2024": 1159.6, "17/10/2025": 1542.1, "17/12/2024": 1134.2, "18/01/2024": 1232.1, "18/02/2025": 1204.6, "18/03/2024": 1027.1, "18/04/2024": 1021.6, "18/07/2024": 1316.1, "18/08/2025": 1303.9, "18/11/2025": 1443.6, "18/12/2023": 963.0, "19/01/2024": 1258.8, "19/02/2025": 1198.8, "19/03/2024": 1030.9, "19/04/2024": 1026.3, "19/06/2024": 1276.4, "19/06/2026": 1478.2, "19/07/2024": 1330.4, "19/08/2025": 1299.9, "19/09/2024": 1198.3, "19/12/2023": 964.0, "19/12/2024": 1143.1, "20/02/2024": 1088.1, "20/02/2025": 1199.7, "20/03/2024": 1043.2, "20/05/2024": 1101.7, "20/07/2026": 1514.7, "20/08/2025": 1315, "20/09/2024": 1201.5, "21/01/2025": 1167.2, "21/02/2024": 1071.6, "21/02/2025": 1205.5, "21/04/2025": 1125.6, "21/05/2024": 1173.7, "21/05/2026": 1428.5, "21/07/2025": 1287, "21/07/2026": 1514.7, "21/08/2024": 1295.8, "21/08/2025": 1322.3, "21/10/2024": 1164.9, "21/11/2025": 1473.8, "21/12/2023": 971.0, "22/01/2024": 1241.8, "22/01/2025": 1168.7, "22/02/2024": 1053.9, "22/04/2024": 1017.5, "22/05/2026": 1434.3, "22/06/2026": 1485.8, "22/07/2024": 1335.6, "22/07/2026": 1521.9, "22/08/2024": 1287.8, "22/08/2025": 1331.2, "22/09/2025": 1431.6, "22/10/2024": 1163.7, "22/10/2025": 1598.3, "22/11/2024": 1081.7, "22/12/2023": 954.0, "23/01/2024": 1231.5, "23/01/2025": 1166.4, "23/02/2024": 1076.3, "23/04/2024": 1012.9, "23/04/2025": 1166.5, "23/05/2024": 1233.6, "23/05/2025": 1144.1, "23/06/2025": 1185.4, "23/07/2024": 1325.3, "23/07/2025": 1264.5, "23/08/2024": 1286.6, "23/09/2024": 1204.7, "23/09/2025": 1408.4, "23/10/2024": 1164.9, "23/12/2024": 1155.4, "23/12/2025": 1501.5, "24/02/2025": 1203.6, "24/04/2024": 1015.7, "24/04/2025": 1185.8, "24/07/2025": 1273.2, "24/09/2024": 1203.3, "24/09/2025": 1384, "24/10/2024": 1159.5, "24/10/2025": 1555.2, "25/01/2024": 1230.5, "25/02/2025": 1207.3, "25/03/2024": 1023.1, "25/03/2025": 1295.8, "25/04/2024": 1036.1, "25/04/2025": 1186.3, "25/06/2026": 1501.8, "25/07/2025": 1290.2, "25/08/2025": 1362, "25/09/2024": 1210.3, "25/09/2025": 1381.7, "25/11/2025": 1484.7, "26/01/2024": 1189, "26/02/2024": 1055.1, "26/04/2024": 1036.6, "26/05/2025": 1145.6, "26/05/2026": 1435.9, "26/06/2024": 1333.7, "26/08/2024": 1290.2, "26/09/2024": 1209.6, "26/11/2024": 1078.4, "26/12/2023": 939.0, "26/12/2024": 1175.4, "26/12/2025": 1501.5, "27/01/2025": 1161.2, "27/02/2024": 1047.4, "27/03/2024": 1020.5, "27/08/2024": 1292.6, "27/10/2025": 1449.3, "27/11/2024": 1075.6, "27/12/2023": 932.0, "27/12/2024": 1170.9, "28/02/2024": 1033.3, "28/03/2025": 1304.9, "28/05/2024": 1205, "28/05/2026": 1432.8, "28/08/2024": 1284.9, "28/11/2023": 867.0, "28/12/2023": 950.0, "29/01/2024": 1219.4, "29/01/2025": 1163.4, "29/02/2024": 1031, "29/04/2024": 1039, "29/04/2025": 1173.9, "29/05/2024": 1181.6, "29/05/2025": 1183.8, "29/05/2026": 1434.8, "29/06/2026": 1508.7, "29/07/2024": 1296.8, "29/09/2025": 1452.9, "29/10/2024": 1138.8, "29/11/2023": 838.0, "29/12/2023": 995.0, "30/01/2024": 1198.2, "30/01/2025": 1166.2, "30/04/2024": 1044.7, "30/06/2026": 1519, "30/07/2025": 1324, "30/09/2025": 1503.2, "30/10/2024": 1135.7, "30/10/2025": 1474.7, "30/11/2023": 858.0, "30/12/2024": 1169.5, "31/01/2024": 1177, "31/03/2025": 1319.6, "31/05/2024": 1215.5, "31/07/2024": 1307.7, "31/07/2025": 1363.8, "06/07/2026": 1531.3, "24/06/2026": 1485.8, "23/06/2026": 1485.8, "27/05/2026": 1431.1, "23/01/2026": 1471.9, "07/08/2025": 1332.0, "27/02/2025": 1215.1, "05/02/2025": 1197.5, "04/02/2025": 1186.2, "31/01/2025": 1168.2, "17/01/2025": 1163.8, "18/10/2024": 1161.9, "27/09/2024": 1209.3, "18/09/2024": 1209.4, "19/08/2024": 1292.5, "16/08/2024": 1281.6, "02/08/2024": 1337.1, "30/07/2024": 1265.2, "12/01/2024": 1097.3, "20/12/2023": 947.17, "27/11/2023": 893.78, "16/06/2026": 1456.0, "09/06/2026": 1460.6, "19/05/2026": 1432.3, "09/02/2026": 1440.6, "19/01/2026": 1471.3, "12/01/2026": 1491.0, "28/11/2025": 1482.9, "11/11/2025": 1457.3, "05/11/2025": 1481.0, "03/11/2025": 1501.7, "29/10/2025": 1472.0, "18/09/2025": 1572.7, "17/09/2025": 1497.3, "11/08/2025": 1328.5, "05/08/2025": 1347.3, "29/07/2025": 1293.4, "04/06/2025": 1193.4, "28/05/2025": 1166.7, "15/05/2025": 1144.9, "10/01/2025": 1166.7, "13/12/2024": 1075.6, "02/12/2024": 1069.1, "28/11/2024": 1076.4, "15/11/2024": 1099.3, "08/11/2024": 1130.1, "04/11/2024": 1148.6, "11/09/2024": 1237.8, "03/05/2024": 1076.9, "22/03/2024": 1042.5, "21/03/2024": 1039.4, "19/02/2024": 1112.5, "14/12/2023": 1010.5, "11/12/2023": 997.5, "01/12/2023": 907.67};
@@ -471,14 +422,11 @@ var MEP_TABLE = {"09/09/2026": 1531.0, "19/04/2026": 1412.0, "20/04/2026": 1411.
 function fmtKey(fecha){var p=fecha.split('/');return p[0].padStart(2,'0')+'/'+p[1].padStart(2,'0')+'/'+p[2];}
 function getCCL(fecha){return CCL_TABLE[fmtKey(fecha)]||null;}
 function getMEP(fecha){return MEP_TABLE[fmtKey(fecha)]||null;}
-// Helper: tipo de cambio apropiado según mercado. Bonos/ONs usan MEP (con fallback a CCL), resto usa CCL.
 function getTC(fecha, mercado){
   var esBonoON=(mercado==='BONOS'||mercado==='ON'||mercado==='FCI');
   return esBonoON ? (getMEP(fecha)||getCCL(fecha)||MEP_HOY||CCL_HOY) : (getCCL(fecha)||CCL_HOY);
 }
 var _HOY_KEY=(function(){var d=new Date();return(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()<9?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();})();
-// Si hoy no está en la tabla (fin de semana, feriado o todavía no se trajo), se usa el último valor
-// cargado — nunca un número fijo viejo, que distorsiona precios de Cedears y el % al P. Venta.
 function _tcUltimoValor(T){var hoy=_HOY_KEY.split('/').reverse().join(''),best=null,bk='';
   Object.keys(T||{}).forEach(function(k){var p=k.split('/');if(p.length!==3)return;var kk=p[2]+p[1].padStart(2,'0')+p[0].padStart(2,'0');if(kk<=hoy&&kk>bk&&T[k]>0){bk=kk;best=T[k];}});return best;}
 var CCL_HOY=CCL_TABLE[_HOY_KEY]||_tcUltimoValor(CCL_TABLE)||1487;
@@ -487,18 +435,12 @@ function tcRefrescarHoy(){
   CCL_HOY=CCL_TABLE[_HOY_KEY]||_tcUltimoValor(CCL_TABLE)||CCL_HOY;
   MEP_HOY=MEP_TABLE[_HOY_KEY]||_tcUltimoValor(MEP_TABLE)||MEP_HOY||CCL_HOY;
 }
-var BRL_HOY=5.80; // BRL por USD — se actualiza con fetchTopbarRates()
-var BRL_TICKERS=new Set([]); // tickers que cotizan en BRL (B3 directo, no NYSE/CEDEAR). BBAS3/PETR3 sacados 2026-09-13: Garo confirmó que los compra en pesos como CEDEAR, no tenencia directa en Brasil.
+var BRL_HOY=5.80;
+var BRL_TICKERS=new Set([]);
 
 var movimientos = [];
 var quotes = {};
-// Id incremental de la última corrida de fetchAllQuotes(). Cada cotización exitosa se estampa
-// con el runId vigente al momento de guardarse — renderPortfolio compara contra el runId actual
-// para saber si ese precio se refrescó en el último intento o quedó "viejo" (ver indicador de
-// fuente/salud de cotizaciones, badge junto al precio en la tabla de Portafolio).
 var _quoteRunId=0;
-// Estampa fuente/corrida/hora en una cotización recién guardada — alimenta el indicador de
-// salud de cotizaciones (puntito de color junto al precio en la tabla de Portafolio).
 function _stampQuote(ticker,source){
   var q=quotes[ticker];
   if(!q) return;
@@ -513,9 +455,6 @@ function _quoteAgeTxt(ts){
   var h=Math.round(m/60);
   return 'hace '+h+'h';
 }
-// Puntito de color junto al precio en Portafolio: de dónde salió la cotización y si se
-// refrescó en el último "Actualizar precios" o quedó vieja (stale). No cambia ningún precio
-// ni cálculo — es la misma capa informativa que el badge "F" de Próximos Cobros.
 function quoteHealthDot(q){
   if(!q||q.price==null||!q.source) return '';
   var stale=q.runId!=null&&q.runId!==_quoteRunId;
@@ -525,10 +464,8 @@ function quoteHealthDot(q){
   var title=label+(age?' — '+(stale?'último precio conocido '+age:'actualizado '+age):'');
   return '<span class="qhelp" style="width:6px;height:6px;border-radius:50%;margin-left:5px;vertical-align:middle;background:'+colorVar+(stale?';animation:pulse 1.4s infinite':'')+'"><span class="qhelp-tip">'+title.replace(/</g,'&lt;')+'</span></span>';
 }
-var RSI_CACHE = {}; // ticker -> {value, ts}. RSI(14) diario, no aplica a bonos/ONs
-var TIR_CACHE = {}; // ticker -> {value, ts}. TIR% desde EcoValores, solo Bonos (cobertura parcial, no cubre ONs)
-
-var PRELOADED = [];
+var RSI_CACHE = {};
+var TIR_CACHE = {};
 
 var RATIOS_TABLE = {"BBAR":3.0,"EWZ":2.0,"ETHA":5.0,"ABT":4.0,"HWM":1.0,"AEG":1.0,"MO":4.0,"AEM":6.0,"AMX":1.0,"AXP":15.0,"AIG":5.0,"AMGN":30.0,"ADI":15.0,"AAPL":20.0,"AMAT":5.0,"T":3.0,"ADP":6.0,"AVY":18.0,"CAR":26.0,"AZN":2.0,"BBVA":1.0,"BBD":1.0,"BSBR":1.0,"BAC":4.0,"BCS":1.0,"B":2.0,"BAS GR":2.0,"BAYN GR":3.0,"BHP":2.0,"BA":24.0,"BP":5.0,"BMY":3.0,"BG":5.0,"CAH":3.0,"CAT":20.0,"CX":1.0,"CVX":16.0,"CSCO":5.0,"C":3.0,"KO":5.0,"KOF":2.0,"CDE":1.0,"CL":3.0,"VALE":2.0,"GLW":4.0,"COST":48.0,"MBG GR":4.0,"DE":40.0,"DTEA GR":3.0,"DEO":6.0,"DIS":12.0,"DD":5.0,"EBAY":2.0,"EOAN GR":6.0,"LLY":56.0,"E":4.0,"XOM":10.0,"FNMA":1.0,"FDX":10.0,"FSLR":18.0,"FMX":6.0,"ORANY":1.0,"FMCC":1.0,"FCX":3.0,"GE":8.0,"GSK":4.0,"GFI":1.0,"GOOGL":58.0,"PAC":16.0,"ASR":20.0,"TV":3.0,"BSN GR":20.0,"HOG":3.0,"HMY":1.0,"HDB":2.0,"HL":1.0,"HPQ":1.0,"HMC":1.0,"HHPD LI":2.0,"HON":8.0,"HSBC":2.0,"IBM":15.0,"IBN":1.0,"INFY":1.0,"ING":3.0,"INTC":5.0,"IFF":12.0,"IP":4.0,"JPM":15.0,"JNJ":15.0,"KMB":6.0,"KGC":1.0,"KB":2.0,"KEP":1.0,"LVS":2.0,"LYG":2.0,"ERIC":2.0,"LMT":20.0,"MRSH":16.0,"MCD":24.0,"MDT":4.0,"MELI":120.0,"MRK":5.0,"MSFT":30.0,"MMM":10.0,"MUFG":1.0,"MFG":1.0,"MBT":2.0,"MSI":20.0,"NGG":2.0,"NEC1 GR":1.0,"NEM":3.0,"NKE":12.0,"NSANY":1.0,"NOK":1.0,"NMR":1.0,"NVS":4.0,"NUE":16.0,"OGZD":2.0,"LKOD":4.0,"ATAD":4.0,"NLMK LI":2.1,"ORCL":3.1,"PCAR":3.0,"PSO":1.0,"PEP":18.0,"PFE":4.0,"PHG":5.0,"PBI":1.0,"PKX":3.0,"PG":15.0,"QCOM":11.0,"BB":3.0,"RIO":8.0,"SHEL":2.0,"SMSN LI":14.0,"SAP":6.0,"SLB":3.0,"SIEGY":3.0,"SNA":6.0,"SONY":8.0,"SCCO":2.0,"SBUX":12.0,"SYY":8.0,"TSM":9.0,"TIIAY":1.0,"TELFY":8.0,"TX":4.0,"TXN":5.0,"BK":2.0,"HSY":21.0,"HD":32.0,"TTE":3.0,"TM":15.0,"TRV":6.0,"JCI":2.0,"USB":5.0,"UL":3.0,"RTX":5.0,"VZ":4.0,"VOD":1.0,"WMT":18.0,"WFC":5.0,"AABA":3.0,"YZCAY":2.0,"META":24.0,"AMZN":144.0,"NVDA":24.0,"ADBE":44.0,"BIIB":13.0,"GILD":4.0,"NFLX":48.0,"TMO":22.0,"PYPL":8.0,"CRM":18.0,"TSLA":15.0,"AMD":10.0,"NG":1.0,"TRIP":2.0,"ANF":1.0,"URBN":2.0,"GRMN":3.0,"SNAP":1.0,"VRSN":6.0,"XRX":1.0,"YELP":2.0,"ROST":4.0,"TGT":24.0,"GS":13.0,"V":18.0,"ARCO":1.0,"AGRO":1.0,"GLOB":18.0,"BABA":9.0,"BIDU":11.0,"ABEV":3.0,"VIV":1.0,"JD":4.0,"NTES":14.0,"TCOM":2.0,"JOYY":5.0,"GGB":1.0,"CBD":1.0,"SBS":1.0,"WB":6.0,"ITUB":1.0,"ERJ":1.0,"UGP":1.0,"SUZ":1.0,"AXIA":1.0,"ELPC":1.0,"TIMB":1.0,"SID":0.125,"TS":1.0,"SAN":1.0,"PBR":1.0,"VIST":3.0,"ABBV":10.0,"BRK/B":22.0,"BIOX":1.0,"AVGO":39.0,"CAAP":1.0,"DOCU":22.0,"ETSY":16.0,"GPRK":1.0,"HAL":2.0,"MA":33.0,"PAAS":3.0,"PSX":6.0,"UNP":20.0,"UNH":33.0,"ZM":47.0,"EFX":16.0,"XYZ":20.0,"SHOP":107.0,"SPOT":28.0,"SNOW":30.0,"TWLO":36.0,"COIN":27.0,"SPGI":45.0,"AAL":2.0,"LRCX":56.0,"EA":14.0,"XP":4.0,"GM":6.0,"DOW":6.0,"AKO.B":1.0,"NIO":4.0,"SE":32.0,"ADS":22.0,"LND":1.0,"BAK":2.0,"AAP":14.0,"LAC":1.0,"MRVL":14.0,"MUX":2.0,"NU":2.0,"PAGS":3.0,"PLTR":3.0,"SHPW":1.0,"STNE":3.0,"SDA":2.0,"PM":18.0,"CVS":15.0,"MDLZ":15.0,"DAL":8.0,"CCL":3.0,"ACN":75.0,"SCHW":13.0,"MRNA":19.0,"STLA":5.0,"BKNG":700.0,"TMUS":33.0,"SPCE":1.0,"RIOT":3.0,"ROKU":13.0,"RACE":83.0,"SWKS":21.0,"PINS":7.0,"BKR":7.0,"DHR":54.0,"GT":2.0,"ISRG":90.0,"LAR":1.0,"NXE":1.0,"ORLY":222.0,"TJX":22.0,"EQNR":6.0,"ARM":27.0,"IBIT":10.0,"RBLX":2.0,"FXI":5.0,"IEUR":11.0,"IBB":27.0,"VEA":10.0,"IVE":40.0,"IVW":20.0,"XLC":19.0,"XLY":43.0,"XLB":18.0,"XLI":28.0,"XLK":46.0,"XLV":29.0,"XLP":16.0,"XLRE":9.0,"IJH":12.0,"EWJ":14.0,"SLV":6.0,"PSQ":8.0,"VIG":39.0,"PDD":25.0,"XPEV":4.0,"ASML":146.0,"TEAM":47.0,"AI":5.0,"CLS":20.0,"CEG":45.0,"DECK":25.1,"RGTI":2.0,"NOW":172.0,"TEM":12.0,"PATH":2.0,"VRTX":101.0,"VST":26.0,"USO":15.0,"EFA":18.0,"IEMG":12.0,"ACWI":26.0,"GDX":10.0,"IWDA":24.0,"SPHQ":14.0,"HOOD":29.0,"CRWV":27.0,"OKLO":28.0,"RKLB":12.0,"ALAB":44.0,"ASTS":15.1,"IREN":12.0,"ECL":56.0,"DJNJ3-XD004":1.0,"BMNR":8.0,"BX":30.0,"COPX":14.0,"ILF":6.0,"ESGU":30.0,"IVV":692.0,"CRWD":79.0,"ANET":29.0,"O":13.0,"GLNG":10.0,"SNDK":170.0,"NBIS":27.0,"HIMS":4.0,"ONDS":2.0,"COP":25.0,"NEE":19.0,"MP":10.0,"CCJ":23.0,"FISV":11.0,"BC37D":1,"BB37D":1,"BB37":1,"CUAP":1,"DICP":1,"ERF25":1,"GD29":1,"GD38":1,"GD41":1,"PARP":1,"PBY26":1,"SA24D":1,"TVPA":1,"TX31":1,"TZXM7":1,"TZXS7":1,"TZXS8":1,"CLSIO":1,"LECAO":1,"LECHO":1,"MR36O":1,"MRCAO":1,"MRCPO":1,"MRCZO":1,"SNEAO":1,"TZV26":1,"TZV27":1,"A3":1,"BHIP":1,"BOLT":1,"CADO":1,"CAPX":1,"CARC":1,"CECO2":1,"CELU":1,"COME":1,"CTIO":1,"DGCE":1,"EDN":1,"FERR":1,"FIPL":1,"HARG":1,"LONG":1,"METR":1,"MIRG":1,"MOLI":1,"OEST":1,"PATA":1,"TXAR":1,"UBER":2,"UPST":5,"URA":5};
 var RATIOS_META = {"ABT":{"nombre":"ABBOTT LABORATORIES","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"HWM":{"nombre":"HOWMET AEROSPACE INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"AEG":{"nombre":"AEGON LTD NPV","mercado":"NYSE","pais":"Paises Bajos","rubro":"Financial"},"MO":{"nombre":"ALTRIA GROUP, INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"AEM":{"nombre":"AGNICO EAGLE MINES LIMITED","mercado":"NYSE","pais":"Canadá","rubro":"Basic Materials"},"AMX":{"nombre":"AMERICA MOVIL-SPN ADR","mercado":"NYSE","pais":"México","rubro":"Communications"},"AXP":{"nombre":"AMERICAN EXPRESS Co.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"AIG":{"nombre":"AMERICAN INTERNATIONAL GROUP INC (AIG)","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"AMGN":{"nombre":"AMGEN INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"ADI":{"nombre":"ANALOG DEVICES INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"AAPL":{"nombre":"APPLE INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"AMAT":{"nombre":"APPLIED MATERIALS INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"T":{"nombre":"AT&T INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"ADP":{"nombre":"AUTOMATIC DATA PROCESSING INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"AVY":{"nombre":"AVERY DENNISON CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"CAR":{"nombre":"AVIS BUDGET GROUP INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"AZN":{"nombre":"ASTRAZENECA PLC","mercado":"NYSE","pais":"Reino Unido","rubro":"Consumer"},"BBVA":{"nombre":"BANCO BILBAO VIZCAYA-SP ADR","mercado":"NYSE","pais":"España","rubro":"Financial"},"BBD":{"nombre":"BANCO BRADESCO, S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Financial"},"BSBR":{"nombre":"BANCO SANTANDER (BRASIL) S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Financial"},"BAC":{"nombre":"BANK OF AMERICA CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"BCS":{"nombre":"BARCLAYS BANK plc ADR","mercado":"NYSE","pais":"Reino Unido","rubro":"Financial"},"B":{"nombre":"BARRICK GOLD CORP.","mercado":"NYSE","pais":"Canadá","rubro":"Basic Materials"},"BAS GR":{"nombre":"BASF SE","mercado":"OTC US","pais":"Alemania","rubro":"Basic Materials"},"BAYN GR":{"nombre":"BAYER AG","mercado":"OTC US","pais":"Alemania","rubro":"Consumer"},"BHP":{"nombre":"BHP GROUP LTD","mercado":"NYSE","pais":"Australia","rubro":"Basic Materials"},"BA":{"nombre":"BOEING Co.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"BP":{"nombre":"BP  plc. ADR","mercado":"NYSE","pais":"Reino Unido","rubro":"Energy"},"BMY":{"nombre":"BRISTOL MYERS SQUIBB COMPANY","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"BG":{"nombre":"BUNGE GLOBAL SA NPV","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"CAH":{"nombre":"CARDINAL HEALTH INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"CAT":{"nombre":"CATERPILLAR Inc.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"CX":{"nombre":"CEMEX S.A.B. de C.V. ADR","mercado":"NYSE","pais":"México","rubro":"Industrial"},"CVX":{"nombre":"CHEVRON CORP","mercado":"NYSE","pais":"Estados Unidos","rubro":"Energy"},"CSCO":{"nombre":"CISCO SYSTEMS  Inc.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"C":{"nombre":"CITIGROUP INCORPORATED","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"KO":{"nombre":"COCA COLA Co.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"KOF":{"nombre":"COCA-COLA FEMSA, S.A.B DE CV","mercado":"NYSE","pais":"México","rubro":"Consumer"},"CDE":{"nombre":"COEUR MINING INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"CL":{"nombre":"COLGATE PALMOLIVE COMPANY","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"VALE":{"nombre":"VALE S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Basic Materials"},"GLW":{"nombre":"CORNING INCORPORATED","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"COST":{"nombre":"COSTCO WHOLSALE CORP","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"MBG GR":{"nombre":"MERCEDES-BENZ AG","mercado":"OTC US","pais":"Alemania","rubro":"Consumer"},"DE":{"nombre":"DEERE & COMPANY","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"DTEA GR":{"nombre":"DEUTSCHE TELEKOM AG ADR","mercado":"OTC US","pais":"Alemania","rubro":"Communications"},"DEO":{"nombre":"DIAGEO PLC ADR","mercado":"NYSE","pais":"Reino Unido","rubro":"Consumer"},"DIS":{"nombre":"DISNEY COMMON STOCK","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"DD":{"nombre":"DUPONT DE NOMOURS INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"EBAY":{"nombre":"EBAY INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"EOAN GR":{"nombre":"E.ON SE","mercado":"OTC US","pais":"Alemania","rubro":"Utilities"},"LLY":{"nombre":"ELI LILLY AND COMPANY","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"E":{"nombre":"ENI SPA - ADR","mercado":"NYSE","pais":"Italia","rubro":"Energy"},"XOM":{"nombre":"EXXON MOBIL CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Energy"},"FNMA":{"nombre":"FED. NATL, MORT - FANNIE MAE","mercado":"OTC US","pais":"Estados Unidos","rubro":"Financial"},"FDX":{"nombre":"FEDEX CORP","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"FSLR":{"nombre":"FIRST SOLAR INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Energy"},"FMX":{"nombre":"FOMENTO ECONOMICO MEXICANO - FEMSA ADR","mercado":"NYSE","pais":"México","rubro":"Consumer"},"ORANY":{"nombre":"ORANGE**","mercado":"OTC US","pais":"Francia","rubro":"Communications"},"FMCC":{"nombre":"FREDDIE MAC (FEDERAL HOME LOAN MORTGAGE CORP.)","mercado":"OTC US","pais":"Estados Unidos","rubro":"Financial"},"FCX":{"nombre":"FREEPORT MCMORAN INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"GE":{"nombre":"GE AEROSPACE.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"GSK":{"nombre":"GSK plc","mercado":"NYSE","pais":"Reino Unido","rubro":"Consumer"},"GFI":{"nombre":"GOLD FIELDS LTD.","mercado":"NYSE","pais":"Sudáfrica","rubro":"Basic Materials"},"GOOGL":{"nombre":"Alphabet Inc. CL  \"A\"","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"PAC":{"nombre":"GRUPO AEROPORTUARIO DEL PACIFICO, S.A.B. de C.V.","mercado":"NYSE","pais":"México","rubro":"Industrial"},"ASR":{"nombre":"GRUPO AEROPORTUARIO DEL SURESTE , S.A.B. de C.V.","mercado":"NYSE","pais":"México","rubro":"Industrial"},"TV":{"nombre":"GRUPO TELEVISA S.A. ADR","mercado":"NYSE","pais":"México","rubro":"Communications"},"BSN GR":{"nombre":"DANONE","mercado":"OTC US","pais":"Francia","rubro":"Consumer"},"HOG":{"nombre":"HARLEY DAVIDSON INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"HMY":{"nombre":"HARMONY GOLD MINING COMPANY LTD.","mercado":"NYSE","pais":"Sudáfrica","rubro":"Basic Materials"},"HDB":{"nombre":"HDFC BANK LIMITED","mercado":"NYSE","pais":"India","rubro":"Financial"},"HL":{"nombre":"HECLA MINING CO","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"HPQ":{"nombre":"HP Inc","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"HMC":{"nombre":"HONDA MOTOR  CO. LTD","mercado":"NYSE","pais":"Japón","rubro":"Consumer"},"HHPD LI":{"nombre":"HON HAI PRECISION INDUSTRY CO. LTD.","mercado":"OTC US","pais":"Taiwan","rubro":"Industrial"},"HON":{"nombre":"HONEYWELL INTERNATIONAL INC. (ex Allied S.)","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Industrial"},"HSBC":{"nombre":"HSBC HOLDINGS plc ADR","mercado":"NYSE","pais":"Reino Unido","rubro":"Financial"},"IBM":{"nombre":"IBM Corp.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"IBN":{"nombre":"ICICI BANK LTD","mercado":"NYSE","pais":"India","rubro":"Financial"},"INFY":{"nombre":"INFOSYS LIMITED","mercado":"NYSE","pais":"India","rubro":"Technology"},"ING":{"nombre":"ING Group NV ADR","mercado":"NYSE","pais":"Paises Bajos","rubro":"Financial"},"INTC":{"nombre":"INTEL  Corporation","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"IFF":{"nombre":"INTERNATIONAL FLAVORS & FRAGRANCE INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"IP":{"nombre":"INTERNATIONAL PAPER Co.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"JPM":{"nombre":"J.P. MORGAN & CHASE Co.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"JNJ":{"nombre":"JOHNSON & JOHNSON","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"KMB":{"nombre":"KIMBERLY CLARK CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"KGC":{"nombre":"KINROSS GOLD CORP.","mercado":"NYSE","pais":"Canadá","rubro":"Basic Materials"},"KB":{"nombre":"KB FINANCIAL GROUP INC.","mercado":"NYSE","pais":"Corea del Sur","rubro":"Financial"},"KEP":{"nombre":"KOREA ELECTRIC POWER CORP.","mercado":"NYSE","pais":"Corea del Sur","rubro":"Utilities"},"LVS":{"nombre":"LAS VEGAS SANDS CORP.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"LYG":{"nombre":"LLOYDS BANKING GROUP plc.","mercado":"NYSE","pais":"Reino Unido","rubro":"Financial"},"ERIC":{"nombre":"LM ERICSSON TELEPHONE Co. ADR","mercado":"NASDAQ GS","pais":"SW","rubro":"Communications"},"LMT":{"nombre":"LOCKHEED MARTIN CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"MRSH":{"nombre":"MARSH","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"MCD":{"nombre":"Mc DONALD'S Corp.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"MDT":{"nombre":"MEDTRONIC PLC","mercado":"NYSE","pais":"Irlanda","rubro":"Consumer"},"MELI":{"nombre":"MERCADOLIBRE INC.","mercado":"NASDAQ GS","pais":"UR","rubro":"Communications"},"MRK":{"nombre":"MERCK & Co. Inc.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"MSFT":{"nombre":"MICROSOFT CORPORATION","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"MMM":{"nombre":"3M COMPANY","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"MUFG":{"nombre":"MITSUBISHI UFJ FINANCIAL GROUP","mercado":"NYSE","pais":"Japón","rubro":"Financial"},"MFG":{"nombre":"MIZUHO FINANCIAL GROUP","mercado":"NYSE","pais":"Japón","rubro":"Financial"},"MBT":{"nombre":"MOBILE TELESYSTEMS***","mercado":"NYSE","pais":"Rusia","rubro":"Communications"},"MSI":{"nombre":"MOTOROLA SOLUTIONS Inc.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"NGG":{"nombre":"NATIONAL GRID PLC-SP  ADR","mercado":"NYSE","pais":"Reino Unido","rubro":"Utilities"},"NEC1 GR":{"nombre":"NEC CORPORATION","mercado":"OTC US","pais":"Japón","rubro":"Technology"},"NEM":{"nombre":"NEWMONT  CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"NKE":{"nombre":"NIKE Inc.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"NSANY":{"nombre":"NISSAN MOTOR CO.","mercado":"OTC US","pais":"Japón","rubro":"Consumer"},"NOK":{"nombre":"NOKIA CORPORATION ADR","mercado":"NYSE","pais":"Finlandia","rubro":"Communications"},"NMR":{"nombre":"NOMURA HOLDINGS INC.","mercado":"NYSE","pais":"Japón","rubro":"Financial"},"NVS":{"nombre":"NOVARTIS AG - ADR","mercado":"NYSE","pais":"Suiza","rubro":"Consumer"},"NUE":{"nombre":"NUCOR CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"OGZD":{"nombre":"GAZPROM PJSC***","mercado":"OTC US","pais":"Rusia","rubro":"Energy"},"LKOD":{"nombre":"LUKOIL PJSC**","mercado":"OTC US","pais":"Rusia","rubro":"Energy"},"ATAD":{"nombre":"TATNEFT PAO**","mercado":"OTC US","pais":"Rusia","rubro":"Energy"},"NLMK LI":{"nombre":"NOVOLIPETSK STEEL PJSC**","mercado":"London Intl","pais":"Rusia","rubro":"Basic Materials"},"ORCL":{"nombre":"ORACLE CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"PCAR":{"nombre":"PACCAR INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"PSO":{"nombre":"PEARSON PLC.","mercado":"NYSE","pais":"Reino Unido","rubro":"Communications"},"PEP":{"nombre":"PEPSICO INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"PFE":{"nombre":"PFIZER INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"PHG":{"nombre":"KONINKLIJKE PHILIPS N.V","mercado":"NYSE","pais":"Paises Bajos","rubro":"Consumer"},"PBI":{"nombre":"PITNEY BOWES INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"PKX":{"nombre":"POSCO HOLDINGS INC","mercado":"NYSE","pais":"Corea del Sur","rubro":"Basic Materials"},"PG":{"nombre":"PROCTER & GAMBLE Co.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"QCOM":{"nombre":"QUALCOMM INCORPORATED","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"BB":{"nombre":"BLACKBERRY LIMITED","mercado":"NYSE","pais":"Canadá","rubro":"Technology"},"RIO":{"nombre":"RIO TINTO PLC - ADR","mercado":"NYSE","pais":"Reino Unido","rubro":"Basic Materials"},"SHEL":{"nombre":"SHELL PLC","mercado":"NYSE","pais":"GB","rubro":"Energy"},"SMSN LI":{"nombre":"SAMSUNG ELECTRONICS CO. LTD.","mercado":"OTC US","pais":"Corea del Sur","rubro":"Technology"},"SAP":{"nombre":"SAP SE","mercado":"NYSE","pais":"Alemania","rubro":"Technology"},"SLB":{"nombre":"SLB LTD","mercado":"NYSE","pais":"Estados Unidos","rubro":"Energy"},"SIEGY":{"nombre":"SIEMENS AG ADR","mercado":"OTC US","pais":"Alemania","rubro":"Industrial"},"SNA":{"nombre":"SNAP-ON INCORPORATED","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"SONY":{"nombre":"SONY GROUP CORPORATION","mercado":"NYSE","pais":"Japón","rubro":"Consumer"},"SCCO":{"nombre":"SOUTHERN COPPER CORP.","mercado":"NYSE","pais":"Perú","rubro":"Basic Materials"},"SBUX":{"nombre":"STARBUCKS CORPORATION","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"SYY":{"nombre":"SYSCO CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"TSM":{"nombre":"TAIWAN SEMICONDUCTOR MANUFACTURING","mercado":"NYSE","pais":"Taiwán","rubro":"Technology"},"TIIAY":{"nombre":"TELECOM ITALIA SPA ADR","mercado":"OTC US","pais":"Italia","rubro":"Communications"},"TELFY":{"nombre":"TELEFONICA S.A. ADR**","mercado":"NYSE","pais":"España","rubro":"Communications"},"TX":{"nombre":"TERNIUM S.A.","mercado":"NYSE","pais":"Luxemburgo","rubro":"Basic Materials"},"TXN":{"nombre":"TEXAS INSTRUMENTS INCORPORATED","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"BK":{"nombre":"BANK OF NEW YORK MELLON CORP","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"HSY":{"nombre":"THE HERSHEY COMPANY","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"HD":{"nombre":"HOME DEPOT INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"TTE":{"nombre":"TotalEnergies SE - ADR","mercado":"NYSE","pais":"Francia","rubro":"Energy"},"TM":{"nombre":"TOYOTA MOTOR CORPORATION ADR","mercado":"NYSE","pais":"Japón","rubro":"Consumer"},"TRV":{"nombre":"The Travelers Companies, Inc.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"JCI":{"nombre":"JOHNSON CONTROLS INTERNATIONAL","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"USB":{"nombre":"U.S. BANCORP","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"UL":{"nombre":"UNILEVER PLC-SPONSORED ADR","mercado":"NYSE","pais":"Reino Unido","rubro":"Consumer"},"RTX":{"nombre":"RTX CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"VZ":{"nombre":"VERIZON COMMUNICATIONS INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"VOD":{"nombre":"VODAFONE GROUP plc. ADR","mercado":"NASDAQ GS","pais":"Reino Unido","rubro":"Communications"},"WMT":{"nombre":"WALMART Inc.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"WFC":{"nombre":"WELLS FARGO & COMPANY","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"AABA":{"nombre":"ALTABA INC***","mercado":"N/A","pais":"US","rubro":"Financial"},"YZCAY":{"nombre":"YANKUANG ENERGY GROUP CO. LTD.","mercado":"OTC US","pais":"China","rubro":"Energy"},"META":{"nombre":"META PLATFORMS INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"AMZN":{"nombre":"AMAZON.COM, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"NVDA":{"nombre":"NVIDIA CORPORATION","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"ADBE":{"nombre":"ADOBE SYSTEMS INCORPORATED","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"BIIB":{"nombre":"BIOGEN INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"GILD":{"nombre":"GILEAD SCIENCES, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"NFLX":{"nombre":"NETFLIX, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"TMO":{"nombre":"THERMO FISHER SCIENTIFIC INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"PYPL":{"nombre":"PAYPAL HOLDINGS, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"CRM":{"nombre":"SALESFORCE INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"TSLA":{"nombre":"TESLA, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"AMD":{"nombre":"ADVANCED MICRO DEVICES, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"NG":{"nombre":"NOVAGOLD RESOURCES INC.","mercado":"NYSEAmerican","pais":"Canadá","rubro":"Basic Materials"},"TRIP":{"nombre":"TRIPADVISOR, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"ANF":{"nombre":"ABERCROMBIE & FITCH CO.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"URBN":{"nombre":"URBAN OUTFITTERS, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"GRMN":{"nombre":"GARMIN LTD.","mercado":"NYSE","pais":"Suiza","rubro":"Industrial"},"SNAP":{"nombre":"SNAP INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"VRSN":{"nombre":"VERISIGN, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"XRX":{"nombre":"XEROX HOLDING CORPORATION","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"YELP":{"nombre":"YELP INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"ROST":{"nombre":"ROSS STORES, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"TGT":{"nombre":"TARGET CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"GS":{"nombre":"THE GOLDMAN SACHS GROUP, INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"V":{"nombre":"VISA INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"ARCO":{"nombre":"ARCOS DORADOS HOLDINGS INC.","mercado":"NYSE","pais":"Uruguay","rubro":"Consumer"},"AGRO":{"nombre":"ADECOAGRO S.A.","mercado":"NYSE","pais":"Argentina","rubro":"Consumer"},"GLOB":{"nombre":"GLOBANT S.A.","mercado":"NYSE","pais":"Uruguay","rubro":"Technology"},"BABA":{"nombre":"ALIBABA GROUP HOLDING LIMITED*","mercado":"NYSE","pais":"China","rubro":"Communications"},"BIDU":{"nombre":"BAIDU, INC.","mercado":"NASDAQ GS","pais":"China","rubro":"Communications"},"ABEV":{"nombre":"AMBEV S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Consumer"},"VIV":{"nombre":"TELEFÔNICA BRASIL S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Communications"},"JD":{"nombre":"JD.COM, INC.","mercado":"NASDAQ GS","pais":"China","rubro":"Communications"},"NTES":{"nombre":"NETEASE, INC.","mercado":"NASDAQ GS","pais":"China","rubro":"Technology"},"TCOM":{"nombre":"TRIP.COM Group Ltd.","mercado":"NASDAQ GS","pais":"China","rubro":"Communications"},"JOYY":{"nombre":"JOYY Inc.","mercado":"NASDAQ GS","pais":"China","rubro":"Communications"},"GGB":{"nombre":"GERDAU S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Basic Materials"},"CBD":{"nombre":"COMPANHIA BRASILEIRA DE DISTRIBUIÇÃO**","mercado":"OTC US","pais":"Brasil","rubro":"Consumer"},"SBS":{"nombre":"COMPANHIA DE SANEAMENTO BÁSICO DO ESTADO DE SÃO PAULO–SABESP","mercado":"NYSE","pais":"Brasil","rubro":"Utilities"},"WB":{"nombre":"WEIBO CORPORATION","mercado":"NASDAQ GS","pais":"China","rubro":"Communications"},"ITUB":{"nombre":"ITAÚ UNIBANCO HOLDING S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Financial"},"ERJ":{"nombre":"EMBRAER-EMPRESA BRASILEIRA DE AERONÁUTICA S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Industrial"},"UGP":{"nombre":"ULTRAPAR PARTICIPAÇÕES S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Energy"},"SUZ":{"nombre":"SUZANO SA","mercado":"NYSE","pais":"Brasil","rubro":"Basic Materials"},"AXIA":{"nombre":"CENTRAIS ELÉTRICAS BRASILEIRAS S.A. - ELETROBRÁS","mercado":"NYSE","pais":"Brasil","rubro":"Utilities"},"ELPC":{"nombre":"COMPANHIA PARANAENSE DE ENERGIA-COPEL - PREF","mercado":"NYSE","pais":"Brasil","rubro":"Utilities"},"TIMB":{"nombre":"TIM PARTICIPAÇÕES S.A.","mercado":"NYSE","pais":"Brasil","rubro":"Communications"},"SID":{"nombre":"COMPANHIA SIDERÚRGICA NACIONAL","mercado":"NYSE","pais":"Brasil","rubro":"Basic Materials"},"TS":{"nombre":"TENARIS S.A. (ADS)","mercado":"NYSE","pais":"Luxemburgo","rubro":"Industrial"},"SAN":{"nombre":"BANCO SANTANDER  S.A. (ADR)","mercado":"NYSE","pais":"España","rubro":"Financial"},"PBR":{"nombre":"PETROLEO BRASILEIRO - PETROBRAS (ADR)","mercado":"NYSE","pais":"Brasil","rubro":"Energy"},"VIST":{"nombre":"VISTA ENERGY S.A.B. de C.V (ADS)","mercado":"NYSE","pais":"México","rubro":"Energy"},"ABBV":{"nombre":"ABBVIE INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"BRK/B":{"nombre":"BERKSHIRE HATHAWAY INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"BIOX":{"nombre":"BIOCERES CROP SOLUTIONS CORP","mercado":"NASDAQ GS","pais":"Argentina","rubro":"Consumer"},"AVGO":{"nombre":"BROADCOM INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"CAAP":{"nombre":"CORP AMERICA AIRPORTS SA","mercado":"NYSE","pais":"Argentina","rubro":"Consumer"},"DOCU":{"nombre":"DOCUSIGN INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"ETSY":{"nombre":"ETSY INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"GPRK":{"nombre":"GEOPARK LTD","mercado":"NYSE","pais":"Chile","rubro":"Energy"},"HAL":{"nombre":"HALLIBURTON CO","mercado":"NYSE","pais":"Estados Unidos","rubro":"Energy"},"MA":{"nombre":"MASTERCARD INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"PAAS":{"nombre":"PAN AMERICAN SILVER CORP","mercado":"NYSE","pais":"Canadá","rubro":"Basic Materials"},"PSX":{"nombre":"PHILLIPS 66","mercado":"NYSE","pais":"Estados Unidos","rubro":"Energy"},"UNP":{"nombre":"UNION PACIFIC CORP","mercado":"NYSE","pais":"Estados Unidos","rubro":"Industrial"},"UNH":{"nombre":"UNITEDHEALTH GROUP INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"ZM":{"nombre":"ZOOM COMMUNICATIONS INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"EFX":{"nombre":"EQUIFAX INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"XYZ":{"nombre":"BLOCK, INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer"},"SHOP":{"nombre":"SHOPIFY INC","mercado":"NYSE","pais":"Canadá","rubro":"Communications"},"SPOT":{"nombre":"SPOTIFY TECHNOLOGY SA","mercado":"NYSE","pais":"Suecia","rubro":"Communications"},"SNOW":{"nombre":"SNOWFLAKE INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"TWLO":{"nombre":"TWILIO INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"COIN":{"nombre":"COINBASE GLOBAL INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Financial"},"SPGI":{"nombre":"S&P GLOBAL INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"AAL":{"nombre":"AMERICAN AIRLINES GROUP INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer"},"LRCX":{"nombre":"LAM RESEARCH CORP","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"EA":{"nombre":"ELECTRONIC ARTS INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"XP":{"nombre":"XP INC","mercado":"NASDAQ GS","pais":"Brasil","rubro":"Financial"},"GM":{"nombre":"GENERAL MOTORS CO","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"DOW":{"nombre":"DOW INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"AKO.B":{"nombre":"EMBOTELLADORA ANDINA S.A.","mercado":"NYSE","pais":"Chile","rubro":"Consumer, Non-cyclical"},"NIO":{"nombre":"NIO INC","mercado":"NYSE","pais":"China","rubro":"Consumer, Cyclical"},"SE":{"nombre":"SEA LTD","mercado":"NYSE","pais":"Islas Caimán","rubro":"Communications"},"ADS":{"nombre":"ADIDAS AG","mercado":"XETRA","pais":"Alemania","rubro":"Consumer"},"LND":{"nombre":"BRASILAGRO - CO BRASILEIRA DE PROPRIEDADES AGRICOLAS","mercado":"NYSE","pais":"Brasil","rubro":"Basic Materials"},"BAK":{"nombre":"BRASKEM SA","mercado":"NYSE","pais":"Brasil","rubro":"Industrial"},"AAP":{"nombre":"ADVANCE AUTO PARTS INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"LAC":{"nombre":"LITHIUM AMERICAS CORP","mercado":"NYSE","pais":"Canadá","rubro":"Technology"},"MRVL":{"nombre":"MARVELL TECHNOLOGY INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Basic Materials"},"MUX":{"nombre":"MCEWEN  INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"NU":{"nombre":"NU HOLDINGS LTD/CAYMAN ISLANDS","mercado":"NYSE","pais":"Reino Unido","rubro":"Consumer, Cyclical"},"PAGS":{"nombre":"PAGSEGURO DIGITAL LTD","mercado":"NYSE","pais":"Reino Unido","rubro":"Technology"},"PLTR":{"nombre":"PALANTIR TECHNOLOGIES INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"SHPW":{"nombre":"SHAPEWAYS HOLDINGS INC***","mercado":"OTC US","pais":"Estados Unidos","rubro":"Communications"},"STNE":{"nombre":"STONECO LTD","mercado":"NASDAQ GS","pais":"Islas Caimán","rubro":"Financial"},"SDA":{"nombre":"SUNCAR TECHNOLOGY GROUP INC","mercado":"NASDAQ CM","pais":"Islas Caimán","rubro":"Consumer, Non-cyclical"},"PM":{"nombre":"PHILIP MORRIS INTERNATIONAL INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"CVS":{"nombre":"CVS HEALTH CORP.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"MDLZ":{"nombre":"MONDELEZ INTERNATIONAL, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"DAL":{"nombre":"DELTA AIR LINES INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"CCL":{"nombre":"CARNIVAL CORP.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"ACN":{"nombre":"ACCENTURE PLC","mercado":"NYSE","pais":"Irlanda","rubro":"Technology"},"SCHW":{"nombre":"CHARLES SCHWAB CORP.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"MRNA":{"nombre":"MODERNA INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"STLA":{"nombre":"STELLANTIS NV","mercado":"NYSE","pais":"Paises Bajos","rubro":"Consumer, Cyclical"},"BKNG":{"nombre":"BOOKING HOLDINGS INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"TMUS":{"nombre":"T-MOBILE US INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"SPCE":{"nombre":"VIRGIN GALACTIC HOLDINGS INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"RIOT":{"nombre":"RIOT PLATFORMS INC.","mercado":"NASDAQ CM","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"ROKU":{"nombre":"ROKU INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"RACE":{"nombre":"FERRARI NV","mercado":"NYSE","pais":"ITALIA","rubro":"Consumer, Cyclical"},"SWKS":{"nombre":"SKYWORKS SOLUTIONS INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"PINS":{"nombre":"PINTEREST INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"BKR":{"nombre":"BAKER HUGHES CO.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Energy"},"DHR":{"nombre":"DANAHER CORP.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"GT":{"nombre":"GOODYEAR TIRE & RUBBER CO./THE","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"ISRG":{"nombre":"INTUITIVE SURGICAL INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer, Non-cyclical"},"LAR":{"nombre":"LITHIUM ARGENTINA AG.","mercado":"NYSE","pais":"Canadá","rubro":"Basic Materials"},"NXE":{"nombre":"NEXGEN ENERGY LTD","mercado":"NYSE","pais":"Canadá","rubro":"Basic Materials"},"ORLY":{"nombre":"O'REILLY AUTOMOTIVE INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"TJX":{"nombre":"TJX COMPANIES INC./THE","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"EQNR":{"nombre":"EQUINOR ASA","mercado":"NYSE","pais":"NORUEGA","rubro":"Energy"},"ARM":{"nombre":"ARM HOLDINGS PLC","mercado":"NASDAQ GS","pais":"GRAN BRETAÑA","rubro":"Technology"},"IBIT":{"nombre":"ISHARES BITCOIN TRUST","mercado":"NASDAQ GM","pais":"Estados Unidos","rubro":"Funds"},"FXI":{"nombre":"ISHARES CHINA LARGE-CAP ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"IEUR":{"nombre":"iShares Core MSCI Europe ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"IBB":{"nombre":"iShares Nasdaq Biotechnology ETF","mercado":"NASDAQ GM","pais":"Estados Unidos","rubro":"ETF"},"VEA":{"nombre":"Vanguard FTSE Developed Markets ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"IVE":{"nombre":"iShares S&P 500 Value ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"IVW":{"nombre":"iShares S&P 500 Growth ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLC":{"nombre":"State Street Communication Services Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLY":{"nombre":"State Street Consumer Discretionary Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLB":{"nombre":"State Street Materials Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLI":{"nombre":"State Street Industrials Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLK":{"nombre":"State Street Technology Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLV":{"nombre":"State Street Health Care Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLP":{"nombre":"State Street Consumer Staples Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"XLRE":{"nombre":"State Street Real Estate Select Sector SPDR ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"IJH":{"nombre":"iShares CORE S&P MID-CAP ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"EWJ":{"nombre":"iShares MSCI JAPAN ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"SLV":{"nombre":"iShares SILVER TRUST","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"PSQ":{"nombre":"PROSHARES SHORT QQQ","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"VIG":{"nombre":"VANGUARD DIVIDEND APPRECIATION","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"PDD":{"nombre":"PDD HOLDINGS INC","mercado":"NASDAQ GS","pais":"Irlanda","rubro":"Communications"},"XPEV":{"nombre":"XPENG INC","mercado":"New York","pais":"China","rubro":"Consumer, Cyclical"},"ASML":{"nombre":"ASML HOLDING NV","mercado":"NASDAQ GS","pais":"Paises Bajos","rubro":"Technology"},"TEAM":{"nombre":"ATLASSIAN CORPORATION","mercado":"NASDAQ GS","pais":"Australia","rubro":"Technology"},"AI":{"nombre":"C3.AI INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"CLS":{"nombre":"CELESTICA INC","mercado":"NYSE","pais":"Canada","rubro":"Industrial"},"CEG":{"nombre":"CONSTELLATION ENERGY CORPORATION","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Utilities"},"DECK":{"nombre":"DECKERS OUTDOOR CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"RGTI":{"nombre":"RIGETTI COMPUTING INC","mercado":"NASDAQ CM","pais":"Estados Unidos","rubro":"Technology"},"NOW":{"nombre":"SERVICENOW INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"TEM":{"nombre":"TEMPUS AI INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"PATH":{"nombre":"UIPATH INC","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"VRTX":{"nombre":"VERTEX PHARMACEUTICALS INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Consumer, Cyclical"},"VST":{"nombre":"VISTRA CORPORATION","mercado":"NYSE","pais":"Estados Unidos","rubro":"Utilities"},"USO":{"nombre":"United States Oil Fund, LP","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"EFA":{"nombre":"iShares MSCI EAFE ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"IEMG":{"nombre":"iShares Core MSCI Emerging Markets ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"ACWI":{"nombre":"iShares MSCI ACWI ETF","mercado":"NASDAQ GM","pais":"Estados Unidos","rubro":"ETF"},"GDX":{"nombre":"Van Eck Gold Miners ETF/USA","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"IWDA":{"nombre":"iShares Core MSCI World UCITS ETF","mercado":"London Stock Exchange","pais":"Irlanda","rubro":"ETF"},"SPHQ":{"nombre":"Invesco S&P 500 Quality ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"HOOD":{"nombre":"ROBINHOOD MARKETS INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"CRWV":{"nombre":"COREWEAVE INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"OKLO":{"nombre":"OKLO INC","mercado":"New York","pais":"Estados Unidos","rubro":"Utilities"},"RKLB":{"nombre":"ROCKET LAB CORP","mercado":"NASDAQ CM","pais":"Estados Unidos","rubro":"Industrial"},"ALAB":{"nombre":"ASTERA LABS INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"ASTS":{"nombre":"AST SPACEMOBILE INC","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Communications"},"IREN":{"nombre":"IREN LTD","mercado":"NASDAQ GS","pais":"Australia","rubro":"Financial"},"ECL":{"nombre":"ECOLAB INC","mercado":"New York","pais":"Estados Unidos","rubro":"Basic Materials"},"DJNJ3-XD004":{"nombre":"JNJ6.95","mercado":"NYSE","pais":"Estados Unidos","rubro":"Corp"},"BMNR":{"nombre":"BITMINE INMERSION TECHNOLOGIES, INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"BX":{"nombre":"BLACKSTONE INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"COPX":{"nombre":"GLOBAL X COPPER MINERS ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"ILF":{"nombre":"ISHARES LATIN AMERICA 40 ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"ESGU":{"nombre":"ISHARES ESG AWARE MSCI USA ETF","mercado":"NASDAQ GM","pais":"Estados Unidos","rubro":"ETF"},"IVV":{"nombre":"ISHARES CORE S&P 500 ETF","mercado":"NYSE Arca","pais":"Estados Unidos","rubro":"ETF"},"CRWD":{"nombre":"CROWDSTRIKE HOLDINGS, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"ANET":{"nombre":"ARISTA NETWORKS INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"O":{"nombre":"REALTY INCOME CORP.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Financial"},"GLNG":{"nombre":"GOLAR LNG LTD.","mercado":"NASDAQ GS","pais":"Bermuda","rubro":"Energy"},"SNDK":{"nombre":"SANDISK CORPORATION","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"NBIS":{"nombre":"NEBIUS GROUP N.V.","mercado":"NASDAQ GS","pais":"PAÍSES BAJOS","rubro":"Technology"},"HIMS":{"nombre":"HIMS & HERS HEALTH, INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Communications"},"ONDS":{"nombre":"ONDAS HOLDINGS INC.","mercado":"NASDAQ CM","pais":"Estados Unidos","rubro":"Industrial"},"COP":{"nombre":"CONOCOPHILLIPS","mercado":"NYSE","pais":"Estados Unidos","rubro":"Energy"},"NEE":{"nombre":"NEXTERA ENERGY, INC.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Utilities"},"MP":{"nombre":"MP MATERIALS CORP.","mercado":"NYSE","pais":"Estados Unidos","rubro":"Basic Materials"},"CCJ":{"nombre":"CAMECO CORPORATION","mercado":"NYSE","pais":"Canada","rubro":"Basic Materials"},"FISV":{"nombre":"FISERV, INC.","mercado":"NASDAQ GS","pais":"Estados Unidos","rubro":"Technology"},"BC37D":{"nombre":"BC37D","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"CUAP":{"nombre":"CUAP","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"DICP":{"nombre":"DICP","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"ERF25":{"nombre":"ERF25","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"GD29":{"nombre":"GD29","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"GD38":{"nombre":"GD38","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"GD41":{"nombre":"GD41","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"PARP":{"nombre":"PARP","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"PBY26":{"nombre":"PBY26","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"SA24D":{"nombre":"SA24D","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"TVPA":{"nombre":"TVPA","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"TX31":{"nombre":"TX31","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"TZXM7":{"nombre":"TZXM7","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"TZXS7":{"nombre":"TZXS7","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"TZXS8":{"nombre":"TZXS8","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"CLSIO":{"nombre":"CLSIO","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"LECAO":{"nombre":"LECAO","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"LECHO":{"nombre":"LECHO","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"MR36O":{"nombre":"MR36O","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"MRCAO":{"nombre":"MRCAO","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"MRCPO":{"nombre":"MRCPO","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"MRCZO":{"nombre":"MRCZO","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"SNEAO":{"nombre":"SNEAO","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"TZV26":{"nombre":"TZV26","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"TZV27":{"nombre":"TZV27","mercado":"BCBA","pais":"Argentina","rubro":"Corp"},"A3":{"nombre":"A3","mercado":"BCBA","pais":"Argentina","rubro":""},"BHIP":{"nombre":"BHIP","mercado":"BCBA","pais":"Argentina","rubro":""},"BOLT":{"nombre":"BOLT","mercado":"BCBA","pais":"Argentina","rubro":""},"CADO":{"nombre":"CADO","mercado":"BCBA","pais":"Argentina","rubro":""},"CAPX":{"nombre":"CAPX","mercado":"BCBA","pais":"Argentina","rubro":""},"CARC":{"nombre":"CARC","mercado":"BCBA","pais":"Argentina","rubro":""},"CECO2":{"nombre":"CECO2","mercado":"BCBA","pais":"Argentina","rubro":""},"CELU":{"nombre":"CELU","mercado":"BCBA","pais":"Argentina","rubro":""},"COME":{"nombre":"COME","mercado":"BCBA","pais":"Argentina","rubro":""},"CTIO":{"nombre":"CTIO","mercado":"BCBA","pais":"Argentina","rubro":""},"DGCE":{"nombre":"DGCE","mercado":"BCBA","pais":"Argentina","rubro":""},"EDN":{"nombre":"EDN","mercado":"BCBA","pais":"Argentina","rubro":""},"FERR":{"nombre":"FERR","mercado":"BCBA","pais":"Argentina","rubro":""},"FIPL":{"nombre":"FIPL","mercado":"BCBA","pais":"Argentina","rubro":""},"HARG":{"nombre":"HARG","mercado":"BCBA","pais":"Argentina","rubro":""},"LONG":{"nombre":"LONG","mercado":"BCBA","pais":"Argentina","rubro":""},"METR":{"nombre":"METR","mercado":"BCBA","pais":"Argentina","rubro":""},"MIRG":{"nombre":"MIRG","mercado":"BCBA","pais":"Argentina","rubro":""},"MOLI":{"nombre":"MOLI","mercado":"BCBA","pais":"Argentina","rubro":""},"OEST":{"nombre":"OEST","mercado":"BCBA","pais":"Argentina","rubro":""},"PATA":{"nombre":"PATA","mercado":"BCBA","pais":"Argentina","rubro":""},"TXAR":{"nombre":"TXAR","mercado":"BCBA","pais":"Argentina","rubro":""},"UBER":{"nombre":"UBER","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"},"UPST":{"nombre":"UPST","mercado":"NYSE","pais":"Estados Unidos","rubro":"Technology"}};
@@ -550,7 +487,6 @@ var SECTOR_MAP = {
 var _MKT_TO_SECTOR={BONOS:'bonos',ON:'on',ARGENTINA:'argentina',BRASIL:'brasil',ETF:'nyse',USA:'nyse',FCI:'fci'};
 function getSector(ticker){
   if(SECTOR_MAP[ticker])return SECTOR_MAP[ticker];
-  // Fallback: derivar del mercado del movimiento más reciente para este ticker
   for(var _i=movimientos.length-1;_i>=0;_i--){
     var _mv=movimientos[_i];
     if(_mv&&_mv.ticker===ticker&&_mv.mercado){
@@ -560,10 +496,6 @@ function getSector(ticker){
   return 'nyse';
 }
 
-// Bonos comprados directo en USD (dólar cable "C" o dólares directo "D"): el PPC/valuación ya
-// está en dólares, no corresponde convertir vía MEP (ver claude/convenciones.md del proyecto).
-// Excepción: BB37D, BC37D y SA24D terminan en "C"/"D" pero son bonos en PESOS — esa letra es
-// parte del código del bono, no indica que se haya comprado directo en dólares.
 var BONOS_USD_DIRECTO_EXCEPCIONES=new Set(['BB37D','BC37D','SA24D']);
 function isBonoUSDDirecto(ticker){
   if(getSector(ticker)!=='bonos')return false;
@@ -770,9 +702,6 @@ var FLUJOS_BONOS={
     {f:'2029-01-14',r:4141.84,a:12837.73},
     {f:'2029-07-14',r:3565.02,a:89864.13},
   ]},
-  // MRCAO (ON GEMSA): Garo tiene dudas de que efectivamente pague — se carga el flujo tal cual
-  // lo muestra Bull igual, sin "corregir" nada (el total de amortización no da 100 como en los
-  // bonos soberanos, es un ON con amortizaciones ya parciales antes de este tramo del flujo).
   'MRCAO':{moneda:'USD',flujos:[
     {f:'2026-12-01',r:1.68,a:10.00},
     {f:'2027-06-01',r:1.19,a:10.00},
@@ -814,10 +743,6 @@ var FLUJOS_BONOS={
   ]},
 };
 // ── Próximos Cobros: calendario de renta/amortización de bonos y ON ──────
-// FLUJOS_BONOS se carga a mano por ticker (fecha, renta y amortización "por
-// cada 100 nominales", igual al formato del calculador de flujos de Bull
-// Market) — ver claude/flujos_bonos.md en el Project para la fuente de cada
-// bono y cómo pedirle a Garo el flujo de uno nuevo que falte.
 function _flujosHoyStr(){
   var d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -835,13 +760,6 @@ function _flujosFechaDDMM(fechaISO){
   var p=fechaISO.split('-');return p[2]+'/'+p[1]+'/'+p[0];
 }
 // ── TIR real (YTM) con el flujo exacto de FLUJOS_BONOS ───────────────────
-// A diferencia de TIR_CACHE (EcoValores, solo Bonos, cobertura parcial), esto
-// calcula la TIR exacta de CUALQUIER ticker con flujo cargado en FLUJOS_BONOS
-// (bonos y ON) descontando su cronograma futuro real contra el precio de
-// mercado de hoy. XIRR actual/365, sin asumir reinversión de cupones.
-// Validado 2026-09-18 contra la planilla de Garo (fuente distinta, con
-// actualización online): BB37D 11,77% vs 11,77% (exacto), AO29 10,22% vs
-// 10,24% (a la par, la diferencia es sub-decimal por timing del precio).
 function _xirrNPV(precio,flujos,hoyUTC,r){
   var total=-precio;
   for(var i=0;i<flujos.length;i++){
@@ -858,7 +776,7 @@ function _xirrCalc(precio,flujos){
   var hoyUTC=new Date(Date.UTC(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()));
   var lo=-0.9,hi=5.0;
   var flo=_xirrNPV(precio,flujos,hoyUTC,lo),fhi=_xirrNPV(precio,flujos,hoyUTC,hi);
-  if(isNaN(flo)||isNaN(fhi)||flo*fhi>0) return null; // sin raíz en el rango esperado (dato raro)
+  if(isNaN(flo)||isNaN(fhi)||flo*fhi>0) return null;
   for(var i=0;i<100;i++){
     var mid=(lo+hi)/2;var fm=_xirrNPV(precio,flujos,hoyUTC,mid);
     if(Math.abs(fm)<1e-9) return mid;
@@ -866,15 +784,6 @@ function _xirrCalc(precio,flujos){
   }
   return (lo+hi)/2;
 }
-// Devuelve {tir, moneda} en % o null si falta cotización o el ticker no tiene
-// flujo cargado. Bonos/ON en USD: precio ARS de mercado ÷ MEP_HOY (mismo TC
-// que usa el resto del portafolio para estos sectores — ver isBonoUSDDirecto
-// y getTC). Bonos en ARS (CER, dólar-linked ya expresado en pesos, etc.): se
-// compara el precio ARS directo contra el flujo ARS, sin conversión — el
-// resultado queda en términos nominales de pesos, igual que la calculan la
-// mayoría de las planillas/calculadoras para bonos peso.
-// Mismo bono en otra especie (C = dólar cable, D = dólares): usa el flujo del bono base.
-// FLUJOS_ALIAS para los explícitos; además cualquier bono USD directo (isBonoUSDDirecto) cuyo base tenga flujo.
 var FLUJOS_ALIAS={'AO29C':'AO29','AO29D':'AO29'};
 function flujoBase(t){if(FLUJOS_BONOS[t])return t;var b=FLUJOS_ALIAS[t]||(isBonoUSDDirecto(t)?t.slice(0,-1):null);return b&&FLUJOS_BONOS[b]?b:null;}
 function flujoDe(t){var b=flujoBase(t);return b?FLUJOS_BONOS[b]:null;}
@@ -882,13 +791,13 @@ function calcularTIRReal(ticker){
   var tabla=flujoDe(ticker);
   if(!tabla) return null;
   var _b=flujoBase(ticker);
-  if(_b!==ticker&&quotes[_b]&&quotes[_b].price!=null) return calcularTIRReal(_b); // misma TIR que el bono base
+  if(_b!==ticker&&quotes[_b]&&quotes[_b].price!=null) return calcularTIRReal(_b);
   var q=quotes[ticker];
   if(!q||q.price==null) return null;
   var ratio=getRatio(ticker)||1;
   var precio;
   if(tabla.moneda==='USD'&&isBonoUSDDirecto(ticker)){
-    precio=q.price*ratio; // la especie C/D ya cotiza en dólares
+    precio=q.price*ratio;
   } else if(tabla.moneda==='USD'){
     var tc=MEP_HOY||CCL_HOY;
     if(!tc) return null;
@@ -903,9 +812,6 @@ function calcularTIRReal(ticker){
   var r=_xirrCalc(precio,flujosFuturos);
   return r==null?null:{tir:r*100,moneda:tabla.moneda};
 }
-// Recorre las posiciones abiertas de bonos/ON, busca el flujo cargado de cada
-// ticker y lo escala por qty/100. No toca ningún cálculo de valuación del
-// portafolio — es una capa informativa aparte.
 function calcularCalendarioCobros(){
   var hoy=_flujosHoyStr();
   var pos=(typeof getPositionsPrincipal==='function'?getPositionsPrincipal():getPositions()).filter(function(p){return p.qty>0.000001;});
@@ -946,18 +852,12 @@ function _flujosFmtTotales(tot){
   if(tot.ARS) partes.push(_flujosFmtMoneda('ARS',tot.ARS));
   return partes.length?partes.join(' + '):'<span style="color:var(--text3)">—</span>';
 }
-// items ya viene ordenado por fecha — agrupa TODOS los que caen el mismo día que el primero.
-// Antes "Próximo cobro" mostraba solo cal.items[0] (ej. solo AO27 el 30/09), aunque AO28/AO29/PARP
-// paguen ese mismo día — Garo lo reportó viendo que la card solo listaba uno de los cuatro.
 function _flujosProximoGrupo(items){
   if(!items.length) return null;
   var fecha=items[0].fecha;
   return {fecha:fecha,items:items.filter(function(it){return it.fecha===fecha;})};
 }
 // ── Badge "D": estimación de próximo dividendo por historial (solo acciones/CEDEARs) ──────
-// A pedido de Garo: en bonos/ON NO se usa (ya tienen el flujo exacto cargado — badge F). En
-// acciones/CEDEARs no hay flujo exacto conocido, así que D se muestra SOLO cuando el historial
-// sugiere que el próximo pago cae dentro de 30 días (no "alguna vez pagó", como antes).
 function _parseFechaDDMMYYYY(s){
   if(!s) return null;
   var p=String(s).split('/');
@@ -965,10 +865,6 @@ function _parseFechaDDMMYYYY(s){
   var d=new Date(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0')+'T00:00:00');
   return isNaN(d.getTime())?null:d;
 }
-// Con 2+ pagos históricos usa el intervalo promedio entre ellos; con 1 solo pago asume anual
-// (365 días — el patrón más común en ADRs/CEDEARs de pago único). No es un flujo exacto como
-// el de los bonos (no existe ese dato para acciones) — es una estimación, por eso D nunca
-// muestra monto, a diferencia de F.
 function _estimarProximoDividendo(fechasOrdenadas){
   if(!fechasOrdenadas.length) return null;
   var intervaloDias=365;
@@ -976,7 +872,7 @@ function _estimarProximoDividendo(fechasOrdenadas){
     var diffs=[];
     for(var i=1;i<fechasOrdenadas.length;i++) diffs.push((fechasOrdenadas[i]-fechasOrdenadas[i-1])/86400000);
     intervaloDias=diffs.reduce(function(a,b){return a+b;},0)/diffs.length;
-    if(intervaloDias<30) intervaloDias=30; // evita estimaciones/loops absurdos con datos sucios
+    if(intervaloDias<30) intervaloDias=30;
   }
   var hoy=new Date();hoy.setHours(0,0,0,0);
   var next=new Date(fechasOrdenadas[fechasOrdenadas.length-1].getTime());
@@ -999,14 +895,13 @@ function calcularDivHistUpcoming30(){
   var set=new Set();
   Object.keys(registros).forEach(function(ticker){
     var sector=getSector(ticker);
-    if(sector==='bonos'||sector==='on') return; // ya tienen F — no duplicar con D
+    if(sector==='bonos'||sector==='on') return;
     var fechas=registros[ticker].sort(function(a,b){return a-b;});
     var prox=_estimarProximoDividendo(fechas);
     if(prox&&prox<=lim) set.add(ticker);
   });
   return set;
 }
-// Mapa ticker→próximo evento dentro de 30 días, para el puntito "F" en la tabla de Portafolio.
 function _flujosMapaProx30(cal){
   var lim=_flujosFechaLimiteStr(30);
   var map={};
@@ -1015,7 +910,6 @@ function _flujosMapaProx30(cal){
   });
   return map;
 }
-// Card chica al pie de "Portafolio" (Próximo cobro / 30 días / 90 días).
 function renderFlujosMiniResumen(cal){
   var el=document.getElementById('flujo-mini-content');
   if(!el) return;
@@ -1037,7 +931,6 @@ function renderFlujosMiniResumen(cal){
     bloque('Próximos 30 días',_flujosFmtTotales(t30))+
     bloque('Próximos 90 días',_flujosFmtTotales(t90));
 }
-// Página completa "Flujos" (Herramientas → Flujos): calendario detallado.
 function renderFlujosPage(){
   var cal=calcularCalendarioCobros();
   var elRes=document.getElementById('flujo-page-resumen');
@@ -1087,7 +980,6 @@ function renderFlujosPage(){
   try{renderCicloVida();}catch(e){console.warn('ciclo',e);}
 }
 
-
 var TICKER_MAP = {'DISN':'DIS','GGB':'GGB','MELI':'MELI','NU':'NU','PAGS':'PAGS','SID':'SID','XP':'XP','A3':'A3.BA','AGRO':'AGRO.BA','BHIP':'BHIP.BA','BIOX':'BIOX.BA','BOLT':'BOLT.BA','CADO':'CADO.BA','CAPX':'CAPX.BA','CARC':'CARC.BA','CECO2':'CECO2.BA','CELU':'CELU.BA','COME':'COME.BA','CTIO':'CTIO.BA','DGCE':'DGCE.BA','EDN':'EDN.BA','FERR':'FERR.BA','FIPL':'FIPL.BA','GLOB':'GLOB.BA','HARG':'HARG.BA','LONG':'LONG.BA','METR':'METR.BA','MIRG':'MIRG.BA','MOLI':'MOLI.BA','OEST':'OEST.BA','PATA':'PATA.BA','TXAR':'TXAR.BA'};
 function getFinnhubTicker(ticker){if(BYMA_TO_NYSE[ticker])return BYMA_TO_NYSE[ticker];return TICKER_MAP[ticker]||ticker;}
 
@@ -1130,7 +1022,6 @@ function tcSave(tipo){
   var fecha = document.getElementById('tc-'+tipo+'-fecha').value.trim();
   var valor = parseFloat(document.getElementById('tc-'+tipo+'-valor').value);
   if(!fecha||!valor) return;
-  // Normalizar fecha a dd/mm/aaaa
   if(fecha.indexOf('-')>0){var p=fecha.split('-');fecha=p[2]+'/'+p[1]+'/'+p[0];}
   if(!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(fecha)){alert('Fecha incompleta: usá dd/mm/aaaa');return;}
   fecha=fmtKey(fecha);
@@ -1162,19 +1053,8 @@ function tcSavePersist(){
   }catch(e){}
   _tcSbPersist();
 }
-// No escribir ccl/mep_override en Supabase antes de haberlos leído: al abrir el portafolio, el MEP de hoy
-// se guardaba con la tabla vieja y borraba los tipos de cambio que había mandado el Sync de GDC.
 var _tcOvrLoaded=false,_tcOvrPend=false;
 function _tcSbPersist(){if(!_tcOvrLoaded){_tcOvrPend=true;return;}sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}
-function tcLoadPersist(){
-  try{
-    var sc=localStorage.getItem((PFX+'ccl_override'));
-    if(sc) Object.assign(CCL_TABLE,JSON.parse(sc));
-    var sm=localStorage.getItem((PFX+'mep_override'));
-    if(sm) Object.assign(MEP_TABLE,JSON.parse(sm));
-  }catch(e){}
-  tcRefrescarHoy();
-}
 function cardToggle(btn){
   var card=btn.closest('.card');
   var collapsed=card.classList.toggle('card-collapsed');
@@ -1182,8 +1062,6 @@ function cardToggle(btn){
   if(card.getAttribute('data-persist')){try{localStorage.setItem(PFX+'col_'+card.id,collapsed?'1':'0');}catch(e){}}
   if(!collapsed&&card.id==='hist-card'&&typeof _histChart!=='undefined'&&_histChart){try{_histChart.resize();}catch(e){}}
 }
-// Fila superior: Distribución · Evolución · Rendimiento por período, lado a lado y plegables
-// (el estado plegado se recuerda por portafolio).
 function topCardPrep(card,flex){
   if(!card||card.getAttribute('data-persist'))return;
   card.setAttribute('data-persist','1');card.style.maxWidth='';card.style.marginBottom='0';card.style.flex=flex;card.style.minWidth='0';
@@ -1224,7 +1102,6 @@ function showPage(id,btn){
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
   if(id==='ventaestad'){ renderVentaEstadisticas(); }
   if(id==='ventahist'){ renderVentaHistorica(); }
-  // Sidebar: colapsado en portafolio, abierto en el resto
   var main=document.getElementById('main');
   if(main){
     if(id==='portafolio') main.classList.remove('sidebar-open');
@@ -1284,10 +1161,8 @@ function calcUSD(){
   var comPct=parseFloat(document.getElementById('m-comision').value)||0;
   var rt=getRatio(document.getElementById('m-ticker').value.trim().toUpperCase()||'');
   var arsCalc=isBonoONForm()?(ars/100):ars;
-  // FCI: cuotapartes se cargan como las muestra Adcap (x1000) → dividir para los totales
   if(document.getElementById('m-mkt').value==='FCI')qty=qty/1000;
   document.getElementById('m-precio-usd').value=(ars&&ccl)?(arsCalc*rt/ccl).toFixed(4):'—';
-  // Calcular comisión $ y totales
   var resumen=document.getElementById('row-calc-resumen');
   if(ars>0&&qty>0){
     var comAbs=qty*arsCalc*comPct/100;
@@ -1318,9 +1193,7 @@ function addMov(){
   var qty=parseFloat(document.getElementById('m-qty').value);
   var precioARSInput=parseFloat(document.getElementById('m-precio-ars').value);
   var mkt=document.getElementById('m-mkt').value;
-  // Bonos/ONs: el usuario ingresa precio por 100 nominales → dividir por 100 para almacenar por nominal
   var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
-  // FCI: Adcap muestra cuotapartes x1000 respecto del VCP de CAFCI/ArgentinaDatos → dividir por 1000
   if(mkt==='FCI'&&!isNaN(qty))qty=qty/1000;
   var cclVal=parseFloat(document.getElementById('m-ccl').value)||getTC(fecha,mkt);
   var comisionPct=parseFloat(document.getElementById('m-comision').value)||0;
@@ -1331,15 +1204,11 @@ function addMov(){
   if((tipo==='compra'||tipo==='venta')&&(!fechaGuard(fecha,tipo)||!precioGuard(ticker,precioARSInput,fecha)))return;
   var ratio=getRatio(ticker);
   var precioUSD=cclVal?precioARS*ratio/cclVal:null;
-  // Calcular comisión absoluta: (qty * precioARS * % / 100)
   var comisionAbsoluta=(qty*precioARS*comisionPct/100);
   var finishEl=document.getElementById('m-finish');
   movimientos.push({id:Date.now(),fecha:fecha,tipo:tipo,mercado:mkt,ticker:ticker,qty:qty,precioARS:precioARS,ccl:cclVal,ratio:ratio,precioUSD:precioUSD,comision:comisionAbsoluta,comisionPct:comisionPct,notas:document.getElementById('m-notas').value,finish:finishEl&&finishEl.checked||false,loteMethod:(tipo==='venta'?'promedio':undefined)});
   (function(){var _cs=document.getElementById('m-cartera');if(_cs)movimientos[movimientos.length-1].cartera=_cs.value||'principal';})();
   saveAndRender();
-  // Guardar TC del día en tablas si no existe aún — usa cclVal (el valor real usado en ESTE
-  // movimiento, ya sea de la tabla o del día en curso), no CCL_HOY/MEP_HOY a secas: si `fecha`
-  // es una fecha pasada, CCL_HOY de "hoy" no es el valor correcto para esa fecha.
   tcStampearFecha(fecha,(mkt==='BONOS'||mkt==='ON'||mkt==='FCI'),cclVal);
   ['m-qty','m-precio-ars','m-ccl','m-precio-usd','m-notas'].forEach(function(id){document.getElementById(id).value='';});
   resetMFechaHoy();
@@ -1369,8 +1238,6 @@ function _parseArgNum(s){
   } else if(hasCom){
     s=s.replace(',','.');
   } else if(hasDot){
-    // Solo tiene punto: si todos los segmentos post-punto tienen exactamente 3 dígitos
-    // es separador de miles (ej: "15.478" → 15478, "1.234.567" → 1234567)
     var parts=s.split('.');
     if(parts.length>=2&&/^\d+$/.test(parts[0])&&parts.slice(1).every(function(p){return /^\d{3}$/.test(p);})){
       s=parts.join('');
@@ -1388,8 +1255,6 @@ function _normFecha(s){
   if(!/^\d{2}$/.test(d)||!/^\d{2}$/.test(m)||!/^\d{4}$/.test(y))return null;
   return d+'/'+m+'/'+y;
 }
-// Precio sospechoso en la importación: contra el mercado (si la operación es de los últimos 7 días) o, si no,
-// contra las otras filas del mismo activo en lo que estás pegando. Devuelve el motivo o null.
 function _impPrecioRaro(r,filas){
   if(!(r.precioARSInput>0)||!r.ticker||(r.tipo!=='compra'&&r.tipo!=='venta'))return null;
   var f2=function(x){return '$'+x.toLocaleString('es-AR',{maximumFractionDigits:2});},ref=null,de='';
@@ -1415,7 +1280,6 @@ function impMovParse(){
     var cols=line.split('\t');
     if(cols.length<4)cols=line.split(';');
     var fechaRaw=(cols[0]||'').trim();
-    // Saltar fila de encabezado (primera columna no empieza con dígito)
     if(!/^\d/.test(fechaRaw))return;
     var fecha=_normFecha(fechaRaw);
     var tipo=(cols[1]||'').trim().toLowerCase();
@@ -1532,14 +1396,11 @@ function saveInvInicial(v){
     if(v===undefined){
       v=getRawNum('inv-sidebar-usd');
     }
-    // v may come in already as raw number or as formatted string — normalize
     var raw = typeof v === 'string' ? (parseFloat(v.replace(/\./g,'').replace(/,/g,'.'))||0) : (parseFloat(v)||0);
     localStorage.setItem((PFX+'inv_inicial'), raw);
     sbSetConfig('inv_inicial', raw);
-    // actualizar display en metric card
     var disp=document.getElementById('inv-inicial-usd-display');
     if(disp) disp.textContent=raw?'$'+Math.round(raw).toLocaleString('es-AR'):'—';
-    // sincronizar campo topbar con formato
     setFmtNum('inv-sidebar-usd', raw, 0);
     renderPortfolio();
   }catch(e){}
@@ -1554,7 +1415,7 @@ function loadInvInicial(){
 }
 // ── Thousand-separator formatting for text inputs ──────────────────────────
 function fmtNumInput(el, decimals){
-  var raw = el.value.replace(/\./g,'').replace(/,/g,'.'); // strip dots, normalize comma
+  var raw = el.value.replace(/\./g,'').replace(/,/g,'.');
   var num = parseFloat(raw);
   if(isNaN(num)){ return; }
   var pos = el.selectionStart;
@@ -1564,7 +1425,6 @@ function fmtNumInput(el, decimals){
   } else {
     el.value = Math.round(num).toLocaleString('es-AR',{maximumFractionDigits:0});
   }
-  // restore cursor position approximately
   var newLen = el.value.length;
   el.selectionStart = el.selectionEnd = Math.max(0, pos + (newLen - oldLen));
 }
@@ -1601,12 +1461,8 @@ function liqConfirm(){
     setTimeout(function(){b.textContent=orig;},1000);
   });
 }
-function rvSave(){}
-function rvLoad(){}
-function rvConfirm(){ renderPortfolio(); perfCalcUpdate(); }
 function invConfirm(){
   var v=getRawNum('inv-sidebar-usd');
-  // Pide confirmación si cambia la Inv. Inicial guardada (está al lado de la Liquidez y es fácil pisarla sin querer)
   var prev=0;try{prev=parseFloat(localStorage.getItem(PFX+'inv_inicial'))||0;}catch(e){}
   if(Math.round(v)===Math.round(prev)||invConfirm._ask)return;
   var f=function(x){return 'USD '+Math.round(x||0).toLocaleString('es-AR');};
@@ -1633,13 +1489,11 @@ var _markPopTicker = null;
 
 async function loadMarks(){
   try{
-    // Intentar cargar desde Supabase
     var d = await sbGetConfig('marks');
     if(d && typeof d === 'object' && !Array.isArray(d)){
       MARKS = d;
       return;
     }
-    // Migración: si hay datos en localStorage, migrarlos a Supabase y borrarlos
     var s = localStorage.getItem((PFX+'marks'));
     if(s){
       MARKS = JSON.parse(s);
@@ -1664,13 +1518,11 @@ function openMarkPopover(ticker, el){
   pop.className='mark-popover';
   pop.id='mark-popover';
 
-  // Título
   var title = document.createElement('div');
   title.style.cssText='margin-bottom:6px;font-weight:600;font-size:.8rem';
   title.textContent = ticker;
   pop.appendChild(title);
 
-  // Botones de tipo
   var btnRow = document.createElement('div');
   btnRow.style.cssText='display:flex;gap:4px;margin-bottom:8px';
   [['sell','🔴 Vender'],['buy','🟢 Comprar'],['watch','⭐ Seguir']].forEach(function(pair){
@@ -1682,7 +1534,6 @@ function openMarkPopover(ticker, el){
   });
   pop.appendChild(btnRow);
 
-  // Textarea nota
   var ta = document.createElement('textarea');
   ta.id='mark-note-input';
   ta.placeholder='Nota (opcional)...';
@@ -1690,7 +1541,6 @@ function openMarkPopover(ticker, el){
   ta.value = m.note||'';
   pop.appendChild(ta);
 
-  // Botones acción
   var actRow = document.createElement('div');
   actRow.style.cssText='display:flex;justify-content:flex-end;gap:6px;margin-top:6px';
   var btnQ = document.createElement('button');
@@ -1705,7 +1555,6 @@ function openMarkPopover(ticker, el){
   actRow.appendChild(btnG);
   pop.appendChild(actRow);
 
-  // Posición
   var r = el.getBoundingClientRect();
   var left = Math.min(r.left, window.innerWidth-200);
   var top  = r.bottom + 4;
@@ -1785,7 +1634,6 @@ async function portPinKey(k){
     var hash=await sha256(_portPinBuf);
     var stored=localStorage.getItem(PORT_PIN_KEY);
     if(!stored){
-      // Primera vez: guardar hash
       localStorage.setItem(PORT_PIN_KEY,hash);
       localStorage.setItem(PORT_SESSION_KEY,Date.now().toString());
       portHideOverlay();portUnblur();
@@ -1837,35 +1685,8 @@ function portBlur(){
   if(btn)btn.style.color='var(--text3)';
 }
 
-function portToggleSummary(){} // vista anterior (sin uso desde v193)
-(function(){
-  try{
-    if(localStorage.getItem('port_summary_collapsed')==='1'){
-      var el=document.getElementById('port-summary-section');
-      var btn=document.getElementById('port-summary-toggle-btn');
-      if(el) el.style.display='none';
-      if(btn) btn.textContent='▼ Mostrar resumen';
-    }
-  }catch(e){}
-})();
-
-function portToggleWatchzone(){} // vista anterior (sin uso desde v193)
-(function(){
-  try{
-    if(localStorage.getItem('port_watchzone_collapsed')==='1'){
-      var el=document.getElementById('port-watchzone-section');
-      var el2=document.getElementById('port-smallinv-section');
-      var btn=document.getElementById('port-watchzone-toggle-btn');
-      if(el) el.style.display='none';
-      if(el2) el2.style.display='none';
-      if(btn) btn.textContent='▼ Mostrar mira';
-    }
-  }catch(e){}
-})();
-
 function portToggleBlur(){
   if(!_portBlurred){portBlur();return;}
-  // Verificar sesión activa
   var sess=parseInt(localStorage.getItem(PORT_SESSION_KEY)||'0');
   var age=(Date.now()-sess)/1000/3600;
   if(age<PORT_SESSION_HOURS&&localStorage.getItem(PORT_PIN_KEY)){
@@ -1876,24 +1697,9 @@ function portToggleBlur(){
 }
 
 loadMarks();
-function portCheckSession(){portUnblur();return; // PIN desactivado
-  var stored=localStorage.getItem(PORT_PIN_KEY);
-  // Actualizar título del overlay según si es primera vez o no
-  var titleEl=document.getElementById('port-pin-title');
-  if(titleEl) titleEl.textContent = stored ? '🔒 Ingresá tu PIN' : '🔑 Configurá tu PIN';
-  if(!stored){portShowOverlay();return;} // Primera vez: configurar PIN
-  var sess=parseInt(localStorage.getItem(PORT_SESSION_KEY)||'0');
-  var age=(Date.now()-sess)/1000/3600;
-  if(age<PORT_SESSION_HOURS){portUnblur();}
-  else{portShowOverlay();} // Sesión expirada: pedir PIN
-}
 // ─────────────────────────────────────────────────────────────────────────
 
 var _gdcInitDone = false;
-// Si sbSaveArray falla (red, Supabase caído, etc.) el guardado quedaba SOLO local y en el próximo
-// reload initFromSupabase() pisa todo con la versión vieja de Supabase — el movimiento "desaparece".
-// Antes esto era silencioso (sbSaveArray traga el error y devuelve false). Ahora se avisa en #lupd.
-// Aviso de "no se guardó en la nube": barra roja fija arriba con Reintentar (queda hasta que se guarde).
 var _SAVE_FAIL={};
 function saveFailClear(tabla){delete _SAVE_FAIL[tabla];_saveFailRender();}
 function _saveFailRender(){
@@ -1923,21 +1729,16 @@ function warnSaveFailed(tabla){
 }
 function saveAndRender(){
   try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){}
-  // Snapshot de "lo que debería estar en la nube" — si sbSaveArrayRetry falla (red caída,
-  // pestaña cerrada antes de terminar), este snapshot sobrevive al reload e initFromSupabase()
-  // lo usa para no pisar movimientos reales con una versión vieja de Supabase.
-  // (Incidente: compra de MO cargada y perdida silenciosamente — 2026-09-01, GDC.)
   try{localStorage.setItem((PFX+'pending_sync'),JSON.stringify(movimientos));}catch(e){}
   if(_gdcInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok){ warnSaveFailed('movimientos'); } else { try{localStorage.removeItem((PFX+'pending_sync'));}catch(e){} saveFailClear('movimientos'); } }); }
   else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
-  renderMovimientos();renderPortfolio();renderDivsCard();vsellPopulateSelect();
+  renderMovimientos();renderPortfolio();vsellPopulateSelect();
   (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
 }
 
-// Estado del modal de edición
 var MOV_EDIT_ID = null;
-var _movWasFiltered = false; // controla el auto-scroll de renderMovimientos(): sólo salta al header la primera vez que se activa un filtro
+var _movWasFiltered = false;
 
 function movModalOpen(id){
   var m=movimientos.find(function(x){return x.id==id;});
@@ -1960,12 +1761,10 @@ function movModalOpen(id){
     '<div class="fgrp"><label>Comisión %</label><input type="number" id="me-com" value="'+(m.comisionPct||0)+'" min="0" max="100" step="0.01"></div>'+
     '<div class="fgrp" style="grid-column:1/-1"><label>Notas</label><input type="text" id="me-notas" value="'+(m.notas||'')+'"></div>'+
     '<div class="fgrp" style="grid-column:1/-1;display:flex;align-items:center"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--mono);font-size:.72rem;color:var(--text2);user-select:none"><input type="checkbox" id="me-finish"'+(m.finish?' checked':'')+' style="accent-color:var(--accent);width:13px;height:13px;cursor:pointer;margin:0"> 🏁 A finish</label></div>';
-  // Evento para recalcular USD al cambiar ARS/CCL/ticker
   ['me-ars','me-ccl','me-ticker'].forEach(function(eid){
     var el=document.getElementById(eid);
     if(el)el.addEventListener('input',movModalCalcUSD);
   });
-  // Al cambiar mercado: actualizar label (MEP vs CCL) y auto-completar TC según mercado/fecha
   var mktEl=document.getElementById('me-mkt');
   if(mktEl){
     mktEl.addEventListener('change',function(){
@@ -2020,7 +1819,6 @@ function movModalSave(){
   var mkt=document.getElementById('me-mkt');
   if(mkt&&mkt.value){
     var newMkt=mkt.value;
-    // Propagar mercado a todos los movimientos del mismo ticker para que el sector sea consistente
     movimientos.forEach(function(x){if(x.ticker===m.ticker)x.mercado=newMkt;});
   }
   if(ticker)m.ticker=ticker;
@@ -2037,7 +1835,6 @@ function movModalSave(){
     m.precioUSD=m.precioARS*rt/m.ccl;
     m.ratio=rt;
   }
-  // Calcular comisión absoluta desde porcentaje: (qty * precioARS * % / 100)
   m.comision=(m.qty*m.precioARS*com/100);
   m.comisionPct=com;
   m.notas=notas;
@@ -2054,15 +1851,11 @@ function movModalClose(){
   MOV_EDIT_ID=null;
 }
 
-
 // ════════════════════════════════════════════════════════
-// Vender: al elegir un ticker en el combo se completa la cantidad con todas las nominales (si vendés menos, la cambiás)
 document.addEventListener('change',function(e){if(!e.target||e.target.id!=='vsell-ticker')return;var t=e.target.value,q=document.getElementById('vsell-qty');if(!t||!q)return;
   try{var p=getPositions().filter(function(x){return x.ticker===t&&x.qty>0;})[0];if(p){q.value=Math.round(p.qty*100)/100;vsellPreview();}}catch(err){}});
-// Precio de Comprar / Vender: flecha arriba/abajo suma o resta de a 5
 document.addEventListener('keydown',function(e){var el=e.target;if(!el||(el.id!=='vbuy-precio-ars'&&el.id!=='vsell-precio-ars'))return;if(e.key!=='ArrowUp'&&e.key!=='ArrowDown')return;
   e.preventDefault();var v=parseFloat(String(el.value).replace(',','.'))||0;v=Math.max(0,Math.round((v+(e.key==='ArrowUp'?5:-5))*100)/100);el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));},true);
-// SIMULADOR DE VENTA
 // ════════════════════════════════════════════════════════
 function divPopulateSelect(){
   var sel = document.getElementById('d-ticker');
@@ -2140,14 +1933,11 @@ function vbuyConfirmar(){
 }
 
 // ─── Vender rápido (módulo en Home/Portafolio) ───
-// Mismos campos y mismo motor (lote más barato) que el Simulador de Venta,
-// pero ejecuta la venta real: crea el movimiento y actualiza la cartera.
 function vsellPopulateSelect(){
   var sel = document.getElementById('vsell-ticker');
   if(!sel) return;
   var current = sel.value;
-  var allPos = getPositions(); // una sola pasada por el historial, reusada abajo (antes se llamaba
-                                // de nuevo dentro del .map, una vez por ticker)
+  var allPos = getPositions();
   var posByTicker = {};
   allPos.forEach(function(p){ if(!posByTicker[p.ticker]) posByTicker[p.ticker]=p; });
   var tickers = [];
@@ -2202,8 +1992,6 @@ function vsellPreview(){
   var qtyVender=parseFloat(qtyEl.value);
   var ventaUSDxUnit=isBonoUSDDirecto(ticker)?(precioARS>0?precioARS:null):((precioARS>0&&ccl>0)?precioARS/ccl:null);
 
-  // Promedio ponderado: se toma directo de getPositions(), que ya deja costUSDpuro/qty
-  // netos de toda la historia (compras y ventas previas, sea cual sea el método usado en cada una).
   var posActual=getPositions().find(function(p){return p.ticker===ticker;});
   if(!posActual||posActual.qty<=0.000001){ prevEl.innerHTML='<span style="color:var(--red)">No quedan unidades abiertas en '+ticker+'.</span>'; if(btnConfirm)btnConfirm.disabled=true; return; }
 
@@ -2289,9 +2077,6 @@ function vsellConfirmar(){
 }
 
 // ─── Estadísticas de Ganancia realizada (x ticker, x tipo, x RF/RV) ───
-// Usa gananciaUSD/gananciaPct/costBasisUSD que getPositions() guarda en cada
-// movimiento de venta (tanto ventas legado con promedio ponderado como ventas
-// nuevas con lote más barato). U$S = símbolo de dólar usado en toda esta vista.
 function vestadTipoTicker(ticker){
   var s=getSector(ticker);
   if(s==='bonos')return 'Bono';
@@ -2300,7 +2085,7 @@ function vestadTipoTicker(ticker){
   if(s==='argentina')return 'Acción Arg.';
   if(s==='brasil')return 'Brasil';
   if(s==='cripto')return 'Cripto';
-  return 'Cedear'; // nyse, europa, china
+  return 'Cedear';
 }
 function vestadEsRF(ticker){
   var s=getSector(ticker);
@@ -2347,7 +2132,7 @@ function vestadTabla(grupos, labelHeader){
 }
 
 function renderVentaEstadisticas(){
-  getPositions(); // fuerza el recálculo/annotate de gananciaUSD en cada venta antes de leer
+  getPositions();
   var ventas=movimientos.filter(function(m){ return m&&m.tipo==='venta'&&m.gananciaUSD!==undefined&&m.gananciaUSD!==null; });
 
   var resumenEl=document.getElementById('vestad-resumen');
@@ -2394,8 +2179,8 @@ function renderVentaEstadisticas(){
 
 // ─── Estadísticas Venta Histórica (prueba standalone, no toca movimientos reales) ───
 var _ventahistRows = [];
-var _ventahistDivs = []; // dividendos/rentas cobradas, persistidos aparte (identifican por ticker corto)
-var _ventahistAportes = []; // aportes/retiros de dinero (cuenta corriente pesos), persistidos aparte
+var _ventahistDivs = [];
+var _ventahistAportes = [];
 
 function ventahistParseFecha(v){
   if(v==null||v==='') return null;
@@ -2419,7 +2204,7 @@ function ventahistParseTipo(v){
   var s=cmpNorm(v);
   if(s==='compra'||s==='c'||s==='buy'||s==='cpra') return 'compra';
   if(s==='venta'||s==='v'||s==='sell'||s==='vtas'||s==='vta') return 'venta';
-  return null; // VTTR, COTR, transferencias u otros códigos no se tratan como operación de mercado
+  return null;
 }
 
 function ventahistParseNum(v){
@@ -2433,8 +2218,6 @@ function ventahistFechaKey(f){
   return p.length===3 ? p[2]+p[1].padStart(2,'0')+p[0].padStart(2,'0') : '0';
 }
 
-// Clasifica el activo en Bonos / Argentina / Brasil / Cedear a partir del texto de Especie.
-// Se usa solo para el desglose de Estadísticas Venta Histórica (no toca la clasificación real por ticker).
 var VHIST_BRASIL_RE=/ITAU|BANCO DO BRASIL|BRADESCO|VALE S\.A|GERDAU|EMBRAER|PETROLEO BRASILEIRO|SIDERURGICA|AMBEV|STONECO|PAGSEGURO|NU HOLDINGS|XP INC|BRASKEM|BRF S\.A|MERC\.?LIB|MSCI BRAZIL/i;
 function ventahistClasificarTipo(idRaw,esBonoON){
   if(esBonoON) return 'Bonos';
@@ -2444,26 +2227,14 @@ function ventahistClasificarTipo(idRaw,esBonoON){
 function ventahistEsBonoON(idRaw){
   return /BONO|BONTE|OBLIGAC|LETRA|LECAP|LECER|BOTE|BOPREAL|VALORES NEGOCIABLES|^ON\s|^L\.\s*T|^LT\s|^B\.\s*TES|^T\.D\./i.test(idRaw);
 }
-// Activos con split conocido dentro del período cargado: la variación de precio "por split" contamina
-// el promedio ponderado y da ganancias/pérdidas ficticias. Se excluyen por completo de la base histórica.
 var VHIST_EXCLUIDOS_RE=/^LONGVIE|^CELULOSA|^FERRUM/i;
-// Tickers cortos equivalentes (usados en el archivo de Dividendos/Rentas, que identifica por ticker y no por nombre completo).
 var VHIST_EXCLUIDOS_TICKERS=new Set(['LONG','CELU','FERR','ECOG']);
 function ventahistEstaExcluido(idRaw){
   if(VHIST_EXCLUIDOS_TICKERS.has(String(idRaw||'').trim().toUpperCase())) return true;
   return VHIST_EXCLUIDOS_RE.test(idRaw)||cmpNorm(idRaw).indexOf('ecogas')>=0;
 }
 
-// Parsea la matriz de filas (como la devuelve XLSX.utils.sheet_to_json({header:1})).
-// Soporta dos formatos:
-//  1) Formato simple: Ticker, Fecha, Tipo, Cantidad, Precio, Mercado (opcional)
-//  2) Formato de exportación de broker: Especie (nombre completo, no ticker), Operado/Liquida (fechas),
-//     Operación (CPRA/VTAS), Cantidad, Importe. En este caso el precio por unidad se calcula como
-//     Importe/Cantidad, así no hace falta adivinar si "Precio" viene cada 100 nominales o por unidad.
 function ventahistParseRows(rows){
-  // Requiere Especie/Ticker Y Cantidad en la misma fila: algunos exports de broker traen una
-  // mini-tabla de "filtros aplicados" antes de la tabla real que también menciona "Especie"
-  // pero sin columna Cantidad, y no queremos confundirla con el encabezado de datos.
   var hdrIdx=rows.findIndex(function(r){
     var n=r.map(cmpNorm);
     var hasId=n.indexOf('especie')>=0||n.indexOf('ticker')>=0;
@@ -2523,7 +2294,6 @@ function ventahistParseRows(rows){
 }
 
 function ventahistReadRows(ab){
-  // 1) intenta como Excel/CSV real
   try{
     var wb=XLSX.read(new Uint8Array(ab),{type:'array'});
     for(var i=0;i<wb.SheetNames.length;i++){
@@ -2532,15 +2302,10 @@ function ventahistReadRows(ab){
       if(rows.some(function(r){return r.some(function(c){var n=cmpNorm(c);return n==='especie'||n==='ticker';});})) return rows;
     }
   }catch(ex){}
-  // 2) fallback: muchos brokers exportan un .xls que en realidad es HTML (ej. Portfolio Personal).
-  //    Reusa el mismo parser que ya usa Comparación de Portafolios para el formato viejo de Veta.
   return cmpParseHTML(ab);
 }
 
 // ─── Dividendos y Rentas cobradas (archivo separado del broker, identifica por ticker corto) ───
-// Formato: Fecha, Cpbt (DIV/RTA/CANJ/RESC), Especie (ticker), Moneda (vacío=USD, "PESOS"=ARS), Divi/renta (monto).
-// Solo DIV y RTA se cuentan como ingreso: CANJ es un canje sin movimiento de caja, y RESC es un rescate/
-// redención total del bono (devolución de capital, no ganancia) — sumarlo como renta sobreestimaría la ganancia.
 function ventahistParseDivRows(rows){
   var hdrIdx=rows.findIndex(function(r){
     var n=r.map(cmpNorm);
@@ -2571,7 +2336,6 @@ function ventahistParseDivRows(rows){
   return {parsed:parsed,ignoradas:ignoradas,errores:errores};
 }
 
-// Traduce el sector real (getSector, el mismo que usa toda la cartera) a los 4 baldes de este desglose.
 function vhistSectorToTipo(sector){
   if(sector==='bonos'||sector==='on') return 'Bonos';
   if(sector==='argentina') return 'Argentina';
@@ -2579,7 +2343,6 @@ function vhistSectorToTipo(sector){
   return 'Cedear';
 }
 
-// Convierte cada cobro de dividendo/renta a USD y lo clasifica, usando getSector real (ticker corto → sector).
 function calcularDividendosHistoricos(rows){
   return rows.map(function(r){
     var sector=(typeof getSector==='function')?getSector(r.ticker):'nyse';
@@ -2590,7 +2353,7 @@ function calcularDividendosHistoricos(rows){
       var tc=esBonoON?(getMEP(r.fecha)||MEP_HOY):(getCCL(r.fecha)||CCL_HOY);
       usd=tc>0?(r.monto/tc):0;
     } else {
-      usd=r.monto; // ya viene en USD
+      usd=r.monto;
     }
     var anio=parseInt((r.fecha.split('/')[2])||'0',10);
     return {ticker:r.ticker,fecha:r.fecha,anio:anio,tipoActivo:tipoActivo,usd:usd};
@@ -2602,7 +2365,6 @@ function ventahistResetFecha(){
   if(el){el.value=_hoyLocalISO();el.dataset.auto=el.value;fechaMarcar(el);}
 }
 
-// Persiste la base histórica (localStorage + Supabase), igual patrón que ccl_override/mep_override.
 function vhistPersist(){
   try{ localStorage.setItem((PFX+'vhist_movs'), JSON.stringify(_ventahistRows)); }catch(e){}
   sbSetConfig('vhist_movs', _ventahistRows);
@@ -2637,7 +2399,6 @@ function ventahistOnFile(input){
   reader.readAsArrayBuffer(f);
 }
 
-// Agrega un movimiento nuevo a mano, sin tener que resubir el Excel entero.
 function ventahistAddManual(){
   var especieEl=document.getElementById('vhist-add-especie');
   var fechaEl=document.getElementById('vhist-add-fecha');
@@ -2676,7 +2437,6 @@ function ventahistClearBase(){
   renderVentaHistorica();
 }
 
-// Persiste los dividendos/rentas cobrados (mismo patrón que vhistPersist).
 function vhistDivsPersist(){
   try{ localStorage.setItem((PFX+'vhist_divs'), JSON.stringify(_ventahistDivs)); }catch(e){}
   sbSetConfig('vhist_divs', _ventahistDivs);
@@ -2722,12 +2482,6 @@ function ventahistClearDivs(){
 }
 
 // ─── Aportes y Retiros (export "Movimientos de Pesos", cuenta corriente completa) ───
-// Formato: Liquida/Operado, Operación, Especie, Cantidad, Precio, Importe, Saldo, Referencia.
-// Señal confiable: el CÓDIGO de Operación (no el texto de Referencia, que es inconsistente:
-// "TRF VALO A ICBC" contiene "TRF" pero es un retiro). PAGO = retiro (Importe siempre negativo),
-// COBR = aporte (Importe siempre positivo). El resto de los códigos (CCTE/CCCD, COTR/VTTR, TCCD/TOCT,
-// ARAN/ARPF, DECU, DEIN/NCIN, NOCR, DEME, CPRA/VTAS, etc.) son transferencias internas, comisiones,
-// retenciones o los movimientos de mercado ya cubiertos por el archivo de compras/ventas — se ignoran.
 function ventahistParseAportesRows(rows){
   var hdrIdx=rows.findIndex(function(r){
     var n=r.map(cmpNorm);
@@ -2755,8 +2509,6 @@ function ventahistParseAportesRows(rows){
   return {parsed:parsed,ignoradas:ignoradas,errores:errores};
 }
 
-// Convierte cada aporte/retiro a USD con el MEP del día (mismo criterio que bonos/ON: la plata
-// entra/sale de la cuenta en pesos y se dolariza al tipo de cambio implícito de ese día).
 function calcularAportesHistoricos(rows){
   return rows.map(function(r){
     var tc=getMEP(r.fecha)||MEP_HOY;
@@ -2806,9 +2558,6 @@ function ventahistClearAportes(){
   renderVentaHistorica();
 }
 
-// Capital neto acumulado (aportes-retiros) al cierre de cada año, en USD. Sparse: solo tiene entrada
-// para años con al menos un movimiento; los años sin movimiento se resuelven arrastrando el último
-// valor conocido (ver vhistDenseYearMap).
 function vhistCapitalSnapshotsAportes(aportesEventos){
   var ordenados=aportesEventos.slice().sort(function(a,b){
     var da=ventahistFechaKey(a.fecha), db=ventahistFechaKey(b.fecha);
@@ -2824,11 +2573,6 @@ function vhistCapitalSnapshotsAportes(aportesEventos){
   return snapshots;
 }
 
-// Capital en cartera A COSTO (posiciones abiertas) por grupo (Tipo o RF/RV), al cierre de cada año.
-// Mismo motor de promedio ponderado que calcularVentaHistorica, pero acumulando por grupo en vez de
-// por ticker, y snapshotenado en cada corte de año calendario. Las ventas sin compra registrada (activos
-// que ya se tenían antes del rango del archivo, ver ⚠️ en "Por Ticker") no restan capital de ningún
-// grupo porque no hay costo base que restarles — quedan afuera del cálculo, tal como se pidió.
 function vhistCapitalPorGrupoAnio(rows, groupOf){
   var pos={}, capitalPorGrupo={}, snapshots={}, currentYear=null;
   var ordenados=rows.slice().sort(function(a,b){
@@ -2863,9 +2607,6 @@ function vhistCapitalPorGrupoAnio(rows, groupOf){
   return snapshots;
 }
 
-// Arrastra hacia adelante el último valor conocido para cubrir sin huecos el rango [minY,maxY].
-// isObj=true para snapshots {grupo:valor} (vhistCapitalPorGrupoAnio), false para números sueltos
-// (vhistCapitalSnapshotsAportes).
 function vhistDenseYearMap(snapshots,minY,maxY,isObj){
   var dense={}, last=isObj?{}:0;
   for(var y=minY;y<=maxY;y++){
@@ -2875,9 +2616,6 @@ function vhistDenseYearMap(snapshots,minY,maxY,isObj){
   return dense;
 }
 
-// Reemplaza el "costo" de una matriz de vhistBuildMatrix por el capital promedio (inicio/fin de año)
-// de cada grupo, para que vhistRenderMatrix calcule el % de ganancia sobre capital invertido en vez de
-// sobre costo-base-de-lo-vendido-ese-año (que se infla con la rotación de cartera).
 function vhistApplyCapitalBase(matrix,capSnapshots){
   var years=matrix.years;
   var minY=years.length?Math.min.apply(null,years)-1:0;
@@ -2902,7 +2640,7 @@ function vhistApplyCapitalBase(matrix,capSnapshots){
 
 function calcularVentaHistorica(rows){
   var pos={};
-  var ventas=[]; // log de cada operación de venta individual, para desgloses por tipo/año
+  var ventas=[];
   var ordenados=rows.slice().sort(function(a,b){
     var da=ventahistFechaKey(a.fecha), db=ventahistFechaKey(b.fecha);
     if(da!==db) return da<db?-1:1;
@@ -2913,7 +2651,6 @@ function calcularVentaHistorica(rows){
     if(!pos[key]) pos[key]={ticker:key,qty:0,costUSDpuro:0,gananciaUSD:0,costBasisVendido:0,ventasCount:0,_sobreventa:0,tipoActivo:r.tipoActivo};
     var p=pos[key];
     var esBonoON=(r.mercado==='BONOS'||r.mercado==='ON');
-    // Bonos/ON: siempre MEP (sin caer a CCL); resto: CCL. Solo se usa el valor de HOY si falta directamente en la tabla.
     var tc=esBonoON?(getMEP(r.fecha)||MEP_HOY):(getCCL(r.fecha)||CCL_HOY);
     var usdPuro=tc>0?(r.precioARS*r.qty/tc):0;
     if(r.tipo==='compra'){
@@ -2940,7 +2677,6 @@ function calcularVentaHistorica(rows){
   return {porTicker:Object.values(pos),ventas:ventas};
 }
 
-// Arma la matriz {years, groups:{label:{perYear:{año:{cost,gan}}, totalCost, totalGan}}} a partir del log de ventas.
 function vhistBuildMatrix(ventas, groupOf){
   var years=Array.from(new Set(ventas.map(function(v){return v.anio;}))).sort();
   var groups={};
@@ -2957,7 +2693,6 @@ function vhistBuildMatrix(ventas, groupOf){
   return {years:years,groups:groups};
 }
 
-// Renderiza la matriz como tabla: filas=grupo (según rowOrder), columnas=años + Total.
 function vhistRenderMatrix(matrix,rowOrder,rowHeaderLabel){
   var years=matrix.years, groups=matrix.groups;
   var rows=rowOrder.filter(function(k){return groups[k];});
@@ -2991,11 +2726,6 @@ function vhistRenderMatrix(matrix,rowOrder,rowHeaderLabel){
   return '<div class="tw panel-table"><table><thead>'+thead+'</thead><tbody>'+bodyRows+footRow+'</tbody></table></div>';
 }
 
-// Ganancia total por año calendario (todos los tipos combinados), como fila de métricas.
-// Si se pasa capSnapshotsAportes (aportes-retiros acumulados, ver vhistCapitalSnapshotsAportes), el %
-// se calcula contra el capital promedio invertido ese año (inicio/fin) en vez del costo-base-de-lo-vendido
-// (que compara mal: infla el % cuando hay mucha rotación de cartera dentro del año). Sin esa base
-// (todavía no se subió el archivo de Movimientos de Pesos) cae al cálculo anterior.
 function vhistRenderAnioTotal(ventas,capSnapshotsAportes){
   var years=Array.from(new Set(ventas.map(function(v){return v.anio;}))).sort();
   var cl=function(n){return n===null?'':(n>=0?'pos':'neg');};
@@ -3030,8 +2760,6 @@ function vhistRenderAnioTotal(ventas,capSnapshotsAportes){
   return '<div style="display:flex;flex-wrap:wrap;gap:6px">'+cards+'</div>';
 }
 
-// Tabla compacta de dividendos/rentas por ticker corto (no se puede mergear con la tabla por Especie
-// descriptiva de arriba porque son dos sistemas de identificación distintos).
 function vhistRenderDivsPorTicker(divEventos){
   if(!divEventos.length) return '';
   var porTicker={};
@@ -3102,17 +2830,10 @@ function renderVentaHistorica(){
       '<div class="metric" style="padding:.4rem .6rem;flex:0 1 auto"><div class="metric-label" style="font-size:.56rem">Ganancia % total</div><div class="metric-value '+cl(totalPct)+'" style="font-size:.8rem">'+fmtPct(totalPct)+'</div></div>'+
     '</div>';
 
-  // Los dividendos/rentas se suman como "ganancia" sin costo asociado (costBasis=0), así entran en los
-  // mismos baldes de año/tipo/RF-RV que las ventas, sin tocar la tabla por Ticker (que usa Especie descriptiva).
   var ventasConDivs=ventas.concat(divEventos.map(function(d){
     return {ticker:d.ticker,fecha:d.fecha,anio:d.anio,tipoActivo:d.tipoActivo,gananciaUSD:d.usd,costBasis:0};
   }));
 
-  // Capital invertido: para el total se usa la plata real que entró/salió de la cuenta (aportes-retiros,
-  // ver ⚙️ tarjeta "Aportes y Retiros"); para Tipo/RF-RV (que no se puede prorratear desde los aportes,
-  // porque un depósito no dice a qué activo va) se usa el capital en cartera a costo de cada grupo.
-  // Las ventas sin compra registrada (activos ya tenidos antes del archivo) no entran en ninguno de los
-  // dos cálculos porque no tienen costo base que restar/sumar — quedan afuera, tal como se pidió.
   var capSnapshotsAportes=_ventahistAportes.length?vhistCapitalSnapshotsAportes(calcularAportesHistoricos(_ventahistAportes)):null;
   if(anioEl){
     anioEl.innerHTML=vhistRenderAnioTotal(ventasConDivs,capSnapshotsAportes);
@@ -3153,15 +2874,6 @@ function renderVentaHistorica(){
     (sorted.some(function(p){return p._sobreventa>0.000001;})?'<div class="ibox" style="margin-top:8px;font-size:.68rem">⚠️ Los tickers marcados vendieron más cantidad de la que compraron dentro del archivo — probablemente ya tenías posición antes del rango de fechas subido, así que esa parte no tiene costo base cargado y no entra en el cálculo de ganancia.</div>':'');
 }
 
-// Guarda `valor` en CCL_TABLE o MEP_TABLE (según esBonoON) para `fecha`, solo si esa fecha
-// todavía no está en la tabla — nunca pisa un valor ya cargado. Persiste en localStorage +
-// Supabase (config), igual que el resto de los overrides de TC. La llaman addMov/
-// vbuyConfirmar/vsellConfirmar justo después de cargar el movimiento, para que la tabla
-// histórica se autocomplete con el CCL/MEP que el usuario ya vio/tipeó en cada operación —
-// antes solo addMov() lo hacía (y encima con el CCL_HOY de "hoy" en vez del valor real de la
-// fecha del movimiento), así que todo lo cargado desde el módulo rápido de Comprar/Vender
-// nunca completaba la tabla, y esas fechas quedaban con el ⚠ para siempre (reportado por Garo
-// 2026-09-18: ~30 fechas de jul-sep/2026, todas "Cargado/Vendido desde módulo rápido").
 function tcStampearFecha(fecha,esBonoON,valor){
   if(!fecha||!(valor>0)) return;
   var _fk=fmtKey(fecha);
@@ -3174,16 +2886,7 @@ function tcStampearFecha(fecha,esBonoON,valor){
   }catch(e){}
   _tcSbPersist();
 }
-// Backfill: recorre TODOS los movimientos ya cargados y completa los huecos de CCL_TABLE/
-// MEP_TABLE con lo que cada uno ya tiene guardado en m.ccl (promedio si un mismo día hay
-// varios movimientos con el mismo valor o valores parecidos — el dólar se mueve un poco
-// durante el día, es normal). No pisa ninguna fecha que ya esté en la tabla.
-// Si un día tiene valores MUY dispares entre sí (más de BACKFILL_DISPERSION_MAX de diferencia
-// entre el mínimo y el máximo — ej. 09/09/2026: TX31 cargado con 1487 vs el resto ~1525-1531,
-// un solo movimiento con el CCL/MEP mal tipeado) NO se promedia a ciegas: se deja esa fecha
-// sin completar y se reporta aparte, para que la carga a mano después de revisar cuál de los
-// valores está mal (caso real reportado por Garo 2026-09-18, MEP correcto de esa fecha: 1531).
-var BACKFILL_DISPERSION_MAX = 15; // diferencia absoluta máxima entre min y max de un mismo día
+var BACKFILL_DISPERSION_MAX = 15;
 function backfillTCDesdeMovimientos(){
   var grupos={ccl:{},mep:{}};
   movimientos.forEach(function(m){
@@ -3200,7 +2903,7 @@ function backfillTCDesdeMovimientos(){
   [['ccl',CCL_TABLE,'CCL'],['mep',MEP_TABLE,'MEP']].forEach(function(par){
     var grupo=grupos[par[0]],tabla=par[1],label=par[2];
     Object.keys(grupo).forEach(function(fk){
-      if(tabla[fk]) return; // ya está cargada, no tocar
+      if(tabla[fk]) return;
       var g=grupo[fk];
       if((g.max-g.min)>BACKFILL_DISPERSION_MAX){
         revisar.push(fk+' ('+label+': min '+g.min+' / max '+g.max+')');
@@ -3231,9 +2934,6 @@ function backfillTCDesdeMovimientosUI(){
 }
 
 // ─── ⚠️ Errores de carga en movimientos ───────────────────────────────────────
-// Revisa todos los movimientos y marca los sospechosos: sin cantidad o precio, fecha inválida o futura,
-// posibles duplicados, ventas de más de lo que se tenía y precios muy distintos a las otras operaciones
-// del mismo activo (±180 días). Solo avisa: no cambia nada.
 var _movSoloProb=false,_movProbCache=null,_movProbKey='';
 function _movUnitUSD(m){
   var bo=(m.mercado==='BONOS'||m.mercado==='ON'),mep=bo||m.mercado==='FCI',ars=(m.mercado==='ARGENTINA'||mep);
@@ -3252,14 +2952,11 @@ function movProblemas(){
     if(!(+m.qty>0))add(m,'cantidad en 0 o negativa');
     if(!((m.precioARS||0)>0)&&!((m.precioUSD||0)>0))add(m,'sin precio');
   });
-  // duplicados exactos
   var vis={};ops.forEach(function(m){var k=[m.fecha,m.tipo,m.ticker,m.qty,m.precioARS||m.precioUSD,m.cartera||'principal'].join('|');(vis[k]=vis[k]||[]).push(m);});
   Object.keys(vis).forEach(function(k){if(vis[k].length>1)vis[k].forEach(function(m){add(m,'posible duplicado ('+vis[k].length+' iguales: misma fecha, cantidad y precio)');});});
-  // ventas de más de lo que se tenía (orden cronológico, por cartera)
   var q={};ops.slice().sort(function(a,b){var x=_phIso(a.fecha)||'',y=_phIso(b.fecha)||'';return x<y?-1:x>y?1:(a.tipo==='compra'?-1:1);}).forEach(function(m){
     if(m.owner==='cristian')return;var k=(m.cartera||'principal')+'|'+m.ticker,n=+m.qty||0;
     if(m.tipo==='compra')q[k]=(q[k]||0)+n;else{var ten=q[k]||0;if(n>ten*1.0001+0.0001)add(m,'vende '+n+' y a esa fecha tenías '+Math.round(ten*10000)/10000);q[k]=ten-n;}});
-  // precio muy distinto a las otras operaciones del mismo activo (±180 días)
   var byT={};ops.forEach(function(m){var u=_movUnitUSD(m),i=_phIso(m.fecha);if(u>0&&i)(byT[m.ticker]=byT[m.ticker]||[]).push({m:m,u:u,t:Date.parse(i)});});
   Object.keys(byT).forEach(function(t){var L=byT[t];if(L.length<3)return;
     L.forEach(function(a){var o=L.filter(function(b){return b!==a&&Math.abs(b.t-a.t)<=180*86400000;}).map(function(b){return b.u;}).sort(function(x,y){return x-y;});if(o.length<2)return;
@@ -3297,7 +2994,6 @@ function renderMovimientos(){
   var wrap=document.getElementById('mov-wrap');
   var filterEl=document.getElementById('mov-filter');
   
-  // Guardar valores actuales de filtros y elemento con focus
   var currentFilterVal=(filterEl?(filterEl.value||'').trim().toUpperCase():'');
   var filterTipo=(document.getElementById('mov-filter-tipo')||{value:''}).value.toLowerCase();
   var filterMkt=(document.getElementById('mov-filter-mkt')||{value:''}).value.toUpperCase();
@@ -3320,14 +3016,12 @@ function renderMovimientos(){
   });
   if(filterFecha) lista=lista.filter(function(m){return (m.fecha||'').indexOf(filterFecha)>=0;});
   if(filterNotas) lista=lista.filter(function(m){return (m.notas||'').toLowerCase().indexOf(filterNotas)>=0;});
-  // Sin CCL en tabla: sólo mercados que NO usan MEP (bonos/ON/FCI usan MEP — ver filtro de abajo)
   if(filterNoCCL) lista=lista.filter(function(m){
     if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
     var usaMep=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
     if(usaMep)return false;
     return !getCCL(m.fecha);
   });
-  // Sin MEP en tabla: bonos/ON/FCI. Chequea el MEP puntual, aunque haya caído a CCL como aproximación
   if(filterNoMEP) lista=lista.filter(function(m){
     if(m.tipo!=='compra'&&m.tipo!=='venta')return false;
     var usaMep=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
@@ -3339,7 +3033,6 @@ function renderMovimientos(){
   if(_movSoloProb){var _pp=movProblemas();lista=lista.filter(function(m){return !!_pp[m.id];});}
   var anyFilter=_movSoloProb||filterVal||filterTipo||filterMkt||filterFecha||filterNotas||filterCartera||filterNoCCL||filterNoMEP;
   document.getElementById('mov-count').textContent=movimientos.length+(anyFilter?' ('+lista.length+' filtrados)':'');
-  // Mostrar/ocultar botón "Borrar ticker" solo cuando hay filtro exacto de ticker
   var btnPurgar=document.getElementById('btn-purgar-ticker');
   if(btnPurgar)btnPurgar.style.display=(filterVal&&!filterTipo&&!filterMkt&&!filterFecha&&!filterNotas)?'':'none';
   checkMovSinTC();
@@ -3356,7 +3049,6 @@ function renderMovimientos(){
           '<button class="btn btn-sm" style="color:var(--amber);border-color:#3e2c10" onclick="reduceMov('+sid+')">−</button>'+
         '</span>'
       : '';
-    // CCL/MEP efectivo: la tabla histórica tiene prioridad sobre el valor guardado
     var _mEsBonoON=(m.mercado==='BONOS'||m.mercado==='ON');
     var _mEsFci=(m.mercado==='FCI');
     var _mEsARS=(m.mercado==='ARGENTINA'||_mEsBonoON||_mEsFci);
@@ -3365,11 +3057,9 @@ function renderMovimientos(){
     var _mCclTabla=getCCL(m.fecha);
     var _mTcTabla=_mUsaMep?(_mMepTabla||_mCclTabla):_mCclTabla;
     var _mTcEfectivo=_mTcTabla||m.ccl||null;
-    // precioUSD: para mercados ARS recalcular desde precioARS/tc_tabla; para USD usar el guardado
     var _mPrecioUSD=(_mEsARS&&(m.precioARS||0)>0&&_mTcEfectivo>0)
       ?(m.precioARS/_mTcEfectivo)
       :(m.precioUSD||null);
-    // Alertas sobre la fuente del TC: bonos/ON/FCI sin MEP puntual (⚠MEP — puede haber caído a CCL como aproximación) vs resto sin CCL puntual (⚠ rojo)
     var _mSinMEP=_mUsaMep&&!_mMepTabla;
     var _mCCLstr;
     if(_mTcTabla){
@@ -3409,9 +3099,7 @@ function renderMovimientos(){
     '</tr>';
   }).join('');
 
-  // Restaurar valores de filtros y focus en el elemento que estaba enfocado
   requestAnimationFrame(function(){
-    // Restaurar valores de filtros (después de que el HTML fue regenerado)
     var filterElNew=document.getElementById('mov-filter');
     var filterTipoNew=document.getElementById('mov-filter-tipo');
     var filterMktNew=document.getElementById('mov-filter-mkt');
@@ -3424,15 +3112,11 @@ function renderMovimientos(){
     if(filterFechaNew&&filterFecha)filterFechaNew.value=filterFecha;
     if(filterNotasNew&&filterNotas)filterNotasNew.value=filterNotas;
     
-    // Restaurar focus en el elemento que estaba enfocado
     if(activeFocusId){
       var elToFocus=document.getElementById(activeFocusId);
       if(elToFocus)elToFocus.focus();
     }
     
-    // Scroll para que wrap quede visible SOLO al activar un filtro (no en cada re-render
-    // mientras el filtro sigue activo, porque eso te pisa el scroll manual — p.ej. al
-    // editar/borrar movimientos uno por uno dentro de una lista filtrada larga).
     if(anyFilter&&!_movWasFiltered){
       wrap.scrollTop=0;
       var content=document.querySelector('.content');
@@ -3449,11 +3133,8 @@ function renderMovimientos(){
 
 function getPositions(){
   var pos={};
-  var lots={}; // ticker -> lotes de compra abiertos [{qtyOpen,unitUSD,unitUSDpuro,unitARS,fecha,id}]
+  var lots={};
 
-  // Procesar en orden CRONOLÓGICO (no orden de carga) para que el consumo de lotes
-  // por venta respete qué compras existían efectivamente a esa fecha.
-  // Portafolios con varias carteras (Omar): sólo los movimientos de la cartera activa
   var ordenados = movimientos.filter(function(m){return m&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);}).sort(function(a,b){
     var fa=(a&&a.fecha||'').split('/'), fb=(b&&b.fecha||'').split('/');
     var da = fa.length===3? fa[2]+fa[1].padStart(2,'0')+fa[0].padStart(2,'0') : '0';
@@ -3464,26 +3145,23 @@ function getPositions(){
 
   ordenados.forEach(function(m){
     if(!m||m.tipo==='aporte')return;
-    if(m.owner==='cristian')return; // movimientos viejos marcados "Cristian" (función eliminada 2026-10-03) quedan fuera
+    if(m.owner==='cristian')return;
     var key=m.ticker;
     if(!pos[key])pos[key]={ticker:m.ticker,mercado:m.mercado,qty:0,costUSD:0,costARS:0,costUSDpuro:0,realizedPnl:0,dividendsUSD:0};
-    else if(m.mercado)pos[key].mercado=m.mercado; // actualizar con cada mov para que el último editado gane
+    else if(m.mercado)pos[key].mercado=m.mercado;
     var p=pos[key];
     if(!lots[key])lots[key]=[];
     var priceUSD=m.precioUSD||0;
     var comUSD=m.comision||0;
     if(m.tipo==='dividendo'){p.dividendsUSD+=priceUSD;}
     else if(m.tipo==='compra'){
-      // Bonos y ONs: dividir por MEP del día; resto: por CCL
-      // La tabla histórica (Tipo de cambio) tiene PRIORIDAD sobre el CCL guardado en el movimiento
-      // Fallback: CCL_HOY como último recurso para no tratar ARS como USD
       var _tc=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
         :(getCCL(m.fecha)||m.ccl||CCL_HOY);
       var usdPuro=isBonoUSDDirecto(m.ticker)?(m.precioARS||0)*m.qty:(_tc>0&&(m.precioARS||0)>0?(m.precioARS||0)*m.qty/_tc:priceUSD*m.qty);
-      p.costUSD+=usdPuro+comUSD;  // consistente con costUSDpuro: usa precioARS/tc_dia
+      p.costUSD+=usdPuro+comUSD;
       p.costARS+=(m.precioARS||0)*m.qty;
-      p.costUSDpuro+=usdPuro;  // USD real pagado: precioARS*qty/MEP o CCL según mercado
+      p.costUSDpuro+=usdPuro;
       p.qty+=m.qty;
       if(m.qty>0)lots[key].push({
         qtyOpen:m.qty,
@@ -3494,7 +3172,6 @@ function getPositions(){
       });
     }
     else if(m.tipo==='venta'){
-      // La tabla histórica tiene PRIORIDAD sobre el CCL guardado en el movimiento
       var _tcV=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
         ?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY)
         :(getCCL(m.fecha)||m.ccl||CCL_HOY);
@@ -3503,9 +3180,6 @@ function getPositions(){
       var qtyTotalOpen=openLots.reduce(function(s,l){return s+l.qtyOpen;},0);
 
       if(m.loteMethod==='barato'&&qtyTotalOpen>0.000001){
-        // Método nuevo (Laboratorio de Ventas validado): descontar primero del lote
-        // de MENOR costo en USD, no del promedio ponderado — deja el costo restante
-        // más alto (cartera más pesimista), tal como se probó en el laboratorio.
         var ordenLotes=openLots.slice().sort(function(a,b){return a.unitUSDpuro-b.unitUSDpuro;});
         var restante=Math.min(m.qty,qtyTotalOpen);
         var costBasisUSD=0,costBasisUSDpuro=0,costBasisARS=0;
@@ -3519,19 +3193,17 @@ function getPositions(){
           lot.qtyOpen-=take;
           restante-=take;
         }
-        var qtyVendidaEfectiva=m.qty-restante; // por si pide más de lo abierto en lotes
+        var qtyVendidaEfectiva=m.qty-restante;
         var proceedsPuro=ventaUSDpuro*qtyVendidaEfectiva-comUSD;
         p.realizedPnl+=proceedsPuro-costBasisUSDpuro;
         p.costUSD-=costBasisUSD;
         p.costARS-=costBasisARS;
         p.costUSDpuro-=costBasisUSDpuro;
         p.qty-=qtyVendidaEfectiva;
-        // Guardar ganancia realizada en el propio movimiento para estadísticas (x ticker, tipo, RF/RV)
         m.gananciaUSD=proceedsPuro-costBasisUSDpuro;
         m.costBasisUSD=costBasisUSDpuro;
         m.gananciaPct=costBasisUSDpuro>0?(m.gananciaUSD/costBasisUSDpuro*100):null;
       } else {
-        // Método legado (histórico, sin tocar): promedio ponderado de todas las compras
         var avg=p.qty>0?p.costUSD/p.qty:0;
         var avgARS=p.qty>0?p.costARS/p.qty:0;
         var avgUSDpuro=p.qty>0?p.costUSDpuro/p.qty:0;
@@ -3542,12 +3214,9 @@ function getPositions(){
         p.costARS-=avgARS*m.qty;
         p.costUSDpuro-=costBasisPuro;
         p.qty-=m.qty;
-        // Guardar ganancia realizada en el propio movimiento para estadísticas (x ticker, tipo, RF/RV)
         m.gananciaUSD=proceedsPuro-costBasisPuro;
         m.costBasisUSD=costBasisPuro;
         m.gananciaPct=costBasisPuro>0?(m.gananciaUSD/costBasisPuro*100):null;
-        // Reducir todos los lotes abiertos proporcionalmente para no romper el
-        // tracking de lotes futuros (mantiene el promedio ponderado intacto).
         if(qtyTotalOpen>0.000001){
           var frac=m.qty/qtyTotalOpen;
           openLots.forEach(function(l){ l.qtyOpen-=l.qtyOpen*frac; });
@@ -3556,13 +3225,8 @@ function getPositions(){
     }
   });
 
-  // Dividendos del Tracker (TRK.divs) confirmados para afectar PPC o ganancia de venta
-  // (ver trkAddDiv). Se recalcula siempre en vivo desde TRK.divs, así que borrar un
-  // dividendo del tracker revierte el efecto automáticamente. No se aplica al desglose
-  // 'cristian' porque el dividendo del tracker no tiene owner asociado.
   if(typeof TRK!=='undefined'&&TRK.divs&&TRK.divs.length){
     TRK.divs.forEach(function(d){
-      // montoPPC (si existe) = parte del dividendo que corresponde a nominales que todavía tenés (histórico Veta, v41)
       var _mPPC=(d.montoPPC!=null)?d.montoPPC:d.montoUSD;
       if(!d.pncApplied||!_mPPC)return;
       var p=pos[d.ticker];
@@ -3576,11 +3240,6 @@ function getPositions(){
 }
 
 // ─── Perf: getPositions() se calcula UNA vez por render de Portafolio ───
-// renderPortfolio() y las cards que dispara (inversiones chicas, perfil, próximos cobros, etc.)
-// pedían las posiciones por separado → el historial completo se recorría 4-5 veces por render
-// (y durante la actualización de precios hay un render por frame). Mientras dura un render se
-// reutiliza el resultado (clave: owner + cartera activa + cantidad de movimientos); fuera de un
-// render, getPositions() se comporta exactamente igual que antes (sin caché).
 var _GP_ON=0,_GP_CACHE={};
 var _getPositionsRaw=getPositions;
 getPositions=function(){
@@ -3599,13 +3258,9 @@ renderPortfolio=function(){
 function renderPortfolio(){
   var all=getPositions();
   var open=all.filter(function(p){return p.qty>0.000001;}).sort(function(a,b){return a.ticker.localeCompare(b.ticker);});
-  // Próximos Cobros: calendario de flujos de bonos/ON (no depende de cotizaciones).
   var _calCobros=calcularCalendarioCobros();
   var _flujoProx30Map=_flujosMapaProx30(_calCobros);
   renderFlujosMiniResumen(_calCobros);
-  // Badge "D": solo acciones/CEDEARs (los bonos/ON ya tienen F con el flujo exacto, no hace
-  // falta duplicar), y solo cuando el historial estima que el próximo dividendo cae dentro de
-  // 30 días — ver calcularDivHistUpcoming30 (mira dividendos + TRK.divs confirmados).
   var _divHistorySet=calcularDivHistUpcoming30();
   var empty=document.getElementById('pos-empty');
   var totalVal=0,totalCost=0;
@@ -3613,33 +3268,23 @@ function renderPortfolio(){
   var totalDivs=dividendos.reduce(function(a,d){return a+(d.usd||0);},0);
   if(!open.length){
     empty.style.display='';
-    document.getElementById('panels-grid').style.display='none';
-    ['panel-nyse','panel-bonos','panel-argentina','panel-brasil','panel-europa','panel-on','panel-china','panel-cripto','panel-fci'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
     ['m-val','m-ganancia','m-divs','m-count'].forEach(function(id){document.getElementById(id).textContent='—';});document.getElementById('m-rend').innerHTML='—';
-    renderDivsCard();
+    
     return;
   }
   empty.style.display='none';
-  document.getElementById('panels-grid').style.display='';
-  var sectors={nyse:[],bonos:[],argentina:[],brasil:[],europa:[],on:[],china:[],cripto:[],fci:[]};
   var sectorCost={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0,fci:0};
   var sectorVal={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0,fci:0};
-  // Tickers marcados "a finish" en algún movimiento
   var finishTickers=new Set(movimientos.filter(function(m){return m.finish;}).map(function(m){return m.ticker;}));
-  // Pasada 1: acumular totales globales y por sector
   open.forEach(function(p){
     var q=quotes[p.ticker];var price=q?q.price:null;
     var ratio=getRatio(p.ticker);var sector=getSector(p.ticker);
-    // Para Argentina: price ya viene en ARS. Para NYSE: price en USD → convertir
-    // Para Bonos/ON: price es por 100 nominales → qty se divide por 100 para el total
     var _sectorIsARS=(getSector(p.ticker)==='argentina'||getSector(p.ticker)==='bonos'||getSector(p.ticker)==='on');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var _isBRL=BRL_TICKERS.has(p.ticker);
     var fromByma=q&&q.fromByma;
     var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=isBonoUSDDirecto(p.ticker)?p.costUSDpuro*100:(mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS);
-    // Acciones y Cedears se pasan a USD al MEP (si vendo en pesos, recompro dólares al MEP; así lo muestra el broker).
-    // CFG.valuarMEP:false vuelve a valuar al CCL.
     var _tcVal=(CFG.valuarMEP!==false&&MEP_HOY>0)?MEP_HOY:CCL_HOY;
     var valueUSD=price!=null?(sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/_tcVal)*p.qty):_isBRL?(price/_tcVal)*p.qty:fromByma?(price/_tcVal)*p.qty:(price/ratio)*p.qty*(CCL_HOY/_tcVal)):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
@@ -3649,7 +3294,6 @@ function renderPortfolio(){
     p._invARS=inversionCedearARS;
   });
 
-  // Totales de Valor Mercado ARS por sector (para concentración)
   var sectorTotalMktARS={nyse:0,bonos:0,argentina:0,brasil:0,europa:0,on:0,china:0,cripto:0,fci:0};
   open.forEach(function(p){
     var sec=getSector(p.ticker);
@@ -3658,7 +3302,6 @@ function renderPortfolio(){
 
   // ── Auto-cálculo RV (NYSE + Argentina + Brasil + Europa + China + Cripto) ──
   var rvSectors=['nyse','argentina','brasil','europa','china','cripto'];
-  // Total RV y RF a valor de mercado (ARS) — base de los colores 2%/3% y de la columna % Tipo
   var rvMktARS=rvSectors.reduce(function(s,sec){return s+(sectorTotalMktARS[sec]||0);},0);
   var rfMktARS=(sectorTotalMktARS.bonos||0)+(sectorTotalMktARS.on||0);
   var cclHoyRV=CCL_HOY>0?CCL_HOY:1;
@@ -3672,64 +3315,8 @@ function renderPortfolio(){
   if(elRV2) elRV2.textContent='$'+rv2pctARS.toLocaleString('es-AR');
   if(elRV3) elRV3.textContent='$'+rv3pctARS.toLocaleString('es-AR');
 
-  // Función color % — <0 rojo, 0-10 naranja, >10 verde
-  function pctColor(pct){
-    if(pct===null||isNaN(pct)) return 'var(--text3)';
-    if(pct<0) return 'var(--red)';
-    if(pct<10) return '#eab308';
-    return 'var(--accent)';
-  }
-  function pctCell(pct,sign){
-    if(pct===null||isNaN(pct)) return '<span style="color:var(--text3)">—</span>';
-    var s=sign&&pct>0?'+':'';
-    return '<span style="color:'+pctColor(pct)+'">'+s+Math.round(pct)+'%</span>';
-  }
-  function deltaCellFn(pct){
-    if(pct===null||isNaN(pct)) return '<span style="color:var(--text3);font-size:.75rem">—</span>';
-    var col=pctColor(pct);
-    var s=pct>0?'+':'';
-    var val=Math.round(pct)+'%';
-    // Badge con fondo semitransparente y fuente más grande
-    var bg=pct<0?'rgba(248,113,113,.13)':pct<10?'rgba(249,115,22,.13)':'rgba(126,232,162,.13)';
-    return '<span style="display:inline-block;color:'+col+';background:'+bg+';border:1px solid '+col+';border-radius:5px;padding:2px 7px;font-size:.82rem;font-weight:700;letter-spacing:-.01em;font-family:var(--mono)">'+s+val+'</span>';
-  }
-  // Recuadro combinado Δ% / ΔUP — fondo y borde según Δ%, texto interno con color propio
-  function deltaUpCellFn(pnlPct, upside){
-    var hasPnl=pnlPct!==null&&!isNaN(pnlPct);
-    var hasUp=upside!==null&&!isNaN(upside);
-    if(!hasPnl&&!hasUp) return '<span style="color:var(--text3);font-size:.75rem">—</span>';
-    // Color del recuadro basado en Δ% (si existe), si no en ΔUP
-    var baseRef=hasPnl?pnlPct:upside;
-    var baseCol=pctColor(baseRef);
-    var baseBg=baseRef<0?'rgba(248,113,113,.13)':baseRef<10?'rgba(249,115,22,.13)':'rgba(126,232,162,.13)';
-    var pnlInner=hasPnl
-      ?'<span style="color:'+pctColor(pnlPct)+';font-size:.82rem;font-weight:700">'+(pnlPct>0?'+':'')+Math.round(pnlPct)+'%</span>'
-      :'<span style="color:var(--text3);font-size:.82rem">—</span>';
-    var upInner=hasUp
-      ?'<span style="color:'+pctColor(upside)+';font-size:.7rem;font-weight:700">'+(upside>0?'+':'')+Math.round(upside)+'%</span>'
-      :'<span style="color:var(--text3);font-size:.7rem">—</span>';
-    return '<span style="display:inline-block;background:'+baseBg+';border:1px solid '+baseCol+';border-radius:5px;padding:2px 7px;font-family:var(--mono);letter-spacing:-.01em">'
-      +pnlInner
-      +'<span style="color:var(--text3);font-size:.65rem;margin:0 3px">/</span>'
-      +upInner
-      +'</span>';
-  }
-
-  // Filtro por ticker y color Δ% (inputs en header)
-  var _portTkFilterEl=document.getElementById('port-ticker-filter');
-  var _portTkFilter=_portTkFilterEl?_portTkFilterEl.value.trim().toUpperCase():'';
-  var _fGreen=document.getElementById('port-filter-green');
-  var _fYellow=document.getElementById('port-filter-yellow');
-  var _fRed=document.getElementById('port-filter-red');
-  var _colorFilterOn=(_fGreen&&_fGreen.checked)||(_fYellow&&_fYellow.checked)||(_fRed&&_fRed.checked);
-  var _fRVRed=document.getElementById('port-filter-rv-red');
-  var _fRVYellow=document.getElementById('port-filter-rv-yellow');
-  var _fRVWhite=document.getElementById('port-filter-rv-white');
-  var _rvFilterOn=(_fRVRed&&_fRVRed.checked)||(_fRVYellow&&_fRVYellow.checked)||(_fRVWhite&&_fRVWhite.checked);
-
-  var _panelTot={};var _pvAlerts=[];var _rbPlan=[];
+  var _pvAlerts=[];var _rbPlan=[];
   var _paFlows={};try{_paFlows=paBuildFlows();}catch(_e){console.warn('paBuildFlows',_e);}
-  // Pasada 2: construir filas
   NV_ROWS=[];
   open.forEach(function(p){
     var q=quotes[p.ticker];var price=q?q.price:null;
@@ -3737,14 +3324,10 @@ function renderPortfolio(){
     var _isARS2=(sector==='argentina'||sector==='bonos'||sector==='on'||sector==='fci');
     var _isBonoON=(sector==='bonos'||sector==='on');
     var ppcUSD=p.qty>0?p.costUSDpuro/p.qty:0;
-    // Para bonos/ONs: auto-detectar bono dólar vs bono peso comparando PPC vs precio de mercado
-    // Bono dólar (BC37D, GD29…): costARS guardado a CCL histórico muy bajo → PPC/mercado << 0.15
-    // Bono peso (CUAP, DICP, TX31…): PPC/mercado ≈ 0.4-1.0 (precio en ARS real)
     var ppcFromARS=p.qty>0?p.costARS/p.qty*100:0;
-    // Bonos/ON/FCI: convertir USD→ARS con MEP_HOY. Resto: CCL_HOY
     var _tcHoy=(_isBonoON||sector==='fci')?(MEP_HOY||CCL_HOY):CCL_HOY;
     var ppcFromUSD=ppcUSD*_tcHoy*100;
-    var mkt=p._mktARS||0;  // usar _mktARS de Pasada 1 (mercadoCedearARS aún no está declarada)
+    var mkt=p._mktARS||0;
     var ppcCedearARS=isBonoUSDDirecto(p.ticker)
       ?ppcUSD*100
       :(_isBonoON
@@ -3755,8 +3338,6 @@ function renderPortfolio(){
     var pnlPct=mercadoCedearARS!=null&&ppcCedearARS>0?(mercadoCedearARS-ppcCedearARS)/ppcCedearARS*100:null;p._pnlPct=pnlPct;
     var targetUSD=getTarget(p.ticker);
     var targetARS=targetUSD!=null?(targetUSD/ratio)*_tcHoy:null;
-    // ΔUP: (P.Venta USD - Precio mercado USD) / Precio mercado USD
-    // bonos/ON: ARS→USD via MEP; argentina: ARS→USD via CCL; NYSE: ya está en USD
     var _rawPrice=q?q.price:null;
     var _isArgentina=(sector==='argentina');
     var fromByma=q&&q.fromByma;
@@ -3770,39 +3351,14 @@ function renderPortfolio(){
     ):null;
     var upside=targetUSD!=null&&priceUSD!=null&&priceUSD>0?(targetUSD-priceUSD)/priceUSD*100:null;
     var _pvHit=upside!=null&&upside<=0;if(_pvHit)_pvAlerts.push(p.ticker);
-    p._pv=targetUSD;p._upside=upside; // para el resumen (buscador de Carteras administradas)
+    p._pv=targetUSD;p._upside=upside;
 
-    // Recuadro combinado Δ% / ΔUP (mismo badge, colores internos independientes)
-    var deltaCell=deltaUpCellFn(pnlPct,upside);
-
-    // P. Venta
-    var targetCell=targetARS!=null?'$'+Math.round(targetARS).toLocaleString('es-AR'):'<span style="color:var(--text3)">—</span>';
-
-    // Inversión $ con color por concentración en el sector
-    var sectorTotal=sectorTotalMktARS[sector]||0;
-    // Comparación directa: inversionCedearARS vs umbrales en ARS auto-calculados
     var invColor=(rv3pctARS>0&&inversionCedearARS>rv3pctARS)?'var(--red)':
                  (rv2pctARS>0&&inversionCedearARS>rv2pctARS)?'#eab308':'var(--text)';
-    var invARS='<span class="port-sensitive" style="color:'+invColor+'">$'+Math.round(inversionCedearARS).toLocaleString('es-AR')+'</span>';
-
-    var mktARS=mercadoCedearARS!=null?'$'+Math.round(mercadoCedearARS).toLocaleString('es-AR'):null;
-    var ppcARS='$'+Math.round(ppcCedearARS).toLocaleString('es-AR');
     var _qHealth=quoteHealthDot(q);
 
-    var finishFlag=finishTickers.has(p.ticker)?'<span title="A finish" style="font-size:.7rem;margin-left:4px">🏁</span>':'';
     var _flujoEv=_flujoProx30Map[p.ticker];
     var _flujoTitle=_flujoEv?('Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' — '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total)):'';
-    var flujoFlag=_flujoEv?'<span class="qhelp" style="color:var(--accent);font-size:.62rem;font-weight:800;margin-left:3px">F<span class="qhelp-tip">'+_flujoTitle.replace(/</g,'&lt;')+'</span></span>':'';
-    var divHistFlag=_divHistorySet.has(p.ticker)?'<span class="qhelp" style="color:var(--blue);font-size:.62rem;font-weight:800;margin-left:3px">D<span class="qhelp-tip">Por tu historial, estimamos un dividendo dentro de 30 días</span></span>':'';
-    var _mark=MARKS[p.ticker];
-    var _markClass=_mark?' marked-'+_mark.type:'';
-    var _markIcon=_mark?(_mark.type==='sell'?'🔴':_mark.type==='buy'?'🟢':'⭐'):'🏷';
-    var _markBtnCls='mark-btn'+(_mark?' active':'');
-    var _markNote=_mark&&_mark.note?'<span class="mark-note-tag" title="'+_mark.note.replace(/"/g,'&quot;')+'">'+_mark.note.replace(/</g,'&lt;')+'</span>':'';
-
-    // RSI (14) para todo menos Bonos/ONs. Para Bonos/ON con flujo cargado en FLUJOS_BONOS: TIR real
-    // (XIRR exacto contra el cronograma, ver calcularTIRReal). Si no hay flujo cargado todavía,
-    // fallback a TIR de EcoValores (solo Bonos, cobertura parcial). Sin ninguna de las dos: '—'.
     var rsiCell;
     if(_isBonoON){
       var _tirReal=(typeof FLUJOS_BONOS!=='undefined'&&flujoDe(p.ticker))?calcularTIRReal(p.ticker):null;
@@ -3822,113 +3378,33 @@ function renderPortfolio(){
         :'<span style="color:var(--text3)">—</span>';
     }
 
-    // % Tipo: peso a valor de mercado sobre el total de renta variable o renta fija (FCI sin columna)
-    var ptipoCell='';
     if(sector!=='fci'){
       var _ptDen=(sector==='bonos'||sector==='on')?rfMktARS:(rvSectors.indexOf(sector)!==-1?rvMktARS:0);
       var _ptPct=_ptDen>0&&inversionCedearARS!=null?inversionCedearARS/_ptDen*100:null;
-      var _ptCol=_ptPct==null?'var(--text)':_ptPct>3?'var(--red)':_ptPct>2?'#eab308':'var(--text)';
-      ptipoCell='<td class="mono col-ptipo">'+(_ptPct!=null?'<span style="color:'+_ptCol+'">'+_ptPct.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%</span>':'<span style="color:var(--text3)">—</span>')+'</td>';
     }
-    // Rebalanceo: vender hasta el 2% del tipo si supera el 2%; comprar hasta el umbral de inversiones chicas (solo RV)
-    var rebalCell='';
     if(sector!=='fci'){
-      var _rbTxt='<span style="color:var(--text3)">—</span>',_rbTip='';
       var _isBonoU=(sector==='bonos'||sector==='on');
       var _unitARS=mercadoCedearARS!=null&&mercadoCedearARS>0&&!isBonoUSDDirecto(p.ticker)?(_isBonoU?mercadoCedearARS/100:mercadoCedearARS):null;
       var _uLbl=_isBonoU?' VN':' u.';
-      var _fmtU=function(ars){if(!_unitARS)return '';var u=Math.round(ars/_unitARS);return u>0?' <span style="font-size:.64rem;color:var(--text3)">· '+u.toLocaleString('es-AR')+_uLbl+'</span>':'';};
-      var _ptLbl=_isBonoU?'la RF':'la RV';
       if(_ptPct!=null&&_ptPct>2&&_ptDen>0){
-        var _objARS=_ptDen*0.02,_sellARS=inversionCedearARS-_objARS;
+        var _sellARS=inversionCedearARS-_ptDen*0.02;
         _rbPlan.push({tk:p.ticker,acc:'vender',ars:_sellARS,u:_unitARS?Math.round(_sellARS/_unitARS):null,uL:_uLbl,tipo:_isBonoU?'RF':'RV',pct:_ptPct});
-        _rbTxt='<span style="color:'+_ptCol+'">vender <span class="port-sensitive">$'+Math.round(_sellARS).toLocaleString('es-AR')+'</span>'+_fmtU(_sellARS)+'</span>';
-        _rbTip=p.ticker+' · '+_ptPct.toFixed(1)+'% de '+_ptLbl+' (total $'+Math.round(_ptDen).toLocaleString('es-AR')+')\nObjetivo 2% → $'+Math.round(_objARS).toLocaleString('es-AR')+'\nVender $'+Math.round(_sellARS).toLocaleString('es-AR')+(_unitARS?' ≈ '+Math.round(_sellARS/_unitARS).toLocaleString('es-AR')+_uLbl+' a $'+Math.round(_isBonoU?_unitARS*100:_unitARS).toLocaleString('es-AR')+(_isBonoU?' c/100 VN':''):'');
       } else if(!_isBonoU&&_ptPct!=null&&_ptDen>0&&typeof SI_THRESHOLD!=='undefined'&&SI_THRESHOLD>0&&_ptPct<SI_THRESHOLD){
-        var _thrARS=_ptDen*SI_THRESHOLD/100,_buyARS=_thrARS-inversionCedearARS;
-        if(_buyARS>0){
-          _rbPlan.push({tk:p.ticker,acc:'comprar',ars:_buyARS,u:_unitARS?Math.round(_buyARS/_unitARS):null,uL:_uLbl,tipo:'RV',pct:_ptPct});
-          _rbTxt='<span style="color:var(--accent)">comprar <span class="port-sensitive">$'+Math.round(_buyARS).toLocaleString('es-AR')+'</span>'+_fmtU(_buyARS)+'</span>';
-          _rbTip=p.ticker+' · '+_ptPct.toFixed(2)+'% de la RV, debajo del umbral de inversiones chicas ('+SI_THRESHOLD+'%)\nUmbral → $'+Math.round(_thrARS).toLocaleString('es-AR')+'\nComprar $'+Math.round(_buyARS).toLocaleString('es-AR')+(_unitARS?' ≈ '+Math.round(_buyARS/_unitARS).toLocaleString('es-AR')+_uLbl+' a $'+Math.round(_unitARS).toLocaleString('es-AR'):'');
-        }
+        var _buyARS=_ptDen*SI_THRESHOLD/100-inversionCedearARS;
+        if(_buyARS>0)_rbPlan.push({tk:p.ticker,acc:'comprar',ars:_buyARS,u:_unitARS?Math.round(_buyARS/_unitARS):null,uL:_uLbl,tipo:'RV',pct:_ptPct});
       }
-      rebalCell='<td class="mono col-rebal"'+(_rbTip?' title="'+_rbTip.replace(/"/g,'&quot;')+'"':'')+'>'+_rbTxt+'</td>';
     }
-    // % Anual (XIRR USD)
     var _paRes=null;try{var _paF=_paFlows[p.ticker];_paRes=_paF?paCalc(_paF.flows,p._valueUSD):null;if(_paRes){_paRes.titulo=p.ticker;PA_LAST[p.ticker]=_paRes;}}catch(_e){}
-    var panualCell='<td class="mono col-panual" style="line-height:1.15">'+paCellHTML(p.ticker,_paRes,_paFlows[p.ticker]?_paFlows[p.ticker].compras:null)+'</td>';
-    var row='<tr class="'+_markClass+'">' +
-      '<td style="font-weight:700">'+
-        '<button class="'+_markBtnCls+'" data-ticker="'+p.ticker.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar activo">'+_markIcon+'</button>'+
-        p.ticker+((sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker)))?'<button class="ph-btn" data-tk="'+p.ticker.replace(/"/g,'&quot;')+'" data-ppc="'+(ppcUSD||0)+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;font-size:.72rem;opacity:.75">📈</button>':'')+(_pvHit?'<span class="qhelp" style="font-size:.68rem;margin-left:3px">🎯<span class="qhelp-tip">Alcanzó su P. Venta</span></span>':'')+finishFlag+flujoFlag+divHistFlag+_markNote+
-      '</td>'+
-      '<td style="text-align:center;padding:.38rem .5rem">'+deltaCell+'</td>'+
-      panualCell+
-      '<td class="mono">'+invARS+'</td>'+
-      '<td class="mono">'+(mktARS?mktARS+_qHealth:'<span style="color:var(--text3)">—</span>')+'</td>'+
-      '<td class="mono muted">'+ppcARS+'</td>'+
-      '<td class="mono col-pventa">'+targetCell+'</td>'+
-      ptipoCell+
-      rebalCell+
-      (CFG.rsi?'<td class="mono col-rsi">'+rsiCell+'</td>':'')+
-      '<td class="mono port-sensitive col-qty">'+(p.qty%1===0?p.qty.toFixed(0):p.qty.toFixed(2))+'</td>'+
-    '</tr>';
     if(CFG.vistaNueva){try{var _nvRv=['nyse','argentina','brasil','europa','china','cripto'].indexOf(sector)>=0,_nvDen=_nvRv?rvMktARS:rfMktARS,_nvRsi=null;
       if(!_isBonoON&&typeof _rsiEntry!=='undefined'&&_rsiEntry&&_rsiEntry.value!=null)_nvRsi=+_rsiEntry.value;
       NV_ROWS.push({t:p.ticker,s:sector,rv:_nvRv,usdD:isBonoUSDDirecto(p.ticker),d:pnlPct,up:upside,inv:inversionCedearARS||0,invCol:invColor,pt:_nvDen>0?(inversionCedearARS||0)/_nvDen*100:0,
         px:mercadoCedearARS,ppc:ppcCedearARS,pv:targetARS,q:p.qty,rsi:_nvRsi,rsiH:rsiCell,usd:p._valueUSD||0,ch:(q&&q.changePct!=null&&isFinite(q.changePct))?q.changePct:null,pvU:targetUSD,tc:_tcHoy,fl:_flujoTitle||'',dh:_divHistorySet.has(p.ticker),fin:finishTickers.has(p.ticker),qh:_qHealth||'',ph:(sector!=='fci'&&!(typeof BRL_TICKERS!=='undefined'&&BRL_TICKERS.has(p.ticker))),ppcU:ppcUSD||0});}catch(_e){}}
-    // Los activos sin cotización (pnlPct===null) siempre pasan el filtro de color: no se
-    // pueden clasificar en verde/amarillo/rojo, y ocultarlos los hacía desaparecer de la
-    // tabla en vez de mostrarse con el precio vacío.
-    var _passColor=!!_portTkFilter||!_colorFilterOn||pnlPct===null||((_fGreen&&_fGreen.checked)&&pnlPct>=10)||((_fYellow&&_fYellow.checked)&&pnlPct>=0&&pnlPct<10)||((_fRed&&_fRed.checked)&&pnlPct<0);
-    var _passRV=!_rvFilterOn||((_fRVRed&&_fRVRed.checked)&&invColor==='var(--red)')||((_fRVYellow&&_fRVYellow.checked)&&invColor==='#eab308')||((_fRVWhite&&_fRVWhite.checked)&&invColor==='var(--text)');
-    if((!_portTkFilter||p.ticker.toUpperCase().indexOf(_portTkFilter)!==-1)&&_passColor&&_passRV&&(typeof tipoVistaPasa!=='function'||tipoVistaPasa(sector))){ sectors[sector].push(row);
-      // Acumular totales del recuadro (filas visibles)
-      var _tt=_panelTot[sector]||(_panelTot[sector]={inv:0,cost:0,costInv:0,pt:0,ptOk:false,paFlows:[],paVal:0});
-      _tt.inv+=inversionCedearARS||0;
-      if(pnlPct!=null&&inversionCedearARS>0){_tt.costInv+=inversionCedearARS;_tt.cost+=inversionCedearARS/(1+pnlPct/100);}
-      if(_paFlows[p.ticker]&&p._valueUSD>0){_tt.paFlows=_tt.paFlows.concat(_paFlows[p.ticker].flows);_tt.paVal+=p._valueUSD;}
-      if(typeof _ptPct!=='undefined'&&_ptPct!=null&&sector!=='fci'){_tt.pt+=_ptPct;_tt.ptOk=true;}
-    }
   });
-  var panelDefs=[{id:'nyse',key:'nyse'},{id:'bonos',key:'bonos'},{id:'argentina',key:'argentina'},{id:'brasil',key:'brasil'},{id:'europa',key:'europa'},{id:'on',key:'on'},{id:'china',key:'china'},{id:'cripto',key:'cripto'},{id:'fci',key:'fci'}];
-  panelDefs.forEach(function(def){
-    var rows=sectors[def.key];var panel=document.getElementById('panel-'+def.id);var body=document.getElementById('body-'+def.id);var meta=document.getElementById('panel-'+def.id+'-meta');
-    if(!panel||!body){return;}
-    if(!rows||!rows.length){panel.style.display='none';return;}
-    panel.style.display='';body.innerHTML=rows.join('');
-    try{
-      var _tb=body.parentNode,_tf=_tb.tFoot||_tb.createTFoot(),_t=_panelTot[def.key];
-      if(_t&&rows.length>1){
-        var _dPct=_t.cost>0?(_t.costInv/_t.cost-1)*100:null;
-        var _isRF=(def.key==='bonos'||def.key==='on');
-        var _wTxt=(_t.ptOk&&def.key!=='fci')?'<div style="font-size:.6rem;color:var(--text2);font-weight:500">'+_t.pt.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'% de '+(_isRF?'la RF':'la RV')+'</div>':'';
-        _tf.innerHTML='<tr><td>TOTAL'+_wTxt+'</td>'+
-          '<td style="text-align:center;padding:.38rem .5rem">'+deltaUpCellFn(_dPct,null)+'</td>'+
-          (function(){var _r=null;try{if(_t.paFlows.length){_r=paCalc(_t.paFlows.slice().sort(function(a,b){return a.d-b.d;}),_t.paVal);if(_r){_r.titulo='Total '+def.id.toUpperCase();PA_LAST['__tot_'+def.key]=_r;}}}catch(_e){}return '<td class="mono col-panual" style="line-height:1.15">'+paCellHTML('__tot_'+def.key,_r,null,'recuadro')+'</td>';})()+
-          '<td class="mono"><span class="port-sensitive">$'+Math.round(_t.inv).toLocaleString('es-AR')+'</span></td>'+
-          '<td class="mono"><span style="color:var(--text3)">—</span></td>'+
-          '<td class="mono muted"><span class="port-sensitive" title="Costo total de las posiciones con cotización">$'+Math.round(_t.cost).toLocaleString('es-AR')+'</span></td>'+
-          (def.key==='fci'?'<td></td><td></td><td></td>':
-          '<td class="col-pventa"></td>'+
-          '<td class="mono col-ptipo">'+(_t.ptOk?_t.pt.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%':'')+'</td>'+
-          '<td class="col-rebal"></td>'+(CFG.rsi?'<td class="col-rsi"></td>':'')+'<td></td>')+
-        '</tr>';
-      } else { _tf.innerHTML=''; }
-    }catch(_e){console.warn('panel totales',_e);}panelSortApply(body);
-    var val=sectorVal[def.key];
-    var _tc=(def.key==='bonos'||def.key==='on'||def.key==='fci')?MEP_HOY:CCL_HOY;
-    var valARS=val>0&&_tc>0?Math.round(val*_tc):null;
-    meta.innerHTML=rows.length+' posiciones'+(valARS?' · <span class="port-sensitive">$'+valARS.toLocaleString('es-AR')+'</span>':'');
-  });
-  // Liquidez del sidebar
   var liqARS=getRawNum('liq-ars');
   var liqUSD=getRawNum('liq-usd');
-  // Liquidez en pesos → USD al MEP (como bonos y ON), no al CCL
   var _tcLiq=(typeof MEP_HOY!=='undefined'&&MEP_HOY>0)?MEP_HOY:CCL_HOY;
   var liqTotalUSD=liqUSD+(_tcLiq>0?liqARS/_tcLiq:0);
   var valConLiq=totalVal+liqTotalUSD;
-  // Distribución de la cartera (card arriba de las tablas)
   try{distRender({rv:['nyse','argentina','brasil','europa','china','cripto'].reduce(function(s,k){return s+(sectorVal[k]||0);},0),rf:(sectorVal.bonos||0)+(sectorVal.on||0),fci:sectorVal.fci||0,hasFci:('fci' in sectorVal),liq:liqTotalUSD,plan:_rbPlan});}catch(_e){console.warn('distRender',_e);}
   try{pvAlertRender(_pvAlerts);}catch(_e){}
   try{negAlertRender(all.filter(function(p){return p.qty<-0.000001;}).map(function(p){return p.ticker+' ('+(Math.round(p.qty*100)/100).toLocaleString('es-AR')+')';}));}catch(_e){}
@@ -3936,17 +3412,9 @@ function renderPortfolio(){
   document.getElementById('m-val').textContent='$'+Math.round(valConLiq).toLocaleString('es-AR');
   document.getElementById('m-count').textContent=open.length;
 
-  // Mini pie distribución — liquidez ARS convertida con MEP
-  var _liqMEP=liqUSD+((MEP_HOY||CCL_HOY)>0?liqARS/(MEP_HOY||CCL_HOY):0);
-  var _fija=(sectorVal.bonos||0)+(sectorVal.on||0)+(sectorVal.fci||0);
-  var _variable=totalVal-_fija;
-  renderMiniPie(_fija,_variable>0?_variable:0,_liqMEP>0?_liqMEP:0);
-  // Sector pie desglose
   renderSectorPie(sectorVal);
-  // RV pie por país
   renderRVPie(sectorVal);
 
-  // Dividendos: leer el total del tracker + movimientos (calculado en renderDivsCard)
   var trkDivsTotal=0;
   try{var td=TRK.divs||[];try{var _lsTrkP=localStorage.getItem(TRK.DKEY);if(_lsTrkP){var _lsTrkPD=JSON.parse(_lsTrkP);if(_lsTrkPD.length>td.length)td=_lsTrkPD;}}catch(_e){}
   if(true){td.forEach(function(d){if(d.estado==='pendiente')return;trkDivsTotal+=divUSD(d)||0;});}}catch(e){}
@@ -3955,13 +3423,10 @@ function renderPortfolio(){
   var allDivs=trkDivsTotal+movDivsTotal+regDivsTotal;
   document.getElementById('m-divs').textContent=allDivs>0?'$'+Math.round(allDivs).toLocaleString('es-AR'):'—';
 
-  // Rendimiento = (ValTotal - CostoTotal) / CostoTotal * 100
-  // Rendimiento: usa inversión inicial si está cargada, si no usa costUSD
   var invInicialEl=document.getElementById('inv-sidebar-usd');
   var invInicial=getRawNum('inv-sidebar-usd');
   var baseRend=invInicial>0?invInicial:totalCost;
   var rendPct=baseRend>0?(valConLiq-baseRend)/baseRend*100:null;
-  // CFG.aportes: ganancia sin aportes/retiros y rendimiento ponderado por días (Dietz modificado)
   var _apc=(CFG.aportes&&typeof aporCalc==='function')?aporCalc(valConLiq,invInicial):null;
   if(CFG.aportes){_aporUlt=_apc?Object.assign({inv:invInicial},_apc):null;try{aporSumRender();}catch(e){}}
   if(_apc&&_apc.rend!=null)rendPct=_apc.rend;
@@ -3975,7 +3440,6 @@ function renderPortfolio(){
     rendEl.innerHTML='<span style="color:'+rendColor+';font-weight:700">'+rendSign+Math.round(rendPct)+'%</span>';
   } else { rendEl.textContent='—'; }
 
-  // % Dolarizado
   var dolzAutoSectors=['nyse','brasil','europa','cripto'];
   var dolzInv=dolzAutoSectors.reduce(function(s,sec){return s+(sectorTotalMktARS[sec]||0);},0);
   var allInv=Object.keys(sectorTotalMktARS).reduce(function(s,sec){return s+(sectorTotalMktARS[sec]||0);},0);
@@ -3992,7 +3456,6 @@ function renderPortfolio(){
     } else { dolzEl.textContent='—'; }
   }
   dolzBuildList(open);
-  // Resumen para la vista familiar (Familia/): se guarda en el Supabase de este portafolio
   try{famQueueSnapshot({
     sectorVal:sectorVal, dolzPct:dolzPct, liqUSD:liqUSD, liqARS:liqARS, liqTotalUSD:liqTotalUSD,
     totalVal:totalVal, rendPct:rendPct, invInicial:invInicial,
@@ -4004,7 +3467,6 @@ function renderPortfolio(){
   if(CFG.simRetiro){_simrCapHoy=valConLiq;try{simrRender();}catch(_e){}}
   try{mobRender({open:open,valConLiq:valConLiq,rendPct:rendPct,liq:liqTotalUSD,dolzPct:dolzPct,sectorVal:sectorVal,cobros:(_calCobros&&_calCobros.items)||[],pv:(typeof _pvAlerts!=='undefined'?_pvAlerts:[])});}catch(_e){console.warn('mobRender',_e);}
 
-  // Ganancia Neta = Valor Total USD - Inv. Inicial USD
   var gananciaEl=document.getElementById('m-ganancia');
   var invInicialG=getRawNum('inv-sidebar-usd');
   if(invInicialG>0){
@@ -4036,17 +3498,14 @@ function renderPortfolio(){
   if(_elWorstTk){_elWorstTk.textContent=_statWorst?_statWorst.ticker:'—';}
   if(_elWorstVal){_elWorstVal.innerHTML=_statWorst?'<span style="color:#ff6b6b;font-weight:600;background:rgba(255,107,107,0.08);border-radius:3px;padding:1px 3px">'+(Math.round(_statWorst._pnlPct))+'%</span>':'—';}
 
-  renderDivsCard();
-  renderNearTarget();
-  renderSmallInv();
+  
+  
+  
   renderPerfilComparacion();
 }
 
-
 // ─── Comparación de portafolios ───
 // ─── Noticias de la cartera (v44) ─────────────────────────────────────────────
-// Fuente: Finnhub /company-news + /quote (variación del subyacente en USA).
-// Solo sectores con cobertura en Finnhub (CEDEAR/NYSE). Argentina, bonos, ON y FCI quedan afuera.
 var NWS_SECTORS={nyse:1,europa:1,china:1,cripto:1,brasil:1};
 var NWS_TTL=3*3600*1000, NWS_LS='gdc_nws_v1';
 var nwsFiltro='hi', nwsExpand={}, nwsBusy=false;
@@ -4054,9 +3513,7 @@ var nwsCache=(function(){try{return JSON.parse(localStorage.getItem(NWS_LS)||'nu
 var NWS_JUNK=/(stocks? to (buy|watch|own|hold)|\btop \d+|best stocks|\b\d+ (stocks|reasons|things)|should you (buy|sell)|is it (time|too late)|motley fool|zacks rank|millionaire|here'?s why|what to know|prediction:|\bcould (rise|soar|double|triple|jump|surge|climb)|\bhow (this|these|to)\b|\d+% upside|beaten[- ]down|is .{1,40} a buy\b|buy the dip|forever stock|no-brainer|screaming buy|smartest .* buy|(stock|shares) .{0,20}vs\.? )/i;
 var NWS_HI=/(\bearnings\b|quarterly results|\bq[1-4] (results|revenue|profit|sales)|\bbeats?\b|\bmiss(es|ed)?\b|\bguidance\b|\boutlook\b|\bforecasts?\b|downgrad|upgrad|\bacquir|\bacquisition|\bmerger\b|\bbuyout\b|\btakeover\b|lawsuit|\bsued\b|\bprobe\b|investigat|\bsec\b|\bdoj\b|\bftc\b|antitrust|\bfda\b|\brecall\b|bankrupt|\bceo (steps|resign|out|exit)|names? .{1,30} ceo|\blayoffs?\b|job cuts|dividend (cut|suspen|hike|increase|raise)|\bbuyback\b|repurchase|stock split|\btariffs?\b|export (ban|curb|restriction|control)|trading halt|\bplunge|\bsoars?\b|\btumbles?\b|\bsurges?\b|\bcrash|\brate (cut|hike)s?|\bcuts? rates|raises? rates|central bank|\bselic\b|\belections?\b|\binflation\b|\bfiscal\b|\bdefault\b|\bimpeach)/i;
 var NWS_MD=/(\banalysts?\b|price target|\b(raises|lifts|cuts|lowers|boosts) .{0,30}targets?\b|\brating\b|partner|\bdeal\b|contract|\blaunch|\bunveil|dividend|regulat|sanction|\bstake\b|insider|expan|\binvest|approv|\bchips?\b|\bai\b)/i;
-// Símbolo alternativo para buscar noticias en Finnhub (ADR en USA) cuando el ticker de cartera no es US
 var NWS_SYM={'BBAS3':'BDORY'};
-// Contexto país/sector: si ≥2 posiciones del mismo sector se mueven fuerte en la misma dirección
 var NWS_GRUPO_MIN=2;
 var NWS_PAIS={
   brasil:{label:'Brasil',flag:'🇧🇷',proxy:'EWZ',cat:'general',q:'Brasil Ibovespa bolsa',kw:/(brazil|brasil|ibovespa|bovespa|\blula\b|haddad|\bselic\b|banco central do brasil|\bbcb\b|\breais?\b|petrobras|\bvale\b|\bb3\b|itau|bradesco|banco do brasil)/i},
@@ -4095,7 +3552,6 @@ function nwsAgo(ts){var m=Math.max(0,Math.round((Date.now()-ts*1000)/60000));if(
 function nwsYmd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function nwsUmbral(){var v=parseFloat((document.getElementById('nws-umbral')||{}).value);return v>0?v:3;}
 function nwsDias(){var v=parseInt((document.getElementById('nws-dias')||{}).value,10);return v>0?v:2;}
-// Valor USD de una posición (misma lógica que vigRender)
 function nwsValUSD(p){
   var q=quotes[p.ticker];if(!q||q.price==null||!p.qty)return 0;
   var sector=getSector(p.ticker),isBonoON=(sector==='bonos'||sector==='on'),isFci=(sector==='fci');
@@ -4113,7 +3569,6 @@ function nwsClasif(n,chgAbs,umbral){
   var h=n.headline||'';
   if(NWS_JUNK.test(h))return 'lo';
   var lvl=NWS_HI.test(h)?'hi':(NWS_MD.test(h)?'md':'lo');
-  // Si el ticker se movió fuerte, lo reciente (24 h) sube un nivel: probablemente explica el movimiento
   if(chgAbs>=umbral&&(Date.now()/1000-n.datetime)<86400){if(lvl==='md')lvl='hi';else if(lvl==='lo')lvl='md';}
   return lvl;
 }
@@ -4189,14 +3644,9 @@ function nwsGrupoHTML(g,umbral){
 }
 
 // ─── Panorama por país (v46) ───────────────────────────────────────────────
-// Siempre visible: noticias macro de cada país donde hay exposición, ordenado por peso.
-// Fuente: Finnhub /news (general + crypto) filtrado por palabras clave del país. Como /news trae solo
-// las últimas ~100 notas, se guarda un registro local de 72 h para no perder el dato de la mañana.
 var NWS_MACRO=/(inflation|\bcpi\b|\bpce\b|\bppi\b|consumer prices|\bfed\b|federal reserve|\bfomc\b|powell|rate (cut|hike)s?|interest rates?|jobs report|payrolls|jobless|unemployment|\bgdp\b|recession|central bank|\becb\b|lagarde|\bselic\b|\bbcra\b|\bpboc\b|elections?|fiscal|budget|deficit|tariffs?|treasury yields?|\bimf\b|\bdefault\b|stimulus|shutdown|retail sales|consumer (spending|confidence)|\bpmi\b)/i;
-// Datos "de primera línea" (pesan más) y sorpresa vs. lo esperado
 var NWS_TOP=/(inflation|\bcpi\b|\bpce\b|consumer prices|jobs report|payrolls|unemployment rate|\bgdp\b|rate (cut|hike|decision)s?|holds? rates|\bfomc\b|\bselic\b|interest rates?)/i;
 var NWS_SURPRISE=/(than expected|expectations|forecasts?|surprise|unexpected|cooler|hotter|estimates)/i;
-// Marcadores propios de EE.UU.: una nota de otro país (BCE, Brasil…) solo cuenta para EE.UU. si también los menciona
 var NWS_US_OWN=/(\bus\b|\bu\.s\.|american|\bfed\b|federal reserve|powell|wall street|treasur|\bs&p\b|nasdaq|dow jones|white house|washington|trump)/i;
 function nwsPanScore(n){var m=NWS_MACRO.test(n.headline),t=NWS_TOP.test(n.headline);return (t?3:m?2:NWS_HI.test(n.headline)?1:0)+((m||t)&&NWS_SURPRISE.test(n.headline)?1:0);}
 var NWS_PAN_LS='gdc_nws_pan_v1',NWS_LOG_LS='gdc_nws_log_v1',NWS_PAN_TTL=30*60*1000;
@@ -4280,8 +3730,6 @@ function nwsPanoramaHTML(){
 }
 
 // ─── Traducción de titulares al español (v47) ──────────────────────────────
-// Google Translate (endpoint público gtx, en lotes) con fallback a MyMemory por titular.
-// Las traducciones se guardan en localStorage: cada titular se traduce una sola vez.
 var NWS_TR_LS='gdc_nws_tr_v1';
 var nwsTrMap=(function(){try{return JSON.parse(localStorage.getItem(NWS_TR_LS)||'{}')||{};}catch(e){return {};}})();
 var nwsTrOn=(function(){try{return localStorage.getItem('gdc_nws_tr_on')!=='0';}catch(e){return true;}})();
@@ -4308,7 +3756,6 @@ async function nwsTrFlush(){
   if(nwsTrBusy||!nwsTrOn)return;
   var ks=Object.keys(nwsTrPend);if(!ks.length)return;
   nwsTrBusy=true;nwsTrPend={};ks.forEach(function(k){nwsTrTried[k]=1;});
-  // lotes de ~1500 caracteres para no pasarse del largo de URL
   var lotes=[],cur=[],len=0;
   ks.forEach(function(k){var l=encodeURIComponent(k).length+3;if(cur.length&&len+l>1500){lotes.push(cur);cur=[];len=0;}cur.push(k.replace(/\n/g,' '));len+=l;});
   if(cur.length)lotes.push(cur);
@@ -4348,7 +3795,6 @@ function nwsRender(){
     var row={p:p,chg:chg,items:items,big:abs>=umbral};
     (row.big?movs:rest).push(row);
   });
-  // Agrupar movimientos fuertes por sector y dirección
   var grupos=[],gk={};
   movs.forEach(function(r){var k=r.p.sector+(r.chg>=0?'+':'-');(gk[k]=gk[k]||{sec:r.p.sector,up:r.chg>=0,rows:[]}).rows.push(r);});
   Object.keys(gk).forEach(function(k){var g=gk[k];if(g.rows.length>=NWS_GRUPO_MIN&&NWS_PAIS[g.sec]){grupos.push(g);g.rows.forEach(function(r){r.grupo=g;});}});
@@ -4382,7 +3828,6 @@ function nwsRender(){
   list.innerHTML=html;
   setTimeout(nwsTrFlush,0);
 }
-// Se llama al final de fetchAllQuotes: marca en el menú cuántas posiciones se movieron ≥ umbral
 function nwsAfterQuotes(){
   try{
     var umbral=nwsUmbral(),n=0;
@@ -4403,11 +3848,10 @@ var VIG_KEY=(PFX+'vigilancia');
 var vigItems=[];
 try{vigItems=JSON.parse(localStorage.getItem(VIG_KEY))||[];}catch(e){vigItems=[];}
 
-// Se guarda también en Supabase (config 'vigilancia') para verla igual en todos los dispositivos.
 var _vigLoaded=false;
 function vigSave(){try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}try{sbSetConfig('vigilancia',vigItems);}catch(e){}}
 async function vigLoad(){
-  if(_vigLoaded||!document.getElementById('page-vigilancia'))return; // solo GDC tiene Vigilancia
+  if(_vigLoaded||!document.getElementById('page-vigilancia'))return;
   try{var c=await sbGetConfig('vigilancia');if(typeof c==='string'){try{c=JSON.parse(c);}catch(e){c=null;}}
     if(Array.isArray(c)&&c.length){vigItems=c;try{localStorage.setItem(VIG_KEY,JSON.stringify(vigItems));}catch(e){}}
     else if(vigItems.length){await sbSetConfig('vigilancia',vigItems);}
@@ -4416,8 +3860,6 @@ async function vigLoad(){
 function vigSet(t,campo,val){var v=vigItems.find(function(x){return x.ticker===t;});if(!v)return;
   if(campo==='obj'){var n=parseFloat(String(val).replace(',','.'));if(n>0)v.obj=n;else delete v.obj;}else if(campo==='nota'){val=String(val||'').trim();if(val)v.nota=val.slice(0,120);else delete v.nota;}
   vigSave();vigRender();}
-// Cotización de los activos de Vigilancia que no están en cartera (las cotizaciones normales solo bajan lo que tenés).
-// data912: bonos, letras, ONs, acciones y Cedears. El panel donde aparece define el tipo si el ticker no es conocido.
 var VIG_SECT={},_vigQts=0,_vigQBusy=false;
 function _vigSect(t){return SECTOR_MAP[t]||VIG_SECT[t]||getSector(t);}
 async function vigCotizar(forzar){
@@ -4434,7 +3876,6 @@ async function vigCotizar(forzar){
   }catch(e){}finally{_vigQBusy=false;}
   return hubo;
 }
-// Precio en USD tal como se muestra en Vigilancia (bonos: cada 100 VN)
 function _vigPrecioUSD(t){var q=quotes[t];if(!q||q.price==null)return null;var s=_vigSect(t),bo=(s==='bonos'||s==='on'),fci=s==='fci',ars=(s==='argentina'||bo||fci),tc=(bo||fci)?(MEP_HOY||CCL_HOY):CCL_HOY;
   if(bo&&isBonoUSDDirecto(t))return q.price;if(ars)return tc>0?q.price/tc:null;return q.fromByma?q.price/(CCL_HOY||1):q.price/(getRatio(t)||1);}
 function vigAdd(){
@@ -4511,7 +3952,7 @@ function vigRender(){
 
 var _cmpData={gdc:null,veta:null,portafolio:null,broker:null};
 var _cmpNombres={gdc:{},veta:{},portafolio:{},broker:{}};
-var _cmpLiqVeta=null; // {ars,usd,usdc} de la hoja Liquidez del xlsx de Veta Capital
+var _cmpLiqVeta=null;
 function cargarGDCEnComparacion(){
   var pos=getPositions().filter(function(p){return p.qty>0.000001;});
   if(!pos.length){alert('El portafolio no tiene posiciones.');return;}
@@ -4556,17 +3997,12 @@ function cmpFindSheetName(wb,re){
   for(var i=0;i<wb.SheetNames.length;i++){if(re.test(wb.SheetNames[i]))return wb.SheetNames[i];}
   return null;
 }
-// Formato nuevo de Veta Capital (xlsx real, hojas Liquidez/Inversiones/Futuros/Opciones,
-// header en la 3ra fila de cada hoja). Devuelve null si no es este formato (para poder
-// caer al parser viejo del .xls disfrazado de HTML).
 function cmpReadVetaWorkbook(ab){
   var wb;
   try{wb=XLSX.read(new Uint8Array(ab),{type:'array'});}catch(ex){return null;}
   var invName=cmpFindSheetName(wb,/inversiones/i);
   if(!invName)return null;
   var invRows=XLSX.utils.sheet_to_json(wb.Sheets[invName],{header:1,defval:''});
-  // El ticker viene en "Codigo" (o, en formatos viejos de Veta, "TituloEspecie");
-  // "TipoEspecie" es solo la categoría (Cedears/Títulos Públicos/Moneda) y no sirve como header-anchor.
   var hdrIdx=invRows.findIndex(function(r){return r.some(function(c){var n=cmpNorm(c);return n==='codigo'||n==='tituloespecie';});});
   var map={},nombres={};
   if(hdrIdx>=0){
@@ -4578,12 +4014,12 @@ function cmpReadVetaWorkbook(ab){
     var totCol=hdr.indexOf('total');
     var tipoCol=hdr.indexOf('tipoespecie');
     invRows.slice(hdrIdx+1).forEach(function(r){
-      if(tipoCol>=0&&cmpNorm(r[tipoCol])==='moneda')return; // efectivo, ya comparado vía Liquidez
+      if(tipoCol>=0&&cmpNorm(r[tipoCol])==='moneda')return;
       var ticker=String(r[tCol]||'').trim().toUpperCase();
       if(!ticker)return;
       var q=cmpParseArgNum(r[totCol]);
       if(isNaN(q)||q<=0)return;
-      map[ticker]=(map[ticker]||0)+q; // suma Disponible + Garantia
+      map[ticker]=(map[ticker]||0)+q;
       var desc=String(r[dCol]||'').trim();
       if(desc)nombres[ticker]=desc;
     });
@@ -4616,7 +4052,6 @@ function cmpLoadFile(who,input){
   reader.onload=function(e){
     var ab=e.target.result;
     if(who==='veta'){
-      // Veta Capital (formato nuevo): xlsx real con hojas Liquidez/Inversiones/Futuros/Opciones
       var vw=cmpReadVetaWorkbook(ab);
       if(vw){
         _cmpData.veta=vw.positions;
@@ -4626,7 +4061,6 @@ function cmpLoadFile(who,input){
       }
       _cmpLiqVeta=null;
     }
-    // Fallback: formato viejo de Veta (.xls disfrazado de HTML) o archivo GDC (.xlsx con columna Ticker)
     var rows=(who==='veta')?cmpParseHTML(ab):cmpParseRows(ab);
     if(!rows||!rows.length){alert('No se pudo leer el archivo.');return;}
     var isVeta=(who==='veta');
@@ -4636,7 +4070,6 @@ function cmpLoadFile(who,input){
         return s==='ticker'||s.includes('nombre de la especie');
       });
     });
-    // Fallback Veta: primera fila con 4+ celdas no vacías
     if(hdrIdx<0&&isVeta){
       hdrIdx=rows.findIndex(function(r){
         return r.filter(function(c){return String(c).trim();}).length>=4;
@@ -4646,8 +4079,7 @@ function cmpLoadFile(who,input){
     var hdr=rows[hdrIdx].map(cmpNorm);
     var tCol=hdr.indexOf('ticker');
     var nCol=hdr.findIndex(function(c){return c.includes('nombre de la especie');});
-    if(isVeta&&nCol<0)nCol=1; // columna fija confirmada del broker
-    // Para Veta: Cantidad siempre en col 3 (estructura fija del broker)
+    if(isVeta&&nCol<0)nCol=1;
     var qCol=isVeta?3:hdr.findIndex(function(c){return c.includes('cantidad');});
     if(!isVeta&&qCol<0){alert('No se encontró columna Cantidad.');return;}
     var map={},nombres={};
@@ -4765,38 +4197,20 @@ function runComparacion(){
 }
 
 // ─── CCL Implícito ───
-function calcCCLI(){} // vista anterior (sin uso desde v193)
 
 // ─── Tickers cerca del objetivo ───
 var NT_THRESHOLD=(function(){
   try{var s=localStorage.getItem((PFX+'ntThreshold'));if(s){var v=parseFloat(s);if(!isNaN(v)&&v>0)return v;}}catch(e){}
   return 4;
 })();
-function ntSavePersist(){} // vista anterior (sin uso desde v193)
-function ntOnSlider(v){} // vista anterior (sin uso desde v193)
-function ntOnInput(v){} // vista anterior (sin uso desde v193)
-function renderNearTarget(){} // vista anterior (sin uso desde v193)
 
 // ─── Inversiones Pequeñas ───
 var SI_THRESHOLD=(function(){
   try{var s=localStorage.getItem((PFX+'siThreshold'));if(s){var v=parseFloat(s);if(!isNaN(v)&&v>=0)return v;}}catch(e){}
   return 0.5;
 })();
-function siSavePersist(){} // vista anterior (sin uso desde v193)
-function siOnSlider(v){} // vista anterior (sin uso desde v193)
-function siOnInput(v){} // vista anterior (sin uso desde v193)
-function renderSmallInv(){} // vista anterior (sin uso desde v193)
 
 // ─── Perfil objetivo (comparación cartera vs. composición sugerida) ───
-// rubroMap: cómo se agrupa cada Rubro (de la pestaña Rubros) dentro de los baldes de
-// sector que define CADA perfil (los tres perfiles usan baldes distintos). Lo que no
-// aparece mapeado para un perfil queda afuera de las metas y se muestra como "Otros"
-// informativo (sin objetivo) al pie de la tabla de sectores.
-// PERFIL_UTILITY_TICKERS: asociación exclusiva de ESTA comparación (no modifica los
-// Rubros del portafolio, que quedan con su clasificación original más detallada,
-// p.ej. HARG sigue siendo "Construcción" y T/VZ/TECO2 siguen siendo "Telecomunicaciones"
-// en la pestaña Rubros). Acá simplemente se los trata como "Utilities" al armar
-// la tabla de sectores de Perfil objetivo.
 var PERFIL_UTILITY_TICKERS=new Set(['PAMP','TRAN','CECO2','HARG','TGSU2','TGNO4','METR','TECO2','NEE','DUK','SO','D','AEP','EXC','T','VZ']);
 var PERFIL_TARGETS={
   Agresivo:{
@@ -4844,11 +4258,7 @@ var PERFIL_TARGETS={
     }
   },
   Conservador:{
-    // Original: RF 70-80% incluía "Plazo fijo/Liquidez inmediata: 10-15%" adentro.
-    // Se separó en Renta Fija (bonos+ONs+FCI money market, 60-80%) + Liquidez (10-15%)
-    // para que sea comparable con cómo la app mide caja (liq-ars/liq-usd) aparte de bonos/ON.
     composicion:{'Renta Variable':[20,30],'Renta Fija':[60,80],'Liquidez':[10,15]},
-    // Internacional incluye CEDEARs defensivos (10-15%) + ETFs diversificados (0-5%)
     geografica:{'Internacional (CEDEARs)':[10,20],'Argentina':[10,15],'Bonos/Liquidez':[70,95]},
     sectores:{
       'Consumo Básico':[8,10],
@@ -4901,7 +4311,6 @@ function computePerfilActual(){
     } else if(rfSet[sector]){
       rfARS+=invARS;
     } else if(_isFci){
-      // FCI: renta variable si el fondo está catalogado como tal (FCI_AD_FONDOS), sino renta fija por defecto
       var _fciCfg=(typeof FCI_AD_FONDOS!=='undefined'&&FCI_AD_FONDOS[p.ticker])||null;
       var _fciCat=_fciCfg?_fciCfg.cat:'rentaFija';
       if(_fciCat==='rentaVariable'){
@@ -4925,18 +4334,12 @@ function computePerfilActual(){
   };
 }
 
-// Puntaje 0-100 de una categoría contra su rango sugerido:
-// 100 si cae adentro del rango; si queda afuera, penaliza según qué tan lejos
-// está en relación al ancho del rango (a más ancho el rango, más tolerante).
 function _perfilRowScore(val,range){
   if(val>=range[0]&&val<=range[1]) return 100;
   var dist=val<range[0]?range[0]-val:val-range[1];
   var width=Math.max(range[1]-range[0],5);
   return Math.max(0,100-(dist/width)*100);
 }
-// Puntaje total de un perfil contra la cartera actual (d = computePerfilActual()).
-// Promedia por grupo (Composición / Geográfica / Sectores) y luego promedia los
-// grupos entre sí, para que un perfil con más filas de sectores no pese de más.
 function computePerfilScore(perfil,d){
   function avg(arr){return arr.length?arr.reduce(function(a,b){return a+b;},0)/arr.length:null;}
   var compScores=Object.keys(perfil.composicion).map(function(k){
@@ -5092,7 +4495,6 @@ function renderPerfilComparacion(){
 }
 
 // ─── Toggle columna Cantidad (oculta por defecto para layout compacto) ───
-function toggleQtyCol(show){} // vista anterior (sin uso desde v193)
 (function initQtyToggle(){
   var show='0';
   try{var s=localStorage.getItem((PFX+'showQty'));if(s!==null)show=s;}catch(e){}
@@ -5106,7 +4508,7 @@ function toggleQtyCol(show){} // vista anterior (sin uso desde v193)
 
 // ─── Toggle columna P. Venta (oculta por defecto) ───
 // ─── Orden de las tablas del Portafolio al hacer click en el título de la columna ───
-var PANEL_SORT={}; // tbodyId -> {col, dir}  (dir 1 = asc, -1 = desc)
+var PANEL_SORT={};
 function _psNum(txt){
   if(txt==null)return null;
   txt=String(txt).replace(/−/g,'-');
@@ -5204,7 +4606,6 @@ function distRender(data){
   function f1(n){return n.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1});}
   function num(n){return Math.round(n).toLocaleString('es-AR');}
   function seg(w,c,lbl){return '<div style="width:'+w+'%;background:'+c+';display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.66rem;font-weight:700;color:#0b1120;white-space:nowrap;overflow:hidden">'+(w>=7?lbl:'')+'</div>';}
-  // Barra objetivo: centro de cada rango, normalizado a 100%
   var mids=cats.map(function(x){return x.r?(x.r[0]+x.r[1])/2:0;});
   var midSum=mids.reduce(function(a,b){return a+b;},0)||1;
   var barA=cats.map(function(x){var p=vals[x.k]/total*100;return p>0?seg(p,x.c,x.s+' '+Math.round(p)+'%'):'';}).join('');
@@ -5232,7 +4633,6 @@ function distRender(data){
       '<span style="font-family:var(--mono);font-size:.66rem;color:'+(nFuera?'#eab308':'var(--text2)')+'">'+(nFuera?nFuera+' tipo'+(nFuera>1?'s':'')+' fuera de rango':'Todo dentro del rango ✓')+'</span></div>'+
     (DIST_OPEN?'<div class="tw" style="margin-top:10px"><table><thead><tr><th style="text-align:left">Tipo</th><th>USD</th><th>Actual</th><th>Objetivo</th><th>Diferencia</th><th>Para llegar ($)</th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:6px">Pesos = USD × CCL ('+num(ccl)+') en renta variable · USD × MEP ('+num(mep)+') en renta fija y liquidez</div></div>':'');
-  // Plan de rebalanceo (órdenes de la columna Rebalanceo + lo que pide el perfil por tipo)
   var plan=(d.plan||[]).slice();
   if(plan.length){
     var tv=0,tc=0;plan.forEach(function(o){if(o.acc==='vender')tv+=o.ars;else tc+=o.ars;});
@@ -5275,7 +4675,6 @@ function _paCCLnear(dt){
   for(var i=0;i<=7;i++){for(var sg=-1;sg<=1;sg+=2){var d2=new Date(dt);d2.setDate(d2.getDate()+sg*i);var k=String(d2.getDate()).padStart(2,'0')+'/'+String(d2.getMonth()+1).padStart(2,'0')+'/'+d2.getFullYear();if(CCL_TABLE[k])return CCL_TABLE[k];if(i===0)break;}}
   return null;
 }
-// Flujos por ticker del ciclo de tenencia actual
 function paBuildFlows(){
   var res={},qty={};
   var ord=(movimientos||[]).filter(function(m){return m&&m.ticker&&(m.tipo==='compra'||m.tipo==='venta'||m.tipo==='dividendo')&&m.owner!=='cristian'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);})
@@ -5287,7 +4686,7 @@ function paBuildFlows(){
     var tc=esBono?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
     var directo=isBonoUSDDirecto(t);
     var unitUSD=directo?(m.precioARS||0):(tc>0&&(m.precioARS||0)>0?(m.precioARS||0)/tc:(m.precioUSD||0));
-    var com=directo?(m.comision||0):((m.comision||0)/(tc>0?tc:1)); // la comisión se guarda en ARS (en USD solo para bonos comprados en dólares)
+    var com=directo?(m.comision||0):((m.comision||0)/(tc>0?tc:1));
     if(m.tipo==='compra'){
       if(!res[t]||(qty[t]||0)<=0.000001){res[t]={flows:[],start:x.d,compras:0};qty[t]=0;}
       res[t].flows.push({d:x.d,v:-(unitUSD*(m.qty||0)+com),lbl:'Compra '+(+(m.qty||0)).toLocaleString('es-AR')});
@@ -5301,13 +4700,11 @@ function paBuildFlows(){
       if(res[t]&&x.d>=res[t].start&&(m.precioUSD||0)>0)res[t].flows.push({d:x.d,v:m.precioUSD,lbl:'Dividendo'});
     }
   });
-  // Dividendos registrados (sección Dividendos)
   try{if(typeof dividendos!=='undefined')(dividendos||[]).forEach(function(dv){
     var t=dv&&dv.ticker;if(!t||!res[t])return;var d=_paParseFecha(dv.fecha);if(!d||d<res[t].start)return;
     var usd=dv.usd||0;if(!usd&&(dv.ars||0)>0){var tc=getCCL(dv.fecha)||dv.ccl||CCL_HOY;if(tc>0)usd=dv.ars/tc;}
     if(usd>0)res[t].flows.push({d:d,v:usd,lbl:'Dividendo'});
   });}catch(e){}
-  // Dividendos / rentas CCL (TRK.divs confirmados)
   try{(TRK.divs||[]).forEach(function(dv){
     if(!dv||dv.estado==='pendiente')return;var t=dv.ticker;if(!t||!res[t])return;
     var d=_paParseFecha(dv.fecha);if(!d||d<res[t].start)return;
@@ -5329,7 +4726,6 @@ function paXIRR(flows){
   for(var k=0;k<200;k++){var mid=(lo+hi)/2,fm=npv(mid);if(Math.abs(fm)<1e-7||(hi-lo)<1e-9)return mid;if(flo*fm<0){hi=mid;fhi=fm;}else{lo=mid;flo=fm;}}
   return (lo+hi)/2;
 }
-// Calcula % anual (o simple si < 90 días) para un conjunto de flujos + valor de hoy
 function paCalc(flows,valorHoy){
   if(!flows||!flows.length||valorHoy==null||!(valorHoy>0))return null;
   var hoy=new Date();hoy.setHours(12,0,0,0);
@@ -5341,39 +4737,6 @@ function paCalc(flows,valorHoy){
   var _res={flows:all,days:days,simple:simple,anual:anual,gan:ret-inv};
   try{_res.spy=paSpy(flows.slice().sort(function(a,b){return a.d-b.d;}),days);}catch(e){}
   return _res;
-}
-function _paDur(days){var a=Math.floor(days/365),m=Math.floor((days%365)/30.4);if(a>0)return a+'a'+(m>0?' '+m+'m':'');if(m>0)return m+'m';return days+' día'+(days!==1?'s':'');}
-function paCellHTML(ticker,r,compras,tag){
-  if(!r||(r.anual==null&&r.simple==null))return '<span style="color:var(--text3)">—</span>';
-  var f1=function(n){return (n>0?'+':'')+n.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';};
-  var txt,col;
-  if(r.anual!=null){txt=f1(r.anual);col=r.anual>10?'var(--accent)':r.anual<0?'var(--red)':'var(--text2)';}
-  else{txt=f1(r.simple)+' <span style="font-size:.6rem">s/anualizar</span>';col='var(--text3)';}
-  var sub=tag||(_paDur(r.days)+(compras!=null?' · '+compras+' compra'+(compras!==1?'s':''):''));
-  var _sd=paSpyDiff(r);
-  if(_sd!=null)sub+='<div style="font-size:.58rem;color:'+(_sd>=0?'var(--accent)':'var(--red)')+'">vs SPY '+(_sd>=0?'+':'')+_sd.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+' pp</div>';
-  return '<span class="pa-cell" data-ticker="'+String(ticker).replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();paShowDetalle(this.dataset.ticker,this)" style="cursor:pointer;color:'+col+';font-weight:700">'+txt+'</span>'+
-    '<div style="font-size:.6rem;color:var(--text3);font-weight:400">'+sub+'</div>';
-}
-function paShowDetalle(key,anchor){
-  if(!SPY_HIST)fetchSPYHist();
-  var r=PA_LAST[key];var old=document.getElementById('pa-pop');if(old){var same=old.dataset.key===key;old.remove();if(same)return;}
-  if(!r)return;
-  var pop=document.createElement('div');pop.id='pa-pop';pop.dataset.key=key;
-  pop.style.cssText='position:fixed;z-index:9999;max-width:440px;width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:.7rem .85rem;font-family:var(--mono);font-size:.7rem;color:var(--text2);box-shadow:0 8px 24px rgba(0,0,0,.45)';
-  var usd=function(v){return (v>0?'+':v<0?'−':'')+Math.abs(Math.round(v)).toLocaleString('es-AR');};
-  var rows=r.flows.map(function(f){return '<tr><td style="padding:.2rem .4rem">'+f.d.toLocaleDateString('es-AR')+'</td><td style="padding:.2rem .4rem">'+f.lbl+'</td><td style="padding:.2rem .4rem;text-align:right;color:'+(f.v<0?'var(--red)':'var(--accent)')+'"><span class="port-sensitive">'+usd(f.v)+'</span></td></tr>';}).join('');
-  var res=r.anual!=null?'<b style="color:'+(r.anual>10?'var(--accent)':r.anual<0?'var(--red)':'var(--text)')+'">'+(r.anual>0?'+':'')+r.anual.toFixed(1).replace('.',',')+'% anual</b>':(r.simple!=null?'<b>'+(r.simple>0?'+':'')+r.simple.toFixed(1).replace('.',',')+'% (sin anualizar, menos de 90 días)</b>':'—');
-  pop.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="color:var(--text);font-size:.78rem">'+(r.titulo||key)+' · rendimiento en USD</b><span style="cursor:pointer;color:var(--text3)" onclick="document.getElementById(\'pa-pop\').remove()">✕</span></div>'+
-    '<div style="max-height:260px;overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">FECHA</th><th style="text-align:left;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">MOVIMIENTO</th><th style="text-align:right;padding:.2rem .4rem;color:var(--text3);font-size:.6rem">USD</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)"><span>Ganancia USD <span class="port-sensitive">'+usd(r.gan)+'</span> · '+_paDur(r.days)+'</span>'+res+'</div>'+
-    (function(){var sd=paSpyDiff(r);if(!r.spy)return '<div style="margin-top:6px;font-size:.62rem;color:var(--text3)">Comparación con SPY: '+(SPY_KEYS?'sin datos de SPY para esas fechas':'cargando historial de SPY…')+'</div>';var sv=r.anual!=null?r.spy.anual:r.spy.simple;if(sv==null)return '';return '<div style="margin-top:6px;font-size:.66rem">Mismo dinero y fechas en SPY: <b>'+(sv>0?'+':'')+sv.toFixed(1).replace('.',',')+'%'+(r.anual!=null?' anual':'')+'</b>'+(sd!=null?' → <b style="color:'+(sd>=0?'var(--accent)':'var(--red)')+'">'+(sd>=0?'le ganaste por ':'perdiste por ')+Math.abs(sd).toFixed(1).replace('.',',')+' pp</b>':'')+'</div>';})()+
-    '<div style="margin-top:6px;font-size:.6rem;color:var(--text3)">Compras/ventas a USD con el CCL de cada fecha (MEP para Bonos, ON y FCI); valor de hoy a mercado.</div>';
-  document.body.appendChild(pop);
-  var rc=anchor.getBoundingClientRect(),ph=pop.offsetHeight,pw=pop.offsetWidth;
-  var top=rc.bottom+6;if(top+ph>window.innerHeight-8)top=Math.max(8,rc.top-ph-6);
-  var left=Math.min(Math.max(8,rc.left),window.innerWidth-pw-8);
-  pop.style.top=top+'px';pop.style.left=left+'px';
 }
 document.addEventListener('click',function(e){var p=document.getElementById('pa-pop');if(p&&!p.contains(e.target)&&!(e.target.closest&&e.target.closest('.pa-cell')))p.remove();});
 
@@ -5453,7 +4816,6 @@ function _spyAt(d){
   var lo=0,hi=SPY_KEYS.length-1;while(lo<hi){var mid=(lo+hi+1)>>1;if(SPY_KEYS[mid]<=k)lo=mid;else hi=mid-1;}
   return SPY_HIST[SPY_KEYS[lo]];
 }
-// Mismo dinero, mismas fechas, en SPY: devuelve {anual|simple}
 function paSpy(flowsSinHoy,days){
   if(!SPY_KEYS||!flowsSinHoy||!flowsSinHoy.length)return null;
   var sh=0,out=[];
@@ -5465,13 +4827,6 @@ function paSpy(flowsSinHoy,days){
   if(days>=90){var r=paXIRR(out);anual=r!=null&&isFinite(r)?r*100:null;}
   return {anual:anual,simple:simple};
 }
-function paSpyDiff(r){
-  if(!r||!r.spy)return null;
-  if(r.anual!=null&&r.spy.anual!=null)return r.anual-r.spy.anual;
-  if(r.anual==null&&r.simple!=null&&r.spy.simple!=null)return r.simple-r.spy.simple;
-  return null;
-}
-
 
 // ─── Funciones de portafolios con broker Bull Market (antes solo en Juli/Hilda/Omar) ───
 function runComparacionBroker(){
@@ -5582,8 +4937,6 @@ function cmpParseBullText(txt){
     while(j<lines.length&&!lines[j].trim())j++;
     if(j>=lines.length)continue;
     if(lines[j].indexOf('\t')===-1){
-      // Bull siempre agrega una línea de descripción del activo entre el ticker y la
-      // fila de datos (ej: 'ABEV' / 'CEDEAR AMBEV S.A.' / '106,00\tUSD 8,98\t...') — saltarla.
       j++;
       while(j<lines.length&&!lines[j].trim())j++;
     }
@@ -5592,7 +4945,6 @@ function cmpParseBullText(txt){
     if(dataLine.indexOf('\t')===-1)continue;
     var cols=dataLine.trim().split('\t');
     if(cols.length<2)continue;
-    // La primera columna de la fila de datos es la Cantidad (no la segunda).
     var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
     if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
   }
@@ -5623,7 +4975,6 @@ function trkImpParseBMDate(v){
     return y+'-'+mo+'-'+d;
   }
   if(typeof v==='number'){
-    // Serial Excel (días desde 1899-12-30) — mismo criterio que el importador de movimientos Bull Market
     var ms=(v-25569)*86400000;
     var d2=new Date(ms);
     if(isNaN(d2.getTime())) return null;
@@ -5725,10 +5076,6 @@ function perfCalcUpdate(){
 function cargarPortafolioEnComparacion(){return cargarJuliEnComparacion();}
 
 // ─── Resumen para la vista familiar ───────────────────────────────────────────
-// Después de cada render (con cotizaciones cargadas) se guarda en config 'resumen_familia' un
-// resumen de lo calculado. Familia/index.html lee los 5 resúmenes. Se guarda como mucho cada
-// 3 minutos salvo que el total cambie más de 0,5%. Con varias carteras (Omar) se guarda una
-// entrada por cartera.
 var _famPrev=null,_famTimer=null,_famLastSave=0,_famLastTotal=0,_famLoaded=false;
 function famQueueSnapshot(d){
   if(d&&d.totalVal>0){INF_LAST=d;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){try{uvActualizar(d);}catch(e){console.warn('uv',e);}try{ratiosAuto();}catch(e){}}}
@@ -5752,7 +5099,6 @@ async function famSaveSnapshot(d){
     if(cart==='principal'||doc.rend==null){doc.rend=d.rendPct;doc.invInicial=d.invInicial||null;}
     doc.periodoInicio=CFG.periodoInicio||null;
     if(CFG.honorario){try{await honCargar();doc.honorarios=HON_LIST||[];}catch(e){}}
-    // cobros (dividendos, rentas, amortizaciones) confirmados por mes, en USD — para "Tus ingresos" del index
     try{var _cm={},_ct={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart))return;var f=_infISO(x.fecha);if(!f)return;
       var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;var tp=divTipo(x),b=_ct[k]||(_ct[k]={div:0,renta:0,amort:0});b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']=Math.round((b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']+u)*100)/100;});
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
@@ -5760,7 +5106,6 @@ async function famSaveSnapshot(d){
     if(cart==='principal'&&CFG.vistaFamiliar){try{await vistaPublicar(d);}catch(e){}}
     if(cart==='principal'&&CFG.push){try{await pushWatchPublicar(d);}catch(e){}}
     if(cart==='principal'){try{doc.sist={vista:CFG.vistaFamiliar?Date.now():null,aportes:(CFG.aportes&&_aporLoaded)?APOR.length:null,avisos:CFG.push?true:null,bk:(function(){try{return localStorage.getItem(PFX+'bk_last')||null;}catch(e){return null;}})()};}catch(e){}}
-    // rendimiento de los períodos anteriores (cargados en la config + cierres registrados) para el index
     if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}
     if(cart==='principal'){try{if(typeof histLoad==='function')await histLoad();var _bs=b100Serie();if(_bs)doc.b100=_bs;else delete doc.b100;delete doc.b100cov;
       var _br=_b100Ref();if(_br&&_br.spx)doc.b100ref={spx:_br.spx};if(CFG.id==='gdc'&&(!_br||_br.d!==_flujosHoyStr()))b100RefBg();}catch(e){}}
@@ -5774,8 +5119,6 @@ async function famSaveSnapshot(d){
 }
 
 // ─── Backups (plan Free de Supabase no tiene backups descargables) ─────────────
-// Copia completa diaria en config 'backup_AAAA-MM-DD' (+ 'backup_AAAA-MM-DD_HHMM_prerestore' antes de
-// restaurar). Se conservan los últimos BK_KEEP backups diarios.
 var BK_KEEP=14,_bkRunning=false;
 function _bkHoy(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 async function _bkList(){
@@ -5852,7 +5195,6 @@ async function bkRestore(key){
     location.reload();
   }catch(e){alert('Error al restaurar: '+e.message);}
 }
-// Botón "Backups" en el encabezado
 document.addEventListener('DOMContentLoaded',function(){
   if(document.getElementById('bk-btn'))return;
   var ref=document.getElementById('sync-btn')||document.querySelector('[onclick*="EnComparacion()"]');
@@ -5862,17 +5204,12 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 // ─── Historial diario y corte anual ───────────────────────────────────────────
-// config 'historial' = {v:1, puntos:[{d:'AAAA-MM-DD', c:{cartera:{v,cost}}, liq, inv, rend}], cierres:[{d, valor, invAnterior}]}
 var HIST=null,_histLoaded=false,HIST_RANGO=null,_histChart=null;
 function _hHoy(){return _bkHoy();}
-// Días sin mercado (fines de semana y feriados nacionales de Argentina): no se registran ni se grafican en Evolución.
-// Lista de feriados para corregir/agregar a mano (AAAA-MM-DD).
 var FERIADOS_AR=new Set(['2025-01-01','2025-03-03','2025-03-04','2025-03-24','2025-04-02','2025-04-17','2025-04-18','2025-05-01','2025-05-02','2025-06-16','2025-06-20','2025-07-09','2025-08-15','2025-10-10','2025-11-21','2025-11-24','2025-12-08','2025-12-25',
   '2026-01-01','2026-02-16','2026-02-17','2026-03-23','2026-03-24','2026-04-02','2026-04-03','2026-05-01','2026-05-25','2026-06-15','2026-07-09','2026-07-10','2026-08-17','2026-10-12','2026-11-23','2026-12-07','2026-12-08','2026-12-25']);
 function esDiaHabil(iso){var p=String(iso||'').split('-');if(p.length!==3)return true;var dw=new Date(+p[0],+p[1]-1,+p[2]).getDay();return dw!==0&&dw!==6&&!FERIADOS_AR.has(iso);}
 async function histLoad(){
-  // Sólo se da por cargado si Supabase respondió bien: si falla, no se crea un historial vacío
-  // (que después pisaría el guardado).
   if(_histLoaded)return HIST;
   try{
     var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.historial&select=value',{headers:sbHeaders()});
@@ -5887,7 +5224,7 @@ async function histLoad(){
 }
 async function histRecord(d,cart){
   if(!(await histLoad()))return;
-  if(!esDiaHabil(_hHoy()))return; // sin mercado: no se agrega punto
+  if(!esDiaHabil(_hHoy()))return;
   var hoy=_hHoy(),pts=HIST.puntos,p=pts.length&&pts[pts.length-1].d===hoy?pts[pts.length-1]:null;
   if(!p){p={d:hoy,c:{}};pts.push(p);}
   p.c[cart]={v:Math.round(d.totalVal*100)/100,cost:Math.round(d.totalCost*100)/100};
@@ -5896,30 +5233,20 @@ async function histRecord(d,cart){
   await sbSetConfig('historial',HIST);
   histRender();
 }
-// Serie de valor total por día (con carteras que no se abrieron ese día arrastrando su último valor)
 function histSerie(){
   if(!HIST)return [];
   var last={},out=[];
-  // Puntos de años anteriores cargados a mano (CFG.histPrevio: [[fecha, valorTotal, inversionInicial], ...])
   var primero=HIST.puntos.length?HIST.puntos[0].d:'9999';
   (CFG.histPrevio||[]).slice().sort(function(a,b){return a[0]<b[0]?-1:1;}).forEach(function(x){if(x[0]<primero)out.push({d:x[0],v:x[1],pos:x[1],cost:null,inv:x[2]||null,rend:null,previo:true});});
-  // CFG.histCarteras: qué carteras suman al gráfico (Omar: solo 'principal'; Cocos y VetaJeep no)
   var incl=CFG.histCarteras||null;
   HIST.puntos.forEach(function(p){Object.keys(p.c||{}).forEach(function(k){if(!incl||incl.indexOf(k)>=0)last[k]=p.c[k];});
-    if(!esDiaHabil(p.d))return; // fines de semana y feriados (puntos viejos) no se grafican
+    if(!esDiaHabil(p.d))return;
     var v=0,cost=0;Object.keys(last).forEach(function(k){v+=last[k].v;cost+=last[k].cost;});
     out.push({d:p.d,v:v+(p.liq||0),pos:v,cost:cost,inv:p.inv,rend:p.rend});});
-  // CFG.aportes: la línea de capital del período actual se recalcula = Inv. Inicial + aportes − retiros hasta cada día
-  // (los puntos viejos tenían guardada la Inv. Inicial que se ajustaba a mano)
   try{if(CFG.aportes&&_aporLoaded){var inv0=getRawNum('inv-sidebar-usd'),ini=aporIni();
     if(inv0>0)out.forEach(function(x){if(x.previo||x.d<ini)return;var n=0;(APOR||[]).forEach(function(a){if(a.fecha>=ini&&a.fecha<=x.d)n+=(a.tipo==='retiro'?-1:1)*(+a.usd||0);});x.inv=Math.round(inv0+n);});}}catch(e){}
   return out;
 }
-// Fecha del último corte anual <= hoy (AAAA-MM-DD) según CFG.periodoInicio ('MM-DD')
-// Años anteriores tomados de la solapa "Rendimiento anual" (config rendanual_periodos), columna TOTAL:
-// % = (tenés − pusiste) / pusiste, sin descontar el 20%. El último período es el que está en curso
-// (su "pusiste" es la inversión inicial actual), así que se usan los anteriores. Cada período se ubica
-// contando hacia atrás desde el último corte (CFG.periodoInicio).
 function _raNum(x){var t=String(x==null?'':x).replace(/[^0-9.,\-]/g,'');
   if(/^-?\d{1,3}([.,]\d{3})+$/.test(t))t=t.replace(/[.,]/g,'');else t=t.replace(',','.');
   return parseFloat(t);}
@@ -5976,12 +5303,10 @@ function histRender(){
   meta.style.display=meta.textContent.trim()?'':'none';
   var primero=HIST.puntos.length?HIST.puntos[0].d.split('-').reverse().join('/'):null;
   nota.textContent=serie.length<2?('El historial empieza '+(primero?'el '+primero:'hoy')+': se agrega un punto por día cada vez que abrís el portafolio.'):'Valor total = posiciones a mercado + liquidez, en USD. Línea punteada = inversión inicial del período. Marcas verticales = cortes anuales.';
-  // aviso de cierre de período
   var ci=document.getElementById('hist-cierre');
   var pend=corte&&!HIST.cierres.some(function(x){return x.d===corte;})&&(new Date(_hHoy())-new Date(corte))/86400000<=60&&ult&&HIST.puntos.length&&HIST.puntos[0].d<corte;
   var _prox=null;if(corte){var _pc=(parseInt(corte.slice(0,4),10)+1)+corte.slice(4),_dd=_aporDias(_hHoy(),_pc);if(_dd>=0&&_dd<=15)_prox={d:_pc,n:_dd};}
   ci.innerHTML=(!pend&&_prox)?'<div style="margin:.6rem 1rem 0;padding:.5rem .7rem;border:1px solid var(--border2);border-radius:var(--rsm);font-family:var(--mono);font-size:.72rem">📅 El período cierra el <b>'+_prox.d.split('-').reverse().join('/')+'</b> (en '+_prox.n+' día'+(_prox.n!==1?'s':'')+'). Ese día te va a aparecer el botón para cerrarlo.</div>':pend?'<div style="margin:.6rem 1rem 0;padding:.5rem .7rem;border:1px solid var(--amber);border-radius:var(--rsm);background:rgba(234,179,8,.08);font-family:var(--mono);font-size:.72rem">📅 Se cumplió el corte anual ('+corte.split('-').reverse().join('/')+'). <button class="btn btn-sm" onclick="cierreAbrir()" style="margin-left:6px">Cerrar período</button> <span style="color:var(--text3)">calcula ganancia y rendimiento con aportes, guarda el resultado y actualiza la Inv. Inicial</span></div>':'';
-  // cortes dentro del rango
   var cortes=[];if(CFG.periodoInicio&&s.length){var y0=parseInt(s[0].d.slice(0,4),10),y1=parseInt(s[s.length-1].d.slice(0,4),10);for(var y=y0;y<=y1;y++){var cd=y+'-'+CFG.periodoInicio;if(cd>=s[0].d&&cd<=s[s.length-1].d)cortes.push(cd);}}
   histRenderAnual(ult);
   var cv=document.getElementById('hist-canvas'),wrapC=cv.parentNode;
@@ -6008,8 +5333,6 @@ function histRender(){
       scales:{x:{ticks:{color:'#3d5a80',font:{size:9},maxTicksLimit:8},grid:{color:'rgba(30,48,80,.4)'}},y:{ticks:{color:'#3d5a80',font:{size:9},callback:function(v){return Math.round(v/1000)+'k';}},grid:{color:'rgba(30,48,80,.4)'}}}},
     plugins:[plug]});
 }
-// Rendimiento por período: años anteriores (CFG.rendAnual {'2023':300,...}, el año es el del INICIO del
-// período) + cierres registrados + período en curso; y el acumulado compuesto.
 function histRenderAnual(ult){
   var el=document.getElementById('hist-anual');if(!el)return;
   var per={};
@@ -6028,7 +5351,6 @@ function histRenderAnual(ult){
 }
 (function _histBoot(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){if(CFG.historial)histLoad().then(function(h){if(h)histRender();});}else if(n<30)_histBoot(n+1);},2000);})(0);
 
-function togglePVentaCol(show){} // vista anterior (sin uso desde v193)
 (function initPVentaToggle(){
   var show='0';
   try{var s=localStorage.getItem((PFX+'showPVenta'));if(s!==null)show=s;}catch(e){}
@@ -6041,7 +5363,6 @@ function togglePVentaCol(show){} // vista anterior (sin uso desde v193)
 })();
 
 // ─── Toggle columna % Tipo (oculta por defecto) ───
-function togglePTipoCol(show){} // vista anterior (sin uso desde v193)
 (function initPTipoToggle(){
   var show='0';
   try{var s=localStorage.getItem((PFX+'showPTipo'));if(s!==null)show=s;}catch(e){}
@@ -6054,7 +5375,6 @@ function togglePTipoCol(show){} // vista anterior (sin uso desde v193)
 })();
 
 // ─── Toggle columna Rebalanceo (oculta por defecto) ───
-function toggleRebalCol(show){} // vista anterior (sin uso desde v193)
 (function initRebalToggle(){
   var show='0';
   try{var s=localStorage.getItem((PFX+'showRebal'));if(s!==null)show=s;}catch(e){}
@@ -6067,7 +5387,6 @@ function toggleRebalCol(show){} // vista anterior (sin uso desde v193)
 })();
 
 // ─── Toggle columna % Anual (oculta por defecto) ───
-function togglePAnualCol(show){} // vista anterior (sin uso desde v193)
 (function initPAnualToggle(){
   var show='0';
   try{var s=localStorage.getItem((PFX+'showPAnual'));if(s!==null)show=s;}catch(e){}
@@ -6127,10 +5446,6 @@ function vmRender(){
   body.innerHTML=html;
 }
 
-function renderDivsCard(){} // card "Dividendos cobrados" eliminada de la portada (2026-10-03)
-
-
-// fetchWithTimeout: fetch con AbortController, timeout en ms
 function fetchWithTimeout(url, opts, ms){
   ms=ms||7000;
   var ctrl=new AbortController();
@@ -6139,7 +5454,6 @@ function fetchWithTimeout(url, opts, ms){
     .finally(function(){clearTimeout(tid);});
 }
 
-// Parsea respuesta Yahoo chart/meta
 function parseYahooChart(j){
   var meta=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
   if(!meta||!meta.regularMarketPrice)return null;
@@ -6155,8 +5469,6 @@ function parseData912Response(data){
     if(!item||typeof item!=='object')return;
     var price=item.last??item.price??item.close??item.c??item.bid??0;
     price=parseFloat(price)||0;
-    // arg_cedears/arg_notes no traen prev_close/prevClose/etc, pero sí pct_change — se usa
-    // para derivar el cierre anterior en vez de caer a "sin variación" (prev=price).
     var prevRaw=item.prev_close??item.prevClose??item.previous_close??item.open??item.pc??null;
     var prev;
     if(prevRaw!=null){ prev=parseFloat(prevRaw)||price; }
@@ -6174,33 +5486,26 @@ function parseData912Response(data){
   }
   return map;
 }
-// Bonos soberanos: arg_bonds
 async function fetchBonosAPI(){
   var r=await fetchWithTimeout('https://data912.com/live/arg_bonds',{headers:{'Accept':'application/json'}},8000);
   if(!r.ok)throw new Error('HTTP '+r.status);
   return parseData912Response(await r.json());
 }
-// ONs corporativas: arg_corp
 async function fetchONsAPI(){
   var r=await fetchWithTimeout('https://data912.com/live/arg_corp',{headers:{'Accept':'application/json'}},8000);
   if(!r.ok)throw new Error('HTTP '+r.status);
   return parseData912Response(await r.json());
 }
-// Acciones argentinas: arg_eq
 async function fetchArgEqAPI(){
   var r=await fetchWithTimeout('https://data912.com/live/arg_stocks',{headers:{'Accept':'application/json'}},8000);
   if(!r.ok)throw new Error('HTTP '+r.status);
   return parseData912Response(await r.json());
 }
-// CEDEARs en BYMA (acciones extranjeras listadas como CEDEAR, ej. GLOB, BIOX — data912 las separa
-// de arg_stocks, que es solo para acciones nativas argentinas). Fallback para 'argentina' cuando
-// arg_stocks no cubre el ticker.
 async function fetchArgCedearsAPI(){
   var r=await fetchWithTimeout('https://data912.com/live/arg_cedears',{headers:{'Accept':'application/json'}},8000);
   if(!r.ok)throw new Error('HTTP '+r.status);
   return parseData912Response(await r.json());
 }
-// ONs/notas que data912 no clasifica en arg_corp (ej. D31M7). Fallback adicional para ON.
 async function fetchArgNotesAPI(){
   var r=await fetchWithTimeout('https://data912.com/live/arg_notes',{headers:{'Accept':'application/json'}},8000);
   if(!r.ok)throw new Error('HTTP '+r.status);
@@ -6212,9 +5517,7 @@ async function fetchYahooAR(ticker,suffix){
   var chartUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=2d';
   var quoteUrl='https://query2.finance.yahoo.com/v7/finance/quote?symbols='+encodeURIComponent(symbol)+'&corsDomain=finance.yahoo.com&formatted=false&lang=en-US&region=AR';
 
-  // Lanzar todos los proxies en PARALELO y tomar el primero que responda bien
   var proxies=[
-    // directo v7
     fetchWithTimeout(quoteUrl,{headers:{'Accept':'application/json','Origin':'https://finance.yahoo.com'}},6000)
       .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
       .then(function(j){
@@ -6225,26 +5528,20 @@ async function fetchYahooAR(ticker,suffix){
         }
         return Promise.reject('no price');
       }),
-    // allorigins
     fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(chartUrl),{},7000)
       .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
       .then(function(j){var d=JSON.parse(j.contents||'{}');var q=parseYahooChart(d);return q||Promise.reject('no price');}),
-    // codetabs (reemplaza a thingproxy.freeboard.io, que dejo de resolver DNS — ERR_NAME_NOT_RESOLVED)
     fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(chartUrl),{},7000)
       .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
       .then(function(j){var q=parseYahooChart(j);return q||Promise.reject('no price');}),
-    // allorigins /raw (endpoint alternativo, bucket de rate-limit distinto al /get de arriba —
-    // reemplaza a jsonp.afeld.me, que tambien dejo de resolver DNS)
     fetchWithTimeout('https://api.allorigins.win/raw?url='+encodeURIComponent(chartUrl),{},7000)
       .then(function(r){return r.ok?r.json():Promise.reject('!ok');})
       .then(function(j){var q=parseYahooChart(j);return q||Promise.reject('no price');})
   ];
 
-  // Promise.any: primer éxito gana
   if(typeof Promise.any==='function'){
     return Promise.any(proxies).catch(function(){throw new Error('Sin datos para '+ticker);});
   }
-  // Fallback para browsers viejos: manual race de éxitos
   return new Promise(function(resolve,reject){
     var remaining=proxies.length;
     proxies.forEach(function(p){
@@ -6264,51 +5561,20 @@ async function fetchAllQuotes(){
   fetchTopbarRates();
   var pos=getPositions().filter(function(p){return p.qty>0.000001;});
   if(!pos.length){flash(document.getElementById('ref-status'),'No hay posiciones',true);return;}
-  _quoteRunId++; // nueva corrida: lo que no se refresque en este ciclo queda marcado "stale"
-  // NO limpiar quotes — mantener cotizaciones viejas hasta que lleguen las nuevas
+  _quoteRunId++;
   try{localStorage.removeItem((PFX+'q3'));localStorage.removeItem((PFX+'q3_ts'));}catch(e){}
   var icon=document.getElementById('ref-icon');var status=document.getElementById('ref-status');var prog=document.getElementById('pos-prog');var pfill=document.getElementById('pfill');
   icon.innerHTML='<span class="spinner"></span>';prog.style.display='';pfill.style.width='0%';
 
-  // Estrategia de cotizaciones:
-  // FASE 1 (paralelo): Yahoo .BA para TODO (acciones argentinas, CEDEARs USA/Brasil/Europa/China/Cripto)
-  //   - argentina: precio ARS directo, sin normalizar
-  //   - todos los demás no-BRL: normalizar ARS→USD-equiv (price*ratio/CCL_HOY) para que
-  //     renderPortfolio pueda hacer (price/ratio)*CCL_HOY y recuperar el precio BYMA real
-  // FASE 2 (secuencial): Finnhub fallback SOLO para tickers donde Yahoo falló
-  //   - aplica a nyse/brasil/europa/china/cripto (no a argentina: no tiene equiv. NYSE)
-  //   - Finnhub devuelve USD por acción subyacente, renderPortfolio lo convierte igual
-  // Bonos/ONs: data912 como siempre (paralelo con Fase 1)
-
-  // 'argentina' se maneja aparte (fetchArgAll): antes dependía únicamente de Yahoo .BA a
-  // través de la cadena de proxies públicos (allorigins/corsproxy/thingproxy/jsonp.afeld),
-  // que suele fallar entera y dejaba las acciones locales sin cotización nueva. data912
-  // expone /live/arg_stocks (misma familia de API ya usada y confiable para bonos/ONs) — se usa como
-  // fuente primaria y Yahoo .BA queda de fallback por ticker.
   var bymaPos=pos.filter(function(p){var s=getSector(p.ticker);return s!=='bonos'&&s!=='on'&&s!=='fci'&&s!=='argentina';});
   var argPos=pos.filter(function(p){return getSector(p.ticker)==='argentina';});
   var bonosPos=pos.filter(function(p){return getSector(p.ticker)==='bonos';});
   var onPos=pos.filter(function(p){return getSector(p.ticker)==='on';});
   var fciPos=pos.filter(function(p){return getSector(p.ticker)==='fci';});
-  // 'argentina' incluido: Finnhub tiene datos BYMA para acciones locales (CECO2.BA, HARG.BA, etc.)
-  // y puede ser más fresco que el cache de Yahoo para small-caps
-  // 'argentina' se sacó del fallback a Finnhub: Finnhub es un proveedor de EEUU y, para un
-  // ticker sin mapeo explícito (getFinnhubTicker devuelve el ticker "pelado"), puede resolverlo
-  // a una acción/ADR de otro mercado que casualmente comparte el símbolo — pasó con LOMA (Loma
-  // Negra): al fallar Yahoo .BA, cayó a Finnhub con 'LOMA' pelado, que devolvió el ADR de NYSE
-  // (~USD 10) en vez del precio real en ARS de BYMA (~3227), y ese valor se usó tal cual como si
-  // fuera ARS. Para 'argentina' no hay fallback confiable → si Yahoo .BA falla, se mantiene la
-  // última cotización cargada (ver 'no limpiar quotes viejas' más arriba) en vez de mostrar un
-  // precio de otro mercado.
   var finnhubFallbackSectors=new Set(['nyse','brasil','europa','china','cripto']);
 
   var total=pos.length,done=0,errors=0;
 
-  // Coalescer de renders: renderPortfolio() recalcula getPositions() (recorre TODO el historial
-  // de movimientos, ordena, etc.) y reconstruye la tabla entera — carísimo para llamarlo una vez
-  // por cada ticker que llega (70-100+ veces por actualización). Se agrupa a lo sumo 1 render por
-  // frame con requestAnimationFrame: varias respuestas que llegan casi juntas comparten un solo
-  // render en vez de una cada una. La barra de progreso (texto/ancho) sigue actualizándose al toque.
   var _renderPending=false;
   function updateProgress(){
     done++;
@@ -6324,13 +5590,6 @@ async function fetchAllQuotes(){
 
   // ── FASE 1: Yahoo .BA para todas las posiciones no-bono/ON (paralelo) ───────
 
-  // Limita cuántos fetchYahooAR() concurrentes se disparan a la vez. Probado en vivo (2026-09-11):
-  // api.allorigins.win (el único proxy vivo hoy, ver changelog) responde bien a 1 pedido (~2.5s)
-  // pero falla los 30 pedidos si se lo bombardea en paralelo ("Failed to fetch" en los 30, confirmado
-  // con Promise.all de 30 tickers reales). fetchBymaAll/fetchArgAll/etc lanzaban TODOS los tickers
-  // (60-90+) al mismo tiempo — de ahí que BBAS3/PETR3 (sin fallback a Finnhub, ver nota abajo) y
-  // GLOB/D31M7 (sin cobertura en data912) se quedaran sin cotización: su único intento a Yahoo caía
-  // en medio de esa ráfaga. Se acota a `limit` pedidos en vuelo por vez.
   var YAHOO_CONCURRENCY=5;
   function mapWithConcurrency(items, limit, worker){
     var idx=0, results=new Array(items.length);
@@ -6344,10 +5603,6 @@ async function fetchAllQuotes(){
     return Promise.all(runners).then(function(){return results;});
   }
   async function fetchBymaAll(){
-    // data912 arg_cedears cubre la enorme mayoría de CEDEARs (probado en vivo: AAPL, MSFT, ABEV,
-    // BBD, ITUB, MELI, VALE, TSLA, GOOGL, BBAS3, PETR3... 1000+ tickers) — mucho más confiable que
-    // Yahoo vía proxy gratuito. Se consulta una sola vez acá y se usa como fuente primaria; Yahoo
-    // queda de fallback solo para lo que data912 no tenga.
     var mapCedears={};
     try{mapCedears=await fetchArgCedearsAPI();}catch(e){}
     await mapWithConcurrency(bymaPos, YAHOO_CONCURRENCY, async function(p){
@@ -6357,16 +5612,12 @@ async function fetchAllQuotes(){
         var cq=esBRLDirecto?null:mapCedears[p.ticker.toUpperCase()];
         var _esData912=cq&&cq.price>0;
         var fbq=_esData912?cq:await fetchYahooAR(p.ticker,esBRLDirecto?'.SA':'.BA');
-        // argentina: ya viene en ARS → guardar directo
-        // BRL_TICKERS (B3 directo): guardar en ARS sin normalizar
-        // Todo lo demás (nyse/brasil/europa/china/cripto CEDEAR): guardar ARS directo
         if(s!=='argentina'&&!esBRLDirecto){
-          fbq.fromByma=true; // precio en ARS/CEDEAR — renderPortfolio lo usa directamente (sin CCL race)
+          fbq.fromByma=true;
         }
         quotes[p.ticker]=fbq;
         _stampQuote(p.ticker,_esData912?'data912':'yahoo');
       }catch(e){
-        // No contar error todavía: Finnhub fallback cubre todos los sectores
       }
       updateProgress();
     });
@@ -6384,8 +5635,6 @@ async function fetchAllQuotes(){
         if(q&&q.price>0){quotes[p.ticker]=q;_stampQuote(p.ticker,'data912');}
         else{quotes[p.ticker]=await fetchYahooAR(p.ticker);_stampQuote(p.ticker,'yahoo');}
       }catch(e){
-        // Sin dato nuevo: se mantiene la última cotización cargada (mismo criterio
-        // que antes — para 'argentina' no hay fallback a Finnhub, ver nota arriba)
       }
       updateProgress();
     });
@@ -6400,10 +5649,9 @@ async function fetchAllQuotes(){
     for(var i=0;i<fallbackPos.length;i++){
       var p=fallbackPos[i];
       try{
-        // Finnhub: USD por acción subyacente → renderPortfolio hace (price/ratio)*CCL_HOY
         quotes[p.ticker]=await fetchFinnhub(getFinnhubTicker(p.ticker));
         _stampQuote(p.ticker,'finnhub');
-        renderPortfolio(); // actualizar UI al llegar cada precio
+        renderPortfolio();
       }catch(e){ errors++; }
       if(i<fallbackPos.length-1)await delay(1100);
     }
@@ -6441,8 +5689,6 @@ async function fetchAllQuotes(){
     });
   }
 
-  // FCI: ArgentinaDatos (fuente CAFCI) — mapa ticker → categoría + nombre del fondo
-  // Verificado 02/07/2026: "Adcap Gestión Estratégica III - Clase A" en /v1/finanzas/fci/rentaFija
   var FCI_AD_FONDOS={'AGE3':{cat:'rentaFija',nombre:'Adcap Gestión Estratégica III - Clase A'}};
   function _fciNorm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim();}
   var _fciCatCache={};
@@ -6464,21 +5710,17 @@ async function fetchAllQuotes(){
         var cur=find(res[0]);
         var prev=find(res[1]);
         if(cur){
-          // VCP en ARS por cuotaparte — igual que argentina (fromByma=true)
           quotes[p.ticker]={price:parseFloat(cur.vcp),prevClose:prev?parseFloat(prev.vcp):parseFloat(cur.vcp),fromByma:true,fromFci:true};
           _stampQuote(p.ticker,'cafci');
         }
-      }catch(e){/* ArgentinaDatos no disponible — sin precio actualizado */}
+      }catch(e){}
       updateProgress();
     }));
   }
 
-  // Fase 1: Yahoo .BA + data912 para bonos/ON + CAFCI para FCI en paralelo
   await Promise.all([fetchBymaAll(),fetchArgAll(),fetchBonosAll(),fetchONsAll(),fetchFCIAll()]);
-  // Fase 2: Finnhub fallback para los que Yahoo no pudo resolver
   await fetchFinnhubFallback();
 
-  // Render final con todos los datos listos
   renderPortfolio();
   (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
 
@@ -6489,17 +5731,12 @@ async function fetchAllQuotes(){
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
   try{localStorage.setItem((PFX+'q3'),JSON.stringify(quotes));localStorage.setItem((PFX+'q3_ts'),Date.now());}catch(e){}
 
-  // RSI: refresco oportunista (no bloquea el render de precios; cada ticker respeta su propio TTL)
   if(CFG.rsi&&typeof fetchAllRSI==='function') fetchAllRSI();
-  // TIR de Bonos: idem, oportunista
   if(CFG.rsi&&typeof fetchAllTIR==='function') fetchAllTIR();
-  // Noticias: badge de movimientos fuertes (v44)
   if(typeof nwsAfterQuotes==='function') nwsAfterQuotes();
 }
 
 // ─── RSI (14, método Wilder) ───────────────────────────────────────────────
-// No aplica a Bonos/ONs (ahí va TIR). Símbolo Yahoo: Argentina usa .BA, el resto ticker directo
-// (así matchea el gráfico "de fábrica" de TradingView, que es lo que la gente compara).
 function getRsiSymbol(ticker){
   return getSector(ticker)==='argentina' ? (ticker+'.BA') : ticker;
 }
@@ -6524,7 +5761,6 @@ function wilderRSI(closes, period){
   return 100-100/(1+rs);
 }
 
-// Colores según rangos pedidos: >75 rojo, 67-75 naranja, 33-67 neutro, 25-33 verde suave, <25 verde fuerte
 function rsiColor(v){
   if(v==null||isNaN(v)) return 'var(--text3)';
   if(v>75) return 'var(--red)';
@@ -6534,7 +5770,6 @@ function rsiColor(v){
   return 'var(--text2)';
 }
 
-// Trae cierres diarios (3 meses) vía la misma cadena de proxies que ya usa fetchYahooAR
 async function fetchRSICloses(symbol){
   var chartUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=3mo';
   var tries=[
@@ -6566,8 +5801,6 @@ async function fetchRSICloses(symbol){
   throw new Error('Sin datos RSI para '+symbol);
 }
 
-// Recalcula RSI para todos los tickers abiertos (excepto bonos/ONs), respetando un TTL
-// de 12hs por ticker para no golpear los proxies gratuitos en cada auto-refresh de precios.
 var _fetchAllRSIRunning=false;
 async function fetchAllRSI(){
   if(_fetchAllRSIRunning) return;
@@ -6594,7 +5827,7 @@ async function fetchAllRSI(){
         var closes=await fetchRSICloses(getRsiSymbol(p.ticker));
         var val=wilderRSI(closes,14);
         if(val!=null) RSI_CACHE[p.ticker]={value:val,ts:Date.now()};
-      }catch(e){ /* se deja el valor cacheado previo, si había */ }
+      }catch(e){ }
       if(i%5===4) renderPortfolio();
       if(i<pending.length-1) await new Promise(function(r){setTimeout(r,600);});
     }
@@ -6606,7 +5839,6 @@ async function fetchAllRSI(){
 }
 
 // ─── Toggle columna RSI (oculta por defecto) ───
-function toggleRSICol(show){} // vista anterior (sin uso desde v193)
 (function initRSIToggle(){
   var show='0';
   try{var s=localStorage.getItem((PFX+'showRSI'));if(s!==null)show=s;}catch(e){}
@@ -6619,10 +5851,6 @@ function toggleRSICol(show){} // vista anterior (sin uso desde v193)
 })();
 
 // ─── TIR de Bonos (fuente: EcoValores research, cobertura parcial) ────────
-// Parsea TODAS las tablas de la página: para cada tabla busca la columna
-// cuyo header sea "% TIR" (o "TIR"), y para cada fila con un link a
-// ticker.php?t=XXX toma el valor de esa columna. Tablas sin columna TIR
-// (Acciones, Cedears, Commodities, etc.) se ignoran solas al no matchear.
 function parseEcoValoresTIR(html){
   var map={};
   try{
@@ -6681,8 +5909,6 @@ async function fetchEcoValoresTIR(){
   throw new Error('Sin datos de TIR (EcoValores)');
 }
 
-// Trae TIR para todos los Bonos abiertos en un solo fetch (EcoValores no pagina).
-// TTL de 12hs igual que RSI. Tickers no presentes en EcoValores quedan en '—'.
 var _fetchAllTIRRunning=false;
 async function fetchAllTIR(){
   if(_fetchAllTIRRunning) return;
@@ -6700,7 +5926,7 @@ async function fetchAllTIR(){
       if(map.hasOwnProperty(p.ticker)){
         TIR_CACHE[p.ticker]={value:map[p.ticker],ts:now};
       } else if(!TIR_CACHE[p.ticker]){
-        TIR_CACHE[p.ticker]={value:null,ts:now}; // marcado "consultado, sin cobertura" para no reintentar cada render
+        TIR_CACHE[p.ticker]={value:null,ts:now};
       }
     });
     try{localStorage.setItem((PFX+'tir'),JSON.stringify(TIR_CACHE));}catch(e){}
@@ -6800,7 +6026,6 @@ function deleteRatio(ticker){
   renderRatios();recalcMovimientos(ticker);
 }
 
-
 function importRatiosXLSX(input){
   var file=input.files[0];if(!file)return;
   var sel=document.getElementById('ratios-status');
@@ -6813,7 +6038,7 @@ function importRatiosXLSX(input){
       var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
       var added=0,updated=0;
       rows.forEach(function(row,i){
-        if(i<8)return; // skip headers
+        if(i<8)return;
         var nombre=String(row[1]||'').trim();
         var ticker=String(row[2]||'').trim();
         var ratio_raw=String(row[7]||'').trim().replace(/ /g,'');
@@ -6867,7 +6092,7 @@ function addDividendo(){
   dividendos.push({id:Date.now(),fecha:fecha,ticker:ticker,ars:ars,ccl:ccl||null,usd:usd,notas:notas});
   try{localStorage.setItem((PFX+'divs'),JSON.stringify(dividendos));}catch(e){}
   sbSetConfig('dividendos', dividendos);
-  renderDividendos();renderPortfolio();renderDivsCard();
+  renderDividendos();renderPortfolio();
   document.getElementById('d-ars').value='';document.getElementById('d-ccl').value='';document.getElementById('d-usd').value='';document.getElementById('d-notas').value='';
   flash(sel,'Dividendo registrado',false);
 }
@@ -6882,7 +6107,7 @@ function deleteDividendo(id){
     localStorage.setItem((PFX+'divs_del'),JSON.stringify(pd));
   }catch(e){}
   try{localStorage.setItem((PFX+'divs'),JSON.stringify(dividendos));}catch(e){}
-  renderDividendos();renderPortfolio();renderDivsCard();
+  renderDividendos();renderPortfolio();
   sbSetConfig('dividendos',dividendos).then(function(ok){
     if(ok){
       try{localStorage.removeItem((PFX+'divs_del'));}catch(e){}
@@ -6897,12 +6122,12 @@ function clearDividendos(){
   if(!confirm('Borrar todos los dividendos?'))return;
   dividendos=[];try{localStorage.removeItem((PFX+'divs'));}catch(e){}
   sbSetConfig('dividendos', []);
-  renderDividendos();renderPortfolio();renderDivsCard();
+  renderDividendos();renderPortfolio();
 }
 
 function renderDividendos(){
   var empty=document.getElementById('d-empty');var wrap=document.getElementById('d-wrap');var body=document.getElementById('d-body');var totalEl=document.getElementById('d-total');
-  if(!empty||!wrap||!body)return; // portafolios sin la solapa Dividendos manual (vieja)
+  if(!empty||!wrap||!body)return;
   if(!dividendos.length){empty.style.display='';wrap.style.display='none';totalEl.textContent='';return;}
   empty.style.display='none';wrap.style.display='';
   var totalUSD=dividendos.reduce(function(a,d){return a+(d.usd||0);},0);
@@ -6917,9 +6142,7 @@ function renderTargets(){
   var body=document.getElementById('targets-body');
   var pos_map={};getPositions().forEach(function(p){if(p.qty>0)pos_map[p.ticker]=p;});
   var filterVal=((document.getElementById('targets-filter')||{}).value||'').toUpperCase().trim();
-  // Solo mostrar tickers que están en cartera (qty > 0)
   var allTickers=Object.keys(pos_map).sort();
-  // Agregar también los que tienen target seteado aunque hayan salido de cartera temporalmente
   Object.keys(TARGET_TABLE).forEach(function(t){ if(TARGET_TABLE[t]!=null && allTickers.indexOf(t)<0) allTickers.push(t); });
   allTickers.sort();
   var tickers=filterVal?allTickers.filter(function(t){return t.includes(filterVal);}):allTickers;
@@ -6969,7 +6192,6 @@ function tgtSyncOnTickerChange(){
   tgtUpdateLabel(ticker);
   var usd=parseFloat(document.getElementById('tgt-usd').value);
   var ars=parseFloat(document.getElementById('tgt-ars').value);
-  // Si hay USD, recalcular ARS; si solo hay ARS, recalcular USD
   if(usd>0) tgtSyncFromUSD();
   else if(ars>0) tgtSyncFromARS();
 }
@@ -7045,7 +6267,6 @@ function saveTarget(ticker){
 }
 
 // ════════════════════════════════════════════════════════
-// TRACKER DE DIVIDENDOS CCL — con PIN + ojo privacidad
 // ════════════════════════════════════════════════════════
 var TRK = {
   DKEY: 'trk_divs_v1'+CFG.trkSuffix,
@@ -7062,20 +6283,10 @@ var TRK = {
   inited: false
 };
 
-// Migración única: las claves de localStorage del tracker de dividendos eran
-// idénticas en los 5 portafolios (trk_divs_v1 / trk_pin_v1 / etc.), y como los 5
-// se publican bajo el mismo origen (gcovetta.github.io, solo cambia la carpeta),
-// localStorage se compartía entre todos — un navegador que hubiera abierto otro
-// portafolio antes podía terminar mostrando (o incluso guardando) sus dividendos
-// acá. Cada app ahora usa una clave propia (sufijo _gdc/_omar/_juli/_hilda/_ana);
-// esto borra las claves viejas compartidas para que dejen de filtrarse.
 ['trk_divs_v1','trk_pin_v1','trk_session_v1','trk_ccl_v1'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
 
-function trkHsh(s){return s.split('').reduce(function(a,c){return(((a<<5)-a)+c.charCodeAt(0))|0;},0).toString(36);}
 function trkSave(){
   try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
-  // Igual que los movimientos: snapshot "pendiente de subir" + reintentos + aviso si falla. Y nunca
-  // escribir antes de terminar de leer Supabase (si no, una lista vacía o parcial pisaba la de la nube).
   try{localStorage.setItem((PFX+'trk_pending'),JSON.stringify(TRK.divs));}catch(e){}
   if(typeof _gdcInitDone==='undefined'||!_gdcInitDone){console.warn('[trkSave] init no terminó — no se sube todavía ('+TRK.divs.length+' cobros)');return;}
   sbSaveArrayRetry('trk_divs', TRK.divs).then(function(ok){
@@ -7084,23 +6295,15 @@ function trkSave(){
   });
 }
 function trkLoad(){
-  // TRK.divs ya fue cargado desde Supabase en el init.
-  // Solo usar localStorage como fallback si está vacío.
   if(!TRK.divs||!TRK.divs.length){
     try{var d=localStorage.getItem(TRK.DKEY);if(d)TRK.divs=JSON.parse(d);}catch(e){TRK.divs=[];}
   }
 }
-function trkGetPin(){try{return localStorage.getItem(TRK.PKEY)||null;}catch(e){return null;}}
-function trkSavePin(p){try{localStorage.setItem(TRK.PKEY,trkHsh(p));}catch(e){}}
-function trkCheckPin(p){return trkHsh(p)===trkGetPin();}
 function trkSaveCCL(v){
   try{localStorage.setItem(TRK.CKEY,String(v));}catch(e){}
   sbSetConfig('trk_ccl', v);
 }
 function trkLoadCCL(){try{var v=localStorage.getItem(TRK.CKEY);return v?parseFloat(v):null;}catch(e){return null;}}
-function trkSetSession(){try{localStorage.setItem(TRK.SKEY,Date.now()+'');}catch(e){}}
-function trkHasSession(){try{var t=localStorage.getItem(TRK.SKEY);return t&&(Date.now()-parseInt(t))<8*60*60*1000;}catch(e){return false;}}
-function trkClearSession(){try{localStorage.removeItem(TRK.SKEY);}catch(e){}}
 
 function initTracker(){
   if(TRK.inited) return;
@@ -7130,7 +6333,6 @@ function trkSetCCL(v,src){
   TRK.ccl=v;trkSaveCCL(v);
   document.getElementById('trk-ccl-display').textContent='$'+v.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('trk-ccl-src').textContent='('+src+')';
-  // actualizar topbar si no viene de dolarapi (para no sobreescribir el live)
   var tbCcl=document.getElementById('tb-ccl');
   if(tbCcl&&tbCcl.textContent==='—'){
     tbCcl.textContent='$'+Math.round(v).toLocaleString('es-AR');
@@ -7145,7 +6347,6 @@ async function trkFetchCCL(){
   try{var r=await fetch('https://dolarapi.com/v1/dolares/contadoconliqui');var d=await r.json();var v=parseFloat(d.venta);if(v>0){trkSetCCL(v,'dolarapi.com');return;}}catch(e){}
   try{var r2=await fetch('https://api.bluelytics.com.ar/v2/latest');var d2=await r2.json();var v2=parseFloat(d2.blue&&d2.blue.value_sell);if(v2>0){trkSetCCL(v2,'bluelytics');return;}}catch(e){}
   if(saved&&saved>0){trkSetCCL(saved,'guardado');return;}
-  // fallback a tabla embebida
   var hoy=new Date();
   var k=(hoy.getDate()<10?'0':'')+hoy.getDate()+'/'+(hoy.getMonth()<9?'0':'')+(hoy.getMonth()+1)+'/'+hoy.getFullYear();
   var fromTable=CCL_TABLE[k];
@@ -7153,9 +6354,7 @@ async function trkFetchCCL(){
   else{document.getElementById('trk-ccl-display').textContent='No disponible';document.getElementById('trk-ccl-src').textContent='— ingresá manualmente';}
 }
 
-
 // ════════════════════════════════════════════════════════
-// CALCULADORA DE ARBITRAJE
 // ════════════════════════════════════════════════════════
 var ARB_PAIRS = [
   { a:'GD29', b:'AL30', pctObj:104.5,
@@ -7213,7 +6412,6 @@ function arbRemovePair(pi){
 
 function arbUpdate(pi, ri, field, val){
   if(ri===-1){
-    // par-level field
     if(field==='a'||field==='b') ARB_PAIRS[pi][field]=val.trim().toUpperCase();
     else if(field==='pctObj') ARB_PAIRS[pi].pctObj=parseFloat(val)||100;
   } else {
@@ -7222,7 +6420,6 @@ function arbUpdate(pi, ri, field, val){
     else r[field]=val;
   }
   arbSave();
-  // Re-render just the ratio cells
   arbRenderRatios(pi);
 }
 
@@ -7242,7 +6439,6 @@ function arbRenderRatios(pi){
     if(el){
       el.innerHTML='<span class="'+cls+'">'+ratio.toFixed(2)+'%</span>';
     }
-    // arrow direction
     var arr=document.getElementById('arb-arrow-'+pi+'-'+ri);
     if(arr){
       var above=ratio>=(pair.pctObj||100);
@@ -7259,7 +6455,6 @@ function arbRender(){
   var html='';
   ARB_PAIRS.forEach(function(pair, pi){
     html+='<div class="arb-wrap">';
-    // Header row - ticker names + obj editable
     html+='<div class="arb-pair-header">';
     html+='<div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div>';
     html+='<div class="arb-label" style="flex-direction:column;gap:2px">';
@@ -7273,9 +6468,8 @@ function arbRender(){
     html+='<div class="arb-label">Condición</div>';
     html+='<div class="arb-label">Voy</div>';
     html+='<div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair('+pi+')" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div>';
-    html+='</div>'; // end header
+    html+='</div>';
 
-    // Data rows
     pair.rows.forEach(function(row, ri){
       var ratio=row.precioB>0?(row.precioA/row.precioB*100):0;
       var cls=arbRatioClass(ratio, pair.pctObj);
@@ -7283,31 +6477,22 @@ function arbRender(){
       var isLast=(ri===pair.rows.length-1)&&true;
       var rowBg=ri%2===0?'':'background:rgba(255,255,255,.025)';
       html+='<div class="arb-row" style="'+rowBg+'">';
-      // Plazo
       html+='<div class="arb-cell arb-plazo"><input class="arb-input" value="'+row.plazo+'" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate('+pi+','+ri+',\'plazo\',this.value)"></div>';
-      // Precio A
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioA||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioA\',this.value)" style="color:#a78bfa"></div>';
-      // Precio B
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioB||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioB\',this.value)" style="color:#448aff"></div>';
-      // Ratio calculado
       html+='<div class="arb-cell" id="arb-ratio-'+pi+'-'+ri+'"><span class="'+cls+'">'+(ratio>0?ratio.toFixed(2)+'%':'—')+'</span></div>';
-      // Flecha
       html+='<div class="arb-cell arb-op '+(above?'sell':'buy')+'" id="arb-arrow-'+pi+'-'+ri+'">'+(ratio>0?(above?'>':'<'):'')+'</div>';
-      // Condición
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.condicion||'')+'" placeholder="$1.00" oninput="arbUpdate('+pi+','+ri+',\'condicion\',this.value)"></div>';
-      // Voy
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.voy||'')+'" placeholder="ticker" oninput="arbUpdate('+pi+','+ri+',\'voy\',this.value)" style="text-transform:uppercase;font-weight:600"></div>';
-      // Nominales
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.nominales||'')+'" placeholder="—" oninput="arbUpdate('+pi+','+ri+',\'nominales\',this.value)"></div>';
-      html+='</div>'; // end row
+      html+='</div>';
     });
 
-    // Add row button
     html+='<div style="text-align:right;margin-top:3px;margin-bottom:2px">';
     html+='<button class="btn btn-sm" onclick="arbAddRow('+pi+')" style="font-size:.6rem;padding:2px 8px">+ plazo</button>';
     html+='</div>';
 
-    html+='</div>'; // end arb-wrap
+    html+='</div>';
   });
   container.innerHTML=html;
 }
@@ -7321,15 +6506,12 @@ function arbAddRow(pi){
 async function fetchTopbarRates(){
   var _cclAntes=CCL_HOY,_mepAntes=MEP_HOY,_brlAntes=BRL_HOY;
   try{await _fetchTopbarRates();}finally{
-    // si cambió el dólar de hoy, recalcular la cartera (precios de Cedears, P. Venta, totales)
     if((Math.abs(CCL_HOY-_cclAntes)>0.5||Math.abs(MEP_HOY-_mepAntes)>0.5||Math.abs(BRL_HOY-_brlAntes)>0.01)&&typeof _gdcInitDone!=='undefined'&&_gdcInitDone&&typeof renderPortfolio==='function'){try{renderPortfolio();}catch(e){}}
   }
 }
 async function _fetchTopbarRates(){
-  // Update RC CCL tag
   var rcTag=document.getElementById('rc-ccl-tag');
   if(rcTag&&typeof CCL_HOY!=='undefined') rcTag.textContent='CCL: $'+Math.round(CCL_HOY).toLocaleString('es-AR');
-  // CCL
   try{
     var rc=await fetch('https://dolarapi.com/v1/dolares/contadoconliqui');
     var dc=await rc.json();
@@ -7340,7 +6522,6 @@ async function _fetchTopbarRates(){
       document.getElementById('tb-ccl-src').textContent='venta';
       var rcTag2=document.getElementById('rc-ccl-tag');
       if(rcTag2) rcTag2.textContent='CCL: $'+Math.round(vc).toLocaleString('es-AR');
-      // Variación: buscar día hábil anterior en CCL_TABLE, fallback a argentinadatos
       try{
         var prevCCL=null;
         var d=new Date();d.setDate(d.getDate()-1);
@@ -7363,7 +6544,6 @@ async function _fetchTopbarRates(){
       }catch(e2){}
     }
   }catch(e){}
-  // MEP
   try{
     var rm=await fetch('https://dolarapi.com/v1/dolares/bolsa');
     var dm=await rm.json();
@@ -7374,7 +6554,6 @@ async function _fetchTopbarRates(){
       document.getElementById('tb-mep-src').textContent='venta';
     }
   }catch(e){
-    // fallback bluelytics
     try{
       var rm2=await fetch('https://api.bluelytics.com.ar/v2/latest');
       var dm2=await rm2.json();
@@ -7385,7 +6564,6 @@ async function _fetchTopbarRates(){
       }
     }catch(e2){}
   }
-  // BRL/USD (frankfurter.app — gratuito, sin key)
   try{
     var rb=await fetch('https://api.frankfurter.app/latest?from=USD&to=BRL');
     var db=await rb.json();
@@ -7393,8 +6571,6 @@ async function _fetchTopbarRates(){
     if(vb>0){ BRL_HOY=vb; }
   }catch(e){}
 }
-
-function trkShowPin(){ trkShowApp(); }
 
 function trkShowApp(){
   var app=document.getElementById('trk-app');
@@ -7404,27 +6580,6 @@ function trkShowApp(){
   trkRender();
 }
 
-function trkBuildPad(){}
-
-function trkUpdateDots(){}
-
-function trkHandleKey(k){}
-
-function trkTryLogin(){ trkShowApp(); }
-
-function trkConfirmNew(){}
-
-function trkDoConfirm(){}
-
-function trkResetAll(){
-  if(!confirm('Esto borrará todos los dividendos del tracker y el PIN. ¿Seguro?'))return;
-  [TRK.DKEY,TRK.PKEY,TRK.CKEY,TRK.SKEY].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
-  sbSaveArray('trk_divs', []);
-  sbSetConfig('trk_ccl', null);
-  TRK.divs=[];TRK.ccl=null;TRK.inited=false;
-  initTracker();
-}
-
 function trkDeleteDiv(id){
   var idx=TRK.divs.findIndex(function(d){return d.id===id;});
   if(idx<0) return;
@@ -7432,7 +6587,7 @@ function trkDeleteDiv(id){
   TRK.divs.splice(idx,1);
   trkSave();
   trkRender();
-  renderDivsCard();
+  
 }
 
 function trkToggleEye(){
@@ -7475,7 +6630,6 @@ function trkRender(){
       tr.innerHTML='<td style="font-weight:700">'+d.ticker+' <span onclick="divTipoCambiar('+d.id+')" title="Tipo de cobro (click para cambiar): dividendo, renta o amortización (devolución de capital)'+(d.tipo?'':' — estimado')+'" style="cursor:pointer;font-size:.55rem;font-weight:700;border:1px solid '+_tpC+';color:'+_tpC+';border-radius:4px;padding:0 4px;vertical-align:middle;'+(d.tipo?'':'border-style:dashed')+'">'+({DIV:'DIV',RENTA:'RENTA',AMORT:'AMORT'}[_tp])+'</span></td><td class="mono">'+fechaF+'</td><td><span class="badge '+(d.moneda==='USD'?'badge-usd':'badge-ars')+'">'+d.moneda+'</span></td><td class="mono trk-sensitive" style="text-align:right">'+mOrig+'</td><td class="mono trk-sensitive pos" style="text-align:right;font-weight:600">'+mUSD+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+cclF+'</td><td class="mono trk-sensitive muted" style="text-align:right">'+accF+'</td><td><button class="btn btn-d btn-sm" onclick="trkDeleteDiv('+d.id+')">x</button></td>';
       tbody.appendChild(tr);
     });
-    // Footer con totales
     var _tfootEl=document.getElementById('trk-tfoot');
     if(_tfootEl){
       var _sumARS=0,_sumUSD=0;
@@ -7528,11 +6682,8 @@ function trkRender(){
 }
 
 // ══ Flujo cobrado por mes / año (v42) ══════════════════════════════════════
-// Agrupa TRK.divs confirmados (dividendos + renta/amortización de bonos y ON) por
-// año y mes, en USD con la misma conversión que el historial (CCL de la fecha ±7
-// días → cclUsado → montoUSD). Usa el monto completo cobrado (no montoPPC).
 var TRK_FLUJO={anio:null,chart:null};
-var TRK_FLUJO_TOPN=8; // tickers que muestra el tooltip del gráfico, de mayor a menor
+var TRK_FLUJO_TOPN=8;
 var TRK_MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 function trkDivUSD(d){
   if(d.moneda==='USD') return d.monto||0;
@@ -7666,15 +6817,11 @@ function trkAddDiv(){
   if(!ticker){flash(sel,'Ingresá el ticker',true);return;}
   if(!fecha){flash(sel,'Seleccioná la fecha',true);return;}
   if(!monto||monto<=0){flash(sel,'Ingresá el monto',true);return;}
-  // cobros en pesos → USD al MEP de la fecha (como la liquidez y los bonos)
   var cclFecha=(moneda==='ARS')?(MEP_TABLE[fecha.split('-').reverse().join('/')]||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||null):null;
   if(moneda==='ARS'&&!cclFecha){flash(sel,'Necesitás el MEP para convertir (no hay MEP cargado para esa fecha ni del día)',true);return;}
   var cclUsado=cclFecha;
   var montoUSD=moneda==='USD'?monto:monto/cclFecha;
 
-  // Impacto en PPC / ganancia de venta: si el activo está en cartera, baja el PPC;
-  // si ya no está (se vendió todo), suma como ganancia realizada de la venta.
-  // Requiere confirmación manual mostrando el efecto exacto antes de aplicarlo.
   var pncApplied=false,pncTarget=null;
   var _match=(typeof trkFindPosicionEnCualquierCartera==='function')?trkFindPosicionEnCualquierCartera(ticker):null;
   var posActual=_match?_match.pos:getPositions().find(function(p){return p.ticker===ticker;});
@@ -7709,19 +6856,12 @@ function trkAddDiv(){
 }
 
 // ══ Histórico Veta → PPC (importación ÚNICA, formato viejo "Movimientos Dividendos y
-// Rentas Cobradas" .xls = HTML disfrazado). Toma DIV y RTA en efectivo (renta +
-// amortización − gastos), y solo resta del PPC si: (a) el activo sigue en cartera hoy,
-// (b) según los movimientos de la app lo tenías a la fecha del cobro, y (c) en proporción
-// a las nominales de ese momento que todavía conservás (mínimo de tenencia desde el cobro
-// hasta hoy / tenencia del broker a esa fecha). Nada se aplica sin confirmar; se revierte
-// con hvRevert(). Los registros quedan en TRK.divs con fuente:'veta_hist' y montoPPC.
 var HVETA={rows:[],excl:[]};
 function _hvYMD(fechaAR){var f=(fechaAR||'').split('/');return f.length===3?f[2]+f[1].padStart(2,'0')+f[0].padStart(2,'0'):'0';}
 function _hvIsoYMD(iso){return (iso||'').replace(/-/g,'');}
 function _hvDays(a,b){return Math.abs((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/86400000);}
 function _hvFmt(n,d){return (n||0).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});}
 function _hvTC(iso,mercado){
-  // TC de la fecha del cobro, o el día anterior más cercano (hasta 7 días). Nunca el de hoy.
   var esBono=(mercado==='BONOS'||mercado==='ON'||mercado==='FCI');
   var d=new Date(iso+'T12:00:00');
   for(var i=0;i<=7;i++){
@@ -7753,7 +6893,6 @@ function hvParse(html){
   return {rows:rows,excl:excl};
 }
 function hvAnalyze(parsed){
-  // Línea de tiempo de tenencia por ticker (solo posiciones propias, igual que getPositions())
   var tl={};
   movimientos.forEach(function(m){
     if(!m||m.owner==='cristian')return;
@@ -7787,7 +6926,6 @@ function hvAnalyze(parsed){
       r.tc=t.tc;r.tcTipo=t.tipo;r.montoUSD=r.monto/t.tc;
     }
     r.montoPPC=r.montoUSD*r.factor;
-    // ¿Ya está en el tracker? (mismo ticker y moneda, ±7 días)
     var ex=TRK.divs.find(function(d){return !usados[d.id]&&d.ticker===r.ticker&&d.moneda===r.moneda&&d.fecha&&_hvDays(d.fecha,r.fecha)<=7;});
     if(ex){
       usados[ex.id]=true;
@@ -7910,7 +7048,6 @@ function hvRevert(){
 
 // ── Importación XLS del broker ────────────────────────────────────────────
 function trkImpInit(){
-  // Importador genérico (GDC: un solo archivo)
   var _f=document.getElementById('trk-imp-file');
   if(_f&&!_f._trkBound){_f._trkBound=true;_f.addEventListener('change', function(e){
     var file = e.target.files[0];
@@ -7918,9 +7055,8 @@ function trkImpInit(){
     var reader = new FileReader();
     reader.onload = function(ev){ trkImpParse(ev.target.result, file.name); };
     reader.readAsArrayBuffer(file);
-    this.value = ''; // reset input para poder subir el mismo archivo de nuevo
+    this.value = '';
   });}
-  // Importador Bull Market (Juli/Hilda/Omar: un archivo por moneda)
   [['trk-imp-file-ars','ARS'],['trk-imp-file-usd','USD'],['trk-imp-file-cable','USD']].forEach(function(pair){
     var el = document.getElementById(pair[0]);
     if(!el||el._trkBound) return;
@@ -7938,14 +7074,12 @@ function trkImpInit(){
 }
 
 function trkImpParseNum(s){
-  // "48.047,05" → 48047.05 | "1,52" → 1.52 | "3.325,00" → 3325
   if(!s || s.trim()==='' || s.trim()==='0,00') return 0;
   var c = s.trim().replace(/\./g,'').replace(',','.');
   return parseFloat(c)||0;
 }
 
 function trkImpParseDate(s){
-  // "02/01/26" → "2026-01-02"
   if(!s) return null;
   var m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if(!m) return null;
@@ -7959,18 +7093,10 @@ function trkImpBuildKey(row){
 }
 
 function trkImpParseOldHTML(html){
-  // Quitar BOM si existe
   if(html.charCodeAt(0)===0xFEFF) html=html.slice(1);
 
-  // Estrategia: en vez de capturar <tr>...</tr> con multilinea (que falla en JS),
-  // extraemos todos los <td> del documento en orden y los agrupamos por <tr>
-  // Para eso detectamos los límites de <tr> y reconstruimos los grupos.
-
-  // 1. Limpiar el HTML dejando solo la estructura de tabla
-  // Reemplazar saltos de línea y tabs para aplanar
   var flat = html.replace(/[\r\n\t]+/g, ' ');
 
-  // 2. Extraer grupos de celdas por fila: partir por <tr
   var trBlocks = flat.split(/<tr[\s>]/i);
   var tagRe = /<[^>]+>/g;
   var tdRe  = /<td[^>]*>(.*?)<\/td>/gi;
@@ -7979,7 +7105,6 @@ function trkImpParseOldHTML(html){
 
   for(var b=0; b<trBlocks.length; b++){
     var block = trBlocks[b];
-    // Extraer todas las <td> de este bloque
     var cells = [];
     var m;
     tdRe.lastIndex = 0;
@@ -7988,14 +7113,8 @@ function trkImpParseOldHTML(html){
       cells.push(raw);
     }
 
-    // Estructura real del broker:
-    // [0]=vacío(checkbox) [1]=fecha [2]=tipo [3]=nro [4]=especie [5]=moneda|portafolio [6]=portafolio|divi [7]=divi|%divi
-    // Si hay columna moneda (PESOS): [5]=PESOS [6]=portafolio [7]=divi/renta
-    // Si no hay columna moneda (USD): [5]=portafolio [6]=divi/renta
-
     if(cells.length < 7) continue;
 
-    // La fecha está en cells[1] (cells[0] es el td vacío)
     var fecha = trkImpParseDate(cells[1]);
     if(!fecha) continue;
 
@@ -8005,10 +7124,6 @@ function trkImpParseOldHTML(html){
     if(!especie) continue;
     if(cpbt === 'RESC' || cpbt === 'RES') continue;
 
-    // Estructura fija del broker:
-    // [0]=vacío [1]=fecha [2]=tipo [3]=nro.cpbt [4]=especie
-    // [5]=moneda (vacío=USD, 'PESOS'=ARS, o nombre especie en casos raros)
-    // [6]=portafolio (acciones) [7]=Divi/Renta ← monto real [8]=%divi ...
     var c5 = (cells[5]||'').trim();
     var moneda = (c5.toUpperCase() === 'PESOS') ? 'ARS' : 'USD';
     var portafolio = trkImpParseNum(cells[6]);
@@ -8030,16 +7145,6 @@ function trkImpParseOldHTML(html){
 }
 
 // ── Nuevo formato Veta Capital: export real xlsx de "Movimientos > Actividad"
-// (hoja "Movimientos", filas de metadata + cabecera Liquidación/Concertación/
-// Concepto/Especie/Cantidad/Precio/Importe/Estado/Comprobante/Referencia).
-// El ticker y la descripción del instrumento vienen como texto libre dentro
-// de "Referencia": "Liquidación de Caja de Valores - Especie [NNNNN] TICKER -
-// DESCRIPCION: Rta. X%. Posiciones al DATE." Se incluyen tanto dividendos de
-// acciones/CEDEARs como cupones (renta) de bonos/ONs — se etiquetan por
-// palabras clave en la descripción ('RENTA' para bonos/ON, 'DIV' para el
-// resto) pero no se descartan; el usuario decide fila por fila en el panel.
-// Devuelve null si el archivo no matchea este formato (para poder caer al
-// parser viejo del .xls disfrazado de HTML).
 function trkImpParseVetaNum(v){
   if(typeof v==='number') return v;
   return trkImpParseNum(String(v==null?'':v));
@@ -8078,13 +7183,13 @@ function trkImpParseVetaMovimientos(wb){
     var r=rows[i];
     if(!r||!r.length) continue;
     var concepto=cmpNorm(r[cConcepto]);
-    if(concepto.indexOf('liquidaci')<0 || concepto.indexOf('cv')<0) continue; // solo "Liquidación de CV"
+    if(concepto.indexOf('liquidaci')<0 || concepto.indexOf('cv')<0) continue;
 
     var referencia=String(r[cReferencia]||'');
     var m=referencia.match(refRe);
     if(!m) continue;
     var descr=m[2].trim();
-    var tipo=cuponRe.test(descr)?'RENTA':'DIV'; // bono/ON vs accion/CEDEAR — solo etiqueta, no filtra
+    var tipo=cuponRe.test(descr)?'RENTA':'DIV';
 
     var fecha=trkImpParseVetaDate(r[cLiq]);
     if(!fecha) continue;
@@ -8100,18 +7205,13 @@ function trkImpParseVetaMovimientos(wb){
   return out.length?out:null;
 }
 
-// Convierte el monto de una fila pendiente de importación a USD, usando el
-// mismo criterio que la carga manual (trkAddDiv): CCL de la fecha del
-// dividendo en CCL_TABLE, y si no está, el CCL de referencia (TRK.ccl).
 function _trkImpMontoUSD(row){
   if(row.moneda==='USD') return {montoUSD:row.monto,cclUsado:null,ok:true};
-  var cclFecha=MEP_TABLE[(row.fecha||'').split('-').reverse().join('/')]||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||null; // pesos → USD al MEP
+  var cclFecha=MEP_TABLE[(row.fecha||'').split('-').reverse().join('/')]||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||null;
   if(!cclFecha) return {montoUSD:null,cclUsado:null,ok:false};
   return {montoUSD:row.monto/cclFecha,cclUsado:cclFecha,ok:true};
 }
 
-// Calcula el impacto en el PPC del activo que tendría cargar esta fila,
-// sin aplicarlo — para mostrarlo en el panel antes de que el usuario confirme.
 function _trkImpPPCPreview(row){
   var conv=_trkImpMontoUSD(row);
   if(!conv.ok) return {ok:false};
@@ -8137,15 +7237,12 @@ function trkImpParse(input, fname){
     var rows=null;
     var isNewFormat=false;
 
-    // 1) Intentar como xlsx real: nuevo formato Veta Capital (hoja "Movimientos",
-    // export de Detalles > Movimientos > Actividad)
     try{
       var wb=XLSX.read(new Uint8Array(input),{type:'array'});
       rows=trkImpParseVetaMovimientos(wb);
       if(rows) isNewFormat=true;
     }catch(exWb){ rows=null; }
 
-    // 2) Fallback: formato viejo del broker (.xls disfrazado de HTML)
     if(!rows){
       var html=new TextDecoder('utf-8').decode(input);
       rows=trkImpParseOldHTML(html);
@@ -8172,10 +7269,6 @@ function trkImpParse(input, fname){
   }
 }
 
-// Punto de entrada único para carga manual (input file) y automática (tarea programada):
-// dedupea contra TRK.divs (confirmados + pendientes) y encola las filas nuevas con
-// estado:'pendiente' — persistidas en Supabase igual que cualquier dividendo, listas
-// para que el usuario las confirme una por una en el panel "Pendientes de revisión".
 function trkQueuePendingRows(rows){
   var existKeys = {};
   TRK.divs.forEach(function(d){ existKeys[trkImpBuildKey(d)] = true; });
@@ -8184,7 +7277,7 @@ function trkQueuePendingRows(rows){
   rows.forEach(function(r){
     var key=trkImpBuildKey(r);
     if(existKeys[key]){ dup++; return; }
-    existKeys[key]=true; // evita duplicados dentro del mismo archivo
+    existKeys[key]=true;
     added++;
     TRK.divs.unshift({
       id: Date.now()+Math.random(),
@@ -8216,7 +7309,7 @@ function trkRenderPending(){
   var card=document.getElementById('trk-pending-card');
   var tbody=document.getElementById('trk-pending-tbody');
   var badge=document.getElementById('trk-pending-badge');
-  if(!card||!tbody)return; // portafolios sin la tarjeta de dividendos pendientes
+  if(!card||!tbody)return;
   var pend=TRK.divs.filter(function(d){return d.estado==='pendiente';});
 
   if(!pend.length){ card.style.display='none'; return; }
@@ -8276,7 +7369,7 @@ function trkPendingConfirm(id){
   d.cclUsado = conv.cclUsado;
   d.pncApplied = pv.target==='ppc' || pv.target==='venta';
   d.pncTarget = pv.target;
-  delete d.estado; // confirmado
+  delete d.estado;
 
   trkSave();
   trkRender();
@@ -8292,9 +7385,6 @@ function trkPendingDiscard(id){
   trkRender();
 }
 
-// Punto de entrada para la tarea programada (vía javascript_tool en el navegador de Claude):
-// recibe el xlsx de Veta como base64 y hace exactamente lo mismo que subirlo a mano —
-// las filas nuevas quedan pendientes de revisión, nunca se confirman solas.
 window.trkAutoImportFromXLSX = function(base64, fname){
   try{
     var bin = atob(base64);
@@ -8339,23 +7429,13 @@ function trkCalcCCL(){
     document.getElementById('lupd').textContent='Cargando desde Supabase...';
     await sbPing();
 
-    // 1. Movimientos
-    // sbMov === null  → Supabase inalcanzable (error de red) → usar localStorage como fallback
-    // sbMov === []    → tabla vacía legítima (portfolio nuevo) → NO usar localStorage (puede estar contaminado)
-    // sbMov.length>0  → datos reales → usar y cachear
     var sbMov = await sbLoadArray('movimientos');
-    // Reconciliar cambios locales sin confirmar en la nube (ver saveAndRender/ptNYSE_pending_sync).
-    // Si hay un snapshot pendiente con movimientos que Supabase no tiene, reintentar guardarlos
-    // ANTES de aceptar la versión de Supabase como fuente de verdad — evita perder compras/ventas
-    // cargadas justo antes de un corte de red o un reload.
     try{
       var _pendingRaw=localStorage.getItem((PFX+'pending_sync'));
       if(_pendingRaw){
         var _pending=JSON.parse(_pendingRaw);
         var _cloudIds={};(sbMov||[]).forEach(function(m){if(m&&m.id!=null)_cloudIds[m.id]=true;});
         var _missing=_pending.filter(function(m){return m&&m.id!=null&&!_cloudIds[m.id];});
-        // Protección: si la nube ya tiene movimientos y el snapshot pendiente no comparte NINGUNO con ella,
-        // el snapshot no es de este portafolio (localStorage compartido entre portafolios del mismo origen) → se descarta.
         var _overlap=_pending.some(function(m){return m&&m.id!=null&&_cloudIds[m.id];});
         if(sbMov&&sbMov.length&&!_overlap){console.warn('[initFromSupabase] snapshot pendiente ajeno a este portafolio — descartado.');_missing=[];}
         if(_missing.length){
@@ -8370,34 +7450,25 @@ function trkCalcCCL(){
       }
     }catch(e){ console.warn('[initFromSupabase] reconciliación de pendientes falló',e); }
     if(sbMov !== null && sbMov.length){
-      // Supabase tiene datos → fuente de verdad
       movimientos = sbMov.filter(function(m){return m!=null;});
       try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));localStorage.setItem((PFX+'version'),DATA_VERSION);}catch(e){}
     } else if(sbMov === null){
-      // Supabase inalcanzable → fallback localStorage (solo si versión coincide)
       var storedVersion=null;try{storedVersion=localStorage.getItem((PFX+'version'));}catch(e){}
       var saved=null;try{saved=localStorage.getItem((PFX+'mov2'));}catch(e){}
       if(saved&&storedVersion===DATA_VERSION){
         try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}
       }
-      // Si no coincide versión → movimientos=[] y el usuario verá portafolio vacío hasta que Supabase vuelva
     } else {
-      // sbMov === [] → tabla vacía
-      // PRELOADED deshabilitado: los datos reales viven en Supabase.
-      // Si la tabla queda vacía, el portfolio muestra vacío hasta que se restituyan los datos.
     }
 
-    // 2. Dividendos
     var sbDivs = await sbGetConfig('dividendos');
     if(sbDivs && sbDivs.length){
       dividendos = sbDivs;
       try{localStorage.setItem((PFX+'divs'),JSON.stringify(dividendos));}catch(e){}
     } else {
       try{var sd=localStorage.getItem((PFX+'divs'));if(sd)dividendos=JSON.parse(sd);}catch(e){}
-      // Sincronizar a Supabase si hay datos en localStorage que nunca se guardaron
       if(dividendos.length) sbSetConfig('dividendos', dividendos);
     }
-    // Aplicar borrados pendientes (protección ante datos stale de Supabase)
     try{
       var _pd=JSON.parse(localStorage.getItem((PFX+'divs_del'))||'[]');
       if(_pd.length){
@@ -8409,67 +7480,46 @@ function trkCalcCCL(){
       }
     }catch(e){}
 
-    // 3. Tracker divs CCL
     var sbTrkDivs = await sbLoadArray('trk_divs');
     setTimeout(divsReparar,4000);
-    // Cobros cargados que no llegaron a subirse (falló la red o se cerró la pestaña): tienen prioridad
     var _trkPend=null;try{_trkPend=JSON.parse(localStorage.getItem((PFX+'trk_pending'))||'null');}catch(e){}
     if(Array.isArray(_trkPend)&&sbTrkDivs!==null){
       TRK.divs=_trkPend;try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
       sbSaveArrayRetry('trk_divs',TRK.divs).then(function(ok){if(ok){try{localStorage.removeItem((PFX+'trk_pending'));}catch(e){}}else warnSaveFailed('trk_divs');});
     } else if(sbTrkDivs && sbTrkDivs.length){
       TRK.divs = sbTrkDivs;
-      // Recuperar desde localStorage si tiene más entradas (Supabase pudo haber sido limpiado)
       try{var _lsTrk=localStorage.getItem(TRK.DKEY);if(_lsTrk){var _lsTrkData=JSON.parse(_lsTrk);if(_lsTrkData.length>TRK.divs.length){TRK.divs=_lsTrkData;sbSaveArray('trk_divs',TRK.divs);}}}catch(e){}
       try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
     } else {
       try{var td=localStorage.getItem(TRK.DKEY);if(td)TRK.divs=JSON.parse(td);}catch(e){}
     }
 
-    // 4. Ratios
     var sbRatios = await sbGetConfig('ratios');
     if(sbRatios){Object.keys(sbRatios).forEach(function(t){RATIOS_TABLE[t]=sbRatios[t];});try{localStorage.setItem((PFX+'ratios'),JSON.stringify(RATIOS_TABLE));}catch(e){}}
     else{try{var sr=localStorage.getItem((PFX+'ratios'));if(sr){var lsr=JSON.parse(sr);Object.keys(lsr).forEach(function(t){RATIOS_TABLE[t]=lsr[t];});}}catch(e){}}
 
-    // Ratios meta (nombre, mercado, país, rubro)
     var sbRatiosMeta = await sbGetConfig('ratios_meta');
     if(sbRatiosMeta){Object.keys(sbRatiosMeta).forEach(function(t){RATIOS_META[t]=sbRatiosMeta[t];});}
     else{if(Object.keys(RATIOS_META).length>0){sbSetConfig('ratios_meta',RATIOS_META);}}
 
-    // 5. Targets
     var sbTargets = await sbGetConfig('targets');
     if(sbTargets){Object.assign(TARGET_TABLE, sbTargets);try{localStorage.setItem((PFX+'targets'),JSON.stringify(TARGET_TABLE));}catch(e){}}
     else{try{var st=localStorage.getItem((PFX+'targets'));if(st){Object.assign(TARGET_TABLE,JSON.parse(st));}}catch(e){}}
 
-    // 5b. Rubros override
     var sbRubros = await sbGetConfig('rubros');
     if(sbRubros){Object.assign(USER_RUBRO_TABLE, sbRubros);try{localStorage.setItem((PFX+'rubros'),JSON.stringify(USER_RUBRO_TABLE));}catch(e){}}
     else{try{var sru=localStorage.getItem((PFX+'rubros'));if(sru){Object.assign(USER_RUBRO_TABLE,JSON.parse(sru));}}catch(e){}}
 
-    // 5c. Watchlist
-    var sbWl = await sbGetConfig('wl_gdc');
-    if(sbWl && Array.isArray(sbWl) && sbWl.length){
-      try{localStorage.setItem(WL_KEY, JSON.stringify(sbWl));}catch(e){}
-      wlRender();
-    } else {
-      var _lsWl = wlLoad();
-      if(_lsWl.length){ sbSetConfig('wl_gdc', _lsWl); }
-    }
-
-
-
-    // 6. CCL/MEP override
     var sbCclOvr = await sbGetConfig('ccl_override');
     if(sbCclOvr){Object.assign(CCL_TABLE, sbCclOvr);}
     else{try{var sc=localStorage.getItem((PFX+'ccl_override'));if(sc)Object.assign(CCL_TABLE,JSON.parse(sc));}catch(e){}}
     var sbMepOvr = await sbGetConfig('mep_override');
     if(sbMepOvr){Object.assign(MEP_TABLE, sbMepOvr);}
     else{try{var sm=localStorage.getItem((PFX+'mep_override'));if(sm)Object.assign(MEP_TABLE,JSON.parse(sm));}catch(e){}}
-    _tcOvrLoaded=true; // recién ahora la tabla en memoria tiene lo de Supabase (incluido lo que mandó el Sync de GDC)
+    _tcOvrLoaded=true;
     if(_tcOvrPend){_tcOvrPend=false;sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}
     tcRefrescarHoy();
 
-    // 7. Liquidez
     var sbLiq = await sbGetConfig('liquidez');
     if(sbLiq){
       if(sbLiq.ars) setFmtNum('liq-ars', sbLiq.ars, 0);
@@ -8477,7 +7527,6 @@ function trkCalcCCL(){
       try{localStorage.setItem((PFX+'liq'),JSON.stringify(sbLiq));}catch(e){}
     } else { loadLiquidez(); }
 
-    // 8. Inversión inicial
     try{await vigLoad();}catch(e){}
     var sbInv = await sbGetConfig('inv_inicial');
     if(sbInv){
@@ -8486,14 +7535,12 @@ function trkCalcCCL(){
       if(di)di.textContent='$'+Math.round(parseFloat(sbInv)).toLocaleString('es-AR');
       try{localStorage.setItem((PFX+'inv_inicial'),String(sbInv));}catch(e){}
     } else{loadInvInicial();}
-    // Objetivo de rendimiento (si el portafolio tiene la calculadora)
     if(document.getElementById('perf-target-usd')){
       var sbPerfTarget = await sbGetConfig('perf_target');
       var _pt=sbPerfTarget||(function(){try{return localStorage.getItem(PFX+'perf_target');}catch(e){return null;}})();
       if(_pt){document.getElementById('perf-target-usd').value=_pt;perfCalcUpdate();}
     }
 
-    // 9. Quotes cache (solo localStorage - datos volátiles)
     try{
       var sq=localStorage.getItem((PFX+'q3'));
       var sqTs=parseInt(localStorage.getItem((PFX+'q3_ts'))||'0');
@@ -8502,19 +7549,16 @@ function trkCalcCCL(){
       else { localStorage.removeItem((PFX+'q3')); localStorage.removeItem((PFX+'q3_ts')); }
     }catch(e){}
 
-    // 9e. RSI cache (solo localStorage - el TTL de 12hs por ticker se valida dentro de fetchAllRSI)
     try{
       var srsi=localStorage.getItem((PFX+'rsi'));
       if(srsi) RSI_CACHE=JSON.parse(srsi)||{};
     }catch(e){}
 
-    // 9f. TIR cache (Bonos, EcoValores) - mismo esquema que RSI
     try{
       var stir=localStorage.getItem((PFX+'tir'));
       if(stir) TIR_CACHE=JSON.parse(stir)||{};
     }catch(e){}
 
-    // 9b. Base histórica de Estadísticas Venta Histórica (persistida, no toca movimientos reales)
     var sbVhist = await sbGetConfig('vhist_movs');
     if(sbVhist && Array.isArray(sbVhist)){
       _ventahistRows=sbVhist;
@@ -8522,7 +7566,6 @@ function trkCalcCCL(){
     } else {
       try{var svh=localStorage.getItem((PFX+'vhist_movs')); if(svh){_ventahistRows=JSON.parse(svh);}}catch(e){}
     }
-    // 9c. Dividendos/Rentas cobrados de Estadísticas Venta Histórica (persistido aparte)
     var sbVhistDivs = await sbGetConfig('vhist_divs');
     if(sbVhistDivs && Array.isArray(sbVhistDivs)){
       _ventahistDivs=sbVhistDivs;
@@ -8530,7 +7573,6 @@ function trkCalcCCL(){
     } else {
       try{var svhd=localStorage.getItem((PFX+'vhist_divs')); if(svhd){_ventahistDivs=JSON.parse(svhd);}}catch(e){}
     }
-    // 9d. Aportes/Retiros de Estadísticas Venta Histórica (persistido aparte)
     var sbVhistAportes = await sbGetConfig('vhist_aportes');
     if(sbVhistAportes && Array.isArray(sbVhistAportes)){
       _ventahistAportes=sbVhistAportes;
@@ -8540,7 +7582,6 @@ function trkCalcCCL(){
     }
     if(typeof renderVentaHistorica==='function') renderVentaHistorica();
 
-    // 10a. Migración una-sola-vez: bonos/ONs deben usar MEP (no CCL) para la conversión a USD
     var MIG_KEY=(PFX+'mig_bonosMEP_v1');
     var _migDone=false;
     try{if(localStorage.getItem(MIG_KEY)==='1')_migDone=true;}catch(e){}
@@ -8566,7 +7607,6 @@ function trkCalcCCL(){
       }
     }
 
-    // 10b. Migración una-sola-vez: rellenar CCL y precioUSD faltantes en cualquier movimiento
     var MIG_KEY_FILL=(PFX+'mig_fillCCL_v1');
     var _fillDone=false;
     try{if(localStorage.getItem(MIG_KEY_FILL)==='1')_fillDone=true;}catch(e){}
@@ -8574,7 +7614,7 @@ function trkCalcCCL(){
       var _fillCount=0;
       movimientos.forEach(function(m){
         if(!m||m.tipo==='aporte'||!m.ticker||!m.fecha)return;
-        if(m.ccl&&m.ccl>0)return; // ya tiene CCL
+        if(m.ccl&&m.ccl>0)return;
         var esBonoON=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');
         var tcFecha=esBonoON?(getMEP(m.fecha)||getCCL(m.fecha)):getCCL(m.fecha);
         if(tcFecha&&tcFecha>0){
@@ -8593,7 +7633,6 @@ function trkCalcCCL(){
       }
     }
 
-    // 10. Recalcular precioUSD si ratios cambiaron
     var _recalcDone=false;
     movimientos.forEach(function(m){
       if(!m||m.tipo==='aporte'||!m.ccl||!m.ticker)return;
@@ -8619,27 +7658,23 @@ function trkCalcCCL(){
     });
     if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){} }
 
-    // Dolz extra desde Supabase
     var sbDolz = await sbGetConfig('dolz_extra');
     if(Array.isArray(sbDolz)) DOLZ_EXTRA = new Set(sbDolz);
 
-    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();renderDivsCard();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();ventahistResetFecha();
+    renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();ventahistResetFecha();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     _gdcInitDone = true;
     if(SB_STATUS&&SB_STATUS.ok!==false)setTimeout(function(){bkDaily();},6000);
     if(initFromSupabase._done) initFromSupabase._done();
 
-    // Si no hay quotes en caché, lanzar fetch inmediato (no esperar 5 min)
     if(Object.keys(quotes).length === 0){
       setTimeout(function(){ if(typeof fetchAllQuotes==='function') fetchAllQuotes(); }, 500);
     }
-    // RSI: dispara siempre al cargar; internamente sólo pide lo que esté vencido (>12hs) o falte
     setTimeout(function(){ if(CFG.rsi&&typeof fetchAllRSI==='function') fetchAllRSI(); }, 1500);
-    // TIR de Bonos (EcoValores): mismo criterio, un solo fetch para toda la cartera
     setTimeout(function(){ if(CFG.rsi&&typeof fetchAllTIR==='function') fetchAllTIR(); }, 2000);
   }
 
-  window.initFromSupabase = initFromSupabase; // expuesta para el listener de auth (login/logout)
+  window.initFromSupabase = initFromSupabase;
   initFromSupabase();
 
   // ── Auto-refresh cada 10 minutos mientras la pagina esta abierta ──
@@ -8676,15 +7711,12 @@ function trkCalcCCL(){
     }, AUTO_MS);
   }
 
-  // Al terminar fetchAllQuotes reiniciar el ciclo y guardar timestamp
   var _origFetch = fetchAllQuotes;
   fetchAllQuotes = async function(){
     var r = await _origFetch();
     var el = document.getElementById('lupd');
     if(el) el.dataset.lastupd = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    // Render final garantizado después de completar fetch
     setTimeout(renderPortfolio, 100);
-    // Si el dashboard está activo, re-renderizarlo con datos frescos
     if(document.getElementById('page-dashboard') && document.getElementById('page-dashboard').classList.contains('active')){
       setTimeout(renderDashboard, 150);
     }
@@ -8694,15 +7726,12 @@ function trkCalcCCL(){
 
   _startCycle();
 
-  // Render inicial con delay — solo si initFromSupabase aún no terminó
-  // (evita mostrar datos del localStorage antes de que Supabase cargue)
   var _sbInitDone = false;
   initFromSupabase._done = function(){ _sbInitDone = true; };
   setTimeout(function(){ if(!_sbInitDone) renderPortfolio(); }, 800);
 
   // ── Market data: BTC, EWZ, IMV/CCL ──────────────────────────────────────
   async function fetchMarketExtras(){
-    // BTC via CoinGecko (no key needed)
     try {
       var r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true');
       if(r.ok){
@@ -8719,13 +7748,11 @@ function trkCalcCCL(){
       }
     }catch(e){}
 
-    // EWZ via Finnhub (con fallback a Yahoo proxies)
     try {
       var ewzQ;
       try {
         ewzQ = await fetchFinnhub('EWZ');
       } catch(e1) {
-        // fallback: Yahoo con proxies (mismo mecanismo que fetchYahooAR)
         var ewzUrl = 'https://query2.finance.yahoo.com/v8/finance/chart/EWZ?interval=1d&range=2d';
         var ewzProxies = [
           fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(ewzUrl),{},7000)
@@ -8746,7 +7773,6 @@ function trkCalcCCL(){
       }
     }catch(e){}
 
-    // IMV/CCL (MERVAL ÷ CCL) — Yahoo ^MERV con proxies
     try {
       var mervUrl = 'https://query2.finance.yahoo.com/v8/finance/chart/%5EMERV?interval=1d&range=2d';
       var mervProxies = [
@@ -8777,7 +7803,6 @@ function trkCalcCCL(){
       }
     }catch(e){}
 
-    // S&P (SPY) y QQQ — Finnhub con fallback Yahoo proxies
     async function fetchTopbarTicker(symbol, elId, chgId){
       try{
         var q;
@@ -8809,18 +7834,15 @@ function trkCalcCCL(){
 
 })();
 
-// Sidebar toggle — global scope so onclick can reach it
 function toggleSidebar(){
   var main = document.getElementById('main') || document.querySelector('.main');
   if(main) main.classList.toggle('sidebar-open');
 }
-// En el celular (vertical) el ☰ abre el menú como lista; al elegir una solapa o tocar afuera se cierra
 document.addEventListener('click',function(e){
   if(window.innerWidth>680&&!document.body.classList.contains('nv-on'))return;var main=document.getElementById('main')||document.querySelector('.main');if(!main||!main.classList.contains('sidebar-open'))return;
   if(e.target.closest('.nav-item')){setTimeout(function(){main.classList.remove('sidebar-open');window.scrollTo(0,0);},50);return;}
   if(!e.target.closest('.sidebar')&&!e.target.closest('#sidebar-toggle-btn')&&!e.target.closest('#nv-menu-btn'))main.classList.remove('sidebar-open');
 },true);
-
 
 // ─── Mini Pie: distribución portafolio ───────────────────────
 // ─── Sector Pie: desglose por cada sector ────────────────────
@@ -8977,12 +7999,8 @@ function renderRVPie(sectorVal){
   });
 }
 
-var MINI_PIE_INST=null;
-function renderMiniPie(){} // torta RF/RV/Liquidez eliminada del Resumen (2026-10-03), reemplazada por "Distribución de la cartera"
-
 // ─── DashBoard ───────────────────────────────────────────────
 var RUBRO_MAP={
-  // Tecnología
   'AAPL':'Tecnología','MSFT':'Tecnología','NVDA':'Tecnología','GOOGL':'Tecnología','GOOG':'Tecnología',
   'META':'Tecnología','ADBE':'Tecnología','CRM':'Tecnología','ORCL':'Tecnología','INTC':'Tecnología',
   'AMD':'Tecnología','QCOM':'Tecnología','AVGO':'Tecnología','SNOW':'Tecnología','SPOT':'Tecnología',
@@ -8992,60 +8010,44 @@ var RUBRO_MAP={
   'GLOB':'Tecnología','BIGO':'Tecnología','SAP':'Tecnología','ASML':'Tecnología','SONY':'Tecnología',
   'TSM':'Tecnología','SSNLF':'Tecnología','BIDU':'Tecnología','MRVL':'Tecnología','PLTR':'Tecnología',
   'ARM':'Tecnología','ALAB':'Tecnología','CRWV':'Tecnología','NBIS':'Tecnología','SNDK':'Tecnología',
-  // E-commerce / Retail
   'AMZN':'E-commerce','MELI':'E-commerce','BABA':'E-commerce','JD':'E-commerce','PDD':'E-commerce',
   'SHOP':'E-commerce','WMT':'E-commerce','TGT':'E-commerce','COST':'E-commerce','EBAY':'E-commerce',
-  // Finanzas
   'JPM':'Finanzas','GS':'Finanzas','BAC':'Finanzas','C':'Finanzas','WFC':'Finanzas',
   'MS':'Finanzas','BLK':'Finanzas','V':'Finanzas','MA':'Finanzas','AXP':'Finanzas',
   'PYPL':'Finanzas','SQ':'Finanzas','NU':'Finanzas','ITUB':'Finanzas','GGAL':'Finanzas',
   'BMA':'Finanzas','SUPV':'Finanzas','BBAR':'Finanzas','VALO':'Finanzas','BHIP':'Finanzas',
   'BPAT':'Finanzas','BYMA':'Finanzas','BRIO':'Finanzas',
-  // Energía
   'XOM':'Energía','CVX':'Energía','SLB':'Energía','COP':'Energía','PBR':'Energía',
   'YPF':'Energía','CEPU':'Energía','PAM':'Energía','TGS':'Energía','OXY':'Energía',
   'MPC':'Energía','PSX':'Energía','VLO':'Energía','VISTA':'Energía','VISTD':'Energía',
   'BP':'Energía','SHEL':'Energía','EOG':'Energía','DVN':'Energía','HAL':'Energía',
-  // Salud
   'JNJ':'Salud','PFE':'Salud','MRK':'Salud','ABBV':'Salud','LLY':'Salud',
   'UNH':'Salud','CVS':'Salud','GILD':'Salud','AMGN':'Salud','BMY':'Salud',
   'ISRG':'Salud','MDT':'Salud','ABT':'Salud','TMO':'Salud','DHR':'Salud',
   'MRNA':'Salud','BNTX':'Salud','REGN':'Salud','VRTX':'Salud',
-  // Consumo masivo
   'KO':'Consumo','PEP':'Consumo','MCD':'Consumo','SBUX':'Consumo','NKE':'Consumo',
   'PM':'Consumo','MO':'Consumo','PG':'Consumo','KHC':'Consumo','GIS':'Consumo',
   'MDLZ':'Consumo','CL':'Consumo','EL':'Consumo','CRES':'Consumo',
-  // Entretenimiento / Streaming
   'NFLX':'Entretenimiento','DIS':'Entretenimiento','PARA':'Entretenimiento',
   'WBD':'Entretenimiento','CMCSA':'Entretenimiento','RBLX':'Entretenimiento',
   'TTWO':'Entretenimiento','EA':'Entretenimiento',
-  // Telecomunicaciones
   'T':'Telecomunicaciones','VZ':'Telecomunicaciones','TECO2':'Telecomunicaciones','COME':'Telecomunicaciones',
-  // Automotriz
   'TSLA':'Automotriz','F':'Automotriz','GM':'Automotriz','STLA':'Automotriz','TM':'Automotriz',
-  // Aerolíneas / Transporte
   'DAL':'Aerolíneas','UAL':'Aerolíneas','AAL':'Aerolíneas','LUV':'Aerolíneas',
   'GLOB':'Tecnología',
-  // Industrial / Defensa
   'CAT':'Industrial','DE':'Industrial','BA':'Industrial','GE':'Industrial',
   'HON':'Industrial','MMM':'Industrial','RTX':'Industrial','LMT':'Industrial',
   'NOC':'Industrial','GD':'Industrial','UPS':'Industrial','FDX':'Industrial',
-  // Materiales / Siderurgia
   'ALUA':'Materiales','TXAR':'Materiales','FCX':'Materiales','NEM':'Materiales',
   'GOLD':'Materiales','NUE':'Materiales','X':'Materiales',
-  // Construcción / Cemento
   'LOMA':'Construcción','HARG':'Construcción',
-  // Inmobiliario
   'IRSA':'Inmobiliario','IRCP':'Inmobiliario',
-  // Agro / Materiales básicos
   'BRF':'Agro','BRFS':'Agro','MOS':'Agro','GGB':'Materiales','BBD':'Finanzas','BBAS3':'Finanzas',
   'PETR3':'Energía','PAGS':'Tecnología','STNE':'Tecnología','ARCO':'Consumo','HOG':'Automotriz',
   'EWZ':'ETF','UNP':'Industrial',
-  // Cripto / Exchange
   'COIN':'Cripto'
 };
 
-// Overrides de rubro por usuario (prevalecen sobre RUBRO_MAP)
 var USER_RUBRO_TABLE={};
 
 var RUBRO_OPTIONS_DEFAULT=[
@@ -9054,7 +8056,7 @@ var RUBRO_OPTIONS_DEFAULT=[
   'Industrial','Materiales','Construcción','Inmobiliario','Agro',
   'Cripto','Bonos','ON','Otros'
 ];
-var RUBRO_OPTIONS=RUBRO_OPTIONS_DEFAULT.slice(); // se puede extender por el usuario
+var RUBRO_OPTIONS=RUBRO_OPTIONS_DEFAULT.slice();
 
 function _rubroLoadCatalog(){
   try{var s=localStorage.getItem((PFX+'rubro_catalog'));if(s){RUBRO_OPTIONS=JSON.parse(s);}}catch(e){}
@@ -9116,7 +8118,7 @@ function rubroCatalogAdd(){
   _rubroSaveCatalog();
   inp.value='';
   rubroRenderCatalogTags();
-  renderRubros(); // refrescar selects
+  renderRubros();
 }
 
 function rubroCatalogRemove(r){
@@ -9141,7 +8143,6 @@ function renderRubros(){
     var segLabel=(DB_SECTOR_LABEL&&DB_SECTOR_LABEL[sector])||sector;
     var segColor=(DB_SECTOR_COLOR&&DB_SECTOR_COLOR[sector])||'#7a9cc5';
     var currentRubro=getRubro(p.ticker);
-    // Asegurar que el rubro actual esté en el catálogo (puede ser uno legado)
     var opts=RUBRO_OPTIONS.slice();
     if(opts.indexOf(currentRubro)<0) opts.unshift(currentRubro);
     var optsHtml=opts.map(function(r){
@@ -9164,12 +8165,10 @@ function renderRubros(){
       '</td>';
     tbody.appendChild(row);
   });
-  // Reaplicar filtro si había texto
   rubroFilterTable();
 }
 
 function rubroUpdateRowLabel(ticker){
-  // Actualiza el data-rubro para que el filtro funcione en tiempo real
   var sel=document.getElementById('rubro-sel-'+ticker);
   if(!sel)return;
   var row=document.querySelector('#rubros-tbody tr[data-ticker="'+ticker+'"]');
@@ -9194,7 +8193,6 @@ function rubroSaveOne(ticker){
   if(!sel)return;
   var rubro=sel.value;
   USER_RUBRO_TABLE[ticker]=rubro;
-  // Actualizar la celda "Rubro actual"
   var row=document.querySelector('#rubros-tbody tr[data-ticker="'+ticker+'"]');
   if(row){
     var td=row.querySelectorAll('td')[2];
@@ -9240,7 +8238,6 @@ function dbDestroyAll(){
 function dbMakeChart(id,config){
   var canvas=document.getElementById(id);
   if(!canvas)return;
-  // Destruir instancia previa en ese canvas (por si quedó huérfana fuera de DB_CHARTS)
   try{var ex=Chart.getChart(canvas);if(ex)ex.destroy();}catch(e){}
   var ctx=canvas.getContext('2d');
   DB_CHARTS[id]=new Chart(ctx,config);
@@ -9271,7 +8268,6 @@ function renderDashboard(){
   var tcHoy=CCL_HOY||1;
   var mepHoy=MEP_HOY||tcHoy;
 
-  // Construir datos por posición con valor USD y ganancia USD
   var posData=[];
   open.forEach(function(p){
     var q=quotes[p.ticker];
@@ -9283,11 +8279,6 @@ function renderDashboard(){
     var _isBRL=BRL_TICKERS.has(p.ticker);
     var valUSD;
     if(q&&q.price){
-      // Misma lógica que renderPortfolio:
-      // NYSE/Brasil/Europa/China/Cripto: price en USD, qty en CEDEARs → (price/ratio)*qty
-      // Argentina: price en ARS → (price/CCL)*qty
-      // Bonos/ON: price en ARS por 100 nominales → (price/MEP)*qty/100
-      // BRL: price en Reales → (price/CCL)*qty
       valUSD=isBonoON ? (q.price/mep)*p.qty/100
             :sector==='fci' ? (q.price/mep)*p.qty
             :isArgentina ? (q.price/tcHoy)*p.qty
@@ -9295,7 +8286,6 @@ function renderDashboard(){
             :q.fromByma ? (q.price/tcHoy)*p.qty
             :(q.price/ratio)*p.qty;
     } else {
-      // Sin cotización: usar costo USD como proxy para que la distribución sea correcta
       valUSD=p.costUSDpuro||0;
     }
     if(!valUSD)return;
@@ -9424,7 +8414,6 @@ function renderDashboard(){
     {key:'europa', label:'Europa'},
     {key:'china',  label:'China'}
   ];
-  // Acumulo valor actual e invertido por separado para el cálculo exacto
   var segValMap={};var segCostMap={};
   posData.forEach(function(d){
     segValMap[d.sector]=(segValMap[d.sector]||0)+d.valUSD;
@@ -9435,7 +8424,6 @@ function renderDashboard(){
     var cost=segCostMap[s.key]||0;
     var val=segValMap[s.key]||0;
     if(cost<=0) return;
-    // (Σ valor actual USD − Σ invertido USD) / Σ invertido USD × 100
     var pct=(val-cost)/cost*100;
     segLabels.push(s.label);
     segVals.push(parseFloat(pct.toFixed(2)));
@@ -9475,14 +8463,12 @@ function renderDashboard(){
   });
 
   // ── Gráfico 1: Distribución por rubro ────────────────────
-  // Solo Renta Variable (excluye Bonos y ONs) · Top 10 + Otros
   var rubroRawData=posData.filter(function(d){return d.sector!=='bonos'&&d.sector!=='on';});
   var rubroVal={};
   rubroRawData.forEach(function(d){
     var rubro=getRubro(d.ticker);
     rubroVal[rubro]=(rubroVal[rubro]||0)+d.valUSD;
   });
-  // Ordenar y tomar top 10; el resto va a "Otros"
   var rubroAllKeys=Object.keys(rubroVal).sort(function(a,b){return rubroVal[b]-rubroVal[a];});
   var rubroTop=rubroAllKeys.slice(0,10);
   var rubroOtrosKeys=rubroAllKeys.slice(10);
@@ -9495,7 +8481,6 @@ function renderDashboard(){
   var RUBRO_COLORS=['#448aff','#f97316','#00c853','#ff5252','#facc15','#c084fc','#38bdf8',
     '#fb923c','#a78bfa','#34d399','#9ca3af'];
 
-  // Función para mostrar detalle al hacer clic
   function dbShowRubroDetail(rubroName, color){
     DB_LAST_RUBRO = {name: rubroName, color: color};
     var detail=document.getElementById('db-rubros-detail');
@@ -9503,14 +8488,12 @@ function renderDashboard(){
     var tbody=document.getElementById('db-rubros-detail-tbody');
     if(!detail||!title||!tbody) return;
 
-    // Tickers que pertenecen a este rubro (para "Otros": los que quedaron fuera del top 10)
     var tickers;
     if(rubroName==='Otros'){
       tickers=rubroRawData.filter(function(d){return rubroOtrosKeys.indexOf(getRubro(d.ticker))>=0;});
     } else {
       tickers=rubroRawData.filter(function(d){return getRubro(d.ticker)===rubroName;});
     }
-    // Ordenar por valUSD desc
     tickers=tickers.slice().sort(function(a,b){return b.valUSD-a.valUSD;});
     var rubroSum=tickers.reduce(function(s,d){return s+d.valUSD;},0);
 
@@ -9603,7 +8586,6 @@ function renderDashboard(){
   if(DB_LAST_RUBRO) dbShowRubroDetail(DB_LAST_RUBRO.name, DB_LAST_RUBRO.color);
 }
 
-
 // ─── World Map ────────────────────────────────────────
 var _dbWorldMap = null;
 function renderWorldMap(posData) {
@@ -9616,7 +8598,6 @@ function renderWorldMap(posData) {
     return;
   }
 
-  // Destroy previous instance
   if (_dbWorldMap) { try { _dbWorldMap.destroy(); } catch(e){} _dbWorldMap = null; }
   container.innerHTML = '';
   container.style.height = '380px';
@@ -9632,7 +8613,6 @@ function renderWorldMap(posData) {
     if (r) regionVal[r] += d.valUSD;
   });
 
-  // Region → ISO country codes
   var regionCountries = {
     usa: ['US'],
     arg: ['AR'],
@@ -9641,7 +8621,6 @@ function renderWorldMap(posData) {
     eur: ['DE','GB','FR','NL','ES','IT','CH','SE','NO','DK','BE','AT','FI','PT','IE','PL']
   };
 
-  // Build countryCode → numeric value (for color scale)
   var countryValues = {};
   var regionLookup = {};
   Object.keys(regionCountries).forEach(function(region) {
@@ -9652,7 +8631,6 @@ function renderWorldMap(posData) {
     });
   });
 
-  // Region display labels
   var regionNames = { usa:'USA', arg:'Argentina', bra:'Brasil', eur:'Europa', chn:'China' };
 
   _dbWorldMap = new jsVectorMap({
@@ -9684,7 +8662,6 @@ function renderWorldMap(posData) {
     }
   });
 
-  // Color invested countries directly on SVG paths (jsvectormap uses lowercase codes)
   var _vals = Object.keys(regionCountries).map(function(r){ return regionVal[r]||0; });
   var _maxV = Math.max.apply(null, _vals) || 1;
   var _svgEl = container.querySelector('svg');
@@ -9693,7 +8670,6 @@ function renderWorldMap(posData) {
       var val = regionVal[region] || 0;
       if (val <= 0) return;
       var t = Math.pow(val / _maxV, 0.5);
-      // Gradient: #1a3060 (26,48,96) → #1a4ee8 (26,78,232)
       var gC = Math.round(48 + t * 30);
       var bC = Math.round(96 + t * 136);
       var color = 'rgb(26,' + gC + ',' + bC + ')';
@@ -9707,16 +8683,13 @@ function renderWorldMap(posData) {
   }
 }
 
-
 // ─── Rendimiento vs S&P 500 ───────────────────────────────────
 function renderPerfChart() {
   var canvas = document.getElementById('perf-chart');
   if (!canvas || typeof Chart === 'undefined') return;
 
-  // Portfolio returns provided by user
-  var myReturns = [300, 70, 23, null]; // 2023, 2024, 2025, 2026 YTD
+  var myReturns = [300, 70, 23, null];
 
-  // Read current portfolio rendimiento for 2026 YTD
   var rendEl = document.getElementById('m-rend');
   if (rendEl) {
     var txt = (rendEl.innerText || rendEl.textContent || '').replace(/[+%\s]/g, '');
@@ -9724,7 +8697,6 @@ function renderPerfChart() {
     if (!isNaN(n)) myReturns[3] = n;
   }
 
-  // S&P 500: 2023-2025 hardcoded; 2026 YTD fetched en vivo
   var spReturns = [26.3, 25.0, 18.0, null];
   var labels = ['2023', '2024', '2025', '2026 YTD'];
 
@@ -9798,8 +8770,7 @@ function renderPerfChart() {
     });
   }
 
-  // Fetch S&P 500 2026 YTD: Dec 30 2025 → hoy
-  var p1 = 1767052800; // 2025-12-30 UTC
+  var p1 = 1767052800;
   var p2 = Math.floor(Date.now() / 1000);
   var yUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&period1=' + p1 + '&period2=' + p2;
 
@@ -9811,7 +8782,6 @@ function renderPerfChart() {
       var ts = res.timestamp || [];
       var cl = (res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close) || [];
 
-      // Primer precio del año 2026 (primer día hábil desde Jan 1)
       var c2026start = null;
       for (var i = 0; i < ts.length; i++) {
         if (ts[i] >= 1767225600 && cl[i] != null) { c2026start = cl[i]; break; }
@@ -9826,14 +8796,8 @@ function renderPerfChart() {
     .catch(function() { draw(); });
 }
 
-/* ── Watchlist "Tickers en la mira" ─────────────────────────────── */
 const WL_KEY = CFG.wlKey;
-function wlLoad(){return [];} // vista anterior (sin uso desde v193)
-function wlSave(arr){} // vista anterior (sin uso desde v193)
-function wlRender(){} // vista anterior (sin uso desde v193)
-function wlAdd(){} // vista anterior (sin uso desde v193)
-function wlDel(i){} // vista anterior (sin uso desde v193)
-wlRender();
+function wlLoad(){return [];}
 
 // ── % Dolarizado ──────────────────────────────────────────────────────────
 var DOLZ_EXTRA = new Set();
@@ -9887,9 +8851,7 @@ async function dolzToggleTicker(ticker){
   renderPortfolio();
 }
 
-
 // ─── App instalada (PWA) ──────────────────────────────────────────────────────
-// En la app instalada no hay botón "atrás" del navegador: se agrega ⌂ para volver a Carteras administradas.
 (function(){
   function standalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
   function add(){
@@ -9903,10 +8865,6 @@ async function dolzToggleTicker(ticker){
 })();
 
 // ─── Informe para el cliente (CFG.informe) ────────────────────────────────────
-// Botón "📄 Informe" en la card Evolución: arma un informe con los datos ya calculados (último render),
-// el historial (con años anteriores), las posiciones y los movimientos. Se ve en pantalla, se imprime o
-// se guarda como PDF y el envío lo decide Garo. Solo con CFG.informe (Ana, Hilda, Juli, Omar; no GDC).
-// El mapa se carga aparte (comun/mapa_mundo.js) recién al generar el informe.
 var INF_LAST=null;
 function _infISO(f){if(!f)return '';f=String(f);if(/^\d{4}-\d{2}-\d{2}/.test(f))return f.slice(0,10);var p=f.split('/');return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):'';}
 function _infDMY(iso,corto){var p=iso.split('-');return p[2]+'/'+p[1]+'/'+(corto?p[0].slice(2):p[0]);}
@@ -9918,8 +8876,6 @@ function _infAddDays(iso,n){var d=new Date(iso+'T12:00:00Z');d.setUTCDate(d.getU
 function _infAntig(iso){if(!iso)return '—';var m=Math.round((new Date(_hHoy())-new Date(iso))/86400000/30.44);if(m<1)return 'menos de 1 mes';var a=Math.floor(m/12),r=m%12;return (a?a+'a ':'')+(r?r+'m':'').trim();}
 var _INF_SECT={nyse:'Acción / Cedear EE.UU.',argentina:'Acción argentina',brasil:'Cedear Brasil',europa:'Cedear Europa',china:'Cedear China',cripto:'Cripto',bonos:'Bono',on:'Obligación negociable',fci:'Fondo común de inversión'};
 var _INF_RF=['bonos','on','fci'];
-// Inicio del período anual de la inversión inicial actual: si ya pasó el corte pero todavía no se cerró
-// (hasta 45 días), el período que se está terminando empezó un año antes.
 function infInicioAnual(){
   var corte=histUltimoCorte();if(!corte)return null;
   var cerrado=(HIST&&HIST.cierres||[]).some(function(c){return c.d===corte;});
@@ -9927,7 +8883,6 @@ function infInicioAnual(){
   if(!cerrado&&dias<=45)return (parseInt(corte.slice(0,4),10)-1)+corte.slice(4);
   return corte;
 }
-// Períodos con rendimiento (años anteriores cargados o leídos de Rendimiento anual + cierres), clave = año de inicio
 function infPeriodos(){
   var per={},pi=CFG.periodoInicio||'01-01';
   Object.keys(CFG.rendAnual||{}).forEach(function(y){per[y]={r:+CFG.rendAnual[y],src:'cargado'};});
@@ -9935,7 +8890,6 @@ function infPeriodos(){
   Object.keys(per).forEach(function(y){per[y].ini=y+'-'+pi;per[y].fin=(parseInt(y,10)+1)+'-'+pi;});
   return per;
 }
-// Valores de inicio y cierre de un período cerrado (del cierre registrado o de los puntos de años anteriores)
 function infValoresPeriodo(p){
   if(p.cz)return {valor:p.cz.valor,base:p.cz.invAnterior||null};
   var hp=(CFG.histPrevio||[]),fin=null,ini=null;
@@ -10011,7 +8965,6 @@ async function infGenerar(){
   var sv=d.sectorVal||{},rv=['nyse','argentina','brasil','europa','china','cripto'].reduce(function(a,k){return a+(sv[k]||0);},0);
   var rf=(sv.bonos||0)+(sv.on||0)+(sv.fci||0),lq=d.liqTotalUSD||0,tt=rv+rf+lq||1;
   var dolz=total>0?Math.min(100,((d.dolzPct||0)/100*(d.totalVal||0)+(d.liqUSD||0))/total*100):null;
-  // perfil de inversor según la cartera: el mismo puntaje que Recomendaciones (composición, geografía y sectores)
   var perfHtml='';
   try{if(typeof PERFIL_TARGETS!=='undefined'&&typeof computePerfilActual==='function'){
     var pd=computePerfilActual();
@@ -10158,11 +9111,6 @@ function infMostrar(html){
 function infImprimir(){var t=document.title;document.title='Informe '+CFG.nombre+' '+_hHoy();window.print();setTimeout(function(){document.title=t;},1500);}
 
 // ─── Importar cobros desde Cocos (texto pegado) ───────────────────────────────
-// En Cocos → Movimientos se copia el listado (Dividendos / Rentas y Amortización) y se pega acá.
-// Cada registro viene en líneas: [etiqueta "2 de oct"], fecha ejecución, fecha liquidación, operación,
-// especie, estado, nominales, total ("US$6,05" o "$14.523,28"). Las filas nuevas quedan en
-// "Pendientes de revisión" (no impactan hasta confirmarlas). Se saltean montos 0 (bajas de nominales),
-// filas sin ticker (ARS, USD, EXT) y las que ya están cargadas (mismo ticker, moneda y monto ±10 días).
 function cocosParseCobros(texto){
   var L=String(texto||'').split(/\r?\n/).map(function(s){return s.trim();}).filter(Boolean);
   var reF=/^(\d{2})\/(\d{2})\/(\d{4})$/,out=[],sk={cero:0,sinTicker:[],otro:0,noLiq:0};
@@ -10180,7 +9128,6 @@ function cocosParseCobros(texto){
     if(esp==='ARS'||esp==='USD'||esp==='EXT'){sk.sinTicker.push({fecha:fecha,ticker:esp,moneda:mon,monto:monto});continue;}
     out.push({fecha:fecha,ticker:esp,tipo:esRen?'RENTA':'DIV',moneda:mon,monto:Math.round(monto*100)/100,acciones:null,descr:esp+' — Cocos: '+op});
   }
-  // bonos/ON que Cocos a veces informa como "Dividendos": si el ticker tiene alguna renta, todo es RENTA
   var ren={};out.forEach(function(r){if(r.tipo==='RENTA')ren[r.ticker]=1;});
   out.forEach(function(r){if(ren[r.ticker])r.tipo='RENTA';});
   return {rows:out,skip:sk};
@@ -10214,7 +9161,6 @@ function trkPendingConfirmAll(){
   trkSave();trkRender();renderPortfolio();
   if(no)alert(ok+' cargados. '+no+' quedaron pendientes porque falta el CCL de su fecha.');
 }
-// UI: tarjeta "Importar desde Cocos" y, si el portafolio no la tiene, la de "Pendientes de revisión"
 function cocosUISetup(){
   var tb=document.getElementById('trk-tbody');if(!tb)return;
   var tabla=tb.closest('.card');if(!tabla||!tabla.parentNode)return;
@@ -10236,8 +9182,6 @@ function cocosUISetup(){
 (function(){var go=function(){try{cocosUISetup();}catch(e){console.warn('cocosUISetup',e);}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 
 // ─── Fechas de Tipo de cambio: las barras se ponen solas ─────────────────────
-// Se escriben solo los números (03102026) y queda 03/10/2026. Enter en la fecha pasa al valor;
-// Enter en el valor guarda.
 function tcFechaMask(el){
   var d=el.value.replace(/\D/g,'').slice(0,8),o=d.slice(0,2);
   if(d.length>2)o+='/'+d.slice(2,4);if(d.length>4)o+='/'+d.slice(4);
@@ -10256,10 +9200,6 @@ function tcFechaMask(el){
 })();
 
 // ─── "Desde tu última visita" ─────────────────────────────────────────────────
-// Al abrir un portafolio compara con cómo estaba la vez anterior que lo abriste en este dispositivo:
-// variación del total, los activos que más se movieron y los cobros cargados desde entonces.
-// Se guarda en este navegador (PFX+'uv_act' = la visita actual, PFX+'uv_prev' = la anterior); una
-// visita nueva empieza si pasaron más de 30 minutos desde la última vez que se vio la cartera.
 var _uvCerrado=false;
 function uvActualizar(d){
   if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA!=='principal')return;
@@ -10299,11 +9239,6 @@ function uvMostrar(prev,tot,pr){
 }
 
 // ─── Control de ratios de Cedears ─────────────────────────────────────────────
-// Si un Cedear cambia de ratio y la tabla no se actualiza, la app lo valúa mal sin avisar.
-// Una vez por día (y con el botón "verificar ahora") compara, para cada Cedear en cartera, el precio
-// del Cedear en pesos con el precio de la acción en NYSE (Finnhub) y el CCL de hoy:
-//   ratio que surge del mercado = precio NYSE × CCL / precio Cedear
-// Si difiere más de 25% del ratio cargado, avisa. No cambia nada solo.
 var RT_SOSP={},_rtCorriendo=false,_rtProgramado=false;
 try{var _rtS=JSON.parse(localStorage.getItem(PFX+'rt_sosp')||'null');if(_rtS&&_rtS.d)RT_SOSP=_rtS.s||{};}catch(e){}
 function _rtCedears(){
@@ -10317,7 +9252,7 @@ function ratiosAuto(){
   var hoy=_hHoy?_hHoy():new Date().toISOString().slice(0,10),ult='';try{ult=localStorage.getItem(PFX+'rt_check')||'';}catch(e){}
   rtBanner();
   if(ult===hoy)return;
-  setTimeout(function(){ratiosVerificar(false);},20000); // después de que terminen de llegar las cotizaciones
+  setTimeout(function(){ratiosVerificar(false);},20000);
 }
 async function ratiosVerificar(manual){
   if(_rtCorriendo)return;_rtCorriendo=true;
@@ -10330,14 +9265,14 @@ async function ratiosVerificar(manual){
       if(usd>0&&ars>0&&CCL_HOY>0){ok++;var sug=usd*CCL_HOY/ars,dev=r/sug-1;
         if(Math.abs(dev)>0.25)nuevo[t]={r:r,sug:sug,ars:ars,usd:usd,ccl:CCL_HOY};}
     }catch(e){}
-    await new Promise(function(res){setTimeout(res,1100);}); // límite gratuito de Finnhub
+    await new Promise(function(res){setTimeout(res,1100);});
   }
   if(ok){RT_SOSP=nuevo;try{localStorage.setItem(PFX+'rt_sosp',JSON.stringify({d:_hHoy(),s:RT_SOSP}));localStorage.setItem(PFX+'rt_check',_hHoy());}catch(e){}}
   _rtCorriendo=false;rtBanner(manual?(ok?'Verificados '+ok+' Cedears':'No se pudo consultar NYSE'):null);
 }
 function rtIgnorar(t){try{var ig=JSON.parse(localStorage.getItem(PFX+'rt_ign')||'{}');ig[t]=getRatio(t);localStorage.setItem(PFX+'rt_ign',JSON.stringify(ig));}catch(e){}rtBanner();}
 function rtBanner(msg){
-  var pg=document.getElementById('page-portafolio');if(!pg)return; // va al final de la página Portafolio
+  var pg=document.getElementById('page-portafolio');if(!pg)return;
   var ig={};try{ig=JSON.parse(localStorage.getItem(PFX+'rt_ign')||'{}');}catch(e){}
   var L=Object.keys(RT_SOSP).filter(function(t){return ig[t]!==getRatio(t)&&RT_SOSP[t].r===getRatio(t);});
   var el=document.getElementById('rt-alert');
@@ -10358,8 +9293,6 @@ function rtBanner(msg){
 }
 
 // ─── Atajos de teclado ────────────────────────────────────────────────────────
-// P portafolio · C compra · V venta · M movimiento · D dividendos · T tipo de cambio · R refrescar cotizaciones ·
-// / buscar ticker · I informe · H inicio · Esc cerrar · ? ayuda. No actúan mientras se escribe en un campo.
 function _kbIr(ids){
   for(var i=0;i<ids.length;i++){var id=ids[i];if(!document.getElementById('page-'+id))continue;
     var nav=Array.prototype.find.call(document.querySelectorAll('.nav-item'),function(n){return (n.getAttribute('onclick')||'').indexOf("'"+id+"'")>=0;});
@@ -10367,8 +9300,6 @@ function _kbIr(ids){
   return false;
 }
 function _kbFoco(id){setTimeout(function(){var e=document.getElementById(id);if(e){e.focus();if(e.select)e.select();}},60);}
-// C / V: van al recuadro Comprar / Vender del Portafolio (más abajo), lo despliegan si estaba
-// plegado, lo centran en pantalla y dejan el cursor en el ticker (en Vender, el combo de tickers).
 function kbOperar(id){
   _kbIr(['portafolio']);
   if(CFG.vistaNueva&&document.getElementById('nv-ops')&&typeof nvModo==='function')nvModo(id==='vsell-ticker'?'v':'c');
@@ -10406,7 +9337,7 @@ document.addEventListener('keydown',function(e){
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(a&&a.isContentEditable))return;
   if(document.getElementById('inf-view')||document.getElementById('inf-dlg'))return;
   var k=e.key;
-  if(k!=='?'&&k!=='h'&&k!=='H'&&(typeof _gdcInitDone==='undefined'||!_gdcInitDone))return; // todavía sin login / cargando
+  if(k!=='?'&&k!=='h'&&k!=='H'&&(typeof _gdcInitDone==='undefined'||!_gdcInitDone))return;
   var hecho=true;
   if(k==='?'){kbAyuda();}
   else if(k==='p'||k==='P'){_kbIr(['portafolio']);}
@@ -10423,7 +9354,6 @@ document.addEventListener('keydown',function(e){
   if(hecho)e.preventDefault();
 });
 
-// Botón "?" arriba a la derecha (en la barra superior) que abre la lista de atajos
 (function(){function add(){var tb=document.querySelector('.topbar');if(!tb||document.getElementById('kb-btn'))return;
   var b=document.createElement('button');b.id='kb-btn';b.type='button';b.textContent='?';b.title='Atajos de teclado (tecla ?)';b.onclick=function(){kbAyuda();};
   b.style.cssText='margin-left:auto;width:24px;height:24px;flex-shrink:0;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:.78rem;font-weight:700;cursor:pointer;line-height:1;padding:0';
@@ -10451,11 +9381,7 @@ document.addEventListener('keydown',function(e){
   document.head.appendChild(st);})();
 
 // ─── Auditoría de la tabla completa de ratios (solo GDC, que es la que se sincroniza) ─────────
-// Para cada Cedear de RATIOS_TABLE con precio en BYMA: ratio que surge del mercado =
-// precio NYSE (Finnhub) × CCL ÷ precio del Cedear. Lista los que difieren más de 25%, con "Usar"
-// para corregirlos (igual que editarlo a mano) y "Sync" para mandar la tabla a las demás carteras.
 var RA_AUD={res:[],corriendo:false,hechos:0,total:0,cancel:false};
-// ratios típicos: enteros (20, 144) o fracciones 1/n (0,3333 = 1 Cedear cada 3 acciones)
 function _raNice(x){if(x<1){return Math.round(10000/Math.round(1/x))/10000;}var r=Math.round(x);return Math.abs(x/r-1)<0.03?r:Math.round(x*10)/10;}
 function _raFmt(x){return String(x).replace('.',',');}
 function raAudUI(){
@@ -10526,15 +9452,12 @@ async function raAudSync(){
 (function(){var go=function(){try{raAudUI();}catch(e){}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 
 // ─── Control de precio al cargar compras y ventas ─────────────────────────────
-// Si la operación es de los últimos 7 días y el precio cargado se aleja más de 10% del de mercado,
-// pide confirmación (típico: un cero de más o de menos). Se compara en la misma unidad que se carga
-// (pesos por Cedear/acción, o por 100 nominales en bonos y ON).
 function _precioMercadoARS(t){
   var q=quotes[t];if(!q||!(q.price>0))return null;
   if(isBonoUSDDirecto(t))return null;
   var s=getSector(t);
   if(q.fromByma||['argentina','bonos','on','fci'].indexOf(s)>=0||BRL_TICKERS.has(t))return q.price;
-  return CCL_HOY>0?q.price*CCL_HOY/getRatio(t):null; // cotización en USD de la acción → precio del Cedear
+  return CCL_HOY>0?q.price*CCL_HOY/getRatio(t):null;
 }
 function precioGuard(t,precio,fecha){
   try{
@@ -10549,9 +9472,6 @@ function precioGuard(t,precio,fecha){
 }
 
 // ─── Papelera y deshacer ──────────────────────────────────────────────────────
-// Lo que se borra o edita (movimientos y cobros) queda 30 días en config 'papelera' (Supabase, se ve
-// desde cualquier dispositivo). Después de cada borrado/edición aparece "↶ Deshacer" unos segundos,
-// y en Movimientos está la tarjeta 🗑 Papelera para restaurar cualquier cosa de la lista.
 var PAP=null,_papCargando=null;
 function _papCargar(){
   if(PAP)return Promise.resolve(PAP);
@@ -10577,7 +9497,7 @@ function papRestaurar(id){
     else if(e.k==='mov'){if(!movimientos.some(function(m){return m.id==e.d.id;}))movimientos.push(e.d);PAP.splice(i,1);saveAndRender();}
     else if(e.k==='movs'){e.d.forEach(function(x){if(!movimientos.some(function(m){return m.id==x.id;}))movimientos.push(x);});PAP.splice(i,1);saveAndRender();}
     else if(e.k==='div'){if(!TRK.divs.some(function(d){return d.id===e.d.id;}))TRK.divs.push(e.d);TRK.divs.sort(function(a,b){return String(b.fecha).localeCompare(String(a.fecha));});PAP.splice(i,1);
-      trkSave();try{trkRender();}catch(_e){}try{renderDivsCard();}catch(_e){}try{renderPortfolio();}catch(_e){}}
+      trkSave();try{trkRender();}catch(_e){}try{}catch(_e){}try{renderPortfolio();}catch(_e){}}
     sbSetConfig('papelera',PAP);papRender();
     var t=document.getElementById('pap-toast');if(t)t.remove();
   });
@@ -10605,11 +9525,6 @@ function papRender(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 
 // ─── Fecha de hoy en los formularios ──────────────────────────────────────────
-// Antes se usaba new Date().toISOString() (UTC): en Argentina, después de las 21 h ya daba la fecha
-// de MAÑANA. Además, si la app quedaba abierta de un día para otro, la fecha precargada seguía siendo
-// la de ayer. Ahora: fecha local, se actualiza sola al volver a la app (si no la cambiaste a mano),
-// el campo se marca en ámbar cuando la fecha no es hoy, y al confirmar una compra o venta con otra
-// fecha se pide confirmación.
 function _hoyLocalISO(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 var _FECHA_IDS=['m-fecha','vbuy-fecha','vsell-fecha','d-fecha','trk-fecha','vhist-add-fecha'];
 function fechaMarcar(el){
@@ -10643,11 +9558,6 @@ function fechaGuard(fechaDMY,tipo){
 })();
 
 // ─── Mercado automático al cargar una compra ──────────────────────────────────
-// Al escribir el ticker en 🛒 Comprar (o en el formulario de Movimientos) se elige solo el mercado:
-//  1) el que usaste la última vez que operaste ese ticker en esta cartera,
-//  2) la tabla de sectores de la app,
-//  3) las listas de BYMA (data912): bonos, ON, acciones argentinas o Cedears (con su país),
-// y, en Comprar, se precarga el precio de mercado si el campo está vacío. Todo se puede cambiar a mano.
 var _MKT_LISTAS=null,_mktListasCargando=null;
 var _SECT_A_MKT={nyse:'USA',argentina:'ARGENTINA',brasil:'BRASIL',europa:'EUROPA',china:'CHINA',cripto:'CRIPTO',bonos:'BONOS',on:'ON',fci:'FCI'};
 var _MKT_NOMBRE={USA:'NYSE / NASDAQ',ETF:'ETF (USA)',ARGENTINA:'Argentina',BONOS:'Bonos',ON:'ON',FCI:'FCI',BRASIL:'Brasil',EUROPA:'Europa',CHINA:'China',CRIPTO:'Cripto'};
@@ -10696,19 +9606,14 @@ function mktEnlazar(tkId,mktId,precioId,onMkt){
   };
   tk.addEventListener('input',function(){clearTimeout(tmr);tmr=setTimeout(correr,450);});
   tk.addEventListener('change',correr);tk.addEventListener('blur',correr);
-  // datalist con los tickers que ya operaste en esta cartera
   var dl=document.getElementById(tkId+'-dl');if(!dl){dl=document.createElement('datalist');dl.id=tkId+'-dl';document.body.appendChild(dl);tk.setAttribute('list',dl.id);}
   tk.addEventListener('focus',function(){var seen={},o='';for(var i=movimientos.length-1;i>=0;i--){var m=movimientos[i];if(m&&m.ticker&&m.ticker!=='APORTE'&&!seen[m.ticker]){seen[m.ticker]=1;o+='<option value="'+m.ticker+'">';}}dl.innerHTML=o;});
-  // al limpiar el formulario (después de guardar) vuelve a detectar
   tk.addEventListener('input',function(){if(!tk.value){manual=false;ult='';_mktHint(sel,'');var pe=precioId&&document.getElementById(precioId);if(pe&&pe.dataset.auto){pe.value='';delete pe.dataset.auto;}}});
 }
 (function(){var go=function(){try{mktEnlazar('vbuy-ticker','vbuy-mkt','vbuy-precio-ars',function(){if(typeof vbuyOnMktChange==='function')vbuyOnMktChange();});mktEnlazar('m-ticker','m-mkt',null,null);}catch(e){console.warn('mktEnlazar',e);}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 
 // ─── Orden de campos en Comprar y Vender ──────────────────────────────────────
-// Comprar: Ticker · Precio · Cantidad · Fecha · Mercado (se autoselecciona).
-// Vender:  Ticker · Precio · Cantidad · Fecha. El CCL/MEP no se pide: sale de la tabla de Tipo de
-// cambio según el activo (CCL para acciones/Cedears, MEP para bonos/ON/FCI).
 (function(){
   function ordenar(ids){var gs=ids.map(function(id){var e=document.getElementById(id);return e?e.closest('.fgrp'):null;});
     if(gs.some(function(g){return !g;}))return;var cont=gs[0].parentNode;gs.forEach(function(g){cont.appendChild(g);});}
@@ -10721,13 +9626,9 @@ function mktEnlazar(tkId,mktId,precioId,onMkt){
 })();
 
 // ─── Honorarios (CFG.honorario, ej. 0.2 en Ana y Juli) ────────────────────────
-// Al cierre de cada período: honorario = % × (valor final según el broker − inversión inicial del
-// período); sin ganancia, 0. Se registra lo cobrado en config 'honorarios' y viaja en el resumen
-// para que Carteras administradas muestre el acumulado.
 var HON_LIST=null;
 async function honCargar(){if(HON_LIST)return HON_LIST;var v=null;try{v=await sbGetConfig('honorarios');}catch(e){}if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){v=null;}}HON_LIST=Array.isArray(v)?v:[];return HON_LIST;}
 function _honPeriodoDefault(){
-  // el último período cerrado (si ya pasó el corte) o el que está en curso
   var corte=histUltimoCorte();if(!corte)return {ini:'',fin:''};
   var ini=(parseInt(corte.slice(0,4),10)-1)+corte.slice(4);return {ini:ini,fin:corte};
 }
@@ -10760,7 +9661,6 @@ async function honAbrir(pre){
   document.body.appendChild(ov);honLista();if(pre)honCalc();
   ['hon-ini','hon-fin'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',function(){var a=document.getElementById('hon-apn');if(a)a.value=Math.round(_honApn(document.getElementById('hon-ini').value,document.getElementById('hon-fin').value)*100)/100;honCalc();});});
 }
-// Aportes − retiros (USD) entre el inicio (incluido) y el cierre (excluido: lo del día del corte va al período siguiente)
 function _honApn(ini,fin){if(!CFG.aportes||!_aporLoaded||!ini)return 0;var n=0;(APOR||[]).forEach(function(a){if(a.fecha>=ini&&(!fin||a.fecha<fin))n+=(a.tipo==='retiro'?-1:1)*(+a.usd||0);});return n;}
 function _honApnInput(){var e=document.getElementById('hon-apn');var v=e?parseFloat(e.value):0;return isNaN(v)?0:v;}
 function honCalc(){
@@ -10803,9 +9703,6 @@ function honLista(){
 }
 
 // ─── Identidad de cada cartera (para no cargar en la equivocada) ──────────────
-// Marco del color de la cartera, chip fijo arriba a la derecha con foto y nombre, nombre en marca
-// de agua, título de la pestaña "Nombre · Inversiones" con ícono de color, y confirmación grande de
-// compras y ventas que dice en qué cartera se opera.
 var CART_COLOR={gdc:'#22c55e',ana:'#e879f9',hilda:'#fb923c',juli:'#38bdf8',omar:'#facc15'};
 var CART_FOTO={gdc:'PerfilGaston.png',ana:'PerfilAna.png',hilda:'PerfilHilda.png',juli:'Juli.png',omar:'perfilOmar.png'};
 function cartColor(){return CFG.color||CART_COLOR[CFG.id]||'#7a9cc5';}
@@ -10816,7 +9713,6 @@ function _cartAv(sz){var c=cartColor(),f=CFG.foto||CART_FOTO[CFG.id];
 function cartIdentidad(){
   var c=cartColor();
   document.title=CFG.nombre+' · Inversiones';
-  // ícono de la pestaña: círculo del color con la inicial
   try{var cv=document.createElement('canvas');cv.width=cv.height=64;var x=cv.getContext('2d');x.fillStyle=c;x.beginPath();x.arc(32,32,30,0,Math.PI*2);x.fill();
     x.fillStyle='#0b1120';x.font='bold 36px Inter,system-ui,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(CFG.nombre.charAt(0),32,35);
     var l=document.querySelector('link[rel="icon"]');if(!l){l=document.createElement('link');l.rel='icon';document.head.appendChild(l);}l.type='image/png';l.href=cv.toDataURL('image/png');}catch(e){}
@@ -10826,35 +9722,27 @@ function cartIdentidad(){
     wm.style.cssText='position:fixed;right:24px;bottom:40px;font-family:Inter,system-ui,sans-serif;font-size:7rem;font-weight:900;letter-spacing:-.04em;color:'+c+';opacity:.05;pointer-events:none;z-index:-1;user-select:none';document.body.appendChild(wm);
     var ch=document.createElement('div');ch.id='cart-chip';ch.title='Estás en la cartera de '+CFG.nombre;
     ch.style.cssText='display:flex;align-items:center;gap:7px;background:'+c+'1f;border:1px solid '+c+';border-radius:999px;padding:1px 11px 1px 1px;font-family:Inter,system-ui,sans-serif;font-weight:700;font-size:.8rem;color:'+c+';white-space:nowrap';
-    // va en la barra superior (siempre visible), anclado a la derecha junto al botón ? (la barra tiene
-    // altura fija y, si se agregaba al final, quedaba en una segunda línea oculta)
     var tb0=document.querySelector('.topbar');
     if(tb0){if(getComputedStyle(tb0).position==='static')tb0.style.position='relative';
       var box=document.createElement('div');box.id='tb-right';box.style.cssText='position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;background:var(--bg);padding-left:10px;z-index:5';
       var kb=document.getElementById('kb-btn');if(kb){kb.style.marginLeft='0';box.appendChild(kb);}tb0.appendChild(box);}
     else{ch.style.position='fixed';ch.style.top='8px';ch.style.right='12px';ch.style.zIndex='99991';document.body.appendChild(ch);}
   }
-  // la foto del encabezado con el borde del color de la cartera
   try{var hi=document.querySelector('header img');if(hi){hi.style.borderColor=c;hi.style.boxShadow='0 0 0 3px '+c+'33';}}catch(e){}
-  // Inv. Inicial al lado de la Liquidez (antes iba al final de la barra con margin-left:auto y quedaba
-  // tapada por el chip o en una segunda línea oculta). La barra queda en una sola línea con scroll.
   try{var _iv=document.getElementById('inv-sidebar-usd');if(_iv&&!_iv._sty){_iv._sty=1;_iv.style.borderColor='var(--amber,#f59e0b)';_iv.style.color='var(--amber,#f59e0b)';_iv.style.background='rgba(245,158,11,.08)';_iv.title='Inversión inicial del período (USD). Al cambiarla pide confirmación.';
     var _lb=_iv.closest('div')&&_iv.closest('div').parentNode&&_iv.closest('div').parentNode.querySelector('.topbar-label');if(_lb){_lb.textContent='🔒 Inv. Inicial';_lb.style.color='var(--amber,#f59e0b)';}}}catch(e){}
   try{var inv=document.getElementById('inv-sidebar-usd'),lu=document.getElementById('liq-usd');
     if(inv&&lu&&!inv._mov){inv._mov=1;var invBox=inv.closest('div');while(invBox&&invBox.parentNode&&!invBox.parentNode.classList.contains('topbar'))invBox=invBox.parentNode;
       var liqItem=lu.closest('.topbar-item');
       if(invBox&&liqItem&&invBox!==liqItem){invBox.style.marginLeft='.6rem';invBox.style.paddingLeft='.8rem';invBox.style.paddingRight='.8rem';invBox.style.borderRight='1px solid var(--border)';invBox.style.flexShrink='0';invBox.querySelectorAll('.topbar-label').forEach(function(l){l.style.whiteSpace='nowrap';});liqItem.style.flexShrink='0';
-        // Liquidez + Inv. Inicial al principio de la barra (siempre a la vista; las cotizaciones siguen después)
         var tbp=liqItem.parentNode,ub=document.getElementById('auth-user-box'),ref=ub&&ub.parentNode===tbp?ub.nextSibling:tbp.firstChild;
         liqItem.style.borderLeft='none';liqItem.style.marginLeft='0';liqItem.style.paddingLeft='0';
         tbp.insertBefore(liqItem,ref);tbp.insertBefore(invBox,liqItem.nextSibling);}}
     var tbx=document.querySelector('.topbar'),tr=document.getElementById('tb-right');
     if(tbx){tbx.style.flexWrap='nowrap';tbx.style.overflowX='auto';tbx.style.overflowY='hidden';tbx.style.scrollbarWidth='none';if(tr)tbx.style.paddingRight=(tr.offsetWidth+24)+'px';}
-    // fijo a la derecha de la barra (fuera del scroll horizontal)
     if(tr&&tbx){var rr=tbx.getBoundingClientRect();tr.style.position='fixed';tr.style.top=(rr.top+rr.height/2)+'px';tr.style.right='10px';tr.style.zIndex='99992';}
   }catch(e){console.warn('inv inicial',e);}
 }
-// Confirmación grande de compra / venta
 function opModal(o){
   return new Promise(function(res){
     var c=cartColor(),v=o.tipo==='venta',col=v?'var(--red,#ff5252)':'var(--accent,#00e676)';
@@ -10879,7 +9767,7 @@ function _opEnvolver(nombre,leer){
   var orig=window[nombre];if(typeof orig!=='function'||orig._op)return;
   var w=function(){var self=this,args=arguments;if(_opBypass)return orig.apply(self,args);
     var o=null;try{o=leer();}catch(e){}
-    if(!o||!o.ticker||!(o.qty>0)||!(o.precio>0))return orig.apply(self,args); // datos incompletos: que valide el original
+    if(!o||!o.ticker||!(o.qty>0)||!(o.precio>0))return orig.apply(self,args);
     opModal(o).then(function(ok){if(!ok)return;_opBypass=true;try{orig.apply(self,args);}finally{_opBypass=false;}});};
   w._op=1;window[nombre]=w;
 }
@@ -10900,39 +9788,27 @@ function _opMktNom(id){var e=document.getElementById(id);return e&&e.selectedInd
       return {tipo:tp,ticker:_opVal('m-ticker').trim().toUpperCase(),qty:q,precio:p,unidad:bo?'c/100 nominales':'',total:bo?q*p/100:q*p,fecha:_opFecha('m-fecha'),mkt:_opMktNom('m-mkt')};});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
-  // Omar: al cambiar de cartera (Cocos / Jeep) se actualiza el nombre del chip
   setInterval(function(){var n=document.getElementById('cart-chip-n');if(n&&n.textContent!==cartNombre())n.textContent=cartNombre();},1500);
 })();
 
 // ─── Monto en USD de un cobro ─────────────────────────────────────────────────
-// Algunos cobros en pesos importados quedaron con montoUSD = monto en pesos (ej. CUAP $424.494 → "USD
-// 424.494"). Si un cobro en ARS tiene un montoUSD que no puede ser (más de la mitad del monto en pesos),
-// se recalcula con el CCL usado, el de la fecha o el de hoy.
-// cobros en pesos → USD al MEP de la fecha (si no hay, el MEP de hoy)
 function _divTC(x){var f=String(x.fecha||''),dmy=f.indexOf('-')>0?f.split('-').reverse().join('/'):f;return getMEP(dmy)||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||+x.cclUsado||CCL_HOY||0;}
 function _divUSDMal(x){return x&&x.moneda==='ARS'&&x.montoUSD!=null&&x.montoUSD!==''&&(+x.montoUSD)>0.5*(+x.monto||0)&&(+x.monto)>0;}
 function divUSD(x){
   if(!x)return 0;if(x.moneda==='USD')return +(x.montoUSD!=null&&x.montoUSD!==''?x.montoUSD:x.monto)||0;
   var tc=_divTC(x);return tc>0?(+x.monto||0)/tc:0;
 }
-// Corrige esos registros en la base (una sola vez, cuando terminó de cargar). No toca montoPPC (lo que
-// ajusta el PPC), solo el monto en USD que se muestra y se suma.
 function divsReparar(){
   if(typeof _gdcInitDone==='undefined'||!_gdcInitDone){setTimeout(divsReparar,3000);return;}
-  // además pasa al MEP los cobros en pesos que se habían convertido al CCL, salvo los que ajustan el
-  // PPC sin montoPPC propio (para no mover el PPC sin avisar)
   var n=0;(TRK.divs||[]).forEach(function(x){if(!x||x.moneda!=='ARS'||!(+x.monto>0))return;var tc=_divTC(x);if(!(tc>0))return;
     var nuevo=Math.round((+x.monto)/tc*100)/100;
     var mal=_divUSDMal(x),ajustaPPC=x.pncApplied&&x.pncTarget==='ppc'&&x.montoPPC==null;
     if(!mal&&(ajustaPPC||Math.abs((+x.montoUSD||0)-nuevo)<=Math.max(0.01,nuevo*0.005)))return;
     x._montoUSDantes=x.montoUSD;x.montoUSD=nuevo;x.cclUsado=tc;n++;});
-  if(n){console.warn('[divsReparar] '+n+' cobros en pesos recalculados en USD al MEP de su fecha');trkSave();try{trkRender();}catch(e){}try{renderDivsCard();}catch(e){}_famLastSave=0;try{renderPortfolio();}catch(e){}}
+  if(n){console.warn('[divsReparar] '+n+' cobros en pesos recalculados en USD al MEP de su fecha');trkSave();try{trkRender();}catch(e){}try{}catch(e){}_famLastSave=0;try{renderPortfolio();}catch(e){}}
 }
 
 // ─── Tipo de cada cobro: dividendo, renta o amortización ──────────────────────
-// Si el cobro tiene tipo guardado (DIV / RENTA / AMORT) se usa ese; si no se estima: acciones y Cedears
-// → dividendo; bonos, ON y letras → renta, salvo el último cobro de un título que ya no está en cartera
-// (vencimiento) → amortización. En Dividendos se cambia con un click en la etiqueta (punteada = estimado).
 var _divTipoCache=null;
 function _divTipoUltimos(){
   if(_divTipoCache&&_divTipoCache.n===TRK.divs.length)return _divTipoCache;
@@ -10953,7 +9829,6 @@ function divTipoCambiar(id){
 }
 
 // ─── Chequeo de salud (lo lee el index en "🩺 Chequeo") ───────────────────────
-// Cobros sin confirmar, fechas sin CCL/MEP cargado, posiciones negativas o sin precio y último backup.
 function saludCalc(d){
   var out={ts:Date.now(),pend:0,faltaTC:[],neg:[],sinPrecio:(d&&d.sinPrecio)||[],bk:null};
   var lim=Date.now()-400*86400000,falta={};
@@ -10973,11 +9848,6 @@ function saludCalc(d){
 }
 
 // ─── Aportes y retiros de dinero (CFG.aportes) — rendimiento por el método de Dietz modificado ─────
-// Config 'flujos_capital': [{id,fecha:'AAAA-MM-DD',tipo:'aporte'|'retiro',moneda:'USD'|'ARS',monto,usd,tc,nota}]
-// Inv. Inicial = valor al inicio del período (no se toca al aportar). Dentro del período:
-//   ganancia = valor − inicial − aportes + retiros
-//   capital promedio = inicial + Σ aporte·(días invertido/días del período) − Σ retiro·(días afuera/días del período)
-//   rendimiento = ganancia / capital promedio
 var APOR=null,_aporLoaded=false;
 async function aporLoad(){
   if(_aporLoaded)return APOR;
@@ -10996,13 +9866,11 @@ async function aporSave(){
   return ok;
 }
 function _aporDias(a,b){var p=a.split('-'),q=b.split('-');return Math.round((new Date(+q[0],+q[1]-1,+q[2])-new Date(+p[0],+p[1]-1,+p[2]))/86400000);}
-// Inicio del período: último corte (CFG.periodoInicio) o 1 de enero
 function aporIni(){var c=(typeof histUltimoCorte==='function')?histUltimoCorte():null;return c||(_hHoy().slice(0,4)+'-01-01');}
 function aporDelPeriodo(){var ini=aporIni(),hoy=_hHoy();return (APOR||[]).filter(function(x){return x.fecha>=ini&&x.fecha<=hoy;});}
-// Resultado del período para un valor actual y una inversión inicial
 function _aporCartOk(){return typeof CARTERA_ACTIVA==='undefined'||!CARTERA_ACTIVA||CARTERA_ACTIVA==='principal';}
 function aporCalc(val,inv){
-  if(!CFG.aportes||!_aporLoaded||!(inv>0)||!_aporCartOk())return null; // los aportes son de la cartera principal
+  if(!CFG.aportes||!_aporLoaded||!(inv>0)||!_aporCartOk())return null;
   var ini=aporIni(),hoy=_hHoy(),T=Math.max(1,_aporDias(ini,hoy)),ap=0,re=0,pond=0;
   aporDelPeriodo().forEach(function(x){var u=+x.usd||0,w=Math.max(0,Math.min(1,_aporDias(x.fecha,hoy)/T));
     if(x.tipo==='retiro'){re+=u;pond-=u*w;}else{ap+=u;pond+=u*w;}});
@@ -11032,26 +9900,24 @@ async function aporAgregarForm(){
   g('apor-monto').value='';g('apor-nota').value='';
   await aporSave();aporRefrescar();
 }
-// Carga masiva: una línea por movimiento → dd/mm/aaaa;aporte|retiro;USD|ARS;monto;nota
 async function aporPegar(){
   var ta=document.getElementById('apor-txt'),st=document.getElementById('apor-st'),L=String(ta.value||'').split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
-  var ok=0,err=[],prev=(APOR||[]).slice(); // duplicados solo contra lo ya guardado (en la lista puede haber dos iguales el mismo día)
+  var ok=0,err=[],prev=(APOR||[]).slice();
   L.forEach(function(l,i){var c=l.split(/[;\t]/).map(function(x){return x.trim();});
     var m=(c[0]||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(!m){err.push('línea '+(i+1)+': fecha');return;}
     var f=m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2),t=/^r/i.test(c[1]||'')?'retiro':'aporte',mo=/ars|\$|peso/i.test(c[2]||'')&&!/us/i.test(c[2]||'')?'ARS':'USD';
-    var s=String(c[3]||'').replace(/[^\d,.\-]/g,'');if(s.indexOf(',')>=0||/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'').replace(',','.');var n=parseFloat(s); // 600.000 = seiscientos mil
+    var s=String(c[3]||'').replace(/[^\d,.\-]/g,'');if(s.indexOf(',')>=0||/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'').replace(',','.');var n=parseFloat(s);
     if(prev.some(function(x){return x.fecha===f&&x.tipo===t&&x.moneda===mo&&Math.abs(x.monto-n)<0.005;})){err.push('línea '+(i+1)+': ya estaba');return;}
     var a0=window.alert;window.alert=function(msg){err.push('línea '+(i+1)+': '+msg);};
     try{if(aporAgregar(f,t,mo,n,c[4]||''))ok++;}finally{window.alert=a0;}});
   if(ok){await aporSave();ta.value='';}
-  _aporMsg=ok+' cargado(s)'+(err.length?' · '+err.join(' · '):'');_aporMsgErr=!!err.length;aporRefrescar(); // el mensaje sobrevive al redibujado
+  _aporMsg=ok+' cargado(s)'+(err.length?' · '+err.join(' · '):'');_aporMsgErr=!!err.length;aporRefrescar();
 }
 async function aporBorrar(id){
   var x=(APOR||[]).find(function(a){return a.id===id;});if(!x)return;
   if(!confirm('¿Borrar el '+x.tipo+' del '+x.fecha.split('-').reverse().join('/')+' por USD '+Math.round(x.usd).toLocaleString('es-AR')+'?'))return;
   APOR=APOR.filter(function(a){return a.id!==id;});await aporSave();aporRefrescar();
 }
-// Una sola vez: si los aportes del período ya estaban sumados a mano en la Inv. Inicial, se los resta
 function aporAjustarInv(){
   var c=aporCalc(1,1);if(!c||!c.neto)return;var inv=getRawNum('inv-sidebar-usd');if(!(inv>0))return;var nueva=Math.round(inv-c.neto);
   if(!confirm('Si ya habías sumado estos aportes a mano en la Inv. Inicial:\n\nInv. Inicial USD '+Math.round(inv).toLocaleString('es-AR')+' − aportes netos USD '+Math.round(c.neto).toLocaleString('es-AR')+' = USD '+nueva.toLocaleString('es-AR')+'\n\n¿La cambio?'))return;
@@ -11105,18 +9971,14 @@ function aporRender(){
 }
 (function _aporBoot(n){setTimeout(function(){if(!CFG.aportes)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){aporLoad().then(async function(a){if(a){await saltosOkLoad();if(CFG.historial)await histLoad();try{renderPortfolio();}catch(e){}aporRender();try{histRender();}catch(e){}}else if(n<40)_aporBoot(n+1);});}else if(n<40)_aporBoot(n+1);},1500);})(0);
 
-// Períodos anteriores {añoDeInicio: rendimiento %}: CFG.rendAnual (o la solapa Rendimiento anual con histDesdeRA) + cierres guardados
 function rendPeriodos(){
   var per={};Object.keys(CFG.rendAnual||{}).forEach(function(y){var r=+CFG.rendAnual[y];if(isFinite(r))per[y]=Math.round(r*100)/100;});
   ((typeof HIST!=='undefined'&&HIST&&HIST.cierres)||[]).forEach(function(cz){if(cz.rendFinal!=null)per[String(parseInt(cz.d.slice(0,4),10)-1)]=Math.round(cz.rendFinal*100)/100;});
-  var corte=(typeof histUltimoCorte==='function')?histUltimoCorte():null;if(corte)delete per[corte.slice(0,4)]; // el en curso va aparte
+  var corte=(typeof histUltimoCorte==='function')?histUltimoCorte():null;if(corte)delete per[corte.slice(0,4)];
   return per;
 }
 
 // ─── Detector de aportes/retiros sin cargar ───────────────────────────────────
-// Entre dos días seguidos del historial: salto = Δ valor − aportes/retiros cargados en esas fechas.
-// Si el salto pasa el 6% del valor (10% si hay más de 4 días entre puntos) y USD 500, se avisa.
-// "Es mercado" lo descarta (config saltos_ok, lista de fechas).
 var SALTOS_OK=null;
 async function saltosOkLoad(){if(SALTOS_OK)return SALTOS_OK;try{var v=await sbGetConfig('saltos_ok');SALTOS_OK=Array.isArray(v)?v:[];}catch(e){SALTOS_OK=[];}return SALTOS_OK;}
 function saltosDetectar(){
@@ -11147,9 +10009,6 @@ function saltosHTML(){
 }
 
 // ─── Cierre de período asistido ───────────────────────────────────────────────
-// Valor al cierre = último punto del historial hasta el día del corte (editable: mejor el del broker).
-// Ganancia y rendimiento del período que cierra con aportes/retiros (Dietz); se guarda en HIST.cierres
-// (Rendimiento por período y Acumulado del index), la Inv. Inicial pasa a ser el valor al cierre y, con honorario, abre 💼.
 function _cierreRango(corte){var y=parseInt(corte.slice(0,4),10)-1;return {ini:y+corte.slice(4),fin:corte};}
 function cierreCalc(V,inv,ini,fin){
   var T=Math.max(1,_aporDias(ini,fin)),ap=0,re=0,pond=0;
@@ -11202,13 +10061,8 @@ async function cierreGuardar(){
   _famLastSave=0;try{renderPortfolio();}catch(e){}try{histRender();}catch(e){}try{aporRender();}catch(e){}
   if(CFG.honorario&&typeof honAbrir==='function')honAbrir({ini:r.ini,fin:r.fin,inv:inv,val:V,apn:c.neto});
 }
-function histCerrarPeriodo(){cierreAbrir();}
-
 
 // ─── Modo celular simplificado ────────────────────────────────────────────────
-// En pantallas ≤680px el Portafolio abre con una vista corta: resumen, alertas, lo que más se movió,
-// próximos cobros, distribución, posiciones, meta (GDC) y botones rápidos. "Ver todo" muestra la vista
-// completa (hasta que toques "📱 Vista simple" o recargues).
 var _mobFull=false;try{_mobFull=sessionStorage.getItem(PFX+'mob_full')==='1';}catch(e){}
 function mobActivo(){return window.innerWidth<=680&&!_mobFull;}
 (function(){try{var st=document.createElement('style');st.id='mob-simple-css';st.textContent=
@@ -11255,7 +10109,6 @@ function mobRender(d){
   var fd=function(i){return i.split('-').reverse().slice(0,2).join('/');};
   var open=(d.open||[]).filter(function(p){return p._valueUSD!=null&&p._valueUSD>0;});
   var chOf=function(p){var q=(typeof quotes!=='undefined')&&quotes[p.ticker];return q&&q.changePct!=null&&isFinite(q.changePct)?q.changePct:null;};
-  // 1. resumen
   var hoyUSD=0;open.forEach(function(p){var c=chOf(p);if(c!=null)hoyUSD+=p._valueUSD-p._valueUSD/(1+c/100);});
   var tot=d.valConLiq||0,hoyPct=tot>0?hoyUSD/(tot-hoyUSD)*100:null;
   var ini=(typeof aporIni==='function')?aporIni():null,inv=getRawNum('inv-sidebar-usd');
@@ -11264,7 +10117,6 @@ function mobRender(d){
     '<div><div class="ml">Hoy</div><div class="mkv" style="'+cl(hoyPct)+'">'+pc(hoyPct)+'</div><div class="msub">'+(hoyUSD>=0?'+':'−')+'USD '+n0(Math.abs(hoyUSD))+'</div></div>'+
     '<div><div class="ml">Período</div><div class="mkv" style="'+cl(d.rendPct)+'">'+pc(d.rendPct)+'</div><div class="msub">'+(ini?'desde '+fd(ini):'')+'</div></div>'+
     '<div><div class="ml">Ganancia</div><div class="mkv" style="'+cl(gan)+'">'+(gan==null?'—':(gan<0?'−':'')+n0(Math.abs(gan)))+'</div><div class="msub">USD del período</div></div></div></div>';
-  // 2. alertas
   var al=[];
   if(d.pv&&d.pv.length)al.push('🎯<div><b>'+d.pv.length+' llegaron a su P. Venta:</b> <span style="font-family:var(--mono);font-weight:700">'+d.pv.slice(0,6).join(' · ')+(d.pv.length>6?'…':'')+'</span></div>');
   try{(typeof saltosDetectar==='function'?saltosDetectar():[]).slice(-2).forEach(function(x){al.push('⚠️<div>¿Entró o salió plata el <b>'+fd(x.d)+'</b>? El valor saltó '+(x.dif>=0?'+':'−')+'USD '+n0(Math.abs(x.dif))+'</div>');});}catch(e){}
@@ -11273,43 +10125,33 @@ function mobRender(d){
     if(HIST&&!HIST.cierres.some(function(x){return x.d===corte;})&&HIST.puntos.length&&HIST.puntos[0].d<corte&&_aporDias(corte,_hHoy())<=60)al.push('📅<div>Pasó el corte del <b>'+fd(corte)+'</b>: cerrá el período</div>');
     else if(dd>=0&&dd<=15)al.push('📅<div>El período cierra en <b>'+dd+' día'+(dd!==1?'s':'')+'</b> ('+fd(prox)+')</div>');}}catch(e){}
   h+='<div class="mb"><div class="ml" style="margin-bottom:4px">Alertas</div>'+(al.length?al.map(function(a){return '<div class="mal">'+a+'</div>';}).join(''):'<div class="msub" style="font-size:.74rem">Sin alertas ✓</div>')+'</div>';
-  // 3. lo que más se movió
   var conCh=open.map(function(p){return {t:p.ticker,c:chOf(p)};}).filter(function(x){return x.c!=null&&x.c!==0;});
   var up=conCh.filter(function(x){return x.c>0;}).sort(function(a,b){return b.c-a.c;}).slice(0,3),dn=conCh.filter(function(x){return x.c<0;}).sort(function(a,b){return a.c-b.c;}).slice(0,3);
   var lst=function(a){return a.length?a.map(function(x){return '<div class="mrow"><span>'+x.t+'</span><span style="'+cl(x.c)+'">'+pc(x.c)+'</span></div>';}).join(''):'<div class="msub">—</div>';};
   h+='<div class="mb"><div class="ml" style="margin-bottom:6px">Lo que más se movió hoy</div><div class="mmv"><div>'+lst(up)+'</div><div>'+lst(dn)+'</div></div></div>';
-  // 4. próximos cobros (7 días)
   var lim=new Date();lim.setDate(lim.getDate()+7);var limS=lim.getFullYear()+'-'+('0'+(lim.getMonth()+1)).slice(-2)+'-'+('0'+lim.getDate()).slice(-2);
   var cob=(d.cobros||[]).filter(function(it){return it.fecha<=limS;});
   h+='<div class="mb"><div class="ml" style="margin-bottom:4px">Próximos cobros · 7 días</div>'+(cob.length?cob.slice(0,8).map(function(it){return '<div class="mrow"><span>'+fd(it.fecha)+' · '+it.ticker+'</span><span style="color:var(--accent)">'+(it.moneda==='USD'?'USD ':'$ ')+(it.total||0).toLocaleString('es-AR',{maximumFractionDigits:it.moneda==='USD'?0:0})+'</span></div>';}).join(''):'<div class="msub" style="font-size:.74rem">Nada en los próximos 7 días</div>')+'</div>';
-  // 5. distribución
   var sv=d.sectorVal||{},rf=0,rv=0;Object.keys(sv).forEach(function(k){if(['bonos','on','fci','letras'].indexOf(k)>=0)rf+=sv[k]||0;else rv+=sv[k]||0;});
   var lq=d.liq||0,T=rf+rv+lq||1,w=function(x){return Math.round(x/T*100);};
   h+='<div class="mb"><div class="ml">Distribución</div><div class="mbar">'+(rv>0?'<span style="width:'+w(rv)+'%;background:#00e676">RV '+w(rv)+'%</span>':'')+(rf>0?'<span style="width:'+w(rf)+'%;background:#448aff;color:#fff">RF '+w(rf)+'%</span>':'')+(lq>0?'<span style="width:'+Math.max(3,w(lq))+'%;background:#7a9cc5">'+w(lq)+'%</span>':'')+'</div>'+
     '<div class="msub" style="font-size:.66rem;margin-top:5px">'+(d.dolzPct!=null?'Dolarizado '+Math.round(d.dolzPct)+'% · ':'')+'Liquidez USD '+n0(lq)+'</div></div>';
-  // 6. posiciones
   var ord=open.slice().sort(function(a,b){return b._valueUSD-a._valueUSD;}),most=_mobPosTodas?ord:ord.slice(0,5);
   h+='<div class="mb"><div class="ml">Mis posiciones</div><div class="mpos"><span class="ml">Ticker</span><span class="ml" style="text-align:right">USD</span><span class="ml" style="text-align:right">Hoy / Total</span>'+
     most.map(function(p){var c=chOf(p),t=p._pnlPct;return '<span>'+p.ticker+'</span><span style="text-align:right">'+n0(p._valueUSD)+'</span><span style="text-align:right"><span style="'+cl(c)+'">'+(c==null?'—':pc(c))+'</span> / <span style="'+cl(t)+'">'+(t==null?'—':pc(t,0))+'</span></span>';}).join('')+'</div>'+
     (ord.length>5?'<div class="mlink" onclick="_mobPosTodas=!_mobPosTodas;renderPortfolio()">'+(_mobPosTodas?'ver menos':'ver las '+ord.length+' posiciones ›')+'</div>':'')+'</div>';
-  // 7. meta de ingresos (GDC)
   if(CFG.id==='gdc'){try{var hace=new Date();hace.setFullYear(hace.getFullYear()-1);var hS=hace.toISOString().slice(0,10),ing=0;
     (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente')return;var f=_infISO(x.fecha);if(!f||f<hS)return;if(divTipo(x)==='AMORT')return;ing+=divUSD(x)||0;});
     var mes=ing/12,meta=100000/12,pm=Math.min(100,mes/meta*100);
     h+='<div class="mb"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="ml">🎯 Meta USD '+n0(meta)+' / mes</span><span style="font-family:var(--mono);font-size:.72rem">hoy <b style="color:var(--accent)">USD '+n0(mes)+'</b></span></div>'+
       '<div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-top:7px"><i style="display:block;height:100%;width:'+pm+'%;background:linear-gradient(90deg,#38bdf8,#00e676)"></i></div>'+
       '<div class="msub" style="margin-top:5px">'+pm.toFixed(1).replace('.',',')+'% de la meta · rentas y dividendos, promedio de 12 meses (los honorarios están en el index)</div></div>';}catch(e){}}
-  // 8. botones
   h+='<div class="mb" style="padding:9px"><div class="mbtn"><button onclick="mobIr(\'compra\')"><b>🛒</b>Comprar</button><button onclick="mobIr(\'venta\')"><b>💸</b>Vender</button><button onclick="mobIr(\'cobro\')"><b>💰</b>Cobro</button><button onclick="mobIr(\'aporte\')"><b>💵</b>Aporte</button></div></div>';
   h+='<div class="mlink" style="font-size:.8rem" onclick="mobVerTodo()">Ver todo (vista completa) ›</div>';
   v.innerHTML=h;
 }
 
 // ─── Vista familiar (solo lectura) ────────────────────────────────────────────
-// Cada vez que se guarda el resumen, se publica en config 'vista_familiar' un resumen chico para la página
-// vista.html (lo que ve el familiar). Solo datos de lectura: valor, ganancia, períodos, evolución, distribución,
-// cobros y aportes. Nada de movimientos, precios de venta ni honorarios.
-// CFG.capitalInicio = capital puesto (USD) hasta el inicio del período actual → habilita "Ganaste desde que empezaste" en USD.
 async function vistaPublicar(d){
   try{
     if(!CFG.vistaFamiliar)return;
@@ -11320,7 +10162,6 @@ async function vistaPublicar(d){
     var acc=1;Object.keys(per).forEach(function(y){acc*=1+per[y]/100;});if(rend!=null)acc*=1+rend/100;
     var apor=(CFG.aportes&&_aporLoaded?APOR:[]).map(function(x){return {f:x.fecha,t:x.tipo,u:Math.round((+x.usd||0)*100)/100};});
     var capital=null;if(CFG.capitalInicio>0){capital=CFG.capitalInicio;apor.forEach(function(x){if(ini&&x.f>=ini)capital+=(x.t==='retiro'?-1:1)*x.u;});}
-    // evolución: un punto por semana (+ el último), con la línea de capital puesto si se conoce
     var serie=[];try{var s=histSerie(),pts=[],byW={};
       s.forEach(function(x){if(x.previo){pts.push(x);return;}var dt=new Date(x.d+'T12:00:00'),wk=x.d.slice(0,4)+'-'+Math.floor((dt-new Date(dt.getFullYear(),0,1))/604800000);byW[wk]=x;});
       pts=pts.concat(Object.keys(byW).map(function(k){return byW[k];})).sort(function(a,b){return a.d<b.d?-1:1;});
@@ -11341,9 +10182,6 @@ async function vistaPublicar(d){
 }
 
 // ─── 🏖️ Simulador de retiro (CFG.simRetiro, solo GDC) ─────────────────────────
-// Mes a mes: el capital rinde la tasa anual, se suma el aporte hasta la fecha de retiro y después se resta el
-// retiro, que sube cada año por la inflación del dólar. Capital "eterno" = retiro anual ÷ (rendimiento − inflación).
-// Los datos cargados y los escenarios guardados quedan en config 'sim_retiro'.
 var SIMR=null,_simrLoaded=false,_simrCapAuto=true,_simrSaveT=null;
 async function simrLoad(){if(_simrLoaded)return;try{var v=await sbGetConfig('sim_retiro');if(v&&typeof v==='object')SIMR=v;}catch(e){}
   SIMR=SIMR||{};SIMR.in=SIMR.in||{ret:8333,ren:10,inf:3,apo:0,ani:0};SIMR.esc=SIMR.esc||[];_simrLoaded=true;}
@@ -11378,7 +10216,6 @@ function simrRender(force){
   var inp=function(id,lbl,val,help,step){return '<label style="display:block"><span style="'+mono+';font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">'+lbl+'</span>'+
     '<input id="simr-'+id+'" type="number" step="'+(step||'any')+'" value="'+val+'" oninput="simrInput(\''+id+'\')" style="width:100%;margin-top:4px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);'+mono+';font-size:.85rem;padding:.35rem .5rem">'+
     '<span style="display:block;font-size:.58rem;color:var(--text3);margin-top:2px">'+help+'</span></label>';};
-  // rendimientos reales para elegir un % realista
   var per={};try{per=rendPeriodos();}catch(e){}var ys=Object.keys(per).sort();
   var chips=ys.map(function(y){return '<button class="btn btn-sm" style="font-size:.62rem;padding:1px 7px" onclick="simrUsarRen('+per[y]+')">'+y+': '+(per[y]>=0?'+':'')+String(Math.round(per[y]*10)/10).replace('.',',')+'%</button>';}).join(' ');
   try{var _ra=(typeof _aporUlt!=='undefined'&&_aporUlt&&_aporUlt.rend!=null)?Math.round(_aporUlt.rend*10)/10:null;if(_ra!=null)chips+=' <button class="btn btn-sm" style="font-size:.62rem;padding:1px 7px" onclick="simrUsarRen('+_ra+')">'+_hHoy().slice(0,4)+' en curso: '+(_ra>=0?'+':'')+String(_ra).replace('.',',')+'%</button>';}catch(e){}
@@ -11423,10 +10260,6 @@ function simrResultado(){
 (function _simrBoot(n){setTimeout(function(){if(!CFG.simRetiro)return;if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){simrLoad().then(function(){if(CFG.historial&&typeof histLoad==='function')return histLoad();}).then(function(){simrRender(true);});}else if(n<40)_simrBoot(n+1);},1800);})(0);
 
 // ─── 📈 Historial de precios por activo ─────────────────────────────────────
-// Bonos, acciones y Cedears: historia diaria de data912 (años hacia atrás).
-// ONs y lo que data912 no tenga: tabla propia precios_hist (Supabase de GDC), que guarda la
-// función "avisos" en la corrida de las 17:30. Se pasa a USD con el MEP (bonos/ONs) o el CCL
-// (acciones y Cedears) de cada día (argentinadatos). Los bonos C/D ya cotizan en dólares.
 var PH_SB={url:'https://wstnseufzyavgdovrehu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU'};
 var _phFx={},_phSer={},_phChart=null,_phSt=null;
 function _phFxLoad(t){
@@ -11496,9 +10329,7 @@ function phRango(k){
   else if(k==='1a'){dd.setFullYear(dd.getFullYear()-1);desde=dd.toISOString().slice(0,10);}
   else if(k==='compra'&&_phSt.mov.length){var d0=new Date(_phSt.mov[0].d+'T12:00:00');d0.setDate(d0.getDate()-20);desde=d0.toISOString().slice(0,10);}
   var pts=ser.filter(function(x){return x[0]>=desde;});if(pts.length<2)pts=ser.slice(-60);
-  // marcas de compra/venta en el primer día con precio desde esa fecha
   var mk={};_phSt.mov.forEach(function(m){for(var i=0;i<pts.length;i++){if(pts[i][0]>=m.d){mk[i]=mk[i]||{c:0,v:0};mk[i][m.t==='compra'?'c':'v']++;break;}}});
-  // achicar a ~500 puntos sin perder marcas ni extremos
   var step=Math.max(1,Math.ceil(pts.length/500)),idx=[];
   for(var i=0;i<pts.length;i++){if(i%step===0||i===pts.length-1||mk[i])idx.push(i);}
   var lab=idx.map(function(i){return pts[i][0];}),val=idx.map(function(i){return pts[i][1];});
@@ -11526,10 +10357,6 @@ function phRango(k){
 }
 
 // ─── 📊 Base 100: rendimiento acumulado para comparar carteras en el index ──
-// Serie de la cartera principal: un punto en cada corte de período (rendimientos de períodos anteriores,
-// rendPeriodos) y un punto por día hábil desde que existe el historial diario (HIST: rend del período
-// en curso guardado cada día, ya descontando aportes y retiros). Entre puntos lejanos el index dibuja
-// punteado (sin datos diarios). GDC además manda el S&P 500 (Cedear SPY en USD CCL) de referencia.
 function b100Serie(){
   if(typeof HIST==='undefined'||!HIST||!CFG.periodoInicio)return null;
   var PI=CFG.periodoInicio,corte=histUltimoCorte();if(!corte)return null;
@@ -11558,7 +10385,6 @@ function b100RefBg(){
 }
 
 // ─── ⏳ Ciclo de vida de bonos y ONs (en Próximos Cobros) ─────────────────
-// TIR con fechas (flujos [{d:'AAAA-MM-DD', m}], el primero negativo). Bisección; null si no hay raíz.
 function _xirrFechas(fl){
   if(!fl.length)return null;var t0=Date.parse(fl[0].d);
   var npv=function(r){var s=0;fl.forEach(function(x){s+=x.m/Math.pow(1+r,(Date.parse(x.d)-t0)/31557600000);});return s;};
@@ -11566,7 +10392,7 @@ function _xirrFechas(fl){
   for(var i=0;i<100;i++){var mid=(lo+hi)/2,v=npv(mid);if(Math.abs(v)<1e-7)return mid;if(a*v<0){hi=mid;b=v;}else{lo=mid;a=v;}}
   return (lo+hi)/2;
 }
-var CICLO_TIR_BAJA=6; // % anual desde hoy por debajo del cual conviene evaluar vender y rotar
+var CICLO_TIR_BAJA=6;
 function renderCicloVida(){
   var el=document.getElementById('flujo-ciclo');
   if(!el){var sc=document.getElementById('flujos-scroll');if(!sc)return;el=document.createElement('div');el.id='flujo-ciclo';el.style.marginTop='1rem';sc.appendChild(el);}
@@ -11576,24 +10402,18 @@ function renderCicloVida(){
   var tenidos={};pos.forEach(function(p){tenidos[p.ticker]=1;});
   var L=pos.map(function(p){var t=p.ticker,tb=flujoDe(t),base=flujoBase(t),q=p.qty,usd=function(m){return tb.moneda==='USD'?m:(tc?m/tc:0);};
     var fut=tb.flujos.filter(function(x){return x.f>h;}),falta=0;fut.forEach(function(x){falta+=usd(((x.r||0)+(x.a||0))*q/100);});
-    // cobros registrados: los del mismo ticker; si no hay y el bono base no está en cartera, los del base (ej. GD30 para GD30D)
     var sumar=function(ok){var c=0,fs={};(TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart)||!ok(x.ticker))return;var u=0;try{u=divUSD(x)||0;}catch(e){}if(u>0){c+=u;fs[_infISO(x.fecha)]=1;}});return {c:c,n:Object.keys(fs).length};};
     var cc=sumar(function(k){return k===t;});
     if(!cc.c&&base!==t&&!tenidos[base])cc=sumar(function(k){return k===base;});
     var cob=cc.c,pas=cc.n;
-    // costUSDpuro ya viene con los cobros aplicados al PPC restados: se los vuelve a sumar para tener lo que pagaste
-    // de verdad y no contar la renta dos veces (una en "cobrado" y otra achicando el costo)
     var aplic=0;(TRK.divs||[]).forEach(function(d){if(d.ticker!==t||!d.pncApplied||d.pncTarget!=='ppc')return;var m=(d.montoPPC!=null)?d.montoPPC:d.montoUSD;if(m>0)aplic+=m;});
     var pag=(p.costUSDpuro||0)+aplic,tot=cob+falta;
-    // % anual sobre lo que pagaste: compras (fecha promedio ponderada) → cobros registrados → flujos futuros
     var anual=null;try{var sq=0,sd=0;movimientos.forEach(function(m){if(m&&m.tipo==='compra'&&m.ticker===t&&(m.cartera||'principal')===cart&&+m.qty>0){var i=_phIso(m.fecha);if(i){sq+=+m.qty;sd+=+m.qty*Date.parse(i);}}});
       if(sq>0&&pag>0){var d0=new Date(sd/sq).toISOString().slice(0,10),fl=[{d:d0,m:-pag}];
         (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente'||(x.cartera&&x.cartera!==cart)||x.ticker!==t)return;var u=0;try{u=divUSD(x)||0;}catch(e){}var f=_infISO(x.fecha);if(u>0&&f)fl.push({d:f<d0?d0:f,m:u});});
         fut.forEach(function(x){fl.push({d:x.f,m:usd(((x.r||0)+(x.a||0))*q/100)});});
         var r=_xirrFechas(fl);if(r!=null)anual=r*100;}}catch(e){}
-    // lo que cobrás en lo que queda del año
     var anio=0,y=h.slice(0,4);fut.forEach(function(x){if(x.f.slice(0,4)===y)anio+=usd(((x.r||0)+(x.a||0))*q/100);});
-    // ¿vender o mantener? valor de mercado hoy vs lo que falta cobrar, y TIR desde hoy
     var hoyV=null,qt=quotes[t];if(qt&&qt.price>0&&tb.moneda==='USD'){var rt=getRatio(t)||1,p100=isBonoUSDDirecto(t)?qt.price*rt:(tc?qt.price*rt/tc:null);if(p100)hoyV=p100*q/100;}
     var tirHoy=null;try{var tr=calcularTIRReal(t);if(tr&&isFinite(tr.tir))tirHoy=tr.tir;}catch(e){}
     return {t:t,vto:tb.flujos[tb.flujos.length-1].f,fut:fut,cob:cob,falta:falta,pag:pag,tot:tot,pct:pag>0?(tot/pag-1)*100:null,pas:pas,anual:anual,anio:anio,hoyV:hoyV,tirHoy:tirHoy,mon:tb.moneda};});
@@ -11614,9 +10434,7 @@ function renderCicloVida(){
         '<div style="display:flex;justify-content:space-between;font-size:.66rem;color:var(--text3);margin-top:2px"><span>'+(x.pas?x.pas+' cobro'+(x.pas>1?'s':'')+' registrado'+(x.pas>1?'s':'')+' · ':'')+(x.fut.length?x.fut.length+' por cobrar':'')+'</span><span>'+(x.fut.length?'próximo '+x.fut[0].f.slice(8,10)+'/'+x.fut[0].f.slice(5,7):'terminado')+'</span></div></div>';}).join('')+'</div>'+
     '<div style="font-size:.64rem;color:var(--text3);margin-top:8px;line-height:1.5">Cobrado = cobros registrados de ese bono (incluye los de nominales que ya vendiste). Falta = renta + amortización futuras del flujo cargado para la cantidad que tenés hoy (bonos en pesos, pasados al MEP de hoy). Pagaste = lo que pagaste por lo que tenés hoy (sin restarle los cobros que achican el PPC, para no contarlos dos veces). El % compara cobrado + falta contra lo pagado: es lo que ganarías manteniéndolo hasta el final; "anual" es ese resultado por año, desde tus compras hasta el vencimiento. Abajo, "hoy vale" es lo que recibirías vendiendo hoy y "desde hoy rinde" es la TIR de mantenerlo desde el precio actual: si vender hoy da más que lo que falta cobrar, o si rinde menos de '+CICLO_TIR_BAJA+'% anual, se marca para que evalúes venderlo y rotar a algo que rinda más.</div></div></div>';
 }
-// Filtro de la tabla del portafolio: Ambas / Renta fija / Renta variable (FCI cuenta como renta fija)
 function tipoVista(){try{return localStorage.getItem(PFX+'tipo_vista')||'ambas';}catch(e){return 'ambas';}}
-function tipoVistaPasa(sector){var v=tipoVista();if(v==='ambas')return true;var rf=(sector==='bonos'||sector==='on'||sector==='fci');return v==='rf'?rf:!rf;}
 function tipoVistaSet(v){try{localStorage.setItem(PFX+'tipo_vista',v);}catch(e){}tipoVistaPintar();try{renderPortfolio();}catch(e){}}
 function tipoVistaPintar(){var w=document.getElementById('tipo-vista');if(!w)return;var v=tipoVista();w.querySelectorAll('button').forEach(function(b){var on=b.dataset.v===v;b.style.background=on?'var(--accent)':'var(--surface2)';b.style.color=on?'#04150b':'var(--text2)';b.style.fontWeight=on?'700':'400';});}
 (function(){function add(){var mf=document.getElementById('mobile-filters');if(!mf||document.getElementById('tipo-vista'))return;
@@ -11626,10 +10444,6 @@ function tipoVistaPintar(){var w=document.getElementById('tipo-vista');if(!w)ret
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();})();
 
 // ─── 🧪 Vista nueva del portafolio (CFG.vistaNueva, página de prueba) ─────────
-// Arriba: foto + Valor total / Rendimiento / Hoy; panel único Comprar/Vender (usa las tarjetas de siempre);
-// filtros Todo/RV/RF + Tipo (USA, Argentina, Brasil, Cripto, Bonos…); tres distribuciones con selección múltiple
-// (distancia al P. Venta, ganancia, peso en su tipo) y la tabla de celdas dobles ordenable.
-// Los datos salen de la misma pasada de renderPortfolio (NV_ROWS); la vista clásica queda abajo.
 var NV_ROWS=[],NV_K={};
 var NV=(function(){var d={ts:{},df:{},dg:{},dm:{},sk:'inv',sd:-1,modo:'c',op:{},dfv:0,mon:'ars',ic:true};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
 if(NV.dfv!==2){(function(){var o=NV.df||{},n={};[0,1,2].forEach(function(i){if(o[i])n[i]=1;});if(o[4])n[3]=1;NV.df=n;NV.dfv=2;})();}
@@ -11719,7 +10533,6 @@ function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')
  var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});var pz=document.getElementById('vsell-precio-ars');if(pz)setTimeout(function(){try{pz.focus({preventScroll:true});pz.select();}catch(e){}},400);}
 function nvBuscar(v){NV.q=(v||'').toUpperCase().trim();nvRender();}
 function nvAbrir(t){if(!NV.op)NV.op={};if(NV.op[t])delete NV.op[t];else NV.op[t]=1;nvSave();nvRender();}
-function nvIr(m){nvModo(m);var r=document.getElementById('nv-opw');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
 function _nvMover(){try{
  var kd=document.getElementById('nv-kd'),kc=document.getElementById('nv-kc');if(kd&&!document.getElementById('m-dolz'))kd.style.display='none';
  [['m-dolz',kd],['dolz-popover',kd],['m-count',kc]].forEach(function(x){var e=document.getElementById(x[0]);if(e&&x[1]&&e.parentNode!==x[1]){x[1].appendChild(e);if(x[0]!=='dolz-popover'){e.className='v';e.style.cssText='';}}});
@@ -11760,9 +10573,7 @@ function nvRender(){
    '<div class="nvdist"><div class="nvbox"><div id="nv-dF"></div></div><div class="nvbox"><div id="nv-dG"></div></div><div class="nvbox"><div id="nv-dM"></div></div></div>'+
    '<div id="nv-tw2"></div><div id="nv-row2" style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-top:14px"><div id="nv-opw"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div><div id="nv-calw" style="min-width:0;max-width:100%;padding-top:41px;display:flex"></div></div><div id="nv-cards" style="margin-top:14px"></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
-  // barra de cotizaciones / liquidez / inv. inicial: se mueve acá (sin el mail ni Salir, que quedan arriba)
   try{var tb0=document.querySelector('.topbar'),nb=document.getElementById('nv-tb0');if(tb0&&nb)Array.prototype.slice.call(tb0.children).forEach(function(c){if(c.id!=='auth-user-box'&&c.id!=='tb-right')nb.appendChild(c);});}catch(e){}
-  // estado Supabase, avisos, Sync y ⇔ Comparación: a la derecha de los KPIs
   try{var stb=document.getElementById('sidebar-toggle-btn'),nimg=document.getElementById('nv-img');if(stb&&nimg){var mb=stb.cloneNode(true);mb.id='nv-menu-btn';mb.style.width='34px';mb.style.height='34px';mb.style.fontSize='1.05rem';nimg.parentNode.insertBefore(mb,nimg);}}catch(e){}
   try{var nt=root.querySelector('.nvtop'),tw=document.createElement('div');tw.id='nv-tools';tw.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap';nt.appendChild(tw);
    var mv=function(){var kb=document.getElementById('kb-btn'),nb0=document.getElementById('nv-tb0');var qw=document.getElementById('nv-q');qw=qw&&qw.parentNode;if(nb0&&qw&&nb0.lastElementChild!==(kb||qw)){nb0.appendChild(qw);if(kb){kb.style.marginLeft='6px';nb0.appendChild(kb);}}
@@ -11770,18 +10581,14 @@ function nvRender(){
     var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);
     var ab=document.querySelector('button[onclick="fetchAllQuotes()"]');if(ab&&ab.parentNode!==tw){tw.appendChild(ab);Array.prototype.slice.call(ab.childNodes).forEach(function(n){if(n.nodeType===3)n.remove();});ab.title='Actualizar precios';ab.className='btn btn-a';ab.style.cssText='padding:0 9px;font-size:.95rem;min-width:0';}};
    mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
-  // encabezado original fuera: el ☰ original pasa a la barra de arriba (visible fuera de Portafolio)
   try{var stb0=document.getElementById('sidebar-toggle-btn'),tbo=document.querySelector('.topbar');if(stb0&&tbo){stb0.style.marginRight='10px';tbo.insertBefore(stb0,tbo.firstChild);}
    var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');document.documentElement.classList.remove('nv-pre');}catch(e){}
-  // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
  _nvMover();try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();}catch(e){console.warn('nv extras',e);}
- // KPIs
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
- // filtros
  var tsel=_nvTsSel(),tl=NV_ROWS.filter(function(o){return NV.tipo==='rv'?o.rv:NV.tipo==='rf'?!o.rv:true;});
  var _nmk=NV_ROWS.filter(function(o){return MARKS[o.t];}).length;document.getElementById('nv-fbar').innerHTML=(_nmk||NV.mk?'<span class="nvchip'+(NV.mk?' on':'')+'" onclick="NV.mk=!NV.mk;nvSave();nvRender()" title="Ver solo los activos marcados">🏷 Marcados <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+_nmk+'</span></span>':'')+NV_TS.map(function(x){var n=tl.filter(function(o){return o.s===x[0];}).length;if(!n&&!(NV.ts||{})[x[0]])return '';var on=!!(NV.ts||{})[x[0]];return '<span class="nvchip'+(on?' on':'')+'"'+(tsel.length&&!on?' style="opacity:.5"':'')+' onclick="nvTs(\''+x[0]+'\')">'+x[1]+' <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+n+'</span></span>';}).join('')+'';
  var dist=function(id,B,key,sin){var L=NV_ROWS.filter(function(o){return _nvOk(o,sin);}),cnt=B.map(function(b){return L.filter(b[1]).length;}),mx=Math.max.apply(null,cnt)||1,anySel=_nvSel(NV[key]).length;
@@ -11849,7 +10656,6 @@ function nvCalendario(){if(!CFG.historial||typeof histSerie!=='function'||!HIST)
   cols.push('<div class="cc">'+col.join('')+'</div>');mesLbl.push('<span>'+lbl+'</span>');d.setDate(d.getDate()+7);}
  var f=function(x){return x?x.d.split('-').reverse().slice(0,2).join('/')+' '+(x.u>=0?'+':'−')+'USD '+Math.round(Math.abs(x.u)).toLocaleString('es-AR'):'—';};
  card.innerHTML='<div style="display:flex;gap:16px;align-items:flex-start;padding:.7rem .9rem"><div class="nvcal" style="padding:0"><div class="dl"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span></div><div><div class="ml">'+mesLbl.join('')+'</div><div class="gr">'+cols.join('')+'</div></div><div style="min-width:150px;max-width:210px;font-family:var(--mono);font-size:.66rem;color:var(--text2);line-height:1.6"><div class="card-title" style="font-size:.84rem;margin-bottom:6px;font-family:var(--sans);white-space:nowrap">📅 Ganancias por día</div><span class="tag">'+(S.length<60?'desde '+S[0].d.split('-').reverse().slice(0,2).join('/'):'12 meses')+'</span><div style="margin-top:6px"><b style="color:var(--accent)">'+pos+'</b> en verde · <b style="color:var(--red)">'+neg+'</b> en rojo</div><div>mejor <span class="port-sensitive">'+f(best)+'</span></div><div>peor <span class="port-sensitive">'+f(worst)+'</span></div></div></div>';}
-// Repaso nocturno: tarjetas de a un activo (marcados, cerca del P. Venta, los que más se movieron hoy)
 var _rp={L:[],i:0};
 function _rpPri(o){if(MARKS[o.t])return 0;if(o.up!=null&&o.up<=5)return 1;if(o.ch!=null&&Math.abs(o.ch)>=3)return 2;return 3;}
 function nvRepaso(){var L=NV_ROWS.filter(function(o){return _rpPri(o)<3;}).sort(function(a,b){return _rpPri(a)-_rpPri(b)||(b.inv||0)-(a.inv||0);});
@@ -11875,7 +10681,6 @@ document.addEventListener('keydown',function(e){var ov=document.getElementById('
  var k=e.key.toLowerCase(),h=true;if(k==='arrowright'||k===' ')_rpIr(1);else if(k==='arrowleft')_rpIr(-1);else if(k==='c')_rpMarca('buy');else if(k==='v')_rpMarca('sell');else if(k==='s')_rpMarca('watch');else if(k==='n'){var t=document.getElementById('rp-nota');if(t)t.focus();}else h=false;
  if(h){e.preventDefault();e.stopPropagation();}},true);
 
-// Traducción de titulares al castellano (Google Translate público, con caché en este navegador)
 var _trC=(function(){try{return JSON.parse(localStorage.getItem('tr_es_v1')||'{}')||{};}catch(e){return {};}})();
 function _trT(h){return _trC[h]||h;}
 function _trN(L){var miss=(L||[]).filter(function(h){return h&&!_trC[h];});if(!miss.length)return Promise.resolve();
@@ -12103,9 +10908,6 @@ function nvPlanSalida(){if(!CFG.simRetiro&&!CFG.planSalida)return;var cw=documen
    (top?'<br><span style="color:var(--text3)">Mayores aportes:</span> <span class="port-sensitive">'+top+'</span>':'')+'</div></div>';}
 
 // ─── 🔔 Avisos push (CFG.push) ─────────────────────────────────────────────────
-// La app registra el dispositivo (config push_subs) y publica qué vigilar (config push_watch).
-// Una función programada en Supabase ("avisos") revisa precios, cobros y cierres y manda la notificación,
-// aunque la app esté cerrada. En iPhone hace falta tener la app agregada a la pantalla de inicio (iOS 16.4+).
 var VAPID_PUB='BP6CJHf5i2nKacdBN9fVoFcjZ51gozu_-YY8Xg1fZPD-GaGezoyGrzARFUz9k6KzWlytWcssXGCFyOT7CyXyR2w';
 function _b64u(s){var p='='.repeat((4-s.length%4)%4),b=(s+p).replace(/-/g,'+').replace(/_/g,'/'),r=atob(b),o=new Uint8Array(r.length);for(var i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o;}
 function pushSoportado(){return 'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;}
@@ -12142,7 +10944,6 @@ async function pushDesactivar(){
     var L=(await sbGetConfig('push_subs'))||[];if(Array.isArray(L)){await sbSetConfig('push_subs',L.filter(function(x){return x.endpoint!==ep;}));}}}catch(e){}
   pushBtnPintar();
 }
-// Qué tiene que vigilar el servidor (se publica con el resumen)
 async function pushWatchPublicar(d){
   if(!CFG.push)return;
   try{

@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0061)https://gcovetta.github.io/portafolio-tracker/portafolio.html -->
 <html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GDC</title>
 <link rel="manifest" href="../manifest.webmanifest">
@@ -18,7 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css">
 <style>
-:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--orange:#ff9100;--green-soft:#4caf50;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px;--rsm:6px}
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#ffd600;--blue:#448aff;--green:#00e676;--orange:#ff9100;--green-soft:#4caf50;--mono:"JetBrains Mono",monospace;--sans:"Inter",sans-serif;--radius:10px;--rsm:6px}
 *{box-sizing:border-box;margin:0;padding:0}html{font-size:15.5px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;overflow:hidden;display:flex;flex-direction:column;height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .app{display:flex;flex-direction:column;flex:1;min-height:0}
@@ -47,8 +45,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 .topbar-val{color:var(--text);font-weight:700;font-size:.8rem;font-family:var(--mono);letter-spacing:-.01em}
 .topbar-sub{color:var(--text3);font-size:.65rem;font-family:var(--mono)}
 .topbar-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
-
-/* ── Marcas de activos ─────────────────────────────────────────── */
 .mark-btn{background:none;border:none;cursor:pointer;font-size:.72rem;padding:0 3px 0 0;opacity:.25;transition:opacity .15s;line-height:1;vertical-align:middle}
 .mark-btn:hover{opacity:1}
 .mark-btn.active{opacity:1}
@@ -58,10 +54,7 @@ tr.marked-watch>td:first-child{border-left:3px solid var(--amber);padding-left:5
 tr.marked-sell{background:rgba(248,113,113,.04)}
 tr.marked-buy{background:rgba(126,232,162,.04)}
 tr.marked-watch{background:rgba(251,191,36,.04)}
-.mark-note-tag{display:inline-block;font-size:.56rem;font-style:italic;color:var(--text3);margin-left:4px;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 .mark-popover{position:fixed;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:.8rem;z-index:9500;min-width:210px;box-shadow:0 8px 28px rgba(0,0,0,.5)}
-.mark-pop-title{font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:.55rem;font-family:var(--sans)}
-.mark-type-btns{display:flex;gap:5px;margin-bottom:.5rem}
 .mark-type-btn{flex:1;padding:5px 2px;border-radius:var(--rsm);border:1px solid var(--border2);background:var(--surface2);cursor:pointer;font-size:.68rem;text-align:center;transition:all .12s;color:var(--text2);font-family:var(--sans)}
 .mark-type-btn:hover{background:var(--border);color:var(--text)}
 .mark-type-btn.sel-sell{border-color:var(--red);background:rgba(248,113,113,.15);color:var(--red)}
@@ -69,11 +62,7 @@ tr.marked-watch{background:rgba(251,191,36,.04)}
 .mark-type-btn.sel-watch{border-color:var(--amber);background:rgba(251,191,36,.15);color:var(--amber)}
 .mark-note-input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:5px 7px;outline:none;margin-bottom:.5rem;box-sizing:border-box}
 .mark-note-input:focus{border-color:var(--accent)}
-.mark-pop-actions{display:flex;gap:5px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}@keyframes spin360{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-/* Tooltip propio (no usa el atributo title nativo — a Garo el tooltip nativo no le abría en
-   Brave, solo le cambiaba el cursor a un signo de pregunta sin mostrar contenido). Se activa
-   con :hover en CSS puro, sin JS. */
 .qhelp{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .qhelp .qhelp-tip{visibility:hidden;opacity:0;position:absolute;bottom:135%;left:50%;transform:translateX(-50%);background:#0d1420;border:1px solid var(--border2,#264070);border-radius:6px;padding:5px 9px;font-size:.68rem;white-space:nowrap;color:var(--text2,#7a9cc5);z-index:200;transition:opacity .1s;box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:var(--mono),monospace;pointer-events:none}
 .qhelp:hover .qhelp-tip,.qhelp:focus .qhelp-tip{visibility:visible;opacity:1}
@@ -95,12 +84,9 @@ header{padding:.7rem 1.5rem;border-bottom:1px solid var(--border);display:flex;a
 .nav-sec{font-size:.57rem;font-family:var(--mono);color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:.6rem .85rem .25rem}
 .page{display:none;padding:1.2rem;width:100%;box-sizing:border-box;max-width:100%}
 .page.active{display:block;width:100%;box-sizing:border-box;max-width:100%}
-.mgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:1.2rem;align-items:flex-start}
-.mgrid .metric{flex:0 1 auto;min-width:0;white-space:nowrap}
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem}
 .metric-label{font-size:.6rem;font-family:var(--sans);color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:500}
 .metric-value{font-size:1.35rem;font-weight:700;letter-spacing:-.03em;font-family:var(--sans)}
-.metric-sub{font-size:.62rem;font-family:var(--mono);color:var(--text3);margin-top:2px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;overflow:hidden}
 .card-header{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .card-title{font-weight:600;font-size:.83rem}
@@ -147,7 +133,6 @@ tr:hover td{background:var(--surface2)}
 .empty-state{text-align:center;padding:2.5rem;color:var(--text3);font-size:.75rem;font-family:var(--mono)}
 .spinner{display:inline-block;width:10px;height:10px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
-.pbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
 .pfill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
 .ibox{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:.65rem .9rem;font-size:.7rem;font-family:var(--mono);color:var(--text2)}
 .ibox b{color:var(--text)}
@@ -157,10 +142,8 @@ tr:hover td{background:var(--surface2)}
 .panel-table table{width:auto;min-width:100%}
 .panel-table th{padding:.35rem .6rem;font-size:.64rem}
 .panel-table td{padding:.4rem .65rem;font-size:.8rem}
-/* Toggle para ocultar columna Cant. en paneles */
 .panels-grid.hide-qty .panel-table th:last-child,
 .panels-grid.hide-qty .panel-table td:last-child{display:none}
-/* Toggle para ocultar columna P. Venta en paneles (oculta por defecto) */
 .panels-grid.hide-pventa .panel-table .col-pventa{display:none}
 .panels-grid.hide-ptipo .panel-table .col-ptipo{display:none}
 .panels-grid.hide-rebal .panel-table .col-rebal{display:none}
@@ -169,14 +152,10 @@ tr:hover td{background:var(--surface2)}
 #panels-grid .panel-table thead th.ps-sortable{cursor:pointer;user-select:none}
 #panels-grid .panel-table thead th.ps-sortable:hover{color:var(--text)}
 #panels-grid .panel-table .ps-arrow{color:var(--accent);font-size:.6rem}
-/* Toggle para ocultar columna RSI en paneles (oculta por defecto) */
 .panels-grid.hide-rsi .panel-table .col-rsi{display:none}
 .qty-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-family:var(--mono);font-size:.65rem;color:var(--text2);user-select:none}
 .qty-toggle input{accent-color:var(--accent);cursor:pointer;width:12px;height:12px;margin:0}
 .qty-toggle:hover{color:var(--text)}
-
-/* ── TRACKER DIVIDENDOS ── */
-.trk-section{margin-bottom:1rem}
 .trk-bar{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px 12px;margin-bottom:1rem;flex-wrap:wrap}
 .trk-bar-label{font-size:.65rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
 .trk-bar-val{font-size:.85rem;font-weight:600;font-family:var(--mono);color:var(--accent)}
@@ -205,13 +184,8 @@ tr:hover td{background:var(--surface2)}
 .trk-ccl-result-label{font-size:.6rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 .trk-ccl-result-val{font-size:1.4rem;font-weight:600;font-family:var(--mono);color:var(--accent)}
 .trk-ccl-result-sub{font-size:.65rem;font-family:var(--mono);color:var(--text2);margin-top:4px}
-
 .port-sensitive{transition:filter .25s}
 .port-blurred .port-sensitive{filter:blur(5px);user-select:none;pointer-events:none}
-/* PIN screen */
-.pin-overlay{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:100}
-.pin-title{font-size:1rem;font-weight:600;color:var(--text)}
-.pin-sub{font-size:.75rem;font-family:var(--mono);color:var(--text3);text-align:center;max-width:260px}
 .pin-dots{display:flex;gap:10px}
 .pin-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--border2);background:transparent;transition:background .15s}
 .pin-dot.filled{background:var(--accent);border-color:var(--accent)}
@@ -222,14 +196,10 @@ tr:hover td{background:var(--surface2)}
 .pin-error{font-size:.7rem;font-family:var(--mono);color:var(--red);min-height:16px}
 .pin-action{font-size:.65rem;font-family:var(--mono);color:var(--text3);cursor:pointer;text-decoration:underline}
 .pin-lock-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:.75rem}
-
-/* page-tracker layout */
 #page-tracker{min-height:200px;overflow-y:auto;max-height:calc(100vh - 115px)}
 .card-toggle{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.82rem;padding:0 2px;line-height:1;flex-shrink:0;transition:transform .15s;margin-left:auto}
 .card-toggle:hover{color:var(--text)}
 .card-collapsed>.card-body,.card-collapsed>.tw,.card-collapsed>div:not(.card-header),.card-collapsed>.empty-state{display:none!important}
-
-/* Mobile filters bar — inline on desktop, full-width row on mobile */
 #mobile-filters{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 #mobile-filters::-webkit-scrollbar{display:none}
 @media(min-width:681px){
@@ -237,15 +207,13 @@ tr:hover td{background:var(--surface2)}
   header{flex-wrap:nowrap}
 }
 @media(max-width:680px){
-  /* ── Layout base ── */
   body{overflow:auto;height:auto}
   .card{overflow:visible}
   #mov-wrap{max-height:none;overflow-y:visible}
   .app{height:auto;min-height:100vh}
   .main{flex-direction:column;flex:1;min-height:0;overflow:visible;height:auto}
   .content{flex:1;min-height:0;overflow-y:visible;overflow-x:visible}
-
-  /* ── Topbar: scroll horizontal compacto ── */
+  
   .topbar{height:auto;min-height:28px;padding:3px 8px;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .topbar::-webkit-scrollbar{display:none}
   .topbar-item{padding:0 .55rem;border-right:1px solid var(--border);flex-shrink:0;height:22px}
@@ -253,93 +221,67 @@ tr:hover td{background:var(--surface2)}
   .topbar-val{font-size:.7rem}
   .topbar-label{font-size:.5rem}
   .topbar-sub{font-size:.56rem}
-  /* Ocultar Liquidez e Inv. Inicial del topbar en mobile */
-  .topbar>div:nth-last-child(-n+2){display:none}
-
-  /* ── Header: 2 filas en mobile ── */
+  .topbar>div:nth-last-child(-n/**/+2){display:none}
+  
   header{padding:.45rem .65rem;gap:.4rem;flex-wrap:wrap;align-items:center}
   #mobile-filters{width:100%;border-top:1px solid var(--border);padding-top:5px;margin-top:2px}
-
-  /* Fila 1: foto + nombre + botones derecha */
+  
   .logo{gap:5px;flex-wrap:nowrap;align-items:center;width:100%;justify-content:space-between}
   .hright{flex-shrink:0;gap:5px}
-
-  /* Fila 2 de filtros: ticker + checkboxes en una barra scrollable */
+  
   #mobile-filters{display:flex;align-items:center;gap:5px;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:3px 0 2px;flex-wrap:nowrap}
   #mobile-filters::-webkit-scrollbar{display:none}
-
-  /* Agrandar checkboxes para que sean tocables en mobile */
+  
   header input[type="checkbox"]{width:16px!important;height:16px!important}
   header label span[style*="border-radius:2px"]{width:12px!important;height:12px!important}
   header label{gap:4px!important;padding:3px 5px;background:var(--surface2);border-radius:5px;border:1px solid var(--border);flex-shrink:0}
-
-  /* Ticker filter más compacto */
+  
   #port-ticker-filter{width:80px!important;font-size:.68rem!important;margin-left:0!important}
-
-  /* Ocultar elementos secundarios del header */
+  
   #sb-status{display:none}
   #sync-label{display:none}
   .logo-dot{display:none}
   #file-ver{display:none}
-
-  /* Foto de perfil más chica en mobile */
+  
   header img[alt="GDC"]{width:32px!important;height:32px!important;box-shadow:none!important}
-
-  /* Supabase status + hora más compactos */
+  
   #lupd{font-size:.58rem!important}
-
-  /* ── Sidebar: barra horizontal ── */
+  
   .sidebar{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:0;border-right:none;border-bottom:1px solid var(--border);width:100%!important;scrollbar-width:none}
   .sidebar::-webkit-scrollbar{display:none}
   .nav-sec{display:none}
   .nav-item{padding:.5rem .65rem;flex-direction:column;gap:2px;font-size:.57rem;flex-shrink:0;white-space:nowrap}
-
-  /* ── Métricas resumen ── */
-  .mgrid{gap:5px;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
-  .mgrid::-webkit-scrollbar{display:none}
-  .mgrid .metric{flex-shrink:0;min-width:105px;padding:.55rem .7rem}
+  
+  
   .metric-value{font-size:1.05rem}
   .metric-label{font-size:.55rem}
-
-  /* ── Cards y paneles ── */
+  
   .panels-grid{grid-template-columns:1fr}
   .card{margin-bottom:.5rem;border-radius:8px}
   .card-header{padding:.55rem .7rem;gap:5px;flex-wrap:wrap}
   .card-title{font-size:.76rem}
-
-  /* ── Tablas: scroll horizontal fluido ── */
+  
   .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
   .panel-table table{font-size:.67rem;min-width:480px}
   .panel-table th,.panel-table td{padding:.28rem .45rem;white-space:nowrap}
   table th,table td{padding:.28rem .42rem;font-size:.67rem;white-space:nowrap}
-
-  /* ── Gráficos ── */
+  
   .trk-metrics{grid-template-columns:1fr 1fr}
   canvas{max-width:100%!important}
-
-  /* ── PIN pad ── */
+  
   .pin-pad{grid-template-columns:repeat(3,50px)}
   .pin-key{width:50px;height:38px}
-
-  /* ── Sections con padding reducido ── */
+  
   .content>div{padding:.5rem .55rem}
-  .nt-card{padding:9px 11px}
-  .nt-header{gap:7px}
+  
   .nt-slider{min-width:90px}
-
-  /* ── Arb grid ── */
+  
   .arb-pair-header,.arb-row{grid-template-columns:24px 1fr 1fr 58px 16px 56px 42px 58px}
   .arb-cell{padding:2px 3px;font-size:.55rem}
-
-  /* ── Botones ── */
+  
   .btn{padding:3px 7px;font-size:.63rem;height:25px}
   .btn-sidebar-toggle{width:25px;height:25px;font-size:.78rem}
 }
-/* Near-target filter */
-.nt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
-.nt-header{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;flex-wrap:wrap}
-.nt-title{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px;color:var(--text)}
-.nt-label{font-size:.72rem;color:var(--text2);font-family:var(--mono)}
 .nt-slider{flex:1;min-width:140px;max-width:460px;height:4px;-webkit-appearance:none;appearance:none;background:var(--border2);border-radius:3px;outline:none;cursor:pointer}
 .nt-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--amber);cursor:pointer;border:2px solid var(--amber)}
 .nt-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--amber);cursor:pointer;border:2px solid var(--amber)}
@@ -347,71 +289,34 @@ tr:hover td{background:var(--surface2)}
 .nt-input:focus{border-color:var(--amber)}
 .nt-input::-webkit-outer-spin-button,.nt-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .nt-input[type=number]{-moz-appearance:textfield}
-.nt-pct{color:var(--amber);font-family:var(--mono);font-weight:700;font-size:.82rem}
 .nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,110px));gap:5px}
-.nt-ticker-card{background:var(--surface2);border:1px solid var(--amber);border-radius:var(--rsm);padding:7px 7px;min-height:40px;display:flex;align-items:center;gap:4px}
-.nt-tk-sym{font-weight:800;font-size:.68rem;color:var(--text);min-width:28px;letter-spacing:.01em}
-.nt-tk-body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
-.nt-tk-prices{display:flex;gap:7px;font-family:var(--mono);font-size:.62rem;white-space:nowrap}
-.nt-tk-price{color:var(--text2)}
-.nt-tk-target{color:var(--text)}
-.nt-tk-progress{display:flex;flex-direction:column;gap:2px;align-items:stretch}
-.nt-tk-pbar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;width:100%}
-.nt-tk-pbar-fill{height:100%;background:var(--amber);border-radius:2px;transition:width .2s}
-.nt-tk-falta{font-family:var(--mono);font-size:.58rem;color:var(--amber);font-weight:700;white-space:nowrap;align-self:flex-end}
-.nt-empty{color:var(--text3);font-family:var(--mono);font-size:.75rem;text-align:center;padding:14px}
-/* Tickers en la mira */
-.wl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:0;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
-.wl-title{font-weight:700;font-size:.9rem;color:var(--text);display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:2px}
-.wl-add-row{display:flex;gap:5px;align-items:center}
-.wl-input{background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:4px 7px;outline:none;height:27px}
-.wl-input:focus{border-color:var(--blue)}
-.wl-input-tk{width:72px;text-transform:uppercase}
-.wl-input-cm{flex:1;min-width:0}
-.wl-add-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--blue);font-family:var(--mono);font-size:.72rem;padding:4px 9px;cursor:pointer;height:27px;white-space:nowrap;transition:background .12s,border-color .12s}
-.wl-add-btn:hover{background:var(--border);border-color:var(--blue)}
 .wl-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:130px}
-.wl-item{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm)}
-.wl-item-sym{font-weight:800;font-size:.7rem;color:var(--blue);min-width:44px;font-family:var(--mono)}
-.wl-item-note{font-size:.68rem;color:var(--text2);font-family:var(--mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wl-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:.75rem;padding:0 2px;line-height:1;transition:color .12s;margin-left:auto;flex-shrink:0}
-.wl-del:hover{color:var(--red)}
-.wl-empty{color:var(--text3);font-family:var(--mono);font-size:.7rem;text-align:center;padding:12px 0}
-.jvm-tooltip{background:#172035!important;color:#e8f0ff!important;border:1px solid #264070!important;font-family:'JetBrains Mono',monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
+.jvm-tooltip{background:#172035!important;color:#e8f0ff!important;border:1px solid #264070!important;font-family:"JetBrains Mono",monospace!important;font-size:.72rem!important;padding:4px 10px!important;border-radius:6px!important;box-shadow:0 4px 14px rgba(0,0,0,.6)!important}
 .jvm-zoom-btn{display:none!important}
-/* ── RENDIMIENTO ANUAL ── */
 .ra-period-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:inline-block}
 .ra-table{width:auto;border-collapse:collapse;font-size:.85rem}
 .ra-table th{text-align:center;padding:.38rem .55rem;font-size:.65rem;font-family:var(--mono);color:rgba(255,255,255,.9);background:#3a2200;border:1px solid #5c3800;white-space:nowrap;font-weight:600}
 .ra-table td{padding:.38rem .55rem;border:1px solid var(--border2);font-size:.85rem;font-family:var(--mono);color:var(--text);background:var(--surface2);white-space:nowrap}
 .ra-label{font-weight:700;color:var(--text)!important;background:var(--surface)!important;font-size:.82rem!important}
 .ra-date-th{background:#2a1700!important;color:var(--amber)!important;text-align:left!important}
-.ra-meses-th{background:var(--surface)!important;border:1px solid var(--border)!important}
-.ra-subhdr{background:#1e1400!important;color:var(--text3)!important;font-size:.55rem!important;letter-spacing:.04em;text-transform:uppercase}
-.ra-row-ganas td{background:rgba(251,146,60,.13)!important}
 .ra-row-pct td{background:rgba(251,146,60,.07)!important}
 .ra-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-family:var(--mono);font-size:.85rem;width:75px;text-align:right;outline:none;padding:1px 2px;transition:border-color .12s}
 .ra-input:hover{border-bottom-color:var(--border2)}
 .ra-input:focus{border-bottom-color:var(--amber);background:rgba(255,255,255,.04)}
 .ra-input-date{color:var(--amber)!important;font-weight:700;text-align:left!important;font-size:.86rem!important;width:115px}
-.ra-pos-val{color:var(--accent)!important}
 .ra-del-btn{height:18px;padding:0 5px;font-size:.58rem;line-height:1}
 .ra-curr{font-size:.68rem;color:var(--text3);margin-right:2px;vertical-align:middle;user-select:none}
 .ra-pct-auto{font-weight:700;text-align:right;padding-right:6px!important}
 .ra-val-big{font-size:1.05rem;font-weight:700;font-family:var(--mono)}
-.ra-sublabel{font-size:.56rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
 .ra-th-cell{background:#3a2200!important;color:rgba(255,255,255,.9)!important;border:1px solid #5c3800!important;font-size:.65rem!important;font-family:var(--mono)!important;font-weight:600!important;text-align:center!important;vertical-align:middle!important}
 .ra-no-border{border:none!important;background:transparent!important;vertical-align:middle;padding:.2rem .3rem!important}
 </style>
-<!-- Vista nueva: oculta la vista vieja desde el primer momento (evita que aparezca un instante al recargar) -->
 <style>html.nv-pre header,html.nv-pre .topbar,html.nv-pre #page-portafolio>*:not(#nv-root):not(#port-pin-overlay){display:none!important}
-html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block;padding:3rem 1rem;text-align:center;font-family:monospace;font-size:.8rem;color:#7a9cc5}</style>
+html.nv-pre #page-portafolio::before{content:"Cargando cartera…";display:block;padding:3rem 1rem;text-align:center;font-family:monospace;font-size:.8rem;color:#7a9cc5}</style>
 <script>document.documentElement.classList.add('nv-pre');setTimeout(function(){document.documentElement.classList.remove('nv-pre');},20000);</script>
 </head>
 <body>
-<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v215 · 12/10/2026</div>
-
-
+<div id="claude-version-badge" title="Versión de la app · tecla ? = atajos"Todo"; GDC 2023–2025 con su inversión inicial de cada año. Rendimiento 2025 de GDC: 22,91%."Evolución" con gráfico (Período actual / 1M / 3M / 6M / 1A / Todo), marcas de cada corte anual y aviso para cerrar el período en la fecha de corte (nueva inversión inicial = valor total del día, con confirmación). Fechas de corte: GDC 1/1, Ana 15/8, Juli 11/5. El resumen para el index ahora incluye el Rendimiento del Resumen." style="position:fixed;bottom:6px;right:8px;z-index:99999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">v216 · 12/10/2026</div>
 <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-family:var(--sans);color:var(--text)">
   <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;font-family:var(--mono)">GDC</div>
   <div style="color:var(--text2);font-size:.82rem">Acceso restringido — iniciá sesión para continuar</div>
@@ -421,7 +326,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
   </button>
   <div id="auth-gate-error" style="color:var(--red);font-size:.75rem;display:none;max-width:280px;text-align:center"></div>
 </div>
-
 <div class="app">
 <div class="topbar">
   <div class="topbar-item" id="auth-user-box" style="display:none;gap:8px">
@@ -505,7 +409,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
     <div id="file-ver" title="Versión del archivo" style="font-size:.6rem;font-family:var(--mono);color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;cursor:default;white-space:nowrap"></div>
     <script>!function(){var d=new Date(document.lastModified),p=function(n){return String(n).padStart(2,'0')};document.getElementById('file-ver').textContent='v '+d.getDate()+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}();</script>
   </div>
-  <!-- Barra de filtros: segunda fila en mobile (width:100%), inline en desktop -->
   <div id="mobile-filters" style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0">
     <input id="port-ticker-filter" type="text" placeholder="Ticker..." maxlength="15" autocomplete="off" oninput="this.value=this.value.toUpperCase();renderPortfolio()" title="Filtrar por ticker" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:4px 8px;height:26px;width:88px;outline:none;text-transform:uppercase;flex-shrink:0">
     <button onclick="document.getElementById('port-ticker-filter').value='';renderPortfolio();" title="Limpiar filtro" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:.8rem;padding:0 2px;line-height:1;flex-shrink:0">✕</button>
@@ -560,8 +463,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
     <a class="nav-item" href="../Juli/PortafolioJuli.html" target="_blank" style="text-decoration:none"><span>👤</span>Portafolio Juli</a>
   </nav>
   <div class="content">
-
-    <!-- PORTAFOLIO -->
+    
     <div class="page active" id="page-portafolio">
       <div id="port-pin-overlay" style="display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.7); z-index: 8000; align-items: center; justify-content: center;">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:220px">
@@ -580,7 +482,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
           <div class="pin-action" onclick="portPinReset()">Cambiar PIN</div>
         </div>
       </div>
-      <!-- Vista nueva: piezas de la vista anterior que se reubican al cargar (el resto se borró en v193) -->
       <div id="nv-legacy" style="display:none">
 <button id="port-eye-btn" onclick="portToggleBlur()" title="Mostrar/ocultar valores" style="background: none; border: none; cursor: pointer; color: var(--accent); font-size: 1.1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;">👁</button>
 <div class="metric-value" id="m-dolz">—</div>
@@ -696,10 +597,9 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
 <button class="btn btn-a" onclick="fetchAllQuotes()"><span id="ref-icon"><span class="spinner"></span></span> Actualizar precios</button>
       </div>
-    </div><!-- /port-content -->
     </div>
-
-    <!-- MOVIMIENTOS -->
+    </div>
+    
     <div class="page" id="page-movimientos">
       <div class="card">
         <div class="card-header" style="cursor:pointer" onclick="movFormToggle()">
@@ -748,7 +648,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
         </div>
       </div>
-<!-- Importar movimientos en tabla -->
       <div class="card" id="imp-mov-card">
         <div class="card-header" style="cursor:pointer" onclick="impMovToggle()">
           <div style="display:flex;align-items:center;gap:6px">
@@ -781,7 +680,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
           </div>
         </div>
       </div>
-
       <div class="card" id="mov-card">
         <div class="card-header">
           <div id="warn-sin-tc"></div>
@@ -832,10 +730,8 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
         </div>
       </div>
-
     </div>
-
-    <!-- DIVIDENDOS (portafolio) -->
+    
     <div class="page" id="page-dividendos">
       <div class="card">
         <div class="card-header"><span class="card-title">Registrar dividendo</span></div>
@@ -869,24 +765,18 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
-    <!-- TRACKER DE DIVIDENDOS CCL -->
+    
     <div class="page" id="page-tracker">
-
-      <!-- PIN overlay -->
-
-      <!-- App content -->
+      
+      
       <div id="trk-app" style="display: block;">
-
         <div class="pin-lock-bar">
           <button class="trk-eye-btn" id="trk-eye-btn">
             <svg id="trk-eye-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             <span id="trk-eye-label">Ocultar valores</span>
           </button>
-          
         </div>
-
-        <!-- CCL bar -->
+        
         <div class="trk-bar">
           <span class="trk-bar-label">CCL hoy</span>
           <span class="trk-bar-val" id="trk-ccl-display">$1.470,80</span>
@@ -898,15 +788,13 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
           <input type="number" id="trk-ccl-inp" style="width:100px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--rsm);color:var(--text);font-family:var(--mono);font-size:.75rem;padding:4px 8px;height:28px" placeholder="Ej: 1483">
           <button class="btn btn-a btn-sm" id="trk-ccl-save-btn">Guardar</button>
         </div>
-
-        <!-- Metrics -->
+        
         <div class="trk-metrics">
           <div class="trk-metric"><div class="trk-metric-label">Total (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-usd">—</div><div class="trk-metric-sub trk-sensitive" id="trk-m-ars-sub"></div></div>
           <div class="trk-metric"><div class="trk-metric-label">Este mes (USD)</div><div class="trk-metric-val trk-sensitive" id="trk-m-mes">—</div></div>
           <div class="trk-metric"><div class="trk-metric-label">Registros</div><div class="trk-metric-val" id="trk-m-count">38</div></div>
         </div>
-
-        <!-- Flujo cobrado por mes / año (v42) -->
+        
         <div class="card" id="trk-flujo-card" style="display:none">
           <div class="card-header">
             <span class="card-title">Flujo cobrado — dividendos + renta de bonos/ON</span>
@@ -921,8 +809,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <div style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-top:6px;line-height:1.5">Suma todo lo confirmado en el historial de abajo (pendientes no cuentan). Montos en USD con el mismo tipo de cambio que el historial. Renta = cupón + amortización cobrados de bonos y ON.</div>
           </div>
         </div>
-
-        <!-- Form -->
+        
         <div class="card">
           <div class="card-header"><span class="card-title">Cargar dividendo</span><button class="card-toggle" onclick="cardToggle(this)">▾</button></div>
           <div class="card-body">
@@ -939,8 +826,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
-        <!-- Importar XLS del broker -->
+        
         <div class="card">
           <div class="card-header">
             <span class="card-title">Importar desde broker</span>
@@ -960,8 +846,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
-        <!-- Histórico Veta → PPC (importación única, formato viejo) -->
+        
         <div class="card" id="hv-card">
           <div class="card-header">
             <span class="card-title">📜 Histórico Veta → PPC (única vez)</span>
@@ -982,8 +867,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <div id="hv-result"></div>
           </div>
         </div>
-
-        <!-- Pendientes de revisión (carga manual y automática convergen acá) -->
+        
         <div class="card" id="trk-pending-card" style="display:none">
           <div class="card-header">
             <span class="card-title">⏳ Pendientes de revisión</span>
@@ -999,8 +883,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
-        <!-- Table -->
+        
         <div class="card">
           <div class="card-header">
             <span class="card-title">Historial de dividendos CCL</span>
@@ -1015,11 +898,9 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </table>
           </div>
         </div>
-
-      </div><!-- /trk-app -->
-    </div><!-- /page-tracker -->
-
-    <!-- RATIOS -->
+      </div>
+    </div>
+    
     <div class="page" id="page-ratios">
       <div class="card">
         <div class="card-header"><span class="card-title">Ratios CEDEAR</span></div>
@@ -1039,8 +920,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
-    <!-- TARGETS -->
+    
     <div class="page" id="page-targets">
       <div class="card">
         <div class="card-header"><span class="card-title">Precios de Venta Objetivo</span><span id="targets-status" class="smsg"></span></div>
@@ -1063,9 +943,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
-    <!-- TIPO DE CAMBIO -->
-    <!-- ══ ARBITRAJE ══ -->
+    
     <div class="page" id="page-arbitraje">
       <div class="card">
         <div class="card-header" style="gap:10px;flex-wrap:wrap">
@@ -1080,14 +958,12 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
           <div id="arb-container"><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD29" onchange="arbUpdate(0,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(0,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AL30" onchange="arbUpdate(0,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(0,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.5%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(0,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(0)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="92310" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88600" placeholder="$0" oninput="arbUpdate(0,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-0"><span class="arb-ratio-amber">104.19%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.025" placeholder="$1.00" oninput="arbUpdate(0,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD29" placeholder="ticker" oninput="arbUpdate(0,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(0,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(0,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="91390" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="88660" placeholder="$0" oninput="arbUpdate(0,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-0-1"><span class="arb-ratio-red">103.08%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-0-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.040" placeholder="$1.00" oninput="arbUpdate(0,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AL30" placeholder="ticker" oninput="arbUpdate(0,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.213" placeholder="—" oninput="arbUpdate(0,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(0)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD41" onchange="arbUpdate(1,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(1,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(1,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(1,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="107%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(1,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(1)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104540" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112720" placeholder="$0" oninput="arbUpdate(1,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-0"><span class="arb-ratio-red">92.74%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-0">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.085" placeholder="$1.00" oninput="arbUpdate(1,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD41" placeholder="ticker" oninput="arbUpdate(1,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(1,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(1,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="104350" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="112900" placeholder="$0" oninput="arbUpdate(1,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-1-1"><span class="arb-ratio-red">92.43%</span></div><div class="arb-cell arb-op buy" id="arb-arrow-1-1">&lt;</div><div class="arb-cell"><input class="arb-input" value="$1.080" placeholder="$1.00" oninput="arbUpdate(1,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(1,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="934" placeholder="—" oninput="arbUpdate(1,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(1)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="TXAR" onchange="arbUpdate(2,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(2,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="ALUA" onchange="arbUpdate(2,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(2,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="130%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(2,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(2)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="873" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="668" placeholder="$0" oninput="arbUpdate(2,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-0"><span class="arb-ratio-green">130.69%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.033" placeholder="$1.00" oninput="arbUpdate(2,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="AE38" placeholder="ticker" oninput="arbUpdate(2,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="284.40" placeholder="—" oninput="arbUpdate(2,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(2,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="878" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="674" placeholder="$0" oninput="arbUpdate(2,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-2-1"><span class="arb-ratio-amber">130.27%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-2-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.270" placeholder="$1.00" oninput="arbUpdate(2,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="ALUAR" placeholder="ticker" oninput="arbUpdate(2,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(2,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(2)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div><div class="arb-wrap"><div class="arb-pair-header"><div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="GD38" onchange="arbUpdate(3,-1,&#39;a&#39;,this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate(3,-1,&#39;a&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px"><input class="arb-input arb-input-name" value="AE38" onchange="arbUpdate(3,-1,&#39;b&#39;,this.value)" style="color:#448aff;width:90px" oninput="arbUpdate(3,-1,&#39;b&#39;,this.value)"></div><div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="104.3%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate(3,-1,&#39;pctObj&#39;,this.value.replace(&#39;%&#39;,&#39;&#39;))"></div><div class="arb-label"></div><div class="arb-label">Condición</div><div class="arb-label">Voy</div><div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair(3)" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div></div><div class="arb-row" style=""><div class="arb-cell arb-plazo"><input class="arb-input" value="CI" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,0,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116620" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111790" placeholder="$0" oninput="arbUpdate(3,0,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-0"><span class="arb-ratio-amber">104.32%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-0">&gt;</div><div class="arb-cell"><input class="arb-input" value="" placeholder="$1.00" oninput="arbUpdate(3,0,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="ticker" oninput="arbUpdate(3,0,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="" placeholder="—" oninput="arbUpdate(3,0,&#39;nominales&#39;,this.value)"></div></div><div class="arb-row" style="background:rgba(255,255,255,.025)"><div class="arb-cell arb-plazo"><input class="arb-input" value="24" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate(3,1,&#39;plazo&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="116690" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioA&#39;,this.value)" style="color:#a78bfa"></div><div class="arb-cell"><input class="arb-input" value="111870" placeholder="$0" oninput="arbUpdate(3,1,&#39;precioB&#39;,this.value)" style="color:#448aff"></div><div class="arb-cell" id="arb-ratio-3-1"><span class="arb-ratio-amber">104.31%</span></div><div class="arb-cell arb-op sell" id="arb-arrow-3-1">&gt;</div><div class="arb-cell"><input class="arb-input" value="$1.044" placeholder="$1.00" oninput="arbUpdate(3,1,&#39;condicion&#39;,this.value)"></div><div class="arb-cell"><input class="arb-input" value="GD38" placeholder="ticker" oninput="arbUpdate(3,1,&#39;voy&#39;,this.value)" style="text-transform:uppercase;font-weight:600"></div><div class="arb-cell"><input class="arb-input" value="1.000" placeholder="—" oninput="arbUpdate(3,1,&#39;nominales&#39;,this.value)"></div></div><div style="text-align:right;margin-top:3px;margin-bottom:2px"><button class="btn btn-sm" onclick="arbAddRow(3)" style="font-size:.6rem;padding:2px 8px">+ plazo</button></div></div></div>
         </div>
       </div>
-
       <div class="card" style="margin-top:.6rem">
         <div class="card-header" style="gap:8px">
           <span class="card-title">⇅ Pases</span>
         </div>
         <div class="card-body" style="padding:.45rem;display:flex;flex-direction:column;gap:.65rem">
-
-          <!-- ===== CEDEAR ===== -->
+          
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:.6rem;font-family:var(--mono);min-width:620px">
               <tr>
@@ -1156,8 +1032,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
               </tr>
             </table>
           </div>
-
-          <!-- ===== BONOS ===== -->
+          
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:.6rem;font-family:var(--mono);min-width:620px">
               <tr>
@@ -1226,22 +1101,16 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
               </tr>
             </table>
           </div>
-
         </div>
       </div>
     </div>
-
     <div class="page" id="page-flujos" style="padding:0">
       <div id="flujos-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-
         <div class="ibox" style="margin-bottom:1rem;font-size:.68rem">
           Calendario de renta y amortización de los bonos/ON que tenés en cartera, calculado a partir del flujo cargado por ticker (por cada 100 nominales) escalado a tu cantidad real. No afecta ningún cálculo de valuación del portafolio — es solo informativo.
         </div>
-
         <div id="flujo-page-resumen" style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap"></div>
-
         <div id="flujo-page-sinflujo" class="ibox" style="display:none;margin-bottom:1rem;font-size:.68rem;border-color:var(--amber);color:var(--amber)"></div>
-
         <div class="card">
           <div class="card-header"><span class="card-title">📅 Calendario de cobros</span></div>
           <div class="card-body" style="padding:.6rem 1rem">
@@ -1261,14 +1130,11 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
       </div>
     </div>
-
     <div class="page" id="page-tipocambio">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start">
-
-        <!-- CCL -->
+        
         <div class="card">
           <div class="card-header" style="flex-direction:column;align-items:stretch;gap:6px">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
@@ -1285,8 +1151,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <table><thead><tr><th>Fecha</th><th style="text-align:right">CCL</th><th></th></tr></thead><tbody id="tc-ccl-body"></tbody></table>
           </div>
         </div>
-
-        <!-- MEP -->
+        
         <div class="card">
           <div class="card-header" style="flex-direction:column;align-items:stretch;gap:6px">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
@@ -1303,14 +1168,11 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <table><thead><tr><th>Fecha</th><th style="text-align:right">MEP</th><th></th></tr></thead><tbody id="tc-mep-body"></tbody></table>
           </div>
         </div>
-
       </div>
     </div>
-
-    <!-- VETA MOVIM (WIP - no impacta portafolio) -->
+    
     <div class="page" id="page-dashboard" style="padding:0">
       <div id="db-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-        <!-- Fila 1: Distribución por rubro -->
         <div style="margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Distribución por rubro <span id="db-rubros-hint" style="font-size: 0.65rem; color: var(--text3); font-weight: 400; display: none;">— hacé clic en un rubro para ver los tickers</span></div>
@@ -1332,7 +1194,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-        <!-- Fila 2: Rendimiento % + Top 10 Ganancias + Top 10 Pérdidas -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Rendimiento % promedio por segmento</div>
@@ -1347,7 +1208,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <div style="position:relative;height:260px"><canvas id="db-chart-losses"></canvas></div>
           </div>
         </div>
-        <!-- Fila 3: Top 10 posiciones -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Top 10 posiciones por valor (USD)</div>
@@ -1358,7 +1218,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <div style="position:relative;height:260px"><canvas id="db-chart-top-rv"></canvas></div>
           </div>
         </div>
-        <!-- Fila 4: Mapa + Rendimiento vs S&P -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div class="card" style="padding:1rem">
             <div class="card-title" style="margin-bottom:.8rem;font-size:.78rem">Inversiones por región</div>
@@ -1371,23 +1230,19 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
-    <!-- VENTAS ESTADISTICAS -->
+    
     <div class="page" id="page-ventaestad" style="padding:0">
       <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-
         <div class="ibox" style="margin-bottom:.7rem;font-size:.72rem;padding:.55rem .7rem">
           📊 Ganancia realizada de todas tus ventas (histórico con lote más barato + ventas nuevas con promedio ponderado),
           agrupada por ticker, por tipo de instrumento y por Renta Fija / Renta Variable.
         </div>
-
         <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem">
             <span class="card-title" style="font-size:.82rem">💰 Resumen total</span>
           </div>
           <div class="card-body" id="vestad-resumen" style="padding:.5rem .7rem"></div>
         </div>
-
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem;align-items:start">
           <div class="card" style="margin-bottom:0">
             <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Tipo de instrumento</span></div>
@@ -1398,18 +1253,14 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-rfrv" style="overflow-x:auto"></div></div>
           </div>
         </div>
-
         <div class="card">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Ticker</span></div>
           <div class="card-body" style="padding:.3rem .5rem"><div id="vestad-ticker" style="overflow-x:auto"></div></div>
         </div>
-
       </div>
     </div>
-
     <div class="page" id="page-ventahist" style="padding:0">
       <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-
         <div class="ibox" style="margin-bottom:.7rem;font-size:.72rem;padding:.55rem .7rem">
           📜 <b>Estadística histórica — no toca tu cartera real (posiciones/precios actuales).</b> Es una base
           separada, guardada acá mismo (no se pierde al recargar). Subí un Excel/CSV con tus compras y ventas para
@@ -1423,7 +1274,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
           activos con split conocido (LONGVIE, ECOGAS, CELULOSA, FERRUM) se excluyen siempre, porque el salto de
           precio por el split contamina el promedio ponderado.
         </div>
-
         <div class="card" style="margin-bottom:.7rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">📂 Base histórica guardada</span></div>
           <div class="card-body" style="padding:.6rem .8rem;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
@@ -1435,7 +1285,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <span id="vhist-file-status" style="font-size:.68rem;font-family:var(--mono);color:var(--text3)"></span>
           </div>
         </div>
-
         <div class="card" style="margin-bottom:.7rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">➕ Agregar movimiento</span></div>
           <div class="card-body" style="padding:.6rem .8rem;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
@@ -1465,7 +1314,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <button class="btn btn-sm" onclick="ventahistAddManual()">Agregar</button>
           </div>
         </div>
-
         <div class="card" style="margin-bottom:.7rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">💵 Dividendos y Rentas cobradas</span></div>
           <div class="card-body" style="padding:.6rem .8rem;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
@@ -1484,7 +1332,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
         <div class="card" style="margin-bottom:.7rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">💵 Aportes y Retiros</span></div>
           <div class="card-body" style="padding:.6rem .8rem;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
@@ -1504,45 +1351,36 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
         <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">💰 Resumen total</span></div>
           <div class="card-body" id="vhist-resumen" style="padding:.5rem .7rem"><div class="ibox">Subí un archivo o agregá movimientos a mano para ver el análisis.</div></div>
         </div>
-
         <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">📅 Ganancia por Año</span></div>
           <div class="card-body" style="padding:.5rem .7rem"><div id="vhist-anio"></div></div>
         </div>
-
         <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">📊 Ganancia % por Tipo x Año</span></div>
           <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-tipo-anio" style="overflow-x:auto"></div></div>
         </div>
-
         <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.82rem">📊 Ganancia % RF vs RV x Año</span></div>
           <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-rfrv-anio" style="overflow-x:auto"></div></div>
         </div>
-
         <div class="card" style="margin-bottom:.6rem">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Por Ticker</span></div>
           <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-ticker" style="overflow-x:auto"></div></div>
         </div>
-
         <div class="card">
           <div class="card-header" style="padding:.5rem .8rem"><span class="card-title" style="font-size:.8rem">Dividendos/Rentas por Ticker</span></div>
           <div class="card-body" style="padding:.3rem .5rem"><div id="vhist-divs-ticker" style="overflow-x:auto"></div></div>
         </div>
-
       </div>
     </div>
-
-    <!-- RUBROS -->
+    
     <div class="page" id="page-rubros" style="padding:0">
       <div id="rubros-scroll" style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
-
-        <!-- Card: Catálogo de rubros -->
+        
         <div class="card" style="margin-bottom:1rem">
           <div class="card-header" style="gap:10px;flex-wrap:wrap;cursor:pointer" onclick="rubroToggleCatalog()">
             <span class="card-title">📂 Catálogo de rubros</span>
@@ -1557,8 +1395,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
-        <!-- Card: Tabla de tickers -->
+        
         <div class="card">
           <div class="card-header" style="gap:10px;flex-wrap:wrap">
             <span class="card-title">🏷 Rubros de activos</span>
@@ -1588,10 +1425,8 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             </div>
           </div>
         </div>
-
       </div>
     </div>
-
     <div class="page" id="page-vetamovim">
       <div class="card">
         <div class="card-header" style="gap:10px;flex-wrap:wrap">
@@ -1628,8 +1463,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
-    <!-- RENDIMIENTO ANUAL -->
+    
     <div class="page" id="page-rendanual">
       <div class="card">
         <div class="card-header">
@@ -1643,7 +1477,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
     <div class="page" id="page-comparacion" style="padding:0">
       <div style="height:calc(100vh - 100px);overflow-y:auto;overflow-x:hidden;padding:1.2rem">
       <div class="card">
@@ -1668,8 +1501,7 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
       </div>
       </div>
     </div>
-
-    <!-- RECOMENDACIONES -->
+    
     <div class="page" id="page-recomendaciones">
       <div class="card">
         <div class="card-header">
@@ -1697,7 +1529,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
     <div class="page" id="page-noticias">
       <div class="card">
         <div class="card-header">
@@ -1722,7 +1553,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         </div>
       </div>
     </div>
-
     
 <div class="page" id="page-vigilancia">
       <div class="card">
@@ -1733,7 +1563,6 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
         <div class="card-body" style="padding:.85rem 1rem">
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
             <div class="fgrp" style="margin:0"><label>Ticker</label><input id="vig-ticker" type="text" placeholder="GGAL" style="text-transform:uppercase;width:90px" onkeydown="if(event.key==='Enter')vigAdd()"></div>
-            
             <button class="btn btn-a btn-sm" onclick="vigAdd()">+ Agregar</button>
             <span id="vig-status" style="font-size:.72rem;align-self:center"></span>
           </div>
@@ -1742,17 +1571,13 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
             <table>
               <thead><tr><th>Ticker</th><th>Δ%</th><th title="Precio de compra objetivo (USD, misma escala que el precio en USD del activo) y cuánto falta que baje para llegar">Dist. al objetivo</th><th>Nota</th><th></th></tr></thead>
               <tbody id="vig-body"></tbody>
-              
             </table>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </div>
-
-<!-- Modal edicion movimientos - fuera de cualquier page para que position:fixed funcione -->
 <div id="mov-modal-overlay" onclick="if(event.target===this)movModalClose()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9999;align-items:center;justify-content:center;padding:1rem">
   <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:1.4rem;width:min(540px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.6)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem">
@@ -1768,25 +1593,21 @@ html.nv-pre #page-portafolio::before{content:'Cargando cartera…';display:block
     </div>
   </div>
 </div>
-
 <script>
 window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', vistaNueva:true, persona:'Gastón', vistaFamiliar:true, simRetiro:true, push:true, aportes:true, periodoInicio:'01-01', rendAnual:{'2023':300,'2024':70,'2025':22.91}, histPrevio:[['2023-01-01',2000,2000],['2023-12-31',6108,2000],['2024-01-01',49946,49946],['2024-12-31',166488,49946],['2025-01-01',166488,166488],['2025-12-31',209441,166488]], supabaseKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU'};
 </script>
-<script src="../comun/portafolio.js?v=215"></script>
-
+<script src="../comun/portafolio.js?v=216"></script>
 <script>
 /* ── RENDIMIENTO ANUAL ── */
 (function(){
   var RA_SBKEY = 'rendanual_periodos';
   var periodos = [];
   var saveTimer = null;
-
   function parseNum(s){
     return parseFloat(String(s||'').replace(/[^0-9.\-]/g,''));
   }
   function fmtPct(n){ return Math.round(n) + '%'; }
   function fmtUsd(n){ return 'u$s ' + Math.round(n).toLocaleString('es-AR'); }
-
   function calc(p){
     var pu = parseNum(p.pusiste), te = parseNum(p.tenes);
     if(isNaN(pu)||isNaN(te)||pu===0) return null;
@@ -1794,7 +1615,6 @@ window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', vistaNueva:true, persona:'Gast�
     var comision = diff * 0.20;
     return { ganas_pct: diff/pu*100, comision_usd: comision, neto_pct: (diff-comision)/pu*100 };
   }
-
   function raSaveDebounced(){
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function(){
@@ -1803,7 +1623,6 @@ window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', vistaNueva:true, persona:'Gast�
       if(typeof sbSetConfig==='function') sbSetConfig(RA_SBKEY, json);
     }, 800);
   }
-
   async function raLoad(){
     var data = null;
     if(typeof sbGetConfig==='function') data = await sbGetConfig(RA_SBKEY);
@@ -1820,7 +1639,6 @@ window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', vistaNueva:true, persona:'Gast�
     }
     raRender();
   }
-
   function raRender(){
     var cont = document.getElementById('ra-container');
     var emp  = document.getElementById('ra-empty');
@@ -1830,7 +1648,6 @@ window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', vistaNueva:true, persona:'Gast�
     if(emp) emp.style.display='none';
     periodos.forEach(function(p,i){ cont.appendChild(raCreateEl(p,i)); });
   }
-
   function raCreateEl(p, idx){
     var c = calc(p);
     var ganasPct    = c ? fmtPct(c.ganas_pct)   : '—';
@@ -1886,12 +1703,10 @@ window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', vistaNueva:true, persona:'Gast�
       '</table>';
     return wrap;
   }
-
   window.raPatch = function(idx, key, val){
     if(periodos[idx]) periodos[idx][key] = val;
     raSaveDebounced();
   };
-
   window.raUpdateCalc = function(idx){
     if(!periodos[idx]) return;
     var c = calc(periodos[idx]);
@@ -1906,26 +1721,21 @@ window.PORTFOLIO_CONFIG={id:'gdc', nombre:'GDC', vistaNueva:true, persona:'Gast�
     set('ra-com-'+idx,  c ? fmtUsd(c.comision_usd) : '—', !!c);
     set('ra-neto-'+idx, c ? fmtPct(c.neto_pct)     : '—', !!c);
   };
-
   window.raAddPeriodo = function(){
     periodos.push({fecha:'',meses:'',pusiste:'',tenes:''});
     raSaveDebounced(); raRender();
   };
-
   window.raDelete = function(idx){
     if(!confirm('¿Eliminar este período?')) return;
     periodos.splice(idx,1); raSaveDebounced(); raRender();
   };
-
   document.addEventListener('DOMContentLoaded', raLoad);
 })();
-
 function paseCalc(tipo) {
   var p = tipo === 'ced' ? 'pce' : 'pbo';
   var dm = tipo === 'ced' ? 0.0002 : 0.0001;
   var dn = 0.0003;
   var ivaR = tipo === 'ced' ? 0.21 : 0.0;
-
   var gv = function(id) {
     var el = document.getElementById(id);
     if (!el) return 0;
@@ -1955,13 +1765,11 @@ function paseCalc(tipo) {
   var fmt = function(n) {
     return '$' + Math.round(n).toLocaleString('es-AR');
   };
-
   var qty  = gv(p+'-qty');
   var pv   = gv(p+'-pv');
   var pc   = gv(p+'-pc');
   var dias = gv(p+'-dias');
   var tasa = gv(p+'-tasa');
-
   // Venta
   var tv   = qty * pv;
   var dmv  = tv * dm;
@@ -1969,7 +1777,6 @@ function paseCalc(tipo) {
   var ivav = (dmv + dnv) * ivaR;
   var ddv  = dmv + dnv + ivav;
   var nv   = tv - ddv;
-
   // Compra
   var tc   = qty * pc;
   var dmc  = tc * dm;
@@ -1977,36 +1784,30 @@ function paseCalc(tipo) {
   var ivac = (dmc + dnc) * ivaR;
   var ddc  = dmc + dnc + ivac;
   var nc   = tc + ddc;
-
   var diff    = nv - nc;
   var ganCau  = nv * (tasa / 100) * (dias / 365);
   var comCau  = nv * 0.0000025;
   var netoCau = diff + ganCau - comCau;
-
   sv(p+'-tv',   fmt(tv));
   sv(p+'-dmv',  fmt(dmv));
   sv(p+'-dnv',  fmt(dnv));
   sv(p+'-ivav', fmt(ivav));
   sv(p+'-ddv',  fmt(ddv));
   sv(p+'-nv',   fmt(nv));
-
   sv(p+'-tc',   fmt(tc));
   sv(p+'-dmc',  fmt(dmc));
   sv(p+'-dnc',  fmt(dnc));
   sv(p+'-ivac', fmt(ivac));
   sv(p+'-ddc',  fmt(ddc));
   sv(p+'-nc',   fmt(nc));
-
   var diffEl = document.getElementById(p+'-diff');
   if (diffEl) {
     diffEl.innerHTML = fmt(diff);
     diffEl.style.color      = diff >= 0 ? 'var(--accent)' : 'var(--red)';
     diffEl.style.background = diff >= 0 ? 'rgba(126,232,162,.1)' : 'rgba(248,113,113,.12)';
   }
-
   sv(p+'-comcau', fmt(comCau));
   sv(p+'-gancau', fmt(ganCau));
-
   var netoEl = document.getElementById(p+'-netocau');
   if (netoEl) {
     netoEl.innerHTML = fmt(netoCau);
@@ -2014,5 +1815,4 @@ function paseCalc(tipo) {
     netoEl.style.background = netoCau >= 0 ? 'rgba(126,232,162,.15)' : 'rgba(248,113,113,.15)';
   }
 }
-
 </script>
