@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=212, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=213, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v213 | 2026-10-12 | GDC: Tu cartera ideal se puede colapsar tocando el título y arranca colapsada (muestra solo el desvío y cuántos grupos están en rango).',
   'v212 | 2026-10-12 | GDC: 🔍 Modo foco (tocando el ticker: gráfico en USD con tus compras/ventas, PPC y P. Venta, datos clave, historia de la posición con cobros, noticias y nota editable, botones Comprar/Vender) y 🎯 Tu cartera ideal (% objetivo por grupo editable, guardado en Supabase config cartera_ideal; desvío y movimientos sugeridos con botón cargar).',
   'v211 | 2026-10-12 | Vista nueva: el Calendario de ganancias queda alineado con el recuadro de Comprar/Vender (misma altura, arriba a la par) y el título en la letra de los demás recuadros.',
   'v210 | 2026-10-12 | Fix celular: con la vista nueva el Portafolio quedaba en blanco en pantallas chicas (la vista simple del celular y la vista nueva se ocultaban mutuamente). Ahora en el celular abre la Vista simple y "Ver todo" muestra la vista nueva.',
@@ -11628,7 +11629,7 @@ function tipoVistaPintar(){var w=document.getElementById('tipo-vista');if(!w)ret
 // (distancia al P. Venta, ganancia, peso en su tipo) y la tabla de celdas dobles ordenable.
 // Los datos salen de la misma pasada de renderPortfolio (NV_ROWS); la vista clásica queda abajo.
 var NV_ROWS=[],NV_K={};
-var NV=(function(){var d={ts:{},df:{},dg:{},dm:{},sk:'inv',sd:-1,modo:'c',op:{},dfv:0,mon:'ars'};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
+var NV=(function(){var d={ts:{},df:{},dg:{},dm:{},sk:'inv',sd:-1,modo:'c',op:{},dfv:0,mon:'ars',ic:true};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
 if(NV.dfv!==2){(function(){var o=NV.df||{},n={};[0,1,2].forEach(function(i){if(o[i])n[i]=1;});if(o[4])n[3]=1;NV.df=n;NV.dfv=2;})();}
 function nvSave(){try{localStorage.setItem(PFX+'nv',JSON.stringify(NV));}catch(e){}}
 var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
@@ -11990,6 +11991,7 @@ var IDEAL=null,_idealLoading=false,_IDEAL_DEF={nyse:40,brasil:12,argentina:10,eu
 var _IDEAL_G=[['nyse','🇺🇸','USA'],['brasil','🇧🇷','Brasil'],['argentina','🇦🇷','Argentina'],['europa','🇪🇺','Europa'],['china','🇨🇳','China'],['cripto','₿','Cripto'],['rf','📜','Renta fija']];
 function _idealG(s){return (s==='bonos'||s==='on'||s==='fci')?'rf':s;}
 function _idealLoad(){if(IDEAL||_idealLoading)return;_idealLoading=true;Promise.resolve(sbGetConfig('cartera_ideal')).then(function(v){IDEAL=(v&&typeof v==='object'&&v.p)?v:{p:Object.assign({},_IDEAL_DEF),ejemplo:true};}).catch(function(){IDEAL={p:Object.assign({},_IDEAL_DEF),ejemplo:true};}).then(function(){_idealLoading=false;try{nvIdeal();}catch(e){}});}
+function idealTog(){NV.ic=!NV.ic;nvSave();nvIdeal();}
 function idealEditar(k){var g=_IDEAL_G.filter(function(x){return x[0]===k;})[0],v=prompt('% ideal para '+g[2]+' (sobre el total de la cartera):',String(IDEAL.p[k]||0));if(v==null)return;var n=parseFloat(String(v).replace(',','.'));if(!(n>=0&&n<=100)){alert('Ingresá un % entre 0 y 100');return;}
  IDEAL.p[k]=Math.round(n*10)/10;delete IDEAL.ejemplo;try{sbSetConfig('cartera_ideal',IDEAL);}catch(e){}nvIdeal();}
 function idealCargar(t,tipo,usd){var o=NV_ROWS.filter(function(x){return x.t===t;})[0];if(!o)return;var unit=o.q>0?(o.usd||0)/o.q:0,q=unit>0?Math.max(1,Math.round(usd/unit)):0;
@@ -12012,10 +12014,10 @@ function nvIdeal(){if(!CFG.simRetiro&&!CFG.carteraIdeal)return;var cw=document.g
    if(rest>=100)ops.push({ty:'c',t:null,u:rest,g:g,why:np?'el resto en activos nuevos de '+g[2]+' (sin pasar 2,5% del tipo cada uno; ideas en Vigilancia)':'no tenés activos de '+g[2]+' con lugar: elegí nuevos (Vigilancia)'});}});
  ops.sort(function(a,b){return (a.ty===b.ty?0:a.ty==='v'?-1:1)||b.u-a.u;});
  var opH=ops.length?ops.slice(0,10).map(function(x){return '<span class="'+(x.ty==='v'?'iv':'ic')+'">'+(x.ty==='v'?'VENDER':'COMPRAR')+'</span><span><b>'+(x.t||x.g[1]+' '+x.g[2])+'</b> <small>'+x.why+'</small></span><span class="port-sensitive">USD '+n0(x.u)+'</span>'+(x.t?'<button class="btn btn-sm" onclick="idealCargar(\''+x.t+'\',\''+x.ty+'\','+Math.round(x.u)+')">cargar</button>':'<span></span>');}).join(''):'<span style="grid-column:1/-1;color:#22c55e">✓ Tu cartera está dentro del ideal en todos los grupos.</span>';
- card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="card-title">🎯 Tu cartera ideal</span><span class="tag">% objetivo sobre el total · tocá ✎ para cambiarlo</span>'+(IDEAL.ejemplo?'<span class="tag" style="color:#f59e0b;border-color:#f59e0b">valores de ejemplo: cargá los tuyos</span>':'')+(Math.abs(sumI-100)>0.5?'<span class="tag" style="color:#ef4444;border-color:#ef4444">los % suman '+sumI+'%</span>':'')+
-  '<span style="margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--text2)">Desvío <b style="color:'+(desv/2<5?'#22c55e':'#ef4444')+'">'+Math.round(desv/2)+' pts</b> · '+enR+' de '+cnt+' en rango (±2)</span></div>'+
+ var col=NV.ic!==false;card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="if(!event.target.closest(\'.ied\'))idealTog()"><span style="color:var(--text3);font-size:.8rem;width:12px">'+(col?'▸':'▾')+'</span><span class="card-title">🎯 Tu cartera ideal</span><span class="tag">% objetivo sobre el total · tocá ✎ para cambiarlo</span>'+(IDEAL.ejemplo?'<span class="tag" style="color:#f59e0b;border-color:#f59e0b">valores de ejemplo: cargá los tuyos</span>':'')+(Math.abs(sumI-100)>0.5?'<span class="tag" style="color:#ef4444;border-color:#ef4444">los % suman '+sumI+'%</span>':'')+
+  '<span style="margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--text2)">Desvío <b style="color:'+(desv/2<5?'#22c55e':'#ef4444')+'">'+Math.round(desv/2)+' pts</b> · '+enR+' de '+cnt+' en rango (±2)</span></div>'+(col?'':
   '<div style="padding:.3rem 0 .4rem"><table class="itb"><tr class="hh"><td>Grupo</td><td class="r">Hoy</td><td>barra = hoy · raya blanca = ideal</td><td class="r">Ideal</td><td class="r">Para llegar</td></tr>'+rows+'</table></div>'+
-  '<div class="isug"><div style="font-weight:700;font-size:.8rem;margin-bottom:6px">Movimientos sugeridos <span style="font-weight:400;color:var(--text3);font-size:.7rem">· primero lo que sobra (cerca del P. Venta o más pesado), después lo que falta (marcados 🟢, debajo de 2% del tipo y con más ΔUp) · "cargar" lo deja listo en el panel, no ejecuta nada</span></div><div class="iop">'+opH+'</div></div>';}
+  '<div class="isug"><div style="font-weight:700;font-size:.8rem;margin-bottom:6px">Movimientos sugeridos <span style="font-weight:400;color:var(--text3);font-size:.7rem">· primero lo que sobra (cerca del P. Venta o más pesado), después lo que falta (marcados 🟢, debajo de 2% del tipo y con más ΔUp) · "cargar" lo deja listo en el panel, no ejecuta nada</span></div><div class="iop">'+opH+'</div></div>');}
 // ─── 🗺️ Cómo se movió hoy: resumen por grupo (en USD, ponderado por lo que tenés) con su índice de referencia ───
 var _NV_MOVG=[['nyse','🇺🇸','USA',[['spy','S&P 500'],['qqq','Nasdaq']]],['brasil','🇧🇷','Brasil',[['ewz','EWZ']]],['argentina','🇦🇷','Argentina',[['imv','Merval/CCL']]],['bonos','📜','Bonos',[]],['on','🏢','ONs',[]],['europa','🇪🇺','Europa',[]],['china','🇨🇳','China',[]],['cripto','₿','Cripto',[['btc','Bitcoin']]],['fci','📈','FCI',[]]];
 function _nvBm(k){var e=document.getElementById('tb-'+k+'-chg');if(!e)return null;var v=parseFloat(String(e.textContent||'').replace('%','').replace(',','.'));return isFinite(v)?v:null;}
