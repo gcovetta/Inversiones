@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=203, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=204, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v204 | 2026-10-12 | Vista nueva (GDC): 🏖️ Plan de salida al final — renta anual de la cartera actual (cupones de bonos/ON de los próximos 12 meses + dividendos de los últimos 12 meses de lo que tenés) contra un objetivo editable (config plan_salida, por defecto USD 100.000/año), con barra de progreso, faltante, rendimiento por renta y capital necesario.',
   'v203 | 2026-10-11 | Vista nueva: Calendario de ganancias más compacto (el texto se acomoda al ancho de las semanas; mínimo 8 semanas visibles).',
   'v202 | 2026-10-11 | Vista nueva: el Calendario de ganancias ocupa solo el ancho que necesita.',
   'v201 | 2026-10-11 | Vista nueva: 🌡 Termómetro de la cartera (eufórica / neutral / deprimida según % en verde hoy, cerca del P. Venta y RSI≥70); 🌙 Repaso nocturno (tarjetas de a un activo con marcas y nota, teclado → C V S N Esc); 📅 Calendario de ganancias de los últimos 12 meses (verde/rojo por día, descontando aportes y retiros).',
@@ -11742,7 +11743,7 @@ function nvRender(){
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
- _nvMover();try{nvTermo();nvCalendario();}catch(e){console.warn('nv extras',e);}
+ _nvMover();try{nvTermo();nvCalendario();nvPlanSalida();}catch(e){console.warn('nv extras',e);}
  // KPIs
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
@@ -11841,6 +11842,43 @@ document.addEventListener('keydown',function(e){var ov=document.getElementById('
  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(inTa){e.target.blur();return;}_rpCerrar();return;}if(inTa)return;
  var k=e.key.toLowerCase(),h=true;if(k==='arrowright'||k===' ')_rpIr(1);else if(k==='arrowleft')_rpIr(-1);else if(k==='c')_rpMarca('buy');else if(k==='v')_rpMarca('sell');else if(k==='s')_rpMarca('watch');else if(k==='n'){var t=document.getElementById('rp-nota');if(t)t.focus();}else h=false;
  if(h){e.preventDefault();e.stopPropagation();}},true);
+
+// ─── 🏖️ Plan de salida: renta anual (cupones de bonos/ON + dividendos) contra un objetivo editable ──────
+var PLANS={obj:100000},_plansLoaded=false,_plansLoading=false;
+function _plansLoad(){if(_plansLoaded||_plansLoading)return;_plansLoading=true;
+ Promise.resolve(sbGetConfig('plan_salida')).then(function(v){if(v&&v.obj>0)PLANS=v;}).catch(function(){}).then(function(){_plansLoaded=true;try{nvPlanSalida();}catch(e){}});}
+function nvPlanObj(){var v=prompt('Objetivo de renta anual en USD (cupones + dividendos):',String(PLANS.obj||100000));if(v==null)return;
+ var n=parseFloat(String(v).replace(/\./g,'').replace(',','.'));if(!(n>0)){alert('Monto inválido');return;}PLANS.obj=Math.round(n);try{sbSetConfig('plan_salida',PLANS);}catch(e){}nvPlanSalida();}
+function _planCalc(){var hoy=_flujosHoyStr(),lim=new Date();lim.setFullYear(lim.getFullYear()+1);var limS=lim.toISOString().slice(0,10),tc=MEP_HOY||CCL_HOY||0;
+ var r={renta:0,amort:0,div:0,cobrado:0,porTk:{}},usd=function(m,mon){return mon==='USD'?m:(tc>0?m/tc:0);};
+ try{calcularCalendarioCobros().items.forEach(function(it){if(it.fecha<hoy||it.fecha>limS)return;var a=usd(it.renta,it.moneda),b=usd(it.amort,it.moneda);r.renta+=a;r.amort+=b;r.porTk[it.ticker]=(r.porTk[it.ticker]||0)+a;});}catch(e){}
+ var hace=new Date();hace.setFullYear(hace.getFullYear()-1);var haceS=hace.toISOString().slice(0,10),abiertos={};
+ NV_ROWS.forEach(function(o){if(o.s!=='bonos'&&o.s!=='on')abiertos[o.t]=1;});
+ (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente')return;var f=String(x.fecha||'');if(f.indexOf('/')>0){var a=f.split('/');f=a[2]+'-'+a[1].padStart(2,'0')+'-'+a[0].padStart(2,'0');}
+  if(f<haceS||(x.cartera&&x.cartera!=='principal'))return;var u=divUSD(x)||0;r.cobrado+=u;if(abiertos[x.ticker]&&x.tipo!=='RENTA'){r.div+=u;r.porTk[x.ticker]=(r.porTk[x.ticker]||0)+u;}});
+ r.total=r.renta+r.div;return r;}
+function nvPlanSalida(){if(!CFG.simRetiro&&!CFG.planSalida)return;var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;_plansLoad();
+ var card=document.getElementById('nv-plan');if(!card){card=document.createElement('div');card.className='card';card.id='nv-plan';card.style.cssText='margin-top:1rem';}
+ if(card.parentNode!==cw||cw.lastChild!==card)cw.appendChild(card);
+ var c=_planCalc(),obj=PLANS.obj||100000,pct=Math.min(100,c.total/obj*100),val=(NV_K&&NV_K.val)||0,yld=val>0?c.total/val*100:0,falta=Math.max(0,obj-c.total);
+ var n0=function(v){return Math.round(v).toLocaleString('es-AR');};
+ var top=Object.keys(c.porTk).map(function(t){return [t,c.porTk[t]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,6).map(function(x){return '<b>'+x[0]+'</b> '+n0(x[1]);}).join(' · ');
+ var cap=yld>0?obj/(yld/100):null;
+ card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="card-title">🏖️ Plan de salida</span><span class="tag">renta de los próximos 12 meses con la cartera actual</span>'+
+  '<span style="margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--text2)">Objetivo <b class="port-sensitive" style="color:var(--text)">USD '+n0(obj)+'/año</b> <button class="btn btn-sm" onclick="nvPlanObj()" title="Cambiar objetivo">✎</button></span></div>'+
+  '<div style="padding:.6rem 1rem 1rem">'+
+  '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span style="font-family:var(--mono);font-size:1.25rem;font-weight:800"><span class="port-sensitive">USD '+n0(c.total)+'</span> <span style="font-size:.8rem;color:var(--text2);font-weight:600">/ año · <span class="port-sensitive">USD '+n0(c.total/12)+'</span> / mes</span></span>'+
+  '<span style="font-family:var(--mono);font-size:1rem;font-weight:800;color:'+(pct>=100?'var(--accent)':pct>=50?'#eab308':'var(--red)')+'">'+pct.toFixed(1).replace('.',',')+'% del objetivo</span></div>'+
+  '<div style="height:16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex">'+
+   '<div title="Cupones de bonos/ON" style="width:'+Math.min(100,c.renta/obj*100)+'%;background:var(--blue)"></div><div title="Dividendos" style="width:'+Math.min(100-Math.min(100,c.renta/obj*100),c.div/obj*100)+'%;background:var(--accent)"></div></div>'+
+  '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:8px;font-family:var(--mono);font-size:.72rem;color:var(--text2)">'+
+   '<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--blue);margin-right:5px"></i>Cupones bonos/ON <b class="port-sensitive" style="color:var(--text)">USD '+n0(c.renta)+'</b></span>'+
+   '<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--accent);margin-right:5px"></i>Dividendos (últimos 12 meses de lo que tenés) <b class="port-sensitive" style="color:var(--text)">USD '+n0(c.div)+'</b></span>'+
+   '<span>Te faltan <b class="port-sensitive" style="color:'+(falta?'var(--red)':'var(--accent)')+'">USD '+n0(falta)+'/año</b></span></div>'+
+  '<div style="margin-top:8px;font-size:.72rem;color:var(--text2);line-height:1.6">La cartera hoy rinde en renta un <b>'+yld.toFixed(2).replace('.',',')+'%</b> anual sobre su valor'+(cap?'; a ese ritmo necesitarías una cartera de <b class="port-sensitive">USD '+n0(cap)+'</b> para llegar al objetivo':'')+'. '+
+   'Con una renta del 7% anual harían falta <b class="port-sensitive">USD '+n0(obj/0.07)+'</b>.'+
+   (c.amort>0?' Aparte, en los próximos 12 meses te devuelven <b class="port-sensitive">USD '+n0(c.amort)+'</b> de capital (amortizaciones), que no cuentan como renta.':'')+
+   (top?'<br><span style="color:var(--text3)">Mayores aportes:</span> <span class="port-sensitive">'+top+'</span>':'')+'</div></div>';}
 
 // ─── 🔔 Avisos push (CFG.push) ─────────────────────────────────────────────────
 // La app registra el dispositivo (config push_subs) y publica qué vigilar (config push_watch).
