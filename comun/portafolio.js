@@ -4,8 +4,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=216, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=217, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v217 | 2026-10-12 | Más liviana al abrir: la librería de Excel (SheetJS, ~860 KB) ya no se carga al abrir el portafolio. Se baja sola al entrar a una pantalla con importación (Movimientos, Dividendos CCL, Ratios, Comparación, Venta histórica) o, como mucho, al elegir el archivo; la importación funciona igual.',
   'v216 | 2026-10-12 | Limpieza 3 (más liviana, sin cambios visibles): el cálculo del Portafolio ya no arma la tabla de la vista vieja que nadie veía (render ~20% más rápido, mismos datos), se borran 52 funciones sin uso (lista de seguimiento, toggles de columnas, PIN viejo del tracker, etc.), los comentarios del código, ~6,5 KB de CSS sin uso en cada HTML y la consulta a Supabase de la lista de seguimiento que se hacía en cada carga.',
   'v215 | 2026-10-12 | GDC Modo foco: recuadro Dividendos/Rentas cobrados desde que lo tenés (USD, % de lo invertido, cantidad y último cobro) y comparación con su referencia (S&P 500 o EWZ para Brasil): línea punteada en el gráfico en la misma escala y si le ganaste en el período elegido.',
   'v214 | 2026-10-12 | GDC: Modo foco suma "Lo tenés desde" (fecha de la primera compra de la tenencia actual, cuánto tiempo y promedio ponderado de tus compras). Las noticias de Modo foco y de Explicame se muestran traducidas al castellano (el original queda al pasar el mouse).',
@@ -1086,6 +1087,7 @@ function showPage(id,btn){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
+  if(['tracker','comparacion','ventahist','ventaestad','ratios','movimientos','vetamovim'].indexOf(id)>=0)_xlsxPrecargar();
   if(CFG.vistaNueva)document.body.classList.toggle('nv-port',id==='portafolio');
   if(id==='tipocambio') tcRender();
   if(btn)btn.classList.add('active');
@@ -4746,6 +4748,16 @@ function loadScriptOnce(src){
   if(!window._lsoP[src])window._lsoP[src]=new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){delete window._lsoP[src];rej(new Error('No se pudo cargar '+src));};document.head.appendChild(s);});
   return window._lsoP[src];
 }
+var XLSX_SRC=window.XLSX_SRC||'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+function xlsxListo(){return typeof XLSX!=='undefined'?Promise.resolve():loadScriptOnce(XLSX_SRC);}
+function _xlsxPrecargar(){if(typeof XLSX!=='undefined')return;var f=function(){xlsxListo().catch(function(){});};if(window.requestIdleCallback)requestIdleCallback(f,{timeout:3000});else setTimeout(f,500);}
+window.addEventListener('change',function(e){var t=e.target;
+ if(!t||t.type!=='file'||t._xlsxRe||typeof XLSX!=='undefined'||!t.files||!t.files.length)return;
+ if(!Array.prototype.some.call(t.files,function(f){return /\.(xlsx|xls|xlsm|ods|csv)$/i.test(f.name||'');}))return;
+ e.stopImmediatePropagation();
+ xlsxListo().then(function(){t._xlsxRe=true;try{t.dispatchEvent(new Event('change',{bubbles:true}));}finally{t._xlsxRe=false;}})
+  .catch(function(){alert('No se pudo cargar el lector de Excel. Revisá la conexión y volvé a elegir el archivo.');});
+},true);
 window._jvmReady=false;
 function loadVectorMap(){
   if(window._jvmP)return window._jvmP;
@@ -7386,6 +7398,7 @@ function trkPendingDiscard(id){
 }
 
 window.trkAutoImportFromXLSX = function(base64, fname){
+  if(typeof XLSX==='undefined'){return xlsxListo().then(function(){return window.trkAutoImportFromXLSX(base64,fname);});}
   try{
     var bin = atob(base64);
     var bytes = new Uint8Array(bin.length);
