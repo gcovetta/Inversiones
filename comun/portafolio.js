@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=202, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=203, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v203 | 2026-10-11 | Vista nueva: Calendario de ganancias más compacto (el texto se acomoda al ancho de las semanas; mínimo 8 semanas visibles).',
   'v202 | 2026-10-11 | Vista nueva: el Calendario de ganancias ocupa solo el ancho que necesita.',
   'v201 | 2026-10-11 | Vista nueva: 🌡 Termómetro de la cartera (eufórica / neutral / deprimida según % en verde hoy, cerca del P. Venta y RSI≥70); 🌙 Repaso nocturno (tarjetas de a un activo con marcas y nota, teclado → C V S N Esc); 📅 Calendario de ganancias de los últimos 12 meses (verde/rojo por día, descontando aportes y retiros).',
   'v200 | 2026-10-11 | Vista nueva: etiqueta 🏷 al lado de cada ticker para marcar 🟢 Comprar / 🔴 Vender / ⭐ Seguir y/o dejar una nota (se ve al lado del ticker; completa al pasar el mouse). Se guarda en Supabase. Filtro 🏷 Marcados. Ahora se puede guardar solo la nota, sin tipo (📝).',
@@ -11804,7 +11805,7 @@ function nvCalendario(){if(!CFG.historial||typeof histSerie!=='function'||!HIST)
  var card=document.getElementById('nv-cal');if(card&&card.parentNode!==cw)cw.insertBefore(card,cw.firstChild);if(card&&key===_calKey)return;_calKey=key;
  if(!card){card=document.createElement('div');card.className='card';card.id='nv-cal';card.style.cssText='margin-bottom:1rem;overflow-x:auto;width:fit-content;max-width:100%';cw.insertBefore(card,cw.firstChild);}
  var D={};for(var i=1;i<S.length;i++){var a=S[i-1],b=S[i];if(!(a.v>0))continue;var flujo=(b.inv!=null&&a.inv!=null)?(b.inv-a.inv):0,g=(b.v-a.v)-flujo;D[b.d]={u:g,p:g/a.v*100};}
- var hoy=new Date(),ini=new Date(hoy),f0=new Date(S[0].d+'T12:00:00'),min=new Date(hoy);min.setDate(min.getDate()-90);ini.setDate(ini.getDate()-364);if(f0>ini)ini=f0<min?f0:min;while(ini.getDay()!==1)ini.setDate(ini.getDate()-1);
+ var hoy=new Date(),ini=new Date(hoy),f0=new Date(S[0].d+'T12:00:00'),min=new Date(hoy);min.setDate(min.getDate()-56);ini.setDate(ini.getDate()-364);if(f0>ini)ini=f0<min?f0:min;while(ini.getDay()!==1)ini.setDate(ini.getDate()-1);
  var iso=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
  var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'],cols=[],mesLbl=[],d=new Date(ini),pos=0,neg=0,best=null,worst=null;
  while(d<=hoy){var col=[],lbl='';for(var k=0;k<5;k++){var x=new Date(d);x.setDate(d.getDate()+k);if(x>hoy){col.push('<i class="e"></i>');continue;}var s=iso(x),r=D[s];if(x.getDate()<=7&&k===0)lbl=MES[x.getMonth()];
@@ -11813,8 +11814,8 @@ function nvCalendario(){if(!CFG.historial||typeof histSerie!=='function'||!HIST)
    col.push('<i class="nvf-cal" style="background:'+c+'" data-tip="'+s.split('-').reverse().join('/')+': '+(r.p>=0?'+':'−')+Math.abs(r.p).toFixed(2).replace('.',',')+'% ('+(r.u>=0?'+':'−')+'USD '+Math.round(Math.abs(r.u)).toLocaleString('es-AR')+')"></i>');}
   cols.push('<div class="cc">'+col.join('')+'</div>');mesLbl.push('<span>'+lbl+'</span>');d.setDate(d.getDate()+7);}
  var f=function(x){return x?x.d.split('-').reverse().slice(0,2).join('/')+' '+(x.u>=0?'+':'−')+'USD '+Math.round(Math.abs(x.u)).toLocaleString('es-AR'):'—';};
- card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="card-title">📅 Calendario de ganancias</span><span class="tag">'+(S.length<60?'desde '+S[0].d.split('-').reverse().join('/')+' · se completa día a día':'últimos 12 meses')+' · días hábiles</span><span style="margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--text2)"><b style="color:var(--accent)">'+pos+'</b> días en verde · <b style="color:var(--red)">'+neg+'</b> en rojo · mejor <span class="port-sensitive">'+f(best)+'</span> · peor <span class="port-sensitive">'+f(worst)+'</span></span></div>'+
-  '<div class="nvcal"><div class="dl"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span></div><div><div class="ml">'+mesLbl.join('')+'</div><div class="gr">'+cols.join('')+'</div></div></div>';}
+ card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;width:0;min-width:100%;box-sizing:border-box"><span class="card-title">📅 Calendario de ganancias</span><span class="tag">'+(S.length<60?'desde '+S[0].d.split('-').reverse().slice(0,2).join('/'):'12 meses')+'</span><span style="flex-basis:100%;font-family:var(--mono);font-size:.66rem;color:var(--text2);line-height:1.5"><b style="color:var(--accent)">'+pos+'</b> días en verde · <b style="color:var(--red)">'+neg+'</b> en rojo · <br>mejor <span class="port-sensitive">'+f(best)+'</span> · peor <span class="port-sensitive">'+f(worst)+'</span></span></div>'+
+  '<div class="nvcal" style="padding:.4rem .8rem .8rem"><div class="dl"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span></div><div><div class="ml">'+mesLbl.join('')+'</div><div class="gr">'+cols.join('')+'</div></div></div>';}
 // Repaso nocturno: tarjetas de a un activo (marcados, cerca del P. Venta, los que más se movieron hoy)
 var _rp={L:[],i:0};
 function _rpPri(o){if(MARKS[o.t])return 0;if(o.up!=null&&o.up<=5)return 1;if(o.ch!=null&&Math.abs(o.ch)>=3)return 2;return 3;}
