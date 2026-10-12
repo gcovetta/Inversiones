@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=204, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=205, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v205 | 2026-10-12 | Vista nueva: 🗺️ Cómo se movió hoy — un recuadro por grupo (USA, Brasil, Argentina, Bonos, ONs, Europa, China, Cripto, FCI) con su variación del día en USD ponderada, el monto, mini mapa de calor, el que más subió/bajó y su referencia (S&P/Nasdaq, EWZ, Merval/CCL, Bitcoin) con si le ganaste o no; tocando un grupo se abre la lista de sus activos. Va al final, arriba del Plan de salida. Solo GDC.',
   'v204 | 2026-10-12 | Vista nueva (GDC): 🏖️ Plan de salida al final — renta anual de la cartera actual (cupones de bonos/ON de los próximos 12 meses + dividendos de los últimos 12 meses de lo que tenés) contra un objetivo editable (config plan_salida, por defecto USD 100.000/año), con barra de progreso, faltante, rendimiento por renta y capital necesario.',
   'v203 | 2026-10-11 | Vista nueva: Calendario de ganancias más compacto (el texto se acomoda al ancho de las semanas; mínimo 8 semanas visibles).',
   'v202 | 2026-10-11 | Vista nueva: el Calendario de ganancias ocupa solo el ancho que necesita.',
@@ -11678,6 +11679,12 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-rep-ov .nvlbl{font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}#nv-rep-ov .rpm{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}#nv-rep-ov .rpb{background:var(--surface2);border:1px solid var(--border2);border-radius:999px;padding:4px 11px;color:var(--text2);cursor:pointer;font-size:.75rem}'+
  '#nv-rep-ov .rpb.on.buy{border-color:var(--accent);color:var(--accent)}#nv-rep-ov .rpb.on.sell{border-color:var(--red);color:var(--red)}#nv-rep-ov .rpb.on.watch{border-color:#f59e0b;color:#f59e0b}#nv-rep-ov textarea{width:100%;box-sizing:border-box;height:58px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:6px 8px;font-size:.8rem}'+
  '#nv-rep-ov .rpf{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}@media(max-width:560px){#nv-rep-ov .rpg{grid-template-columns:repeat(2,1fr)}}'+
+ '#nv-mov .up{color:#22c55e}#nv-mov .dn{color:#ef4444}#nv-mov .mu{color:var(--text3)}#nv-mov .mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;padding:.8rem 1rem}'+
+ '#nv-mov .mt{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 11px;cursor:pointer}#nv-mov .mt:hover{border-color:var(--border2)}#nv-mov .mt.sel{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}'+
+ '#nv-mov .th{display:flex;align-items:center;gap:6px;font-size:.84rem}#nv-mov .w{margin-left:auto;font-family:var(--mono);font-size:.6rem;color:var(--text3)}#nv-mov .tv{font-family:var(--mono);font-size:1.4rem;font-weight:800;margin-top:5px}#nv-mov .tu{font-family:var(--mono);font-size:.72rem;font-weight:700}'+
+ '#nv-mov .heat{display:flex;gap:2px;height:10px;margin:8px 0 6px;border-radius:3px;overflow:hidden}#nv-mov .heat i{display:block;height:100%}#nv-mov .bw{display:flex;justify-content:space-between;gap:6px;font-family:var(--mono);font-size:.64rem;color:var(--text2)}'+
+ '#nv-mov .bm{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:.64rem;color:var(--text2);border-top:1px dashed var(--border);margin-top:6px;padding-top:5px}#nv-mov .bm .vs{margin-left:auto;font-weight:700}'+
+ '#nv-mov .det{margin:0 1rem 1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px}#nv-mov table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.76rem}#nv-mov td{padding:5px 4px;border-bottom:1px solid var(--border);text-align:left;height:auto}#nv-mov td.r{text-align:right}#nv-mov tr.hh td{color:var(--text3);font-size:.6rem;text-transform:uppercase}'+
  '#nv-root td.hoy{font-size:.74rem;font-weight:700}'+
  '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
@@ -11743,7 +11750,7 @@ function nvRender(){
   // borde general con el color de la cartera
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
- _nvMover();try{nvTermo();nvCalendario();nvPlanSalida();}catch(e){console.warn('nv extras',e);}
+ _nvMover();try{nvTermo();nvCalendario();nvMov();nvPlanSalida();}catch(e){console.warn('nv extras',e);}
  // KPIs
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
@@ -11843,6 +11850,29 @@ document.addEventListener('keydown',function(e){var ov=document.getElementById('
  var k=e.key.toLowerCase(),h=true;if(k==='arrowright'||k===' ')_rpIr(1);else if(k==='arrowleft')_rpIr(-1);else if(k==='c')_rpMarca('buy');else if(k==='v')_rpMarca('sell');else if(k==='s')_rpMarca('watch');else if(k==='n'){var t=document.getElementById('rp-nota');if(t)t.focus();}else h=false;
  if(h){e.preventDefault();e.stopPropagation();}},true);
 
+// ─── 🗺️ Cómo se movió hoy: resumen por grupo (en USD, ponderado por lo que tenés) con su índice de referencia ───
+var _NV_MOVG=[['nyse','🇺🇸','USA',[['spy','S&P 500'],['qqq','Nasdaq']]],['brasil','🇧🇷','Brasil',[['ewz','EWZ']]],['argentina','🇦🇷','Argentina',[['imv','Merval/CCL']]],['bonos','📜','Bonos',[]],['on','🏢','ONs',[]],['europa','🇪🇺','Europa',[]],['china','🇨🇳','China',[]],['cripto','₿','Cripto',[['btc','Bitcoin']]],['fci','📈','FCI',[]]];
+function _nvBm(k){var e=document.getElementById('tb-'+k+'-chg');if(!e)return null;var v=parseFloat(String(e.textContent||'').replace('%','').replace(',','.'));return isFinite(v)?v:null;}
+function nvMovSel(k){NV.movSel=NV.movSel===k?null:k;nvSave();nvMov();}
+function nvMov(){if(!CFG.simRetiro&&!CFG.movGrupos)return;var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
+ var card=document.getElementById('nv-mov');if(!card){card=document.createElement('div');card.className='card';card.id='nv-mov';card.style.cssText='margin-top:1rem';}
+ cw.appendChild(card);
+ var P=function(x,d){if(x==null||!isFinite(x))return '<span class="mu">—</span>';x=+x.toFixed(d==null?2:d);return '<span class="'+(x>0?'up':x<0?'dn':'mu')+'">'+(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(d==null?2:d).replace('.',',')+'%</span>';};
+ var U=function(x){x=Math.round(x);return '<span class="port-sensitive">'+(x>0?'+':x<0?'−':'')+'USD '+Math.round(Math.abs(x)).toLocaleString('es-AR')+'</span>';};
+ var tot=0,totD=0,totB=0,tiles='',G={};
+ NV_ROWS.forEach(function(o){var g=G[o.s]||(G[o.s]={usd:0,d:0,b:0,L:[]});var u=o.usd||0;g.usd+=u;tot+=u;g.L.push(o);if(o.ch!=null&&isFinite(o.ch)&&u>0){var b=u/(1+o.ch/100);g.d+=u-b;g.b+=b;totD+=u-b;totB+=b;}});
+ _NV_MOVG.forEach(function(x){var g=G[x[0]];if(!g||!g.L.length)return;var p=g.b>0?g.d/g.b*100:null,w=tot>0?g.usd/tot*100:0;
+  var L=g.L.filter(function(o){return o.ch!=null&&isFinite(o.ch);}).sort(function(a,b){return b.ch-a.ch;});
+  var heat=g.L.slice().sort(function(a,b){return (b.usd||0)-(a.usd||0);}).map(function(o){var c=o.ch,col=c==null?'#26324a':c>0?'rgba(34,197,94,'+(0.25+0.7*Math.min(1,c/3)).toFixed(2)+')':c<0?'rgba(239,68,68,'+(0.25+0.7*Math.min(1,-c/3)).toFixed(2)+')':'#26324a';
+   return '<i class="nvf-cal" style="flex:'+Math.max(o.usd||0,tot/400)+';background:'+col+'" data-tip="'+o.t+(c==null?'':' '+(c>0?'+':'')+c.toFixed(2).replace('.',',')+'%')+'"></i>';}).join('');
+  var bw=L.length?'<div class="bw"><span>▲ '+L[0].t+' '+P(L[0].ch)+'</span>'+(L.length>1?'<span>▼ '+L[L.length-1].t+' '+P(L[L.length-1].ch)+'</span>':'')+'</div>':'';
+  var bms=x[3].map(function(b){var v=_nvBm(b[0]);if(v==null)return '';var df=p==null?null:p-v;return '<div class="bm"><span>'+b[1]+'</span>'+P(v)+(df==null?'':'<span class="vs '+(df>=0?'up':'dn')+'">'+(df>=0?'▲ le ganás':'▼ te gana')+' por '+Math.abs(df).toFixed(2).replace('.',',')+' pts</span>')+'</div>';}).join('');
+  tiles+='<div class="mt'+(NV.movSel===x[0]?' sel':'')+'" onclick="nvMovSel(\''+x[0]+'\')"><div class="th"><span>'+x[1]+'</span><b>'+x[2]+'</b><span class="w">'+Math.round(w)+'% de la cartera</span></div><div class="tv">'+P(p)+'</div><div class="tu">'+(g.b>0?U(g.d):'<span class="mu">sin variación del día</span>')+'</div><div class="heat">'+heat+'</div>'+bw+bms+'</div>';});
+ var det='';var sg=NV.movSel&&G[NV.movSel];if(sg){var gi=_NV_MOVG.filter(function(x){return x[0]===NV.movSel;})[0];
+  det='<div class="det"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><b>'+gi[1]+' '+gi[2]+'</b><span class="tag">'+sg.L.length+' activos</span><span class="nvclr" style="margin-left:auto" onclick="nvMovSel(null)">cerrar ✕</span></div><table><tr class="hh"><td>Símbolo</td><td>Cambio</td><td class="r">Tenés</td><td class="r">Movió hoy</td></tr>'+
+   sg.L.slice().sort(function(a,b){return (b.ch==null?-99:b.ch)-(a.ch==null?-99:a.ch);}).map(function(o){var m=o.ch!=null&&isFinite(o.ch)&&o.usd>0?o.usd-o.usd/(1+o.ch/100):null;return '<tr><td><b>'+o.t+'</b></td><td>'+P(o.ch)+'</td><td class="r mu"><span class="port-sensitive">USD '+_nvN(o.usd)+'</span></td><td class="r">'+(m==null?'<span class="mu">—</span>':'<span class="'+(m>=0?'up':'dn')+'">'+U(m)+'</span>')+'</td></tr>';}).join('')+'</table></div>';}
+ var tp=totB>0?totD/totB*100:null;
+ card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="card-title">🗺️ Cómo se movió hoy</span><span class="tag">en dólares · ponderado por lo que tenés</span><span style="margin-left:auto;font-family:var(--mono);font-size:.8rem">Total cartera <b>'+P(tp)+'</b> <b class="'+(totD>=0?'up':'dn')+'">'+U(totD)+'</b></span></div><div class="mg">'+tiles+'</div>'+det;}
 // ─── 🏖️ Plan de salida: renta anual (cupones de bonos/ON + dividendos) contra un objetivo editable ──────
 var PLANS={obj:100000},_plansLoaded=false,_plansLoading=false;
 function _plansLoad(){if(_plansLoaded||_plansLoading)return;_plansLoading=true;
@@ -11859,7 +11889,7 @@ function _planCalc(){var hoy=_flujosHoyStr(),lim=new Date();lim.setFullYear(lim.
  r.total=r.renta+r.div;return r;}
 function nvPlanSalida(){if(!CFG.simRetiro&&!CFG.planSalida)return;var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;_plansLoad();
  var card=document.getElementById('nv-plan');if(!card){card=document.createElement('div');card.className='card';card.id='nv-plan';card.style.cssText='margin-top:1rem';}
- if(card.parentNode!==cw||cw.lastChild!==card)cw.appendChild(card);
+ cw.appendChild(card);
  var c=_planCalc(),obj=PLANS.obj||100000,pct=Math.min(100,c.total/obj*100),val=(NV_K&&NV_K.val)||0,yld=val>0?c.total/val*100:0,falta=Math.max(0,obj-c.total);
  var n0=function(v){return Math.round(v).toLocaleString('es-AR');};
  var top=Object.keys(c.porTk).map(function(t){return [t,c.porTk[t]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,6).map(function(x){return '<b>'+x[0]+'</b> '+n0(x[1]);}).join(' · ');

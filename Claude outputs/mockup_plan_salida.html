@@ -1,0 +1,67 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Plan de salida — propuesta</title>
+<style>
+:root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#4b6a92;--accent:#22c55e;--red:#ef4444;--blue:#448aff;--amber:#f59e0b;--mono:ui-monospace,Menlo,monospace;--sans:system-ui,-apple-system,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);padding:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:980px}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:.7rem 1rem;border-bottom:1px solid var(--border)}
+.tt{font-weight:700}.tag{font-family:var(--mono);font-size:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text3)}
+.ob{margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--text2)}.ob b{color:var(--text)}
+.btn{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:1px 7px;font-size:.72rem;margin-left:4px}
+.bd{padding:.8rem 1rem 1rem}
+.blk{margin-bottom:16px}
+.lbl{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.big{font-family:var(--mono);font-size:1.2rem;font-weight:800}.big small{font-size:.78rem;color:var(--text2);font-weight:600}
+.pct{font-family:var(--mono);font-weight:800}
+.bar{position:relative;height:16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex}
+.bar div{height:100%}
+.leg{display:flex;gap:16px;flex-wrap:wrap;margin-top:7px;font-family:var(--mono);font-size:.7rem;color:var(--text2)}
+.leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.leg b{color:var(--text)}
+.sl{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.72rem;color:var(--text2);background:var(--surface2);border:1px solid var(--border2);border-radius:999px;padding:2px 10px}
+.sl b{color:var(--amber)}
+.note{font-size:.72rem;color:var(--text2);line-height:1.6;border-top:1px dashed var(--border);padding-top:10px}
+.note b{color:var(--text)}
+.cap{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.cap div{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.cap .v{font-family:var(--mono);font-weight:800;font-size:.95rem;margin-top:2px}
+.cap .s{font-size:.66rem;color:var(--text3)}
+.mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text);opacity:.6}
+</style></head><body>
+<div class="card">
+ <div class="hd"><span class="tt">🏖️ Plan de salida</span><span class="tag">con la cartera actual</span>
+  <span class="ob">Objetivo <b>USD 100.000/año</b><span class="btn">✎</span></span></div>
+ <div class="bd">
+
+  <div class="blk" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:8px 12px">
+   <span style="font-size:.8rem">➕ <b>Aporte extra</b></span><span class="sl">USD <b>350.000</b> ✎</span><span style="font-size:.72rem;color:var(--text2)">venta del departamento · simulación, no se suma a la cartera real</span>
+   <span style="margin-left:auto" class="sl">invertido en: <b>misma mezcla</b> · renta fija 7%</span></div>
+
+  <div class="blk">
+   <div class="lbl">1 · Renta — lo que cobrás sin vender nada</div>
+   <div class="row"><span class="big">USD 14.872 <small>/ año · USD 1.239 / mes</small></span><span class="pct" style="color:var(--red)">14,9% del objetivo</span></div>
+   <div class="bar"><div style="width:5%;background:var(--blue)"></div><div style="width:9.9%;background:#60a5fa"></div></div>
+   <div class="leg"><span><i style="background:var(--blue)"></i>Cartera actual <b>5.003</b></span><span><i style="background:#60a5fa"></i>Renta del aporte (2,82% como hoy) <b>9.869</b></span></div>
+  </div>
+
+  <div class="blk">
+   <div class="lbl" style="display:flex;align-items:center;gap:10px">2 · Retiro total sostenible <span class="sl">retiro anual <b>4%</b> de la cartera ✎</span></div>
+   <div class="row"><span class="big">USD 21.095 <small>/ año · USD 1.758 / mes</small></span><span class="pct" style="color:#eab308">21,1% del objetivo</span></div>
+   <div class="bar"><div style="width:14.9%;background:var(--blue)"></div><div style="width:6.2%;background:var(--amber)"></div><i class="mark" style="left:7.1%" title="sin el aporte"></i></div>
+   <div class="leg"><span><i style="background:var(--blue)"></i>Renta <b>14.872</b></span><span><i style="background:var(--amber)"></i>Ventas para completar el 4% <b>6.223</b></span><span>Sin el aporte: <b>7.095</b> (la rayita)</span><span>Te faltan <b style="color:var(--red)">USD 78.905/año</b></span></div>
+  </div>
+
+  <div class="cap">
+   <div><div class="lbl">Cartera con el aporte</div><div class="v">USD 527.381</div><div class="s">objetivo al 4%: USD 2.500.000 · tenés 21%</div></div>
+   <div><div class="lbl">Si el aporte va a renta fija al 7%</div><div class="v" style="color:var(--accent)">USD 29.503/año</div><div class="s">29,5% del objetivo · todo en cupones, sin vender</div></div>
+   <div><div class="lbl">Llegás a USD 2,5 M en</div><div class="v">~18 años</div><div class="s">a 9,5%/año · con USD 2.000/mes de aporte: ~14 años (sin el depto: 30 / 21)</div></div>
+  </div>
+
+  <div class="note">
+   La barra <b>1</b> es la plata que entra sola (cupones y dividendos). La barra <b>2</b> es el <b>retiro total</b> que la regla clásica considera sostenible (~4% anual del valor, <b>incluyendo</b> la renta): lo que no cubren los cupones y dividendos se completa vendiendo. El % y el aporte extra los elegís vos (✎); el aporte es solo una simulación.<br>
+   Aparte, en los próximos 12 meses te devuelven <b>USD 7.247</b> de capital (amortizaciones de bonos), que no cuentan como renta.
+  </div>
+ </div>
+</div>
+<p style="font-family:var(--mono);font-size:.7rem;color:#4b6a92;max-width:980px">Propuesta con tus números de hoy (GDC) + aporte simulado de USD 350.000. Los años del último recuadro son ilustrativos y saldrían del cálculo real (mismo motor que el Simulador de retiro).</p>
+</body></html>
