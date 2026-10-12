@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=205, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=206, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v206 | 2026-10-12 | Vista nueva: el panel Comprar/Vender ocupa solo el ancho que necesita.',
   'v205 | 2026-10-12 | Vista nueva: 🗺️ Cómo se movió hoy — un recuadro por grupo (USA, Brasil, Argentina, Bonos, ONs, Europa, China, Cripto, FCI) con su variación del día en USD ponderada, el monto, mini mapa de calor, el que más subió/bajó y su referencia (S&P/Nasdaq, EWZ, Merval/CCL, Bitcoin) con si le ganaste o no; tocando un grupo se abre la lista de sus activos. Va al final, arriba del Plan de salida. Solo GDC.',
   'v204 | 2026-10-12 | Vista nueva (GDC): 🏖️ Plan de salida al final — renta anual de la cartera actual (cupones de bonos/ON de los próximos 12 meses + dividendos de los últimos 12 meses de lo que tenés) contra un objetivo editable (config plan_salida, por defecto USD 100.000/año), con barra de progreso, faltante, rendimiento por renta y capital necesario.',
   'v203 | 2026-10-11 | Vista nueva: Calendario de ganancias más compacto (el texto se acomoda al ancho de las semanas; mínimo 8 semanas visibles).',
@@ -11686,7 +11687,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-mov .bm{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:.64rem;color:var(--text2);border-top:1px dashed var(--border);margin-top:6px;padding-top:5px}#nv-mov .bm .vs{margin-left:auto;font-weight:700}'+
  '#nv-mov .det{margin:0 1rem 1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px}#nv-mov table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.76rem}#nv-mov td{padding:5px 4px;border-bottom:1px solid var(--border);text-align:left;height:auto}#nv-mov td.r{text-align:right}#nv-mov tr.hh td{color:var(--text3);font-size:.6rem;text-transform:uppercase}'+
  '#nv-root td.hoy{font-size:.74rem;font-weight:700}'+
- '#nv-root #nv-ops>.card{margin:0}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
+ '#nv-root #nv-ops>.card{margin:0;width:fit-content!important;max-width:100%;display:block}#nv-root #nv-opw{width:fit-content;max-width:100%}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
 function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')vsellPopulateSelect();}catch(e){}var sel=document.getElementById('vsell-ticker');if(sel){sel.value=t;var o=NV_ROWS.filter(function(x){return x.t===t;})[0];var q=document.getElementById('vsell-qty');if(q&&o)q.value=o.q;try{vsellPreview();}catch(e){}}
