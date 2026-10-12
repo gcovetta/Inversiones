@@ -11,8 +11,9 @@
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
 // En cada cambio: subir APP_VERSION, agregar una línea arriba en APP_CHANGELOG y subir el ?v=
 // de la etiqueta <script src="../comun/portafolio.js?v=N"> en los 5 HTML.
-var APP_VERSION=208, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=209, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v209 | 2026-10-12 | Vista nueva: el Calendario de ganancias queda bajo y a lo ancho (cuadritos a la izquierda, título y números a la derecha), para no estirar la fila de Comprar/Vender.',
   'v208 | 2026-10-12 | GDC: ❓ Explicame este movimiento — en los activos que se movieron ±3% o más hoy (columna Hoy) y en los grupos de "Cómo se movió hoy", un ? que muestra el motivo probable (resultados, recomendación, fusión, dividendo…) con los titulares de Finnhub de los últimos 3 días y el contexto del grupo e índice. Argentina/bonos/ON: contexto del Merval/CCL + Google Noticias. Sin IA.',
   'v207 | 2026-10-12 | Vista nueva: el Calendario de ganancias va al lado del panel Comprar/Vender (abajo si no entra).',
   'v206 | 2026-10-12 | Vista nueva: el panel Comprar/Vender ocupa solo el ancho que necesita.',
@@ -11830,8 +11831,7 @@ function nvCalendario(){if(!CFG.historial||typeof histSerie!=='function'||!HIST)
    col.push('<i class="nvf-cal" style="background:'+c+'" data-tip="'+s.split('-').reverse().join('/')+': '+(r.p>=0?'+':'−')+Math.abs(r.p).toFixed(2).replace('.',',')+'% ('+(r.u>=0?'+':'−')+'USD '+Math.round(Math.abs(r.u)).toLocaleString('es-AR')+')"></i>');}
   cols.push('<div class="cc">'+col.join('')+'</div>');mesLbl.push('<span>'+lbl+'</span>');d.setDate(d.getDate()+7);}
  var f=function(x){return x?x.d.split('-').reverse().slice(0,2).join('/')+' '+(x.u>=0?'+':'−')+'USD '+Math.round(Math.abs(x.u)).toLocaleString('es-AR'):'—';};
- card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;width:0;min-width:100%;box-sizing:border-box"><span class="card-title">📅 Calendario de ganancias</span><span class="tag">'+(S.length<60?'desde '+S[0].d.split('-').reverse().slice(0,2).join('/'):'12 meses')+'</span><span style="flex-basis:100%;font-family:var(--mono);font-size:.66rem;color:var(--text2);line-height:1.5"><b style="color:var(--accent)">'+pos+'</b> días en verde · <b style="color:var(--red)">'+neg+'</b> en rojo · <br>mejor <span class="port-sensitive">'+f(best)+'</span> · peor <span class="port-sensitive">'+f(worst)+'</span></span></div>'+
-  '<div class="nvcal" style="padding:.4rem .8rem .8rem"><div class="dl"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span></div><div><div class="ml">'+mesLbl.join('')+'</div><div class="gr">'+cols.join('')+'</div></div></div>';}
+ card.innerHTML='<div style="display:flex;gap:16px;align-items:flex-start;padding:.7rem .9rem"><div class="nvcal" style="padding:0"><div class="dl"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span></div><div><div class="ml">'+mesLbl.join('')+'</div><div class="gr">'+cols.join('')+'</div></div><div style="min-width:150px;max-width:210px;font-family:var(--mono);font-size:.66rem;color:var(--text2);line-height:1.6"><div class="card-title" style="font-size:.82rem;margin-bottom:5px">📅 Ganancias por día</div><span class="tag">'+(S.length<60?'desde '+S[0].d.split('-').reverse().slice(0,2).join('/'):'12 meses')+'</span><div style="margin-top:6px"><b style="color:var(--accent)">'+pos+'</b> en verde · <b style="color:var(--red)">'+neg+'</b> en rojo</div><div>mejor <span class="port-sensitive">'+f(best)+'</span></div><div>peor <span class="port-sensitive">'+f(worst)+'</span></div></div></div>';}
 // Repaso nocturno: tarjetas de a un activo (marcados, cerca del P. Venta, los que más se movieron hoy)
 var _rp={L:[],i:0};
 function _rpPri(o){if(MARKS[o.t])return 0;if(o.up!=null&&o.up<=5)return 1;if(o.ch!=null&&Math.abs(o.ch)>=3)return 2;return 3;}
