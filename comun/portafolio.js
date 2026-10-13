@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=223, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=224, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v224 | 2026-10-13 | Guardado seguro también en movimientos y dividendos (se actualizan las filas y después se borran las sobrantes: la nube nunca queda vacía si se corta la conexión) y en la sincronización GDC → Omar/Ana. Si una tabla no lo admite, vuelve solo al método anterior.',
   'v223 | 2026-10-13 | Revisión general: (1) los proxies gratuitos caídos (allorigins, codetabs, corsproxy) ya no se reintentan en cada carga: si fallan se saltean 6 h (antes cada uno esperaba 7–12 s); (2) el RSI se calcula con el historial de data912 (sin proxy) y los que no se consiguen se reintentan a las 12 h; (3) el historial se pide una sola vez (antes 3 a la vez); (4) guardar configuración es una sola operación (antes borrar + insertar, con riesgo de perder el dato si fallaba en el medio); (5) se borra código de la vista vieja (toggles de columnas, orden de tablas, estilos) y fetchSPYHist.',
   'v222 | 2026-10-13 | Se elimina VetaMovim del Laboratorio (pantalla y código), no se usaba. La importación de Veta en Dividendos CCL sigue igual.',
   'v221 | 2026-10-13 | Fotos de perfil livianas: versiones de 128 px en webp (~4 KB cada una en vez de 30 a 400 KB).',
@@ -150,6 +151,10 @@ async function _sbSetOther(baseUrl, apiKey, configKey, value) {
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal'
     };
+    var _body=JSON.stringify({ key: configKey, value: JSON.stringify(value) });
+    var ru=await fetch(baseUrl+'/rest/v1/config?on_conflict=key',{method:'POST',headers:Object.assign({},headers,{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:_body});
+    if(ru.ok)return true;
+    if(!(ru.status===400||ru.status===409||ru.status===422))return false;
     await fetch(baseUrl + '/rest/v1/config?key=eq.' + encodeURIComponent(configKey), {
       method: 'DELETE', headers: headers
     });
@@ -413,7 +418,18 @@ async function sbGetConfig(key){
   }catch(e){ return null; }
 }
 
+// Guardado de tablas (movimientos, trk_divs): primero se escriben/actualizan las filas (upsert por id) y recién
+// después se borran las que sobran, así la nube nunca queda vacía si la conexión se corta en el medio.
+// Si la tabla no admite upsert, vuelve al método anterior (borrar todo + insertar).
+var _sbArrUpsertNo={};
 async function sbSaveArray(table, arr){
+  var n=(arr||[]).length;
+  if(n&&!_sbArrUpsertNo[table]){try{
+    var rowsU=arr.map(function(item,i){return{id:i+1,data:item,updated_at:new Date().toISOString()};});
+    var up=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?on_conflict=id',{method:'POST',headers:Object.assign({},sbHeaders(),{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(rowsU)});
+    if(up.ok){var dx=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gt.'+n,{method:'DELETE',headers:sbHeaders()});if(!dx.ok)throw new Error('DEL extra '+dx.status);return true;}
+    if(up.status===400||up.status===409||up.status===422)_sbArrUpsertNo[table]=true;else throw new Error('UPS '+up.status);
+  }catch(e){console.warn('sbSaveArray error',table,e);return false;}}
   try{
     var delRes=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?id=gte.0',{method:'DELETE',headers:sbHeaders()});
     if(!delRes.ok) throw new Error('DEL '+delRes.status);
