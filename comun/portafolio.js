@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=222, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=223, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v223 | 2026-10-13 | Revisión general: (1) los proxies gratuitos caídos (allorigins, codetabs, corsproxy) ya no se reintentan en cada carga: si fallan se saltean 6 h (antes cada uno esperaba 7–12 s); (2) el RSI se calcula con el historial de data912 (sin proxy) y los que no se consiguen se reintentan a las 12 h; (3) el historial se pide una sola vez (antes 3 a la vez); (4) guardar configuración es una sola operación (antes borrar + insertar, con riesgo de perder el dato si fallaba en el medio); (5) se borra código de la vista vieja (toggles de columnas, orden de tablas, estilos) y fetchSPYHist.',
   'v222 | 2026-10-13 | Se elimina VetaMovim del Laboratorio (pantalla y código), no se usaba. La importación de Veta en Dividendos CCL sigue igual.',
   'v221 | 2026-10-13 | Fotos de perfil livianas: versiones de 128 px en webp (~4 KB cada una en vez de 30 a 400 KB).',
   'v220 | 2026-10-13 | El resumen para el index suma los cobros de los próximos 12 meses (con la parte de capital) para la nueva pestaña Cobros. Historial de precios: un cambio de ratio del Cedear (ej. SPY el 29/05/2026) ya no se ve como una caída del 66%; se reescala lo anterior (afecta Modo foco, gráfico de precios y comparación con el S&P).',
@@ -363,8 +364,14 @@ function sbHeaders(){
   return {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+token};
 }
 
+var _sbUpsertNo=false;
 async function sbSetConfig(key, value){
   _sbCfgInv[key]=true;
+  if(!_sbUpsertNo){try{
+    var ru=await fetch(SUPABASE_URL+'/rest/v1/config?on_conflict=key',{method:'POST',headers:Object.assign({},sbHeaders(),{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({key:key,value:value,updated_at:new Date().toISOString()})});
+    if(ru.ok)return true;
+    if(ru.status===400||ru.status===409||ru.status===422)_sbUpsertNo=true;else return false;
+  }catch(e){console.warn('sbSetConfig error',key,e);return false;}}
   try{
     await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.'+encodeURIComponent(key),{
       method:'DELETE', headers:sbHeaders()
@@ -4297,76 +4304,9 @@ function renderPerfilComparacion(){
 }
 
 // ─── Toggle columna Cantidad (oculta por defecto para layout compacto) ───
-(function initQtyToggle(){
-  var show='0';
-  try{var s=localStorage.getItem((PFX+'showQty'));if(s!==null)show=s;}catch(e){}
-  function apply(){
-    var cb=document.getElementById('qty-toggle');var grid=document.getElementById('panels-grid');
-    if(cb)cb.checked=(show==='1');
-    if(grid&&show!=='1')grid.classList.add('hide-qty');
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
-})();
 
 // ─── Toggle columna P. Venta (oculta por defecto) ───
 // ─── Orden de las tablas del Portafolio al hacer click en el título de la columna ───
-var PANEL_SORT={};
-function _psNum(txt){
-  if(txt==null)return null;
-  txt=String(txt).replace(/−/g,'-');
-  var m=txt.match(/-?\d[\d.,]*/);if(!m)return null;
-  var s=m[0].replace(/[.,]$/,'');
-  if(s.indexOf(',')!==-1)s=s.replace(/\./g,'').replace(',','.');
-  else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
-  var n=parseFloat(s);return isNaN(n)?null:n;
-}
-function _psKey(td,col){
-  if(!td)return null;
-  if(col===0){var b=td.querySelector('[data-ticker]');var t=(b?b.getAttribute('data-ticker'):td.textContent)||'';t=t.trim().toUpperCase();return t||null;}
-  if(col===1){var sp=td.querySelector('span>span');return _psNum(sp?sp.textContent:td.textContent);}
-  return _psNum(td.textContent);
-}
-function panelSortApply(tbody){
-  if(!tbody||!tbody.id)return;
-  var table=tbody.parentNode;
-  var st=PANEL_SORT[tbody.id];
-  var ths=(table&&table.tHead&&table.tHead.rows[0])?table.tHead.rows[0].cells:[];
-  for(var i=0;i<ths.length;i++){
-    var th=ths[i];
-    if(tbody.id==='body-fci'&&i>4)continue;
-    var a=th.querySelector('.ps-arrow');
-    if(!a){a=document.createElement('span');a.className='ps-arrow';th.appendChild(a);th.classList.add('ps-sortable');if(!th.title)th.title='Click para ordenar';}
-    a.textContent=(st&&st.col===i)?(st.dir>0?' ▲':' ▼'):'';
-  }
-  var rows=Array.prototype.slice.call(tbody.rows);
-  rows.forEach(function(r,i){if(r.dataset.psIdx==null)r.dataset.psIdx=i;});
-  rows.sort(function(a,b){
-    var ia=+a.dataset.psIdx,ib=+b.dataset.psIdx;
-    if(!st)return ia-ib;
-    var ka=_psKey(a.cells[st.col],st.col),kb=_psKey(b.cells[st.col],st.col);
-    if(ka==null&&kb==null)return ia-ib;
-    if(ka==null)return 1;if(kb==null)return -1;
-    var c=(typeof ka==='string'||typeof kb==='string')?String(ka).localeCompare(String(kb)):(ka-kb);
-    return (c*st.dir)||(ia-ib);
-  });
-  rows.forEach(function(r){tbody.appendChild(r);});
-}
-function panelSortClick(th){
-  var table=th.closest('table');var tbody=table&&table.tBodies[0];
-  if(!tbody||!tbody.id)return;
-  var col=th.cellIndex;
-  if(tbody.id==='body-fci'&&col>4)return;
-  var firstDir=col===0?1:-1;
-  var st=PANEL_SORT[tbody.id];
-  if(!st||st.col!==col)PANEL_SORT[tbody.id]={col:col,dir:firstDir};
-  else if(st.dir===firstDir)st.dir=-firstDir;
-  else delete PANEL_SORT[tbody.id];
-  panelSortApply(tbody);
-}
-document.addEventListener('click',function(e){
-  var th=e.target&&e.target.closest?e.target.closest('#panels-grid .panel-table thead th'):null;
-  if(th)panelSortClick(th);
-});
 
 // ─── Distribución de la cartera (RV / RF / Liquidez) vs rango objetivo del perfil (solapa Recomendaciones) ───
 var DIST_LS_KEY=(PFX+'distPerfil');
@@ -4608,33 +4548,6 @@ function pvAlertFiltrar(t){var fEl=document.getElementById('port-ticker-filter')
 var SPY_HIST=null,SPY_KEYS=null,_spyLoading=false;
 var SPY_LS_KEY=(PFX+'spyHist');
 (function(){try{var c=JSON.parse(localStorage.getItem(SPY_LS_KEY)||'null');if(c&&c.data){SPY_HIST=c.data;SPY_KEYS=Object.keys(c.data).sort();window._spyDay=c.day;}}catch(e){}})();
-async function fetchSPYHist(force){
-  var hoy=_hoyLocalISO();
-  if(_spyLoading)return;if(!force&&SPY_HIST&&window._spyDay===hoy)return;
-  _spyLoading=true;
-  var url='https://query2.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=10y';
-  var tries=[
-    function(){return fetchWithTimeout('https://api.allorigins.win/get?url='+encodeURIComponent(url),{},12000).then(function(r){return r.ok?r.json():Promise.reject('!ok');}).then(function(j){return JSON.parse(j.contents||'{}');});},
-    function(){return fetchWithTimeout('https://corsproxy.io/?url='+encodeURIComponent(url),{},12000).then(function(r){return r.ok?r.json():Promise.reject('!ok');});},
-    function(){return fetchWithTimeout('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),{},12000).then(function(r){return r.ok?r.json():Promise.reject('!ok');});}
-  ];
-  try{
-    for(var i=0;i<tries.length;i++){
-      try{
-        var j=await tries[i]();var res=j&&j.chart&&j.chart.result&&j.chart.result[0];if(!res||!res.timestamp)continue;
-        var adj=res.indicators&&res.indicators.adjclose&&res.indicators.adjclose[0]&&res.indicators.adjclose[0].adjclose;
-        var cl=adj||(res.indicators&&res.indicators.quote&&res.indicators.quote[0]&&res.indicators.quote[0].close);if(!cl)continue;
-        var data={};res.timestamp.forEach(function(t,k){if(cl[k]!=null)data[new Date(t*1000).toISOString().slice(0,10)]=Math.round(cl[k]*100)/100;});
-        if(Object.keys(data).length<200)continue;
-        SPY_HIST=data;SPY_KEYS=Object.keys(data).sort();window._spyDay=hoy;
-        try{localStorage.setItem(SPY_LS_KEY,JSON.stringify({day:hoy,data:data}));}catch(e){}
-        try{renderPortfolio();}catch(e){}
-        return;
-      }catch(e){}
-    }
-    console.warn('[SPY] no se pudo obtener el historial');
-  } finally {_spyLoading=false;}
-}
 function _spyAt(d){
   if(!SPY_KEYS||!SPY_KEYS.length)return null;
   var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -5036,13 +4949,20 @@ function _hHoy(){return _bkHoy();}
 var FERIADOS_AR=new Set(['2025-01-01','2025-03-03','2025-03-04','2025-03-24','2025-04-02','2025-04-17','2025-04-18','2025-05-01','2025-05-02','2025-06-16','2025-06-20','2025-07-09','2025-08-15','2025-10-10','2025-11-21','2025-11-24','2025-12-08','2025-12-25',
   '2026-01-01','2026-02-16','2026-02-17','2026-03-23','2026-03-24','2026-04-02','2026-04-03','2026-05-01','2026-05-25','2026-06-15','2026-07-09','2026-07-10','2026-08-17','2026-10-12','2026-11-23','2026-12-07','2026-12-08','2026-12-25']);
 function esDiaHabil(iso){var p=String(iso||'').split('-');if(p.length!==3)return true;var dw=new Date(+p[0],+p[1]-1,+p[2]).getDay();return dw!==0&&dw!==6&&!FERIADOS_AR.has(iso);}
-async function histLoad(){
-  if(_histLoaded)return HIST;
+var _histP=null;
+function histLoad(){
+  if(_histLoaded)return Promise.resolve(HIST);
+  if(!_histP)_histP=_histLoadReal().then(function(x){_histP=null;return x;},function(){_histP=null;return null;});
+  return _histP;
+}
+async function _histLoadReal(){
   try{
-    var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.historial&select=value',{headers:sbHeaders()});
-    if(!r.ok)return null;
-    var d=await r.json();if(!Array.isArray(d))return null;
-    var h=d[0]?d[0].value:null;if(typeof h==='string'){try{h=JSON.parse(h);}catch(e){h=null;}}
+    var h,_pc=await _sbCfgDePrecarga('historial');
+    if(_pc)h=_pc.v;
+    else{var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.historial&select=value',{headers:sbHeaders()});
+      if(!r.ok)return null;
+      var d=await r.json();if(!Array.isArray(d))return null;
+      h=d[0]?d[0].value:null;if(typeof h==='string'){try{h=JSON.parse(h);}catch(e){h=null;}}}
     HIST=(h&&typeof h==='object'&&Array.isArray(h.puntos))?h:{v:1,puntos:[],cierres:[]};
     if(!HIST.cierres)HIST.cierres=[];
     if(CFG.histDesdeRA)await histCargarRA();
@@ -5178,54 +5098,23 @@ function histRenderAnual(ult){
 }
 (function _histBoot(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){if(CFG.historial)histLoad().then(function(h){if(h)histRender();});}else if(n<30)_histBoot(n+1);},2000);})(0);
 
-(function initPVentaToggle(){
-  var show='0';
-  try{var s=localStorage.getItem((PFX+'showPVenta'));if(s!==null)show=s;}catch(e){}
-  function apply(){
-    var cb=document.getElementById('pventa-toggle');var grid=document.getElementById('panels-grid');
-    if(cb)cb.checked=(show==='1');
-    if(grid&&show!=='1')grid.classList.add('hide-pventa');
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
-})();
 
 // ─── Toggle columna % Tipo (oculta por defecto) ───
-(function initPTipoToggle(){
-  var show='0';
-  try{var s=localStorage.getItem((PFX+'showPTipo'));if(s!==null)show=s;}catch(e){}
-  function apply(){
-    var cb=document.getElementById('ptipo-toggle');var grid=document.getElementById('panels-grid');
-    if(cb)cb.checked=(show==='1');
-    if(grid){if(show==='1')grid.classList.remove('hide-ptipo');else grid.classList.add('hide-ptipo');}
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
-})();
 
 // ─── Toggle columna Rebalanceo (oculta por defecto) ───
-(function initRebalToggle(){
-  var show='0';
-  try{var s=localStorage.getItem((PFX+'showRebal'));if(s!==null)show=s;}catch(e){}
-  function apply(){
-    var cb=document.getElementById('rebal-toggle');var grid=document.getElementById('panels-grid');
-    if(cb)cb.checked=(show==='1');
-    if(grid){if(show==='1')grid.classList.remove('hide-rebal');else grid.classList.add('hide-rebal');}
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
-})();
 
 // ─── Toggle columna % Anual (oculta por defecto) ───
-(function initPAnualToggle(){
-  var show='0';
-  try{var s=localStorage.getItem((PFX+'showPAnual'));if(s!==null)show=s;}catch(e){}
-  function apply(){
-    var cb=document.getElementById('panual-toggle');var grid=document.getElementById('panels-grid');
-    if(cb)cb.checked=(show==='1');
-    if(grid){if(show==='1'){grid.classList.remove('hide-panual');setTimeout(function(){try{fetchSPYHist();}catch(e){}},3000);}else grid.classList.add('hide-panual');}
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
-})();
 
+var _PROX_RE=/^https:\/\/(api\.allorigins\.win|api\.codetabs\.com|corsproxy\.io)\//;
+function _proxKo(h){try{var o=JSON.parse(localStorage.getItem('prox_ko')||'{}');return o[h]&&Date.now()-o[h]<6*3600e3;}catch(e){return false;}}
+function _proxMarca(h,ko){try{var o=JSON.parse(localStorage.getItem('prox_ko')||'{}');if(ko)o[h]=Date.now();else delete o[h];localStorage.setItem('prox_ko',JSON.stringify(o));}catch(e){}}
 function fetchWithTimeout(url, opts, ms){
+  var _pm=_PROX_RE.exec(String(url));
+  if(_pm){var _h=_pm[1];if(_proxKo(_h))return Promise.reject(new Error('proxy caído: '+_h));
+    return _fetchWT(url,opts,ms).then(function(r){_proxMarca(_h,!r.ok&&r.status>=500);return r;},function(e){_proxMarca(_h,true);throw e;});}
+  return _fetchWT(url,opts,ms);
+}
+function _fetchWT(url, opts, ms){
   ms=ms||7000;
   var ctrl=new AbortController();
   var tid=setTimeout(function(){ctrl.abort();},ms);
@@ -5549,6 +5438,13 @@ function rsiColor(v){
   return 'var(--text2)';
 }
 
+async function _rsiData912(tk){
+  var cat=_phCat(getSector(tk));if(!cat)return null;
+  try{var r=await fetchWithTimeout('https://data912.com/historical/'+cat+'/'+encodeURIComponent(tk),{headers:{Accept:'application/json'}},12000);
+    if(!r.ok)return null;var a=await r.json();if(!Array.isArray(a))return null;
+    var c=a.filter(function(x){return x&&x.date&&parseFloat(x.c)>0;}).sort(function(x,y){return x.date<y.date?-1:1;}).slice(-70).map(function(x){return parseFloat(x.c);});
+    return c.length>=15?_phSplits(c.map(function(v,i){return ['',v];})).map(function(x){return x[1];}):null;}catch(e){return null;}
+}
 async function fetchRSICloses(symbol){
   var chartUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(symbol)+'?interval=1d&range=3mo';
   var tries=[
@@ -5603,12 +5499,12 @@ async function fetchAllRSI(){
     for(var i=0;i<pending.length;i++){
       var p=pending[i];
       try{
-        var closes=await fetchRSICloses(getRsiSymbol(p.ticker));
+        var closes=await _rsiData912(p.ticker);
+        if(!closes)closes=await fetchRSICloses(getRsiSymbol(p.ticker));
         var val=wilderRSI(closes,14);
-        if(val!=null) RSI_CACHE[p.ticker]={value:val,ts:Date.now()};
-      }catch(e){ }
-      if(i%5===4) renderPortfolio();
-      if(i<pending.length-1) await new Promise(function(r){setTimeout(r,600);});
+        RSI_CACHE[p.ticker]={value:val!=null?val:null,ts:Date.now()};
+      }catch(e){ RSI_CACHE[p.ticker]={value:(RSI_CACHE[p.ticker]&&RSI_CACHE[p.ticker].value)||null,ts:Date.now()}; }
+      if(i%15===14) renderPortfolio();
     }
     try{localStorage.setItem((PFX+'rsi'),JSON.stringify(RSI_CACHE));}catch(e){}
     renderPortfolio();
@@ -5618,16 +5514,6 @@ async function fetchAllRSI(){
 }
 
 // ─── Toggle columna RSI (oculta por defecto) ───
-(function initRSIToggle(){
-  var show='0';
-  try{var s=localStorage.getItem((PFX+'showRSI'));if(s!==null)show=s;}catch(e){}
-  function apply(){
-    var cb=document.getElementById('rsi-toggle');var grid=document.getElementById('panels-grid');
-    if(cb)cb.checked=(show==='1');
-    if(grid&&show!=='1')grid.classList.add('hide-rsi');
-  }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
-})();
 
 // ─── TIR de Bonos (fuente: EcoValores research, cobertura parcial) ────────
 function parseEcoValoresTIR(html){
@@ -9188,23 +9074,6 @@ document.addEventListener('keydown',function(e){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();})();
 
 // ─── Vista celular: en pantallas angostas cada posición se ve como tarjeta ───────────────────
-(function(){if(document.getElementById('mob-cards-css'))return;var st=document.createElement('style');st.id='mob-cards-css';
-  var P='#panels-grid .panel-table ';
-  st.textContent='@media (max-width:640px){'+
-    P+'thead{display:none}'+P+'table,'+P+'tbody,'+P+'tfoot{display:block;width:100%}'+
-    P+'tr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px 10px;padding:.6rem .7rem;border-bottom:1px solid var(--border)}'+
-    P+'tbody tr:last-child{border-bottom:none}'+
-    P+'td{border:none!important;padding:0!important;text-align:left!important;white-space:normal;min-width:0}'+
-    P+'td:nth-child(1){grid-column:1/3;font-size:.92rem;align-self:center}'+
-    P+'td:nth-child(2){grid-column:3;justify-self:end;text-align:right!important;align-self:center}'+
-    P+'td:nth-child(n+3)::before{display:block;font-size:.54rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono);font-weight:400;margin-bottom:1px}'+
-    P+'td:nth-child(4)::before{content:"Inversión $"}'+P+'td:nth-child(5)::before{content:"Mercado $"}'+P+'td:nth-child(6)::before{content:"PPC $"}'+
-    P+'td.col-panual::before{content:"% anual"}'+P+'td.col-pventa::before{content:"P. Venta"}'+P+'td.col-ptipo::before{content:"% tipo"}'+
-    P+'td.col-rebal::before{content:"Rebalanceo"}'+P+'td.col-rsi::before{content:"RSI"}'+P+'td.col-qty::before{content:"Cant."}'+
-    P+'td.col-rebal{grid-column:1/-1}'+P+'tfoot tr{background:var(--surface2)}'+
-    P+'td:empty{display:none}'+
-  '}';
-  document.head.appendChild(st);})();
 
 // ─── Auditoría de la tabla completa de ratios (solo GDC, que es la que se sincroniza) ─────────
 var RA_AUD={res:[],corriendo:false,hechos:0,total:0,cancel:false};
