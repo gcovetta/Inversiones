@@ -1,11 +1,29 @@
+// ─── 🩺 Registro de errores (captura desde el primer momento; se guarda en Supabase al terminar la carga) ───
+var _ERR_Q=[],_ERR_N=0;
+function _errAnotar(msg,src,ctx){
+  try{
+    msg=String(msg||'').slice(0,300);if(!msg)return;
+    if(/^(chrome|moz|safari)(-web)?-extension:/.test(String(src||'')))return;
+    if(/^Script error\.?$|Failed to fetch|NetworkError|Load failed|network error|AbortError|The user aborted|ResizeObserver loop/i.test(msg))return;
+    if(window._errGuardando)return;
+    if(++_ERR_N>25)return;
+    var pg=(document.querySelector('.page.active')||{}).id||'';
+    _ERR_Q.push({ts:Date.now(),msg:msg,src:String(src||'').replace(/^https?:\/\/[^\/]+/,'').replace(/\?[^:]*/,'').slice(0,120),ctx:String(ctx||'').slice(0,60),pag:pg.replace('page-',''),dev:/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'cel':'pc',ver:(typeof APP_VERSION!=='undefined'?APP_VERSION:null)});
+    if(typeof _errProgramar==='function')_errProgramar();
+  }catch(e){}
+}
+window.addEventListener('error',function(e){if(e&&e.message)_errAnotar(e.message,(e.filename||'')+':'+(e.lineno||'')+':'+(e.colno||''),'error');});
+window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errAnotar(r&&r.message?r.message:String(r),r&&r.stack?String(r.stack).split('\n')[1]:'','promesa');});
+(function(){var w=console.warn;console.warn=function(){try{for(var i=0;i<arguments.length;i++){var a=arguments[i];if(a instanceof Error){_errAnotar(a.message,a.stack?String(a.stack).split('\n')[1]:'',typeof arguments[0]==='string'?arguments[0]:'aviso');break;}}}catch(e){}return w.apply(console,arguments);};})();
 // ─── Ajustes para celular (sin scroll horizontal, menú compacto, todo un poco más chico) ───
 (function(){try{var st=document.createElement('style');st.id='mobile-fix-css';st.textContent="@media(max-width:680px){\n  html{font-size:14px}\n  .panels-grid{grid-template-columns:minmax(0,1fr)!important}\n  .panels-grid>*{min-width:0}\n  #panels-grid .panel-table table{min-width:0!important;width:100%!important}\n  #panels-grid .tw{overflow-x:hidden!important}\n  .main:not(.sidebar-open) .sidebar{display:none!important}\n  .main.sidebar-open .sidebar{display:flex!important;flex-direction:column!important;position:fixed!important;left:8px;right:8px;top:64px;max-height:72vh;overflow-y:auto!important;overflow-x:hidden!important;z-index:9000;border:1px solid var(--border2)!important;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.6);padding:.3rem 0!important;width:auto!important}\n  .sidebar>div:not(.nav-sec){display:none!important}\n  .main.sidebar-open .nav-item{width:100%!important;flex-direction:row!important;justify-content:flex-start!important;font-size:.85rem!important;padding:.7rem 1rem!important;gap:10px!important}\n  .nav-item>div{display:none!important}\n  #port-summary-section{gap:8px!important}\n  #port-summary-section>div{flex:1 1 100%!important;width:auto!important;min-width:0;max-width:100%}\n  #port-summary-section>div[style*=\"grid-template-columns:1fr 1fr 1fr\"]{grid-template-columns:repeat(3,minmax(0,1fr))!important}\n  #port-summary-section>div[style*=\"flex-direction:column\"][style*=\"width:155px\"]{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]{flex-wrap:nowrap!important}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]>div{flex:1 1 50%!important;min-width:0!important;padding:.3rem!important}\n  #port-summary-section>div[style*=\"flex:1;flex-wrap:wrap\"]>div>div{height:150px!important}\n  #port-summary-section .metric{padding:.5rem .6rem}\n  #top-cards-row>.card{flex:1 1 100%!important}\n  #port-watchzone-section{flex-direction:column!important}\n  #port-watchzone-section>*{flex:1 1 auto!important;width:auto!important;min-width:0!important}\n  #pos-footer-bar{position:static!important;box-shadow:none!important;padding:.35rem .6rem!important}\n  #pos-footer-bar .qty-toggle{font-size:.6rem!important}\n  #claude-version-badge{font-size:.55rem!important;padding:2px 6px!important;opacity:.75;bottom:4px!important;right:4px!important}\n}\n";(document.head||document.documentElement).appendChild(st);}catch(e){}})();
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=218, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=219, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v219 | 2026-10-13 | (1) Abre sin señal y más rápido: el service worker guarda en el equipo los archivos con versión (código, datos y librerías) y la última copia de cada página; sin conexión se ve lo último guardado. (2) 🩺 Registro de errores: los errores de la app se guardan solos en Supabase (config "errores", con versión, equipo y pantalla) y aparece un aviso ⚠️ junto a la hora de actualización para verlos. (3) Los HTML cargan portafolio.min.js (versión compacta generada con tools/minificar.js).',
   'v218 | 2026-10-13 | Carga más rápida: (1) la carga desde Supabase corre una sola vez (antes 3 veces: 68 consultas → ~25, y sin riesgo de que se pisen guardados); (2) la configuración llega en una sola consulta y movimientos/dividendos en paralelo; (3) Chart.js se baja después de mostrar la cartera; (4) tablas fijas (CCL/MEP históricos, ratios, flujos de bonos) pasan a comun/datos.js, que queda en caché entre versiones; (5) al abrir se muestra al instante la última visita guardada en el navegador mientras llegan los datos nuevos.',
   'v217 | 2026-10-12 | Más liviana al abrir: la librería de Excel (SheetJS, ~860 KB) ya no se carga al abrir el portafolio. Se baja sola al entrar a una pantalla con importación (Movimientos, Dividendos CCL, Ratios, Comparación, Venta histórica) o, como mucho, al elegir el archivo; la importación funciona igual.',
   'v216 | 2026-10-12 | Limpieza 3 (más liviana, sin cambios visibles): el cálculo del Portafolio ya no arma la tabla de la vista vieja que nadie veía (render ~20% más rápido, mismos datos), se borran 52 funciones sin uso (lista de seguimiento, toggles de columnas, PIN viejo del tracker, etc.), los comentarios del código, ~6,5 KB de CSS sin uso en cada HTML y la consulta a Supabase de la lista de seguimiento que se hacía en cada carga.',
@@ -307,6 +325,8 @@ async function authEnsureSession(){
       window._sbAccessToken=null;
     }
   }catch(e){}
+  // Sin señal (token vencido y no se puede renovar): si la sesión guardada en este equipo es la tuya, se muestra lo guardado.
+  try{if(navigator.onLine===false){for(var _i=0;_i<localStorage.length;_i++){var _k=localStorage.key(_i);if(!/^sb-.*-auth-token$/.test(_k))continue;var _s=JSON.parse(localStorage.getItem(_k)||'null');var _u=_s&&(_s.user||(_s.currentSession&&_s.currentSession.user));if(_u&&_u.email===ALLOWED_EMAIL){if(gate)gate.style.display='none';window._sinSenal=true;return true;}}}}catch(e){}
   if(gate) gate.style.display='flex';
   var box=document.getElementById('auth-user-box');
   if(box) box.style.display='none';
@@ -355,7 +375,7 @@ async function sbSetConfig(key, value){
   }catch(e){ console.warn('sbSetConfig error',key,e); return false; }
 }
 
-var _SB_CFG_PRE=['dividendos','ratios','ratios_meta','targets','rubros','ccl_override','mep_override','liquidez','vigilancia','inv_inicial','perf_target','vhist_movs','vhist_divs','vhist_aportes','dolz_extra','perfil_inversor','cartera_ideal','plan_salida','flujos_capital','papelera','sim_retiro','historial','saltos_ok','honorarios','marks','rendanual_periodos'];
+var _SB_CFG_PRE=['dividendos','ratios','ratios_meta','targets','rubros','ccl_override','mep_override','liquidez','vigilancia','inv_inicial','perf_target','vhist_movs','vhist_divs','vhist_aportes','dolz_extra','perfil_inversor','cartera_ideal','plan_salida','flujos_capital','papelera','sim_retiro','historial','saltos_ok','honorarios','marks','rendanual_periodos','errores'];
 var _sbCfgP=null,_sbCfgTs=0,_sbCfgInv={};
 function _sbCfgPrefetch(){
   _sbCfgInv={};_sbCfgTs=Date.now();
@@ -7473,6 +7493,7 @@ function trkCalcCCL(){
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();ventahistResetFecha();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     _gdcInitDone = true;
+    if(window._sinSenal||navigator.onLine===false){var _lu=document.getElementById('lupd');if(_lu)_lu.textContent='📡 Sin conexión · mostrando lo último guardado';}
     if(SB_STATUS&&SB_STATUS.ok!==false)setTimeout(function(){bkDaily();},6000);
     if(initFromSupabase._done) initFromSupabase._done();
 
@@ -10815,3 +10836,42 @@ async function pushWatchPublicar(d){
   var b=document.createElement('button');b.id='push-btn';b.className='btn-sidebar-toggle';b.style.cssText='width:auto;padding:0 8px;font-size:.85rem';b.textContent='🔕';b.onclick=pushClick;
   hr.insertBefore(b,hr.firstChild);pushBtnPintar();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();})();
+
+// ─── 🩺 Registro de errores: guardado (config 'errores', últimos 60) y aviso ⚠️ en la barra ───
+var _errTmr=null,_ERR_VISTO_K=PFX+'err_visto';
+function _errProgramar(){if(typeof _gdcInitDone==='undefined'||!_gdcInitDone||!_ERR_Q.length)return;clearTimeout(_errTmr);_errTmr=setTimeout(_errGuardar,5000);}
+async function _errGuardar(){
+  if(!_ERR_Q.length||window._errGuardando)return;window._errGuardando=true;
+  try{
+    var nuevos=_ERR_Q.splice(0,_ERR_Q.length);
+    var L=await sbGetConfig('errores');if(!Array.isArray(L))L=[];
+    nuevos.forEach(function(n){var x=L.filter(function(e){return e.msg===n.msg&&e.src===n.src;})[0];
+      if(x){x.n=(x.n||1)+1;x.ts=n.ts;x.ver=n.ver;x.pag=n.pag;x.dev=n.dev;}else{n.n=1;L.push(n);}});
+    L.sort(function(a,b){return b.ts-a.ts;});L=L.slice(0,60);
+    await sbSetConfig('errores',L);_errPintar(L);
+  }catch(e){}finally{window._errGuardando=false;}
+}
+function _errVisto(){var v=0;try{v=+localStorage.getItem(_ERR_VISTO_K)||0;}catch(e){}return v;}
+function _errPintar(L){
+  _ERR_LISTA=L||[];var nv=_ERR_LISTA.filter(function(e){return e.ts>_errVisto()&&e.ts>Date.now()-7*864e5;});
+  var b=document.getElementById('err-chip');
+  if(!nv.length){if(b)b.style.display='none';return;}
+  if(!b){var ref=document.getElementById('lupd');if(!ref||!ref.parentNode)return;b=document.createElement('button');b.id='err-chip';b.onclick=errAbrir;
+    b.style.cssText='background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.5);border-radius:999px;padding:1px 9px;font-size:.68rem;font-family:var(--mono);cursor:pointer;margin-right:6px;white-space:nowrap';
+    ref.parentNode.insertBefore(b,ref);}
+  var tot=nv.reduce(function(a,e){return a+(e.n||1);},0);
+  b.textContent='⚠️ '+tot+' error'+(tot>1?'es':'');b.title='Errores de la app en los últimos 7 días (tocá para ver)';b.style.display='';
+}
+var _ERR_LISTA=[];
+function errAbrir(){
+  var ov=document.getElementById('err-ov');if(!ov){ov=document.createElement('div');ov.id='err-ov';ov.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:6vh 12px;overflow:auto';ov.onclick=function(e){if(e.target===ov)ov.remove();};document.body.appendChild(ov);}
+  var esc=function(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+  var f=function(ts){var d=new Date(ts);return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});};
+  var vis=_errVisto();
+  var rows=_ERR_LISTA.map(function(e){return '<div style="border-top:1px solid var(--border);padding:8px 0;'+(e.ts>vis?'':'opacity:.55')+'"><div style="display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:.66rem;color:var(--text3)"><span>'+f(e.ts)+' · v'+esc(e.ver)+' · '+esc(e.dev)+(e.pag?' · '+esc(e.pag):'')+'</span><span>'+((e.n||1)>1?'×'+e.n:'')+'</span></div><div style="font-size:.8rem;margin-top:2px">'+esc(e.msg)+'</div><div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:2px">'+esc(e.ctx)+(e.src?' · '+esc(e.src):'')+'</div></div>';}).join('');
+  ov.innerHTML='<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;max-width:640px;width:100%;padding:14px 16px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><b>🩺 Errores de la app</b><span style="font-size:.7rem;color:var(--text3)">últimos '+_ERR_LISTA.length+' · se guardan solos</span><span style="margin-left:auto;display:flex;gap:6px"><button class="btn btn-sm" onclick="errVistos()">Marcar vistos</button><button class="btn btn-sm" onclick="errBorrar()">Borrar todo</button><button class="btn btn-sm" onclick="document.getElementById(\'err-ov\').remove()">✕</button></span></div>'+(rows||'<div style="padding:12px 0;color:var(--text3);font-size:.8rem">Sin errores registrados 🎉</div>')+'<div style="font-size:.66rem;color:var(--text3);margin-top:8px">Si algo se repite, pasale esta lista a Claude: dice versión, equipo, pantalla y dónde falló.</div></div>';
+}
+function errVistos(){try{localStorage.setItem(_ERR_VISTO_K,String(Date.now()));}catch(e){}_errPintar(_ERR_LISTA);var o=document.getElementById('err-ov');if(o)o.remove();}
+async function errBorrar(){if(!confirm('¿Borrar el registro de errores de esta cartera?'))return;await sbSetConfig('errores',[]);_ERR_LISTA=[];_errPintar([]);var o=document.getElementById('err-ov');if(o)o.remove();}
+(function _errBoot(n){setTimeout(function(){if(typeof _gdcInitDone==='undefined'||!_gdcInitDone){if(n<40)_errBoot(n+1);return;}
+  sbGetConfig('errores').then(function(L){_errPintar(Array.isArray(L)?L:[]);_errProgramar();}).catch(function(){});},1500);})(0);
