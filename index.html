@@ -57,7 +57,23 @@ footer{padding:.75rem 2rem;border-top:1px solid var(--border);font-family:var(--
 /* ── Carteras administradas ── */
 
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
-#portal{width:100%;max-width:none}
+#portal{width:100%;max-width:1280px;margin:0 auto}
+.nv-top{position:relative;z-index:20}.gsrch{position:relative;flex:1;min-width:240px;max-width:520px}.gsrch input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:.8rem;padding:.5rem .75rem;outline:none}.gsrch input:focus{border-color:var(--accent)}
+.gsres{position:absolute;top:40px;left:0;width:min(760px,94vw);max-height:70vh;overflow:auto;background:#0d1420;border:1px solid var(--border2);border-radius:12px;padding:10px 12px;z-index:30;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:12px}.hcard{padding:14px 16px}.hbig{font-family:var(--mono);font-size:2.2rem;font-weight:800;letter-spacing:-.02em;margin:2px 0}
+.hk{display:flex;gap:22px;flex-wrap:wrap;margin-top:12px}.hk div{display:flex;flex-direction:column}.hk small{font-size:.62rem;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}.hk b{font-family:var(--mono);font-size:1.05rem}.hk i{font-style:normal;font-family:var(--mono);font-size:.66rem}
+.inbox{padding:12px 14px}.ibh{font-weight:600;font-size:.85rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}.cnt,.tcnt{background:var(--amber);color:#1a1200;border-radius:999px;font-size:.62rem;padding:1px 7px;font-weight:800}
+.inbox .it{display:flex;gap:9px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border);font-size:.76rem;line-height:1.4}.inbox .it i{font-style:normal;width:18px;text-align:center}.inbox .it span{flex:1}.inbox .it a{color:var(--blue);text-decoration:none;font-size:.7rem;white-space:nowrap}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:6px}
+a.pc{display:block;position:relative;text-decoration:none;color:var(--text);padding:12px 14px}a.pc:hover{border-color:var(--border2)}a.pc.off{opacity:.45}
+.pch{display:flex;align-items:center;gap:6px;padding-right:56px}.pv{font-family:var(--mono);font-size:1.1rem;font-weight:800;margin-top:8px}.pr{display:flex;justify-content:space-between;gap:6px;font-family:var(--mono);font-size:.68rem;margin-top:3px}
+a.pc .fr{position:absolute;top:12px;right:12px;font-size:.6rem;font-family:var(--mono);color:var(--text3);display:flex;align-items:center;gap:4px}a.pc .fr i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.cy{margin-top:8px}.cyt{display:flex;justify-content:space-between;font-size:.6rem;font-family:var(--mono);color:var(--text2);margin-bottom:3px}.cyb{height:6px;border-radius:3px;background:var(--bg);border:1px solid var(--border);overflow:hidden}.cyb div{height:100%}
+.pchip{display:inline-block;font-size:.6rem;font-family:var(--mono);border:1px solid var(--border2);border-radius:999px;padding:1px 7px;color:var(--text2);margin-top:7px}.pchip.yel{border-color:var(--amber);color:var(--amber)}
+.tabs{display:flex;gap:2px;margin:14px 0 0;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 14px;font-size:.8rem;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px}.tab.on{color:var(--text);border-color:var(--blue);font-weight:600}
+.pane{display:none;padding-top:12px}.pane.on{display:block}.colbtn.on{border-color:var(--blue);color:var(--blue)}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.people{grid-template-columns:repeat(2,minmax(0,1fr))}.hbig{font-size:1.8rem}.gsrch{max-width:none;flex-basis:100%}}
 .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 #portal h1{font-size:1.05rem;margin:0}
 .sub{font-family:var(--mono);font-size:.68rem;color:var(--text2)}
@@ -130,7 +146,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v47</span>
+  <span class="subtitle">Carteras administradas · v48</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -141,14 +157,6 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     <div id="gate-err">Esa cuenta de Google no tiene acceso.</div>
   </div>
   <div id="main-content" style="display:none;width:100%;flex-direction:column;align-items:center">
-    <div class="section-label">📊 Portafolios</div>
-    <div class="plinks">
-      <a class="plink" href="GDC/PortafolioGDC.html"><img src="GDC/PerfilGaston.png" alt="GDC"><b>GDC</b><span class="pls" id="pl-gdc"></span></a>
-      <a class="plink" href="Omar/PortafolioOmar2.html"><img src="Omar/perfilOmar.png" alt="Omar"><b>Omar</b><span class="pls" id="pl-omar"></span></a>
-      <a class="plink" href="Hilda/PortafolioHilda.html"><img src="Hilda/PerfilHilda.png" alt="Hilda"><b>Hilda</b><span class="pls" id="pl-hilda"></span></a>
-      <a class="plink" href="Ana/PortafolioAna2.html"><img src="Ana/PerfilAna.png" alt="Ana"><b>Ana</b><span class="pls" id="pl-ana"></span></a>
-      <a class="plink" href="Juli/PortafolioJuli.html"><img src="Juli/Juli.png" alt="Juli"><b>Juli</b><span class="pls" id="pl-juli"></span></a>
-    </div>
     <div id="portal"><div class="sub">Cargando resúmenes…</div></div>
     <div class="section-label">🛠 Herramientas</div>
     <div class="plinks">
@@ -159,8 +167,8 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v47 · 08/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v47</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v48 · 13/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v48</footer>
 <script>
 var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
@@ -185,15 +193,15 @@ function agoC(ts){if(!ts)return '—';var s=(Date.now()-ts)/1000;if(s<3600)retur
 function ago(ts){if(!ts)return '—';var s=(Date.now()-ts)/1000;if(s<3600)return 'hace '+Math.max(1,Math.round(s/60))+' min';if(s<86400)return 'hace '+Math.round(s/3600)+' h';var d=Math.round(s/86400);return d===1?'ayer':'hace '+d+' días';}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
-var LOGS={},VISITAS={};
+var LOGS={},VISITAS={},ERRS={};
 async function loadOne(c,tok){
   try{
-    var r=await fetch(c.url+'/rest/v1/config?key=in.(resumen_familia,push_log)&select=key,value',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
+    var r=await fetch(c.url+'/rest/v1/config?key=in.(resumen_familia,push_log,errores)&select=key,value',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
     if(!r.ok)return {err:'HTTP '+r.status};
     var d=await r.json();if(!d||!d.length)return {err:'sin resumen'};
     var pv=function(x){var v=x.value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){}}return v;};
     var row=d.filter(function(x){return x.key==='resumen_familia';})[0],lg=d.filter(function(x){return x.key==='push_log';})[0];
-    var v=row?pv(row):null;LOGS[c.id]=lg?pv(lg):null;
+    var v=row?pv(row):null;LOGS[c.id]=lg?pv(lg):null;var er=d.filter(function(x){return x.key==='errores';})[0];ERRS[c.id]=er?pv(er):null;
     try{var rv=await fetch(c.url+'/rest/v1/vista_visitas?select=ts,disp&order=ts.desc&limit=200',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
       VISITAS[c.id]=rv.ok?await rv.json():null;}catch(e){VISITAS[c.id]=null;}
     if(!v||!v.carteras)return {err:'sin resumen'};
@@ -205,7 +213,7 @@ async function loadOne(c,tok){
 function agg(doc,solo,principal){
   if(principal===undefined)principal=true;
   var ks=Object.keys(doc.carteras).filter(function(k){return !solo||solo.indexOf(k)>=0;});
-  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,apn:principal?(+doc.aporNeto||0):0,rp:principal?(doc.rendPer||null):null,ver:doc.appVersion||null,sist:principal?(doc.sist||null):null,b100:principal?(doc.b100||null):null,b100ref:doc.b100ref||null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],carteras:ks};
+  var o={rend:(principal&&doc.rend!=null?doc.rend:null),val:0,cost:0,sect:{},dolz:0,pos:{},ts:doc.ts,ccl:doc.ccl,pi:doc.periodoInicio||null,inv:principal?(doc.invInicial||null):null,hon:principal?(doc.honorarios||null):null,cm:principal?(doc.cobradosMes||null):null,ct:principal?(doc.cobradosTipo||null):null,sal:principal?(doc.salud||null):null,apn:principal?(+doc.aporNeto||0):0,rp:principal?(doc.rendPer||null):null,ver:doc.appVersion||null,sist:principal?(doc.sist||null):null,b100:principal?(doc.b100||null):null,b100ref:doc.b100ref||null,liq:principal?((doc.liq&&doc.liq.totalUSD)||0):0,liqUSD:principal?((doc.liq&&doc.liq.usd)||0):0,cobros:principal?(doc.cobros||[]):[],cob12:principal?(doc.cobros12||null):null,carteras:ks};
   if(solo&&ks.length===1&&doc.carteras[ks[0]].ts)o.ts=doc.carteras[ks[0]].ts;
   ks.forEach(function(cn){var c=doc.carteras[cn];
     o.val+=c.totalVal||0;o.cost+=c.totalCost||0;
@@ -308,60 +316,49 @@ function render(){
   var gan=F.val-F.cost;
   var cobs=Object.values(F.cob).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:0;});
   var cU=cobs.reduce(function(a,x){return a+x.usd;},0),cA=cobs.reduce(function(a,x){return a+x.ars;},0);
-  var h='<div class="top"><div class="chips">'+chips+'</div><button class="colbtn" onclick="privToggle()" title="'+(PRIV?'Mostrar los montos':'Ocultar los montos (para mostrar la pantalla)')+'" style="'+(PRIV?'background:var(--amber);color:#1a1300;border-color:var(--amber)':'')+'">'+(PRIV?'🙈 Montos ocultos':'👁 Ocultar montos')+'</button><button class="colbtn" onclick="colTodos(true)" title="Colapsar todos los cuadros">▸ Colapsar todo</button><button class="colbtn" onclick="colTodos(false)" title="Expandir todos los cuadros">▾ Expandir todo</button></div>';
-  h+=_bkBar;
-  h+='<div class="kpis">'+
-    '<div class="k"><div class="kl">Total administrado (USD)</div><div class="kv">'+n0(F.total+EXTRA)+'</div><div class="ks">'+(ccl?'≈ $'+n0((F.total+EXTRA)*ccl)+' al CCL':'')+(EXTRA?'<br>incl. '+sv.map(function(c){return esc(c.nombre)+' '+k(DATA[c.id].o.total);}).join(' · '):'')+'</div></div>'+
-    '<div class="k"><div class="kl">Cobros próximos 30 días</div><div class="kv">USD '+n0(cU)+'</div><div class="ks">'+(cA?'+ ARS '+n0(cA)+' · ':'')+cobs.length+' pago'+(cobs.length!==1?'s':'')+'</div></div>'+
-    (function(){var H=0,hay=false;VIEW.forEach(function(c){var d=DATA[c.id];if(!c.honorario||!d||!d.o||OFF[c.id])return;var x=honorario(c,d.o);if(x!=null){H+=x;hay=true;}});
-      // honorarios ya cobrados de períodos anteriores (CFG.honCobrados {año: USD})
-      var cob=0,det=[];CFG.forEach(function(c){var hc=honCobrados(c);Object.keys(hc).sort().forEach(function(y){cob+=hc[y];det.push(esc(c.nombre)+' '+y+': '+n0(hc[y]));});});
-      return hay?'<div class="k"><div class="kl">Tus honorarios hoy</div><div class="kv grn">USD '+n0(H)+'</div><div class="ks">'+
-        (function(){var L=[],T=0;VIEW.forEach(function(c){var d=DATA[c.id];if(!c.honorario||!d||!d.o||OFF[c.id])return;var pr=honProy(c,d.o);if(!pr)return;
-          if(pr.pronto)L.push(esc(c.nombre)+': muy pronto ('+_fd(pr.fin)+')');else{T+=pr.monto;L.push(esc(c.nombre)+' ≈ USD '+n0(pr.monto)+' ('+_fd(pr.fin)+')');}});
-          return L.length?'<span title="Si cada cartera sigue ganando al mismo ritmo que en lo que va del período, proporcional a los días que faltan. Es una estimación, no una promesa.">Proyección al cierre: <b>USD '+n0(T)+'</b> ('+L.join(' · ')+')</span>':'';})()+
-        '</div></div>':'';})()+
-    '<div class="k"><div class="kl">Liquidez total</div><div class="kv">USD '+n0(F.liq)+'</div><div class="ks">'+(F.total>0?n1(F.liq/F.total*100)+'% del total':'')+'</div></div></div>';
-  h+=chequeoCard();
-  h+=busqCard();
-  h+=pvCard();
-  // por persona
-  h+='<div class="grid"><div class="card"><div class="ch">Por persona</div><div class="cb tw"><table id="pp-table"><thead><tr><th>Portafolio</th><th>USD</th><th title="Rendimiento del período en curso (el del Resumen de cada portafolio) y, debajo, los períodos anteriores">Rend.</th><th title="Lo que ganó desde que empezó a invertir con vos: todos los períodos encadenados, incluido el actual (como el Acumulado de Rendimiento por período). Con un solo período, —.">Acumulado</th><th title="Tiempo que falta para el próximo corte anual (cierre del período)">Cierre de ciclo</th><th title="Tu honorario: 20% de (valor actual − inversión inicial del período). Sin ganancia, 0">Honorario</th><th title="Hace cuánto se actualizó el resumen (m = minutos, h = horas, d = días)">Act.</th></tr></thead><tbody>'+
-    on.slice().sort(function(a,b){return DATA[b.id].o.total-DATA[a.id].o.total;}).map(function(c){var o=DATA[c.id].o;var d=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);var old=Date.now()-o.ts>7*86400000;
-      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a>'+(o.carteras.length>1&&!c.src?' <span class="mut">('+o.carteras.length+' carteras)</span>':'')+'</td><td>'+n0(o.total)+'</td>'+rendTd(o,d)+promTd(c,o,d)+cicloTd(o)+honTd(c,o)+'<td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'" style="white-space:nowrap">'+agoC(o.ts)+'</td></tr>';}).join('')+
-    sv.map(function(c){var o=DATA[c.id].o;var old=Date.now()-o.ts>7*86400000;
-      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a></td><td>'+n0(o.total)+'</td>'+salidaTd(c,o)+'<td class="mut">—</td><td class="mut">—</td><td class="mut">—</td><td class="'+(old?'yel':'mut')+'" title="'+new Date(o.ts).toLocaleString('es-AR')+'" style="white-space:nowrap">'+agoC(o.ts)+'</td></tr>';}).join('')+
-    '</tbody></table></div></div>';
-  // distribucion familia
-  h+='<div class="card"><div class="ch">Distribución total</div><div class="cb">'+distBlocks(F,false)+'</div></div>';
-  // por persona distribucion
-  h+='<div class="card full"><div class="ch">Distribución por portafolio</div><div class="cb"><div class="pp" style="margin-top:0">'+
-    on.map(function(c){var o=DATA[c.id].o;return '<div class="pbox"><h4>'+av(c)+''+esc(c.nombre)+' <span class="mut" style="font-family:var(--mono);font-size:.62rem;font-weight:400;margin-left:auto">USD '+n0(o.total)+'</span></h4>'+distBlocks(o,true)+'</div>';}).join('')+
-    '</div></div></div>';
-  h+='</div>'; // cierra la grilla de arriba
-  // Mayores posiciones y Próximos cobros van al final de la página
-  var tail='<div class="grid" style="margin-top:12px">';
-  // mayores posiciones
-  var top=Object.values(F.pos).sort(function(a,b){return b.v-a.v;}).slice(0,20);
-  tail+='<div class="card"><div class="ch">Mayores posiciones <span class="sub">click = detalle</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th>USD</th><th>% del total</th><th>Quién la tiene</th></tr></thead><tbody>'+
-    top.map(function(x){var pf=x.v/F.total*100;var col=pf>3?'red':pf>2?'yel':'';
+  // ── Armado v48 ──
+  var dia=function(o){var g=0,b=0;Object.values(o.pos).forEach(function(p){if(p.ch!=null&&isFinite(p.ch)&&p.v>0){var b0=p.v/(1+p.ch/100);g+=p.v-b0;b+=b0;}});return {g:g,b:b};};
+  var FD=(function(){var g=0,b=0;on.forEach(function(c){var x=dia(DATA[c.id].o);g+=x.g;b+=x.b;});return {g:g,p:b>0?g/b*100:null};})();
+  var HON=0,HONP=0,hayH=false;VIEW.forEach(function(c){var d=DATA[c.id];if(!c.honorario||!d||!d.o||OFF[c.id])return;var x=honorario(c,d.o);if(x!=null){HON+=x;hayH=true;}var pr=honProy(c,d.o);if(pr&&!pr.pronto)HONP+=pr.monto;});
+  var cls=function(v){return v==null?'mut':v>=0?'grn':'red';};
+  var TOT=F.total+EXTRA;
+  var h='<div class="top nv-top"><div class="gsrch"><input id="busq" type="search" autocomplete="off" spellcheck="false" placeholder="🔎 Buscar ticker en todas las carteras  ( / )" value="'+esc(BQ)+'" oninput="busqSet(this.value)" onfocus="busqAbrir(true)"><div id="busq-res" class="gsres"'+(BQ?'':' style="display:none"')+'>'+busqRes()+'</div></div>'+
+    '<div class="chips">'+chips+'</div>'+
+    '<button class="colbtn" onclick="privToggle()" title="'+(PRIV?'Mostrar los montos':'Ocultar los montos (para mostrar la pantalla)')+'" style="'+(PRIV?'background:var(--amber);color:#1a1300;border-color:var(--amber)':'')+'">'+(PRIV?'🙈':'👁')+'</button>'+
+    '<button class="colbtn" onclick="bkAll()" id="bk-all-btn" title="Descargar backup de todas las carteras">💾</button></div>';
+  h+='<div class="hero"><div class="card hcard"><div class="kl">Total administrado (USD)</div><div class="hbig">'+n0(TOT)+'</div>'+
+    '<div class="ks">'+(ccl?'≈ $'+n0(TOT*ccl)+' al CCL':'')+(EXTRA?' · incl. '+sv.map(function(c){return esc(c.nombre)+' '+k(DATA[c.id].o.total);}).join(' · '):'')+'</div>'+
+    '<div class="hk">'+
+      '<div><small>Hoy</small><b class="'+cls(FD.p)+'">'+(FD.p==null?'—':pct(FD.p))+'</b><i class="'+cls(FD.g)+'">'+(FD.p==null?'':(FD.g>=0?'+':'−')+'USD '+n0(Math.abs(FD.g)))+'</i></div>'+
+      '<div><small>Cobros 30 días</small><b>USD '+n0(cU)+'</b><i class="mut">'+(cA?'+ ARS '+k(cA)+' · ':'')+cobs.length+' pago'+(cobs.length!==1?'s':'')+'</i></div>'+
+      (hayH?'<div><small>Tus honorarios hoy</small><b class="grn">USD '+n0(HON)+'</b><i class="mut" title="Si cada cartera sigue ganando al mismo ritmo, proporcional a los días que faltan">'+(HONP?'proy. al cierre USD '+n0(HONP):'')+'</i></div>':'')+
+      '<div><small>Liquidez</small><b>USD '+n0(F.liq)+'</b><i class="mut">'+(F.total>0?n1(F.liq/F.total*100)+'% del total':'')+'</i></div>'+
+    '</div></div>'+bandeja(on,cobs,_bkDias)+'</div>';
+  h+='<div class="people">'+VIEW.map(function(c){return personaCard(c,TOT);}).join('')+'</div>';
+  var top20=Object.values(F.pos).sort(function(a,b){return b.v-a.v;}).slice(0,20);
+  var mayores='<div class="card"><div class="ch">Mayores posiciones <span class="sub">click = detalle</span></div><div class="cb tw"><table><thead><tr><th>Ticker</th><th>USD</th><th>% del total</th><th>Quién la tiene</th></tr></thead><tbody>'+
+    top20.map(function(x){var pf=x.v/F.total*100;var col=pf>3?'red':pf>2?'yel':'';
       var r='<tr class="clk" onclick="toggleT(\''+esc(x.t)+'\')"><td><b>'+esc(x.t)+'</b> <span class="mut">'+(SECT[x.s]?SECT[x.s][0]:'')+'</span></td><td>'+n0(x.v)+'</td><td class="'+col+'">'+n1(pf)+'%</td><td style="text-align:left;white-space:normal">'+x.by.sort(function(a,b){return b.p.v-a.p.v;}).map(function(b){return esc(b.c.nombre)+' '+k(b.p.v);}).join(' · ')+'</td></tr>';
       if(OPEN[x.t])r+=x.by.map(function(b){var ppc=b.p.q>0?b.p.c/b.p.q:null;return '<tr class="det"><td>&nbsp;&nbsp;'+esc(b.c.nombre)+'</td><td>'+n0(b.p.v)+'</td><td>cant. '+b.p.q.toLocaleString('es-AR')+'</td><td style="text-align:left">'+(ppc?'PPC USD '+ppc.toLocaleString('es-AR',{maximumFractionDigits:2})+' · ':'')+'Δ '+(b.p.pnl!=null?pct(b.p.pnl):'—')+(b.p.an!=null?' · '+pct(b.p.an)+' anual':'')+'</td></tr>';}).join('');
       return r;}).join('')+'</tbody></table></div></div>';
-  // cobros
-  tail+='<div class="card"><div class="ch">Próximos cobros de todos <span class="sub">30 días · bonos/ON con flujo cargado</span></div><div class="cb tw">'+(cobs.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th>Quién</th><th>Monto</th></tr></thead><tbody>'+
-    cobs.map(function(x){return '<tr><td>'+x.f.split('-').reverse().slice(0,2).join('/')+'</td><td><b>'+esc(x.t)+'</b></td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en los próximos 30 días.</div>')+'</div></div></div>';
-  h+=ingresosCard();
-  h+=cmpCard();
-  h+=mapaCard();
-  h+=moversCard();
-  h+=sistemaCard();
-  h+=tail;
-  h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). "Actualizado" en amarillo = más de 7 días sin abrir ese portafolio. Los chips de arriba incluyen/excluyen a cada uno.</div>';
+  var porPersona='<div class="card"><div class="ch">Por persona</div><div class="cb tw"><table id="pp-table"><thead><tr><th>Portafolio</th><th>USD</th><th title="Rendimiento del período en curso y, debajo, los anteriores">Rend.</th><th title="Todos los períodos encadenados, incluido el actual">Acumulado</th><th title="Tiempo que falta para el próximo corte anual">Cierre de ciclo</th><th title="Tu honorario: 20% de (valor actual − inversión inicial del período)">Honorario</th><th>Act.</th></tr></thead><tbody>'+
+    on.slice().sort(function(a,b){return DATA[b.id].o.total-DATA[a.id].o.total;}).map(function(c){var o=DATA[c.id].o;var d=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);var old=Date.now()-o.ts>7*86400000;
+      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a>'+(o.carteras.length>1&&!c.src?' <span class="mut">('+o.carteras.length+' carteras)</span>':'')+'</td><td>'+n0(o.total)+'</td>'+rendTd(o,d)+promTd(c,o,d)+cicloTd(o)+honTd(c,o)+'<td class="'+(old?'yel':'mut')+'" style="white-space:nowrap">'+agoC(o.ts)+'</td></tr>';}).join('')+
+    sv.map(function(c){var o=DATA[c.id].o;var old=Date.now()-o.ts>7*86400000;
+      return '<tr><td><a href="'+c.link+'">'+av(c)+'<b>'+esc(c.nombre)+'</b></a></td><td>'+n0(o.total)+'</td>'+salidaTd(c,o)+'<td class="mut">—</td><td class="mut">—</td><td class="mut">—</td><td class="'+(old?'yel':'mut')+'" style="white-space:nowrap">'+agoC(o.ts)+'</td></tr>';}).join('')+
+    '</tbody></table></div></div>';
+  var dist='<div class="grid"><div class="card"><div class="ch">Distribución total</div><div class="cb">'+distBlocks(F,false)+'</div></div>'+
+    '<div class="card full"><div class="ch">Distribución por portafolio</div><div class="cb"><div class="pp" style="margin-top:0">'+
+    on.map(function(c){var o=DATA[c.id].o;return '<div class="pbox"><h4>'+av(c)+''+esc(c.nombre)+' <span class="mut" style="font-family:var(--mono);font-size:.62rem;font-weight:400;margin-left:auto">USD '+n0(o.total)+'</span></h4>'+distBlocks(o,true)+'</div>';}).join('')+'</div></div></div></div>';
+  var nSis=0;try{_chqItems().L.forEach(function(x){nSis+=x.P.length;});}catch(e){}
+  var TABS=[['hoy','🟩 Hoy'],['dist','Distribución'],['ing','💰 Ingresos'],['rend','📈 Rendimiento'],['pos','Posiciones'],['cob','📅 Cobros'],['sis','🛠 Sistema'+(nSis?' <span class="tcnt">'+nSis+'</span>':'')]];
+  var PANES={hoy:mapaCard()+moversCard(),dist:dist,ing:ingresosCard(),rend:porPersona+cmpCard(),pos:pvCard()+mayores,cob:cobrosPane(on),sis:chequeoCard()+sistemaCard()};
+  if(!PANES[TAB])TAB='hoy';
+  h+='<div class="tabs">'+TABS.map(function(t){return '<div class="tab'+(t[0]===TAB?' on':'')+'" data-t="'+t[0]+'" onclick="tabSel(\''+t[0]+'\')">'+t[1]+'</div>';}).join('')+'</div>';
+  h+=TABS.map(function(t){return '<div class="pane'+(t[0]===TAB?' on':'')+'" id="pane-'+t[0]+'">'+PANES[t[0]]+'</div>';}).join('');
+  h+='<div class="note">Cada portafolio guarda su resumen cuando se abre con cotizaciones cargadas (como mucho cada 3 minutos). Los chips de arriba incluyen/excluyen a cada uno.</div>';
   app.innerHTML=h;
-  try{colSetup();}catch(e){console.warn('colSetup',e);}
-  try{cmpDraw();}catch(e){console.warn('cmp',e);}
-  try{mapaDraw();}catch(e){console.warn('mapa',e);}
+  tabDibujar();
   CFG.forEach(function(c){var el=document.getElementById('pl-'+c.id),d=DATA[c.id];if(!el)return;var a0=el.closest('a');if(a0){a0.style.borderColor=ccol(c);var im=a0.querySelector('img');if(im)im.style.borderColor=ccol(c);}if(!d||!d.o){el.textContent='';return;}var o=d.o,r=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null);
     var hn=honorario(c,o);el.innerHTML='USD '+k(o.total)+(r!=null?' · <span class="'+(r>=0?'grn':'red')+'">'+pct(r)+'</span>':'')+(hn!=null?' · <span title="Tu honorario (20% de la ganancia del período)">💼 '+(hn>0?k(hn):'0')+'</span>':'');});
 }
@@ -385,6 +382,60 @@ async function bkAll(){
   if(err.length)alert('Backup '+(n?'parcial':'fallido')+'. Sin datos de: '+err.join(', ')+'\nEntrá una vez a esos portafolios para iniciar sesión y volvé a intentar.');
   render();
 }
+// ── v48: pestañas, bandeja, tarjetas por persona, cobros por rango, buscador global ──
+var TAB=(function(){try{return localStorage.getItem('idx_tab')||'hoy';}catch(e){return 'hoy';}})();
+function tabSel(t){TAB=t;try{localStorage.setItem('idx_tab',t);}catch(e){}
+  document.querySelectorAll('#portal .tab').forEach(function(x){x.classList.toggle('on',x.dataset.t===t);});
+  document.querySelectorAll('#portal .pane').forEach(function(x){x.classList.toggle('on',x.id==='pane-'+t);});tabDibujar();}
+function tabDibujar(){if(TAB==='rend'){try{cmpDraw();}catch(e){console.warn('cmp',e);}}if(TAB==='hoy'){try{mapaDraw();}catch(e){console.warn('mapa',e);}}}
+function busqAbrir(v){var r=document.getElementById('busq-res');if(!r)return;r.style.display=(v&&BQ)?'block':'none';}
+document.addEventListener('click',function(e){if(!e.target.closest||e.target.closest('.gsrch'))return;var r=document.getElementById('busq-res');if(r)r.style.display='none';});
+function _ciclo(c,o){var pi=(o&&o.pi)||PI_DEF[c.id];if(!pi)return null;var hoy=new Date();hoy.setHours(0,0,0,0);var p=pi.split('-');
+  var fin=new Date(hoy.getFullYear(),parseInt(p[0],10)-1,parseInt(p[1],10));if(fin<=hoy)fin.setFullYear(fin.getFullYear()+1);
+  var ini=new Date(fin);ini.setFullYear(ini.getFullYear()-1);var tot=(fin-ini)/864e5,falta=Math.round((fin-hoy)/864e5);
+  return {fin:fin,falta:falta,pct:Math.max(0,Math.min(100,(tot-falta)/tot*100)),txt:falta<31?falta+' día'+(falta!==1?'s':''):n1(falta/30.44).replace(/,0$/,'')+' meses'};}
+function personaCard(c,TOT){var d=DATA[c.id];
+  if(!d||!d.o)return '<a class="card pc" href="'+c.link+'"><div class="pch">'+av(c)+'<b>'+esc(c.nombre)+'</b></div><div class="sub red" style="margin-top:8px">⚠ '+esc((d&&d.err)||'sin datos')+'</div><div class="sub">Abrí la cartera para que guarde su resumen.</div></a>';
+  var o=d.o,off=!!OFF[c.id],dd=Math.floor((Date.now()-o.ts)/864e5);
+  var x=null;if(!c.soloValor){var g=0,b=0;Object.values(o.pos).forEach(function(p){if(p.ch!=null&&isFinite(p.ch)&&p.v>0){var b0=p.v/(1+p.ch/100);g+=p.v-b0;b+=b0;}});x=b>0?g/b*100:null;}
+  var r=(o.rend!=null)?o.rend:(o.cost>0?(o.val/o.cost-1)*100:null),cy=c.soloValor?null:_ciclo(c,o);
+  var h='<a class="card pc'+(off?' off':'')+'" href="'+c.link+'"><span class="fr"><i style="background:'+(dd>=7?'var(--amber)':'var(--accent)')+'"></i>'+agoC(o.ts)+'</span><div class="pch">'+av(c)+'<b>'+esc(c.nombre)+'</b></div>'+
+    '<div class="pv">USD '+n0(o.total)+'</div>';
+  if(c.soloValor){var sx=c.salida;h+='<div class="pr"><span class="mut">de salida</span>'+(sx&&sx.inicial>0?'<span class="mut">retirado '+k(sx.retirado||0)+' de '+k(sx.inicial)+'</span>':'')+'</div>';}
+  else h+='<div class="pr"><span class="'+(x==null?'mut':x>=0?'grn':'red')+'">hoy '+(x==null?'—':pct(x))+'</span><span class="'+(r==null?'mut':r>=0?'grn':'red')+'">período '+(r==null?'—':pct(r))+'</span></div>';
+  if(cy)h+='<div class="cy" title="Ciclo anual: cierra el '+_fd(cy.fin)+'"><div class="cyt"><span>cierre '+_fd(cy.fin).slice(0,5)+'</span><span class="'+(cy.falta<=30?'yel':'')+'">faltan '+cy.txt.replace(' meses',' m')+'</span></div><div class="cyb"><div style="width:'+cy.pct.toFixed(0)+'%;background:'+(cy.falta<=30?'var(--amber)':'var(--blue)')+'"></div></div></div>';
+  if(c.honorario){var hn=honorario(c,o),pr=honProy(c,o);h+='<span class="pchip'+(cy&&cy.falta<=30?' yel':'')+'">💼 hoy USD '+(hn>0?n0(hn):'0')+(pr&&!pr.pronto?' · proy. USD '+n0(pr.monto):'')+'</span>';}
+  else if(!c.soloValor)h+='<span class="pchip">'+(TOT>0?n1(o.total/TOT*100)+'% del total':'')+(o.carteras.length>1?' · '+o.carteras.length+' carteras':'')+'</span>';
+  return h+'</a>';}
+function ibMas(b){var m=document.getElementById('ib-mas');if(!m)return;var v=m.style.display==='none';m.style.display=v?'block':'none';b.textContent=v?'Ver menos':'Ver '+m.children.length+' más';}
+function bandeja(on,cobs,bkDias){var L=[];
+  VIEW.forEach(function(c){var d=DATA[c.id];if(!d||!d.o||OFF[c.id])return;Object.keys(d.o.pos).forEach(function(t){var p=d.o.pos[t];if(p.up!=null&&p.up<=0)L.push({n:2.5,i:'🎯',t:'<b>'+esc(t)+'</b> ('+esc(c.nombre)+') llegó a su precio de venta',a:'<a href="'+c.link+'">Ver →</a>'});});});
+  try{_chqItems().L.forEach(function(x){x.P.forEach(function(p){L.push({n:p.n,i:p.n>=3?'🔴':p.n>=2?'🟡':'🔵',t:'<b>'+esc(x.c.nombre)+'</b>: '+esc(p.t),a:'<a href="'+x.c.link+'">Abrir →</a>'});});});}catch(e){}
+  VIEW.forEach(function(c){var E=ERRS[c.id];if(!Array.isArray(E)||c.src)return;var n=E.filter(function(e){return e.ts>Date.now()-7*864e5;}).reduce(function(a,e){return a+(e.n||1);},0);
+    if(n)L.push({n:2,i:'🩺',t:n+' error'+(n>1?'es':'')+' en <b>'+esc(c.nombre)+'</b> en los últimos 7 días',a:'<a href="'+c.link+'">Ver →</a>'});});
+  var lim7=new Date(Date.now()+7*864e5).toISOString().slice(0,10);
+  cobs.filter(function(x){return x.f<=lim7;}).forEach(function(x){L.push({n:1,i:'💵',t:'Cobro <b>'+esc(x.t)+'</b> · '+(x.usd?'USD '+n0(x.usd):'')+(x.usd&&x.ars?' + ':'')+(x.ars?'ARS '+n0(x.ars):'')+' · '+x.who.map(esc).join(', '),a:'<span class="mut">'+x.f.split('-').reverse().slice(0,2).join('/')+'</span>'});});
+  if(bkDias===null||bkDias>7)L.push({n:1,i:'💾',t:bkDias===null?'Nunca bajaste un backup completo a tu compu':'Último backup completo hace '+bkDias+' días',a:'<a href="#" onclick="bkAll();return false">Bajar →</a>'});
+  L.sort(function(a,b){return b.n-a.n;});
+  var it=function(x){return '<div class="it"><i>'+x.i+'</i><span>'+x.t+'</span>'+x.a+'</div>';};
+  return '<div class="card inbox"><div class="ibh">📥 Para mirar hoy '+(L.length?'<span class="cnt">'+L.length+'</span>':'')+'</div>'+
+    (L.length?L.slice(0,6).map(it).join('')+(L.length>6?'<div id="ib-mas" style="display:none">'+L.slice(6).map(it).join('')+'</div><button class="colbtn" style="margin-top:6px" onclick="ibMas(this)">Ver '+(L.length-6)+' más</button>':''):'<div class="sub grn" style="padding:10px 0">Todo en orden ✓</div>')+'</div>';}
+var COB_R=(function(){try{return +localStorage.getItem('idx_cobr')||90;}catch(e){return 90;}})();
+function cobR(d){COB_R=d;try{localStorage.setItem('idx_cobr',String(d));}catch(e){}var el=document.getElementById('pane-cob');if(el){var on=VIEW.filter(function(c){return !OFF[c.id]&&DATA[c.id]&&DATA[c.id].o&&!c.soloValor;});el.innerHTML=cobrosPane(on);}}
+function cobrosPane(on){var lim=new Date(Date.now()+COB_R*864e5).toISOString().slice(0,10),M={},P={},falta=[];
+  on.forEach(function(c){var o=DATA[c.id].o,L=o.cob12;if(!L){L=o.cobros||[];if(COB_R>30)falta.push(c.nombre);}
+    L.forEach(function(cb){if(cb.f>lim)return;var key=cb.f+'|'+cb.t,x=M[key]||(M[key]={f:cb.f,t:cb.t,who:[],usd:0,ars:0,aU:0,aA:0});if(x.who.indexOf(c.nombre)<0)x.who.push(c.nombre);
+      var pp=P[c.id]||(P[c.id]={c:c,usd:0,ars:0});if(cb.m==='USD'){x.usd+=cb.x;x.aU+=cb.a||0;pp.usd+=cb.x;}else{x.ars+=cb.x;x.aA+=cb.a||0;pp.ars+=cb.x;}});});
+  var L=Object.values(M).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:0;});
+  var tU=0,tA=0,kU=0;L.forEach(function(x){tU+=x.usd;tA+=x.ars;kU+=x.aU;});
+  var mon=function(u,a){return ((u?'USD '+n0(u):'')+(u&&a?' + ':'')+(a?'ARS '+n0(a):''))||'—';};
+  var btn=function(d,l){return '<button class="colbtn'+(COB_R===d?' on':'')+'" onclick="cobR('+d+')">'+l+'</button>';};
+  return '<div class="grid"><div class="card"><div class="ch" style="display:flex;align-items:center;gap:6px">Próximos cobros de todos <span style="margin-left:auto;display:flex;gap:4px">'+btn(30,'30 d')+btn(90,'90 d')+btn(365,'12 m')+'</span></div><div class="cb tw">'+
+    (L.length?'<table><thead><tr><th>Fecha</th><th>Ticker</th><th style="text-align:left">Quién</th><th>Monto</th></tr></thead><tbody>'+L.map(function(x){var cap=(x.aU||x.aA),tipo=cap?(((x.aU>=x.usd-0.01)&&(x.aA>=x.ars-0.01))?'<span class="yel">capital</span>':'<span class="mut">renta + amort.</span>'):'<span class="mut">renta</span>';
+      var p=x.f.split('-');return '<tr><td>'+p[2]+'/'+p[1]+(COB_R>300?'/'+p[0].slice(2):'')+'</td><td style="text-align:left"><b>'+esc(x.t)+'</b> '+tipo+'</td><td style="text-align:left">'+x.who.map(esc).join(' · ')+'</td><td>'+mon(x.usd,x.ars)+'</td></tr>';}).join('')+'</tbody></table>':'<div class="sub">Sin cobros en el período.</div>')+
+    (falta.length?'<div class="sub" style="margin-top:6px">'+falta.map(esc).join(', ')+': por ahora solo los próximos 30 días (se completa al abrir esa cartera con la versión nueva).</div>':'')+'</div></div>'+
+    '<div class="card"><div class="ch">Totales · '+(COB_R===365?'12 meses':COB_R+' días')+'</div><div class="cb tw"><table><tbody>'+Object.values(P).map(function(x){return '<tr><td style="text-align:left">'+av(x.c)+esc(x.c.nombre)+'</td><td>'+mon(x.usd,x.ars)+'</td></tr>';}).join('')+
+    '<tr><td style="text-align:left"><b>Todos</b></td><td><b>'+mon(tU,tA)+'</b></td></tr></tbody></table>'+(kU>0?'<div class="sub" style="margin-top:8px">De eso, USD '+n0(kU)+' es devolución de capital (vencimientos y amortizaciones): plata para reinvertir.</div>':'')+'</div></div></div>';}
 function toggleP(id){OFF[id]=!OFF[id];try{localStorage.setItem('fam_off',JSON.stringify(OFF));}catch(e){}render();}
 // ── 🎯 Posiciones que alcanzaron su P. Venta (y las que están a menos de 3%) en todas las carteras ──
 var PV_MAS=false;
@@ -442,11 +493,14 @@ function metaBox(tot,tR,g){
 }
 // ── 📊 Comparar carteras (base 100) ──
 var CMP={r:'anio',off:{},ch:null};
+// Cambio de ratio del Cedear SPY (29/05/2026, x0,335): un salto de un dia mayor a x1,8 o menor a x0,55 se toma como cambio de unidad
+function _splitAdj(ser){if(!ser||ser.length<2)return ser;var o=ser.map(function(x){return [x[0],x[1]];});
+  for(var i=o.length-1;i>0;i--){var r=o[i][1]/o[i-1][1];if(r>1.8||r<0.55){for(var j=0;j<i;j++)o[j][1]*=r;}}return o;}
 function _cmpSeries(){
   var L=[];
   VIEW.filter(function(c){return !c.src;}).forEach(function(c){var d=DATA[c.id];if(!d||!d.o||!d.o.b100||d.o.b100.length<2)return;L.push({k:c.id,n:c.nombre,col:ccol(c),s:d.o.b100});});
   var ref=null;VIEW.forEach(function(c){var d=DATA[c.id];if(d&&d.o&&d.o.b100ref&&d.o.b100ref.spx)ref=d.o.b100ref.spx;});
-  if(ref&&ref.length)L.push({k:'spx',n:'S&P 500',col:'#94a3b8',s:ref,ref:true});
+  if(ref&&ref.length)L.push({k:'spx',n:'S&P 500',col:'#94a3b8',s:_splitAdj(ref),ref:true});
   return L;
 }
 function _cmpDesde(L){
@@ -535,7 +589,7 @@ function ingresosCard(){
     '<div class="sub" style="margin-top:4px">Rentas: cobros confirmados en la solapa Dividendos de GDC (se actualiza al abrir GDC); los cobros en pesos al MEP. Las amortizaciones se separan según la etiqueta de cada cobro (se cambia con un click en Dividendos). Honorarios: los registrados con 💼 en Ana y Juli y los cargados a mano (en el mes de cierre de cada período).</div></div></div>';
 }
 // ── 🩺 Chequeo: lo que conviene revisar en cada portafolio (sale del resumen que guarda cada uno) ──
-function chequeoCard(){
+function _chqItems(){
   var L=[],ok=[],maxV=0;
   VIEW.forEach(function(c){var d=DATA[c.id];if(d&&d.o&&d.o.ver>maxV)maxV=d.o.ver;});
   VIEW.forEach(function(c){var d=DATA[c.id];if(!d||!d.o||c.src)return;var o=d.o,s=o.sal,P=[],dias=Math.floor((Date.now()-o.ts)/86400000);
@@ -554,6 +608,10 @@ function chequeoCard(){
     (function(){var pi=o.pi||PI_DEF[c.id];if(!pi)return;var hoy=new Date();hoy.setHours(0,0,0,0);var p=pi.split('-');var f=new Date(hoy.getFullYear(),+p[0]-1,+p[1]);if(f<hoy)f.setFullYear(f.getFullYear()+1);
       var df=Math.round((f-hoy)/86400000);if(df<=15)P.push({n:1,t:'cierra el período en '+df+' día'+(df!==1?'s':'')+' ('+_fd(f)+')'+(c.honorario?': ese día cerralo y registrá el honorario':': ese día cerralo desde Evolución')});})();
     if(P.length)L.push({c:c,P:P});else ok.push(c.nombre);});
+  return {L:L,ok:ok};
+}
+function chequeoCard(){
+  var _q=_chqItems(),L=_q.L,ok=_q.ok;
   var col={1:'#38bdf8',2:'#eab308',3:'#ff5252'};
   if(!L.length)return '<div class="card" style="margin-bottom:12px"><div class="ch">🩺 Chequeo <span class="sub grn">todo en orden</span></div><div class="cb" style="font-size:.8rem">Sin nada para revisar en '+ok.map(esc).join(', ')+'.</div></div>';
   return '<div class="card" style="margin-bottom:12px"><div class="ch">🩺 Chequeo <span class="sub">'+L.reduce(function(a,x){return a+x.P.length;},0)+' cosa(s) para revisar'+(ok.length?' · en orden: '+ok.map(esc).join(', '):'')+'</span></div><div class="cb" style="font-size:.8rem;line-height:1.55">'+
@@ -678,7 +736,7 @@ function busqCard(){
   return '<div class="card busq"><div class="cb"><input id="busq" type="search" autocomplete="off" spellcheck="false" placeholder="🔎 Buscar un ticker en todas las carteras (ej. MSFT, AL30) — tecla /" value="'+esc(BQ)+'" oninput="busqSet(this.value)" list="busq-dl">'+
     '<datalist id="busq-dl">'+Object.keys(all).sort().map(function(t){return '<option value="'+esc(t)+'">';}).join('')+'</datalist><div id="busq-res">'+busqRes()+'</div></div></div>';
 }
-function busqSet(v){BQ=String(v||'').toUpperCase().trim();var el=document.getElementById('busq-res');if(el)el.innerHTML=busqRes();var i=document.getElementById('busq');if(i&&i.value.toUpperCase().trim()!==BQ)i.value=BQ;}
+function busqSet(v){BQ=String(v||'').toUpperCase().trim();var el=document.getElementById('busq-res');if(el)el.innerHTML=busqRes();var i=document.getElementById('busq');if(i&&i.value.toUpperCase().trim()!==BQ)i.value=BQ;busqAbrir(true);}
 function busqRes(){
   if(!BQ)return '';
   var tk={};VIEW.forEach(function(c){var d=DATA[c.id];if(d&&d.o)Object.keys(d.o.pos).forEach(function(t){if(t.indexOf(BQ)>=0)tk[t]=(tk[t]||0)+d.o.pos[t].v;});});

@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=219, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=220, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v220 | 2026-10-13 | El resumen para el index suma los cobros de los próximos 12 meses (con la parte de capital) para la nueva pestaña Cobros. Historial de precios: un cambio de ratio del Cedear (ej. SPY el 29/05/2026) ya no se ve como una caída del 66%; se reescala lo anterior (afecta Modo foco, gráfico de precios y comparación con el S&P).',
   'v219 | 2026-10-13 | (1) Abre sin señal y más rápido: el service worker guarda en el equipo los archivos con versión (código, datos y librerías) y la última copia de cada página; sin conexión se ve lo último guardado. (2) 🩺 Registro de errores: los errores de la app se guardan solos en Supabase (config "errores", con versión, equipo y pantalla) y aparece un aviso ⚠️ junto a la hora de actualización para verlos. (3) Los HTML cargan portafolio.min.js (versión compacta generada con tools/minificar.js).',
   'v218 | 2026-10-13 | Carga más rápida: (1) la carga desde Supabase corre una sola vez (antes 3 veces: 68 consultas → ~25, y sin riesgo de que se pisen guardados); (2) la configuración llega en una sola consulta y movimientos/dividendos en paralelo; (3) Chart.js se baja después de mostrar la cartera; (4) tablas fijas (CCL/MEP históricos, ratios, flujos de bonos) pasan a comun/datos.js, que queda en caché entre versiones; (5) al abrir se muestra al instante la última visita guardada en el navegador mientras llegan los datos nuevos.',
   'v217 | 2026-10-12 | Más liviana al abrir: la librería de Excel (SheetJS, ~860 KB) ya no se carga al abrir el portafolio. Se baja sola al entrar a una pantalla con importación (Movimientos, Dividendos CCL, Ratios, Comparación, Venta histórica) o, como mucho, al elegir el archivo; la importación funciona igual.',
@@ -3260,7 +3261,8 @@ function renderPortfolio(){
     totalCost:open.reduce(function(a,p){return a+(p._valueUSD!=null?(p.costUSDpuro||0):0);},0),
     pos:open.filter(function(p){return p._valueUSD!=null;}).map(function(p){var r=PA_LAST[p.ticker];return {t:p.ticker,s:getSector(p.ticker),q:Math.round(p.qty*10000)/10000,v:Math.round(p._valueUSD*100)/100,c:Math.round((p.costUSDpuro||0)*100)/100,pnl:p._pnlPct!=null?Math.round(p._pnlPct*10)/10:null,an:(r&&r.anual!=null)?Math.round(r.anual*10)/10:null,pv:p._pv!=null?p._pv:null,up:p._upside!=null?Math.round(p._upside*10)/10:null,ch:(quotes[p.ticker]&&quotes[p.ticker].changePct!=null&&isFinite(quotes[p.ticker].changePct))?Math.round(quotes[p.ticker].changePct*100)/100:null};}),
     sinPrecio:open.filter(function(p){return p._valueUSD==null;}).map(function(p){return p.ticker;}),
-    cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};})
+    cobros:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(30);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total};}),
+    cobros12:_calCobros.items.filter(function(it){return it.fecha<=_flujosFechaLimiteStr(366);}).map(function(it){return {f:it.fecha,t:it.ticker,m:it.moneda,x:it.total,a:it.amort||0};})
   });}catch(_e){console.warn('famQueueSnapshot',_e);}
   if(CFG.simRetiro){_simrCapHoy=valConLiq;try{simrRender();}catch(_e){}}
   try{mobRender({open:open,valConLiq:valConLiq,rendPct:rendPct,liq:liqTotalUSD,dolzPct:dolzPct,sectorVal:sectorVal,cobros:(_calCobros&&_calCobros.items)||[],pv:(typeof _pvAlerts!=='undefined'?_pvAlerts:[])});}catch(_e){console.warn('mobRender',_e);}
@@ -4917,6 +4919,7 @@ async function famSaveSnapshot(d){
     doc.ccl=CCL_HOY;doc.mep=MEP_HOY;
     doc.liq={usd:d.liqUSD||0,ars:d.liqARS||0,totalUSD:d.liqTotalUSD||0};
     if(cart==='principal'||!doc.cobros)doc.cobros=d.cobros;
+    if(cart==='principal'&&d.cobros12)doc.cobros12=d.cobros12;
     doc.carteras[cart]={ts:now,totalVal:d.totalVal,totalCost:d.totalCost,sectorVal:d.sectorVal,dolzPct:d.dolzPct,pos:d.pos,rend:d.rendPct};
     if(cart==='principal'||doc.rend==null){doc.rend=d.rendPct;doc.invInicial=d.invInicial||null;}
     doc.periodoInicio=CFG.periodoInicio||null;
@@ -10140,6 +10143,13 @@ function _phFxLoad(t){
 }
 function _phCat(s){if(s==='bonos')return 'bonds';if(s==='argentina')return 'stocks';if(s==='on'||s==='fci')return null;return 'cedears';}
 function _phIso(f){var p=String(f||'').split('/');return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):null;}
+// Cambio de ratio del Cedear (o split): un salto de un día a otro mayor a ×1,8 o menor a ×0,55 se toma como cambio
+// de unidad y se reescala todo lo anterior a la unidad de hoy (ej. SPY 29/05/2026: ×0,335). Así los rendimientos no saltan.
+function _phSplits(ser){
+  if(!ser||ser.length<2)return ser;var out=ser.map(function(x){return [x[0],x[1]];});
+  for(var i=out.length-1;i>0;i--){var r=out[i][1]/out[i-1][1];if(r>1.8||r<0.55){for(var j=0;j<i;j++)out[j][1]*=r;}}
+  return out;
+}
 async function _phSerie(tk,s){
   if(_phSer[tk])return _phSer[tk];
   var raw={},src={d912:0,propio:0},cat=_phCat(s);
@@ -10154,6 +10164,7 @@ async function _phSerie(tk,s){
     while(j<fxK.length&&fxK[j]<=d){lastFx=fx[fxK[j]];j++;}
     if(lastFx>0)ser.push([d,raw[d]/lastFx]);
   });
+  if(s!=='bonos'&&s!=='on')ser=_phSplits(ser);
   var res={ser:ser,src:src,fxOk:usdDir||fxK.length>0};
   if(ser.length)_phSer[tk]=res;
   return res;

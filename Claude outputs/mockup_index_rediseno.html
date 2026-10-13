@@ -1,0 +1,187 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Index — propuesta de rediseño</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#4b6a92;--g:#22c55e;--r:#ef4444;--bl:#448aff;--am:#f59e0b;--mono:ui-monospace,"JetBrains Mono",Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif;font-size:14px}
+.wrap{max-width:1240px;margin:0 auto;padding:16px}
+.note{font-size:.72rem;color:var(--t3);margin:0 0 10px}
+header{display:flex;align-items:center;gap:10px;padding:6px 0 14px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--g);box-shadow:0 0 10px var(--g)}
+.logo{font-weight:800;font-size:1.05rem}.sync{font-family:var(--mono);font-size:.7rem;color:var(--t2)}
+.hbtn{margin-left:auto;display:flex;gap:6px}.hbtn span{border:1px solid var(--b2);background:var(--s2);border-radius:8px;padding:4px 9px;font-size:.75rem;color:var(--t2)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.hero{display:grid;grid-template-columns:1.35fr 1fr;gap:12px}
+.lbl{font-family:var(--mono);font-size:.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
+.big{font-family:var(--mono);font-size:2.3rem;font-weight:800;letter-spacing:-.02em;margin:4px 0 2px}
+.kr{display:flex;gap:22px;flex-wrap:wrap;margin-top:8px}.kr div b{display:block;font-family:var(--mono);font-size:1.05rem}.kr div small{font-size:.68rem;color:var(--t2)}
+.up{color:var(--g)}.dn{color:var(--r)}.mu{color:var(--t3)}
+.inbox h3{margin:0 0 8px;font-size:.85rem;display:flex;align-items:center;gap:8px}.cnt{background:var(--am);color:#1a1200;border-radius:999px;font-size:.66rem;padding:1px 7px;font-weight:800}
+.it{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--b);font-size:.8rem}
+.it i{font-style:normal;width:20px;text-align:center}.it span{flex:1}.it em{font-style:normal;font-family:var(--mono);font-size:.66rem;color:var(--t3);white-space:nowrap}
+.it a{color:var(--bl);text-decoration:none;font-size:.72rem;white-space:nowrap}
+.people{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}
+.p{position:relative;cursor:pointer}.p:hover{border-color:var(--b2)}
+.ph{display:flex;align-items:center;gap:8px}.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;color:#04150b}
+.p .v{font-family:var(--mono);font-size:1.15rem;font-weight:800;margin-top:8px}.p .r{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.7rem;margin-top:3px}
+.fr{position:absolute;top:12px;right:12px;font-size:.6rem;font-family:var(--mono);color:var(--t3);display:flex;align-items:center;gap:4px}.fr i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.chip{display:inline-block;font-size:.6rem;font-family:var(--mono);border:1px solid var(--b2);border-radius:999px;padding:0 6px;color:var(--t2);margin-top:6px}
+.tabs{display:flex;gap:4px;margin:16px 0 0;border-bottom:1px solid var(--b);overflow-x:auto}
+.tab{padding:9px 14px;font-size:.82rem;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}.tab.on{color:var(--t);border-color:var(--bl);font-weight:600}
+.pane{display:none;padding-top:12px}.pane.on{display:block}
+.g2{display:grid;grid-template-columns:1.6fr 1fr;gap:12px}
+.tm{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:34px;gap:3px}
+.tm div{border-radius:5px;font-family:var(--mono);font-size:.62rem;padding:4px 5px;display:flex;flex-direction:column;justify-content:space-between;color:#fff}
+.mv{width:100%;border-collapse:collapse;font-size:.78rem}.mv td{padding:5px 4px;border-top:1px solid var(--b)}.mv td:nth-child(n+2){text-align:right;font-family:var(--mono)}
+.bar{height:10px;border-radius:5px;background:var(--bg);border:1px solid var(--b);overflow:hidden;display:flex}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.7rem;color:var(--t2);margin-top:6px}.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:12px;border-top:1px dashed var(--b)}
+.tools span{font-size:.75rem;color:var(--t2);border:1px solid var(--b);border-radius:8px;padding:5px 10px;background:var(--s)}
+.call{position:relative}.call:after{content:attr(data-n);position:absolute;top:-9px;left:-9px;background:var(--bl);color:#fff;font-size:.62rem;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.srch{position:relative;flex:1;max-width:460px;margin-left:14px}.srch input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:9px;color:var(--t);font-family:var(--mono);font-size:.8rem;padding:7px 11px;outline:none}
+.sres{display:none;position:absolute;top:38px;left:0;width:560px;max-width:92vw;background:#0d1420;border:1px solid var(--b2);border-radius:12px;padding:10px 12px;z-index:5;box-shadow:0 12px 30px rgba(0,0,0,.55)}.sres .sh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:.8rem;margin-bottom:4px}
+.cy{margin-top:8px}.cy .t{display:flex;justify-content:space-between;font-size:.64rem;font-family:var(--mono);color:var(--t2);margin-bottom:3px}.cy .bar{height:6px}
+.ok{color:var(--g)}.wa{color:var(--am)}.st td{text-align:left!important;font-family:var(--mono);font-size:.72rem;white-space:nowrap}.st th{font-family:var(--mono);font-size:.58rem;color:var(--t3);text-transform:uppercase;text-align:left;padding:4px;font-weight:500}
+.exp{margin-top:22px;font-size:.78rem;color:var(--t2);line-height:1.6}.exp b{color:var(--t)}
+@media(max-width:900px){.hero,.g2{grid-template-columns:1fr}.people{grid-template-columns:repeat(2,minmax(0,1fr))}.big{font-size:1.9rem}}
+</style></head><body><div class="wrap">
+<p class="note">Propuesta · números de GDC reales del 13/10, los de las otras carteras son de ejemplo. Las pestañas de abajo funcionan.</p>
+
+<header><span class="dot"></span><span class="logo">Inversiones</span><span class="sync">5 carteras · actualizado hace 3 min</span>
+ <div class="srch call" data-n="6"><input id="q" placeholder="🔍 Buscar ticker en todas las carteras  ( / )" value="MELI" autocomplete="off">
+  <div class="sres" id="sres">
+   <div class="sh"><b>MELI</b> · MercadoLibre · 🇺🇸 Cedear · hoy <span class="up">+1,8%</span><span style="margin-left:auto" class="mu">total USD 11.240 · 2,3% de todo</span></div>
+   <table class="mv"><tr><td>GDC</td><td>120 Cedears</td><td>USD 7.906</td><td class="dn">Δ −2%</td><td>P.V. 22,04 · falta +40%</td></tr>
+   <tr><td>Omar · Principal</td><td>40 Cedears</td><td>USD 2.635</td><td class="up">Δ +18%</td><td class="mu">sin P. Venta</td></tr>
+   <tr><td>Ana</td><td>11 Cedears</td><td>USD 699</td><td class="up">Δ +6%</td><td>P.V. 19,50 · falta +24%</td></tr></table>
+   <div class="mu" style="font-size:.68rem;margin-top:6px">Enter abre MELI en la cartera más grande · también busca por nombre ("mercado")</div>
+  </div></div>
+ <span class="hbtn"><span>👁</span><span>💾</span><span>gcovetta ▾</span></span></header>
+
+<div class="hero">
+ <div class="card call" data-n="1">
+  <div class="lbl">Total administrado</div>
+  <div class="big">USD 488.720</div>
+  <div class="mu" style="font-family:var(--mono);font-size:.75rem">≈ $ 679,3 M al CCL</div>
+  <div class="kr">
+   <div><small>Hoy</small><b class="up">+0,4% <span style="font-size:.75rem">+USD 1.940</span></b></div>
+   <div><small>En el año</small><b class="up">+9,8%</b></div>
+   <div><small>vs S&amp;P 500</small><b class="up">+2,6 pp</b></div>
+   <div><small>Cobros 12 m</small><b>USD 31.400</b></div>
+   <div><small>Liquidez</small><b>6,1%</b></div>
+  </div>
+  <svg viewBox="0 0 600 70" width="100%" style="margin-top:10px" aria-label="Evolución del total en 12 meses">
+   <defs><linearGradient id="gg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#22c55e" stop-opacity=".35"/><stop offset="1" stop-color="#22c55e" stop-opacity="0"/></linearGradient></defs>
+   <path d="M0,55 L50,50 L100,53 L150,44 L200,40 L250,42 L300,34 L350,27 L400,31 L450,18 L500,15 L550,10 L600,6 L600,70 L0,70Z" fill="url(#gg)"/>
+   <path d="M0,55 L50,50 L100,53 L150,44 L200,40 L250,42 L300,34 L350,27 L400,31 L450,18 L500,15 L550,10 L600,6" fill="none" stroke="#22c55e" stroke-width="2"/>
+  </svg>
+ </div>
+ <div class="card inbox call" data-n="2">
+  <h3>📥 Para mirar hoy <span class="cnt">5</span></h3>
+  <div class="it"><i>🎯</i><span><b>STNE</b> (GDC) y <b>PAGS</b> (Ana) llegaron a su precio de venta</span><a href="#">Vender →</a></div>
+  <div class="it"><i>💵</i><span>Cobro <b>BB37D</b> · USD 420 en GDC y Omar</span><em>01/11</em></div>
+  <div class="it"><i>🟡</i><span><b>Hilda</b> lleva 9 días sin abrirse: su resumen está viejo</span><a href="#">Abrir →</a></div>
+  <div class="it"><i>🩺</i><span>1 error nuevo en <b>Omar</b> (celular)</span><a href="#">Ver →</a></div>
+  <div class="it"><i>💾</i><span>Nunca bajaste un backup completo a tu compu</span><a href="#">Bajar →</a></div>
+ </div>
+</div>
+
+<div class="people call" data-n="3">
+ <div class="card p"><span class="fr"><i style="background:var(--g)"></i>hoy</span><div class="ph"><span class="av" style="background:#22c55e">G</span><b>GDC</b></div><div class="v">177.381</div><div class="r"><span class="up">hoy +0,4%</span><span class="up">año +9,5%</span></div><div class="cy"><div class="t"><span>ciclo · cierra 31/12</span><span>2,6 meses</span></div><div class="bar"><div style="width:78%;background:#448aff"></div></div></div><span class="chip">36% del total</span></div>
+ <div class="card p"><span class="fr"><i style="background:var(--g)"></i>hoy</span><div class="ph"><span class="av" style="background:#60a5fa">O</span><b>Omar</b></div><div class="v">142.900</div><div class="r"><span class="up">hoy +0,2%</span><span class="up">año +11,2%</span></div><div class="cy"><div class="t"><span>ciclo · cierra 01/04</span><span>5,6 meses</span></div><div class="bar"><div style="width:40%;background:#448aff"></div></div></div><span class="chip">3 carteras · Cocos: retirado 95%</span></div>
+ <div class="card p"><span class="fr"><i style="background:var(--am)"></i>9 d</span><div class="ph"><span class="av" style="background:#f59e0b">H</span><b>Hilda</b></div><div class="v">71.300</div><div class="r"><span class="mu">hoy —</span><span class="up">año +6,1%</span></div><div class="cy"><div class="t"><span>ciclo · cierra 05/11</span><span>23 días</span></div><div class="bar"><div style="width:93%;background:#f59e0b"></div></div></div><span class="chip">resumen viejo</span></div>
+ <div class="card p"><span class="fr"><i style="background:var(--g)"></i>ayer</span><div class="ph"><span class="av" style="background:#c084fc">A</span><b>Ana</b></div><div class="v">58.640</div><div class="r"><span class="dn">hoy −0,3%</span><span class="up">año +8,7%</span></div><div class="cy"><div class="t"><span>ciclo · cierra 15/02</span><span>4,1 meses</span></div><div class="bar"><div style="width:62%;background:#448aff"></div></div></div><span class="chip">💼 honorario hoy USD 1.020 · proy. USD 1.640</span></div>
+ <div class="card p"><span class="fr"><i style="background:var(--g)"></i>hoy</span><div class="ph"><span class="av" style="background:#f472b6">J</span><b>Juli</b></div><div class="v">38.499</div><div class="r"><span class="up">hoy +0,6%</span><span class="up">año +12,4%</span></div><div class="cy"><div class="t"><span>ciclo · cierra 24/10</span><span>11 días</span></div><div class="bar"><div style="width:97%;background:#f59e0b"></div></div></div><span class="chip" style="border-color:#f59e0b;color:#f59e0b">💼 cierra pronto · honorario USD 860</span></div>
+</div>
+
+<div class="tabs call" data-n="4">
+ <div class="tab on" data-t="hoy">🟩 Hoy</div><div class="tab" data-t="dist">Distribución</div><div class="tab" data-t="ing">💰 Ingresos</div><div class="tab" data-t="rend">📈 Rendimiento</div><div class="tab" data-t="pos">Posiciones</div><div class="tab" data-t="cob">Cobros</div><div class="tab" data-t="sis">🛠 Sistema</div>
+</div>
+
+<div class="pane on" id="p-hoy"><div class="g2">
+ <div class="card"><div class="lbl" style="margin-bottom:8px">Mapa del día · tamaño = USD · color = variación</div>
+  <div class="tm">
+   <div style="grid-column:span 4;grid-row:span 3;background:#14532d">TX31<b>+0,1%</b></div>
+   <div style="grid-column:span 3;grid-row:span 3;background:#1f2937">AO29<b>0,0%</b></div>
+   <div style="grid-column:span 3;grid-row:span 2;background:#7f1d1d">BC37D<b>−0,9%</b></div>
+   <div style="grid-column:span 2;grid-row:span 2;background:#166534">MELI<b>+1,8%</b></div>
+   <div style="grid-column:span 3;grid-row:span 1;background:#15803d">STNE +7,9%</div>
+   <div style="grid-column:span 2;grid-row:span 1;background:#16a34a">PAGS +4,7%</div>
+   <div style="grid-column:span 2;grid-row:span 2;background:#991b1b">NFLX<b>−1,7%</b></div>
+   <div style="grid-column:span 2;grid-row:span 2;background:#14532d">ALUA<b>+3,4%</b></div>
+   <div style="grid-column:span 3;grid-row:span 2;background:#166534">AMZN<b>+3,1%</b></div>
+   <div style="grid-column:span 2;grid-row:span 2;background:#1f2937">META<b>0,0%</b></div>
+   <div style="grid-column:span 3;grid-row:span 2;background:#14532d">VALE<b>+1,5%</b></div>
+  </div></div>
+ <div class="card"><div class="lbl" style="margin-bottom:6px">Lo que más movió el total</div>
+  <table class="mv">
+   <tr><td>🇦🇷 ALUA</td><td class="up">+3,4%</td><td class="up">+127</td></tr>
+   <tr><td>🇧🇷 STNE</td><td class="up">+7,9%</td><td class="up">+126</td></tr>
+   <tr><td>🇧🇷 PAGS</td><td class="up">+4,7%</td><td class="up">+121</td></tr>
+   <tr><td>🇺🇸 AMZN</td><td class="up">+3,2%</td><td class="up">+88</td></tr>
+   <tr><td>🇺🇸 NFLX</td><td class="dn">−1,7%</td><td class="dn">−77</td></tr>
+   <tr><td>🇦🇷 MIRG</td><td class="dn">−1,9%</td><td class="dn">−28</td></tr>
+  </table>
+  <div class="mu" style="font-size:.7rem;margin-top:8px">Subieron 37 · bajaron 26 · en las 5 carteras</div></div>
+</div></div>
+
+<div class="pane" id="p-dist"><div class="card">
+ <div class="lbl">Por tipo</div><div class="bar" style="margin-top:6px"><div style="width:47%;background:#22c55e"></div><div style="width:47%;background:#448aff"></div><div style="width:6%;background:#7a9cc5"></div></div>
+ <div class="legend"><span><i style="background:#22c55e"></i>Renta variable 47%</span><span><i style="background:#448aff"></i>Renta fija 47%</span><span><i style="background:#7a9cc5"></i>Liquidez 6%</span></div>
+ <div class="lbl" style="margin-top:14px">Por mercado</div><div class="bar" style="margin-top:6px"><div style="width:50%;background:#448aff"></div><div style="width:19%;background:#22c55e"></div><div style="width:14%;background:#60a5fa"></div><div style="width:11%;background:#f59e0b"></div><div style="width:6%;background:#c084fc"></div></div>
+ <div class="legend"><span><i style="background:#448aff"></i>Bonos 50%</span><span><i style="background:#22c55e"></i>USA 19%</span><span><i style="background:#60a5fa"></i>Argentina 14%</span><span><i style="background:#f59e0b"></i>Brasil 11%</span><span><i style="background:#c084fc"></i>Otros 6%</span></div>
+ <div class="lbl" style="margin-top:14px">Moneda</div><div class="bar" style="margin-top:6px"><div style="width:51%;background:#22c55e"></div><div style="width:49%;background:#7a9cc5"></div></div>
+ <div class="legend"><span><i style="background:#22c55e"></i>Dolarizado 51%</span><span><i style="background:#7a9cc5"></i>Pesos 49%</span><span class="mu">· el detalle por persona queda en un desplegable debajo</span></div>
+</div></div>
+
+<div class="pane" id="p-ing"><div class="g2">
+ <div class="card"><div class="lbl">Meta de ingresos</div>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px"><span style="font-family:var(--mono);font-size:1.4rem;font-weight:800">USD 282<span class="mu" style="font-size:.8rem"> / mes</span></span><span class="mu" style="font-family:var(--mono);font-size:.8rem">meta 8.333 · 3,4%</span></div>
+  <div class="bar" style="margin-top:8px;height:12px"><div style="width:3.4%;background:#22c55e"></div></div>
+  <svg viewBox="0 0 600 120" width="100%" style="margin-top:14px" aria-label="Cobros por mes, últimos 12 meses">
+   <g fill="#22c55e"><rect x="10" y="80" width="34" height="30"/><rect x="60" y="70" width="34" height="40"/><rect x="110" y="88" width="34" height="22"/><rect x="160" y="60" width="34" height="50"/><rect x="210" y="84" width="34" height="26"/><rect x="260" y="74" width="34" height="36"/><rect x="310" y="90" width="34" height="20"/><rect x="360" y="66" width="34" height="44"/><rect x="410" y="82" width="34" height="28"/><rect x="460" y="56" width="34" height="54"/><rect x="510" y="78" width="34" height="32"/><rect x="560" y="70" width="34" height="40"/></g>
+   <g fill="#4b6a92" font-size="10" font-family="monospace"><text x="14" y="120">nov</text><text x="564" y="120">oct</text></g>
+  </svg></div>
+ <div class="card"><div class="lbl">Últimos 12 meses</div>
+  <table class="mv" style="margin-top:6px"><tr><td>Rentas</td><td>USD 1.096</td></tr><tr><td>Dividendos</td><td>USD 1.862</td></tr><tr><td>Honorarios (Ana, Juli)</td><td>USD 423</td></tr><tr><td><b>Total</b></td><td><b>USD 3.381</b></td></tr><tr><td class="mu">Amortizaciones (no suman)</td><td class="mu">USD 1.812</td></tr></table></div>
+</div></div>
+
+<div class="pane" id="p-rend"><div class="card"><div class="lbl">Base 100 · USD · cada cartera contra el S&amp;P 500</div><div class="mu" style="padding:30px 0;text-align:center">El gráfico actual de "Comparar carteras" va acá, con sus rangos 1M / 3M / Año / 12M / Todo.</div></div></div>
+<div class="pane" id="p-pos"><div class="card"><div class="lbl">Mayores posiciones de todas las carteras</div><div class="mu" style="padding:30px 0;text-align:center">La tabla actual de "Mayores posiciones" va acá, con buscador de ticker que dice en qué carteras está.</div></div></div>
+<div class="pane" id="p-cob"><div class="g2">
+ <div class="card"><div style="display:flex;align-items:center;gap:8px"><span class="lbl">Próximos cobros de todos</span><span style="margin-left:auto;display:flex;gap:4px;font-family:var(--mono);font-size:.66rem"><span class="chip" style="margin:0">30 d</span><span class="chip" style="margin:0;border-color:var(--bl);color:var(--bl)">90 d</span><span class="chip" style="margin:0">12 m</span></span></div>
+  <table class="mv" style="margin-top:6px"><tr><td class="mu">Fecha</td><td class="mu" style="text-align:left">Ticker</td><td class="mu" style="text-align:left">Quién</td><td class="mu">Monto</td></tr>
+  <tr><td style="text-align:left">30/10</td><td style="text-align:left"><b>PBA27</b> <span class="mu">renta</span></td><td style="text-align:left">GDC</td><td>ARS 48.900</td></tr>
+  <tr><td style="text-align:left">01/11</td><td style="text-align:left"><b>BB37D</b> <span class="mu">renta</span></td><td style="text-align:left">GDC · Omar</td><td>USD 420</td></tr>
+  <tr><td style="text-align:left">22/11</td><td style="text-align:left"><b>DNC3O</b> <span class="wa">vence</span></td><td style="text-align:left">Hilda</td><td>USD 2.098</td></tr>
+  <tr><td style="text-align:left">30/11</td><td style="text-align:left"><b>TX31</b> <span class="mu">renta</span></td><td style="text-align:left">GDC · Ana</td><td>ARS 312.400</td></tr>
+  <tr><td style="text-align:left">01/12</td><td style="text-align:left"><b>MRCAO</b> <span class="mu">renta+amort.</span></td><td style="text-align:left">Juli</td><td>USD 234</td></tr></table></div>
+ <div class="card"><div class="lbl">Totales · 90 días</div>
+  <table class="mv" style="margin-top:6px"><tr><td>GDC</td><td>USD 1.130 + ARS 361 mil</td></tr><tr><td>Omar</td><td>USD 210</td></tr><tr><td>Hilda</td><td>USD 2.098</td></tr><tr><td>Ana</td><td>ARS 156 mil</td></tr><tr><td>Juli</td><td>USD 234</td></tr><tr><td><b>Todos</b></td><td><b>USD 3.672 + ARS 517 mil</b></td></tr></table>
+  <div class="mu" style="font-size:.68rem;margin-top:8px">De eso, USD 2.334 es devolución de capital (vencimientos y amortizaciones) para reinvertir.</div></div>
+</div></div>
+<div class="pane" id="p-sis"><div class="card" style="overflow-x:auto"><div class="lbl" style="margin-bottom:6px">🛠 Sistema · <span class="wa">3 cosas para mirar</span></div>
+ <table class="mv st"><tr><th>Cartera</th><th>Abierta</th><th>Versión</th><th>Backup</th><th>Tipo de cambio</th><th>Vista familiar</th><th>Entradas</th><th>Aportes</th><th>Avisos</th><th>Errores</th></tr>
+ <tr><td><b>GDC</b></td><td class="ok">✓ hace 3 min</td><td class="ok">✓ v219</td><td class="ok">✓ hoy</td><td class="ok">✓ completo</td><td class="mu">—</td><td class="mu">—</td><td class="ok">✓ 14 cargados</td><td class="ok">✓ hoy · 2 disp.</td><td class="ok">✓ 0</td></tr>
+ <tr><td><b>Omar</b></td><td class="ok">✓ hace 2 h</td><td class="ok">✓ v219</td><td class="ok">✓ hoy</td><td class="ok">✓ completo</td><td class="ok">✓ hace 2 h</td><td>👀 ayer · cel · 6 veces</td><td class="mu">—</td><td class="mu">—</td><td class="wa">⚠ 1 nuevo</td></tr>
+ <tr><td><b>Hilda</b></td><td class="wa">⚠ hace 9 días</td><td class="wa">⚠ v214</td><td class="wa">⚠ hace 9 días</td><td class="ok">✓ completo</td><td class="ok">✓ hace 9 d</td><td class="mu">nunca entró</td><td class="mu">—</td><td class="mu">—</td><td class="ok">✓ 0</td></tr>
+ <tr><td><b>Ana</b></td><td class="ok">✓ ayer</td><td class="ok">✓ v219</td><td class="ok">✓ ayer</td><td class="ok">✓ completo</td><td class="ok">✓ ayer</td><td>👀 hace 3 d · pc · 2 veces</td><td class="ok">✓ 3 cargados</td><td class="mu">—</td><td class="ok">✓ 0</td></tr>
+ <tr><td><b>Juli</b></td><td class="ok">✓ hace 5 h</td><td class="ok">✓ v219</td><td class="ok">✓ hoy</td><td class="ok">✓ completo</td><td class="mu">—</td><td class="mu">—</td><td class="mu">—</td><td class="mu">—</td><td class="ok">✓ 0</td></tr></table>
+ <div class="mu" style="font-size:.68rem;margin-top:8px">Es la misma tabla de hoy (columnas iguales) más la columna Errores del registro nuevo. Lo amarillo también aparece en la bandeja de arriba.</div></div></div>
+
+<div class="tools call" data-n="5"><span class="lbl" style="align-self:center;margin-right:4px">Herramientas</span><span>🏠 Control Obra</span><span>✅ Tareas</span><span>🔨 Comparador</span><span>💰 Gastos</span></div>
+
+<div class="exp">
+<b>① Arriba, lo que importa en 3 segundos:</b> el total, cómo va hoy, en el año y contra el S&amp;P, los cobros y la liquidez, con la curva de 12 meses. Hoy el total está más abajo, mezclado con otras tarjetas.<br>
+<b>② Una sola bandeja "Para mirar hoy":</b> junta lo que hoy está repartido en Chequeo, Precio de venta, Sistema, Cobros y Backup (5 desplegables). Solo aparece lo que pide acción, ordenado por importancia, cada cosa con su botón.<br>
+<b>③ Una tarjeta por persona</b> con valor, hoy, año y qué tan fresco está su dato (verde, o amarillo si pasaron más de 7 días). Tocás la tarjeta y entrás a su portafolio. Reemplaza los chips de arriba y la tabla "Por persona".<br>
+<b>④ Pestañas en lugar de una página de 4.700 px:</b> Mapa del día, Distribución, Ingresos, Rendimiento, Posiciones, Cobros y Sistema son lo mismo que hay hoy, pero ves una cosa a la vez. La pestaña elegida se recuerda.<br>
+<b>⑥ Buscador global</b> (tecla /): escribís un ticker o un nombre y ves en qué carteras está, cuántos nominales, cuánto vale, cómo va y su precio de venta. Tocá el buscador para ver el ejemplo con MELI.<br>
+<b>Ciclo en cada tarjeta:</b> barra con cuánto pasó del período anual y cuánto falta para el cierre (en amarillo cuando quedan menos de 30 días). En Ana y Juli suma el honorario de hoy y el proyectado al cierre.<br>
+<b>Sistema</b> queda como pestaña propia con la misma tabla de hoy, y lo que esté en amarillo se repite en la bandeja. <b>Cobros</b> pasa a 30, 90 días o 12 meses, con los totales por persona y la parte que es devolución de capital.<br>
+<b>⑤ Herramientas al pie</b>, en una línea, porque no son de inversiones.<br>
+En el celular: la bandeja queda debajo del total, las personas en 2 columnas y las pestañas se deslizan de costado.
+</div>
+</div>
+<script>var q=document.getElementById('q'),sr=document.getElementById('sres');q.onfocus=function(){sr.style.display='block';};q.oninput=function(){sr.style.display=q.value?'block':'none';};document.addEventListener('click',function(e){if(!e.target.closest('.srch'))sr.style.display='none';});
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);});document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('on',p.id==='p-'+t.dataset.t);});};});</script>
+</body></html>
