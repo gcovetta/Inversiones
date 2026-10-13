@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=221, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=222, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v222 | 2026-10-13 | Se elimina VetaMovim del Laboratorio (pantalla y código), no se usaba. La importación de Veta en Dividendos CCL sigue igual.',
   'v221 | 2026-10-13 | Fotos de perfil livianas: versiones de 128 px en webp (~4 KB cada una en vez de 30 a 400 KB).',
   'v220 | 2026-10-13 | El resumen para el index suma los cobros de los próximos 12 meses (con la parte de capital) para la nueva pestaña Cobros. Historial de precios: un cambio de ratio del Cedear (ej. SPY el 29/05/2026) ya no se ve como una caída del 66%; se reescala lo anterior (afecta Modo foco, gráfico de precios y comparación con el S&P).',
   'v219 | 2026-10-13 | (1) Abre sin señal y más rápido: el service worker guarda en el equipo los archivos con versión (código, datos y librerías) y la última copia de cada página; sin conexión se ve lo último guardado. (2) 🩺 Registro de errores: los errores de la app se guardan solos en Supabase (config "errores", con versión, equipo y pantalla) y aparece un aviso ⚠️ junto a la hora de actualización para verlos. (3) Los HTML cargan portafolio.min.js (versión compacta generada con tools/minificar.js).',
@@ -885,7 +886,7 @@ function showPage(id,btn){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
-  if(['tracker','comparacion','ventahist','ventaestad','ratios','movimientos','vetamovim'].indexOf(id)>=0)_xlsxPrecargar();
+  if(['tracker','comparacion','ventahist','ventaestad','ratios','movimientos'].indexOf(id)>=0)_xlsxPrecargar();
   if(CFG.vistaNueva)document.body.classList.toggle('nv-port',id==='portafolio');
   if(id==='tipocambio') tcRender();
   if(btn)btn.classList.add('active');
@@ -5223,54 +5224,6 @@ function histRenderAnual(ult){
   }
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply);}else{apply();}
 })();
-
-// ─── VetaMovim (laboratorio de importación de movimientos, NO impacta portafolio) ───
-var VM_ROWS=[];
-function vmAddRow(){
-  VM_ROWS.push({fecha:'',ticker:'',tipo:'',cant:'',precio:'',moneda:'USD',total:'',notas:''});
-  vmRender();
-}
-function vmDelRow(i){
-  if(i<0||i>=VM_ROWS.length)return;
-  VM_ROWS.splice(i,1);
-  vmRender();
-}
-function vmEditRow(i,field,val){
-  if(!VM_ROWS[i])return;
-  VM_ROWS[i][field]=val;
-}
-function vmClearAll(){
-  if(!VM_ROWS.length)return;
-  if(!confirm('¿Vaciar toda la tabla VetaMovim?'))return;
-  VM_ROWS=[];
-  vmRender();
-}
-function vmRender(){
-  var body=document.getElementById('vm-body');
-  if(!body)return;
-  if(!VM_ROWS.length){
-    body.innerHTML='<tr><td colspan="10" class="empty-state" style="padding:1.5rem">Sin movimientos cargados — usá "+ Fila" o esperá a que mapeemos la estructura de importación</td></tr>';
-    return;
-  }
-  var inp=function(i,field,val,w){
-    return '<input class="arb-input" style="width:'+(w||'100%')+';text-align:left;padding:3px 5px;font-size:.72rem" value="'+(val||'')+'" oninput="vmEditRow('+i+',\''+field+'\',this.value)">';
-  };
-  var html=VM_ROWS.map(function(r,i){
-    return '<tr>'+
-      '<td class="mono muted" style="font-size:.7rem">'+(i+1)+'</td>'+
-      '<td>'+inp(i,'fecha',r.fecha,'95px')+'</td>'+
-      '<td>'+inp(i,'ticker',r.ticker,'80px')+'</td>'+
-      '<td>'+inp(i,'tipo',r.tipo,'90px')+'</td>'+
-      '<td>'+inp(i,'cant',r.cant,'80px')+'</td>'+
-      '<td>'+inp(i,'precio',r.precio,'90px')+'</td>'+
-      '<td>'+inp(i,'moneda',r.moneda,'65px')+'</td>'+
-      '<td>'+inp(i,'total',r.total,'100px')+'</td>'+
-      '<td>'+inp(i,'notas',r.notas,'140px')+'</td>'+
-      '<td><button class="btn btn-d btn-sm" onclick="vmDelRow('+i+')" title="Eliminar">✕</button></td>'+
-    '</tr>';
-  }).join('');
-  body.innerHTML=html;
-}
 
 function fetchWithTimeout(url, opts, ms){
   ms=ms||7000;
