@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Inversiones">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://wstnseufzyavgdovrehu.supabase.co" crossorigin>
 <style>
 :root{--bg:#0b1120;--surface:#111927;--surface2:#172035;--border:#1e3050;--border2:#264070;--text:#e8f0ff;--text2:#7a9cc5;--text3:#3d5a80;--accent:#00e676;--accent2:#00c853;--red:#ff5252;--amber:#eab308;--blue:#448aff;--mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--radius:10px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -146,7 +146,7 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
 <header>
   <div class="logo-dot"></div>
   <span class="logo">Inversiones</span>
-  <span class="subtitle">Carteras administradas · v48</span>
+  <span class="subtitle">Carteras administradas · v49</span>
   <div id="user-box" style="display:none"><span id="user-email"></span><button onclick="authLogout()">Salir</button></div>
 </header>
 <main>
@@ -167,10 +167,10 @@ tr.clk{cursor:pointer}tr.clk:hover td{background:rgba(68,138,255,.06)}
     </div>
   </div>
 </main>
-<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v48 · 13/10/2026</div>
-<footer>gcovetta · github.io/Inversiones · carteras administradas v48</footer>
+<div id="idx-version" title="Versión del index (Carteras administradas)" style="position:fixed;bottom:6px;right:8px;z-index:9999;font-family:var(--mono),monospace;font-size:.9rem;font-weight:600;color:var(--text2,#ccc);background:var(--surface2,#172035);border:1px solid var(--border,#333);border-radius:4px;padding:4px 10px;opacity:.9;user-select:none;cursor:default">index v49 · 13/10/2026</div>
+<footer>gcovetta · github.io/Inversiones · carteras administradas v49</footer>
 <script>
-var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston.png", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna.png", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda.png", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli.png", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar.png", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
+var CFG=[{"id": "gdc", "nombre": "GDC", "url": "https://wstnseufzyavgdovrehu.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzdG5zZXVmenlhdmdkb3ZyZWh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzU0MTYsImV4cCI6MjA5MTM1MTQxNn0.0mmKvfCM_HoBJjbIhFzM5TeKEc-LphQwEXNjHqV_CfU", "img": "GDC/PerfilGaston_s.webp", "link": "GDC/PortafolioGDC.html", "auth": true}, {"id": "ana", "nombre": "Ana", "url": "https://arxntlqhtrtskabzihlf.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyeG50bHFodHJ0c2thYnppaGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTEyMDMsImV4cCI6MjA5MjM2NzIwM30.q3qnU2rkLDF4xwaKXvu8FvknJBIbhxWj01GRzY6l4dg", "img": "Ana/PerfilAna_s.webp", "link": "Ana/PortafolioAna2.html", "auth": false, "honorario": 0.2, "honCobrados": {"2025": 400, "2026": 423}}, {"id": "hilda", "nombre": "Hilda", "url": "https://zqlpfvxgtxfnqztiudzc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxbHBmdnhndHhmbnF6dGl1ZHpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNzY0MDAsImV4cCI6MjA5Mzg1MjQwMH0.2ICcVeG1ed95T_ZVO-EwqQYP1HQi58l7DCGA5q45EE4", "img": "Hilda/PerfilHilda_s.webp", "link": "Hilda/PortafolioHilda.html", "auth": false}, {"id": "juli", "nombre": "Juli", "url": "https://ujgkiuqvehidcnbtwrqn.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZ2tpdXF2ZWhpZGNuYnR3cnFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDEyODIsImV4cCI6MjA5NDExNzI4Mn0.RIFerRYa-jKzNOBv59bxeWAnzhtvSLSc1sdRR2-uRyk", "img": "Juli/Juli_s.webp", "link": "Juli/PortafolioJuli.html", "auth": false, "honorario": 0.2}, {"id": "omar", "nombre": "Omar", "url": "https://opbbnvfmgdmdsmbhmgsc.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wYmJudmZtZ2RtZHNtYmhtZ3NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDExNDYsImV4cCI6MjA5Mjg3NzE0Nn0.tpqr2XVrcJuwPsiuonFeBbUrRG7Vt9RzRzIv7uHDCng", "img": "Omar/perfilOmar_s.webp", "link": "Omar/PortafolioOmar2.html", "auth": false, "split": {"cocos": "Cristian", "vetajeep": "Jeep"}, "salida": {"cocos": {"inicial": 50000, "retirado": 47388.58}}}];
 var ALLOWED='gcovetta@gmail.com';
 var SECT={nyse:['USA','#ef4444'],argentina:['Argentina','#38bdf8'],brasil:['Brasil','#facc15'],europa:['Europa','#fb923c'],china:['China','#f87171'],cripto:['Cripto','#c084fc'],bonos:['Bonos','#f97316'],on:['ON','#9ca3af'],fci:['FCI','#10b981']};
 var RV=['nyse','argentina','brasil','europa','china','cripto'],RF=['bonos','on','fci'];
@@ -196,14 +196,15 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp
 var LOGS={},VISITAS={},ERRS={};
 async function loadOne(c,tok){
   try{
-    var r=await fetch(c.url+'/rest/v1/config?key=in.(resumen_familia,push_log,errores)&select=key,value',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
+    var _hd={headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}};
+    var _vP=fetch(c.url+'/rest/v1/vista_visitas?select=ts,disp&order=ts.desc&limit=200',_hd).then(function(x){return x.ok?x.json():null;}).catch(function(){return null;});
+    var r=await fetch(c.url+'/rest/v1/config?key=in.(resumen_familia,push_log,errores)&select=key,value',_hd);
     if(!r.ok)return {err:'HTTP '+r.status};
     var d=await r.json();if(!d||!d.length)return {err:'sin resumen'};
     var pv=function(x){var v=x.value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){}}return v;};
     var row=d.filter(function(x){return x.key==='resumen_familia';})[0],lg=d.filter(function(x){return x.key==='push_log';})[0];
     var v=row?pv(row):null;LOGS[c.id]=lg?pv(lg):null;var er=d.filter(function(x){return x.key==='errores';})[0];ERRS[c.id]=er?pv(er):null;
-    try{var rv=await fetch(c.url+'/rest/v1/vista_visitas?select=ts,disp&order=ts.desc&limit=200',{headers:{apikey:c.key,Authorization:'Bearer '+(tok||c.key)}});
-      VISITAS[c.id]=rv.ok?await rv.json():null;}catch(e){VISITAS[c.id]=null;}
+    VISITAS[c.id]=await _vP;
     if(!v||!v.carteras)return {err:'sin resumen'};
     return {doc:v};
   }catch(e){return {err:'sin conexión'};}
@@ -524,8 +525,9 @@ function cmpCard(){
 function cmpRango(k){CMP.r=k;document.querySelectorAll('#cmp-card .cmp-b').forEach(function(b){var on=b.dataset.r===k;b.style.background=on?'var(--accent)':'var(--surface2)';b.style.color=on?'#04150b':'var(--text2)';});cmpDraw();}
 function cmpToggle(k){CMP.off[k]=!CMP.off[k];var el=document.getElementById('cmp-card');if(el){var nw=document.createElement('div');nw.innerHTML=cmpCard();var keepCol=el.classList.contains('col');el.replaceWith(nw.firstChild);if(keepCol)document.getElementById('cmp-card').classList.add('col');try{colSetup();}catch(e){}}cmpDraw();}
 function _cmpDias(a,b){return Math.round((Date.parse(b)-Date.parse(a))/86400000);}
+var _chP=null;function _chartCargar(){if(typeof Chart!=='undefined')return Promise.resolve();if(!_chP)_chP=new Promise(function(res,rej){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';s.onload=res;s.onerror=function(){_chP=null;rej();};document.head.appendChild(s);});return _chP;}
 function cmpDraw(){
-  var cv=document.getElementById('cmp-cv');if(!cv||typeof Chart==='undefined')return;
+  var cv=document.getElementById('cmp-cv');if(!cv)return;if(typeof Chart==='undefined'){_chartCargar().then(cmpDraw).catch(function(){});return;}
   var L=_cmpSeries();if(!L.length)return;
   var desde=_cmpDesde(L),fs={};
   var R=L.map(function(x){var s=x.s,pts=[],antes=null;
@@ -776,7 +778,18 @@ async function boot(){
   gate.style.display='none';main.style.display='flex';ub.style.display='flex';
   document.getElementById('user-email').textContent=se.user.email;
   var toks=window.TOKS=await Promise.all(CFG.map(async function(c,i){if(i===0)return se.access_token;try{var cl=window.supabase.createClient(c.url,c.key);var r=await cl.auth.getSession();var s2=r&&r.data&&r.data.session;return (s2&&s2.user&&s2.user.email===ALLOWED)?s2.access_token:null;}catch(e){return null;}}));
+  var _cache=null;try{_cache=JSON.parse(localStorage.getItem('idx_cache_v1')||'null');}catch(e){}
+  if(_cache&&_cache.res&&_cache.res.length===CFG.length){try{LOGS=_cache.L||{};VISITAS=_cache.V||{};ERRS=_cache.E||{};_aplicar(_cache.res);_marcaCache(_cache.ts);}catch(e){console.warn('cache',e);}}
   var res=await Promise.all(CFG.map(function(c,i){return loadOne(c,toks[i]);}));
+  // si una cartera no respondió (sin señal, error), se sigue mostrando su última carga guardada
+  var _mix=res.map(function(r,i){return r.doc?r:((_cache&&_cache.res&&_cache.res[i]&&_cache.res[i].doc)?_cache.res[i]:r);});
+  try{if(res.some(function(r){return r.doc;}))localStorage.setItem('idx_cache_v1',JSON.stringify({ts:Date.now(),res:_mix,L:LOGS,V:VISITAS,E:ERRS}));}catch(e){}
+  _aplicar(_mix);_marcaCache(null);
+}
+function _marcaCache(ts){var n=document.getElementById('idx-cache');if(!ts){if(n)n.remove();return;}
+  if(!n){n=document.createElement('div');n.id='idx-cache';n.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--surface2);border:1px solid var(--border2);border-radius:999px;padding:4px 12px;font-family:var(--mono);font-size:.68rem;color:var(--text2)';document.body.appendChild(n);}
+  n.textContent='Mostrando la última carga ('+agoC(ts)+') · actualizando…';}
+function _aplicar(res){
   VIEW=[];
   CFG.forEach(function(c,i){var r=res[i];VIEW.push(c);
     if(!r.doc){DATA[c.id]={err:r.err};return;}

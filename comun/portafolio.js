@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=220, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=221, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v221 | 2026-10-13 | Fotos de perfil livianas: versiones de 128 px en webp (~4 KB cada una en vez de 30 a 400 KB).',
   'v220 | 2026-10-13 | El resumen para el index suma los cobros de los próximos 12 meses (con la parte de capital) para la nueva pestaña Cobros. Historial de precios: un cambio de ratio del Cedear (ej. SPY el 29/05/2026) ya no se ve como una caída del 66%; se reescala lo anterior (afecta Modo foco, gráfico de precios y comparación con el S&P).',
   'v219 | 2026-10-13 | (1) Abre sin señal y más rápido: el service worker guarda en el equipo los archivos con versión (código, datos y librerías) y la última copia de cada página; sin conexión se ve lo último guardado. (2) 🩺 Registro de errores: los errores de la app se guardan solos en Supabase (config "errores", con versión, equipo y pantalla) y aparece un aviso ⚠️ junto a la hora de actualización para verlos. (3) Los HTML cargan portafolio.min.js (versión compacta generada con tools/minificar.js).',
   'v218 | 2026-10-13 | Carga más rápida: (1) la carga desde Supabase corre una sola vez (antes 3 veces: 68 consultas → ~25, y sin riesgo de que se pisen guardados); (2) la configuración llega en una sola consulta y movimientos/dividendos en paralelo; (3) Chart.js se baja después de mostrar la cartera; (4) tablas fijas (CCL/MEP históricos, ratios, flujos de bonos) pasan a comun/datos.js, que queda en caché entre versiones; (5) al abrir se muestra al instante la última visita guardada en el navegador mientras llegan los datos nuevos.',
@@ -9576,7 +9577,7 @@ function honLista(){
 
 // ─── Identidad de cada cartera (para no cargar en la equivocada) ──────────────
 var CART_COLOR={gdc:'#22c55e',ana:'#e879f9',hilda:'#fb923c',juli:'#38bdf8',omar:'#facc15'};
-var CART_FOTO={gdc:'PerfilGaston.png',ana:'PerfilAna.png',hilda:'PerfilHilda.png',juli:'Juli.png',omar:'perfilOmar.png'};
+var CART_FOTO={gdc:'PerfilGaston_s.webp',ana:'PerfilAna_s.webp',hilda:'PerfilHilda_s.webp',juli:'Juli_s.webp',omar:'perfilOmar_s.webp'};
 function cartColor(){return CFG.color||CART_COLOR[CFG.id]||'#7a9cc5';}
 function cartNombre(){var n=CFG.nombre;if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA&&CARTERA_ACTIVA!=='principal'){n+=' · '+({cocos:'Cristian (Cocos)',vetajeep:'Jeep'}[CARTERA_ACTIVA]||CARTERA_ACTIVA);}return n;}
 function _cartAv(sz){var c=cartColor(),f=CFG.foto||CART_FOTO[CFG.id];
