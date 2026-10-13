@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=224, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=225, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v225 | 2026-10-13 | El botón ⇔ "Cargar posiciones actuales en Comparación" aparece en la barra de las 5 carteras (antes solo en GDC; en las otras quedaba escondido).',
   'v224 | 2026-10-13 | Guardado seguro también en movimientos y dividendos (se actualizan las filas y después se borran las sobrantes: la nube nunca queda vacía si se corta la conexión) y en la sincronización GDC → Omar/Ana. Si una tabla no lo admite, vuelve solo al método anterior.',
   'v223 | 2026-10-13 | Revisión general: (1) los proxies gratuitos caídos (allorigins, codetabs, corsproxy) ya no se reintentan en cada carga: si fallan se saltean 6 h (antes cada uno esperaba 7–12 s); (2) el RSI se calcula con el historial de data912 (sin proxy) y los que no se consiguen se reintentan a las 12 h; (3) el historial se pide una sola vez (antes 3 a la vez); (4) guardar configuración es una sola operación (antes borrar + insertar, con riesgo de perder el dato si fallaba en el medio); (5) se borra código de la vista vieja (toggles de columnas, orden de tablas, estilos) y fetchSPYHist.',
   'v222 | 2026-10-13 | Se elimina VetaMovim del Laboratorio (pantalla y código), no se usaba. La importación de Veta en Dividendos CCL sigue igual.',
@@ -10298,7 +10299,7 @@ function nvRender(){
   try{var nt=root.querySelector('.nvtop'),tw=document.createElement('div');tw.id='nv-tools';tw.style.cssText='margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap';nt.appendChild(tw);
    var mv=function(){var kb=document.getElementById('kb-btn'),nb0=document.getElementById('nv-tb0');var qw=document.getElementById('nv-q');qw=qw&&qw.parentNode;if(nb0&&qw&&nb0.lastElementChild!==(kb||qw)){nb0.appendChild(qw);if(kb){kb.style.marginLeft='6px';nb0.appendChild(kb);}}
     ['cartera-activa-badge','port-eye-btn','lupd','sb-status','push-btn','sync-btn','bk-btn'].forEach(function(id){var e=document.getElementById(id);if(e&&e.parentNode!==tw)tw.appendChild(e);});
-    var cb=document.querySelector('.hright button[onclick^="cargarGDCEnComparacion"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);
+    var cb=document.querySelector('.hright button[onclick$="EnComparacion()"]');if(cb&&cb.parentNode!==tw)tw.appendChild(cb);
     var ab=document.querySelector('button[onclick="fetchAllQuotes()"]');if(ab&&ab.parentNode!==tw){tw.appendChild(ab);Array.prototype.slice.call(ab.childNodes).forEach(function(n){if(n.nodeType===3)n.remove();});ab.title='Actualizar precios';ab.className='btn btn-a';ab.style.cssText='padding:0 9px;font-size:.95rem;min-width:0';}};
    mv();setTimeout(mv,1500);setTimeout(mv,5000);}catch(e){}
   try{var stb0=document.getElementById('sidebar-toggle-btn'),tbo=document.querySelector('.topbar');if(stb0&&tbo){stb0.style.marginRight='10px';tbo.insertBefore(stb0,tbo.firstChild);}
