@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=226, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=227, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v227 | 2026-10-13 | GDC · Simulador de retiro: nuevo recuadro 💼 Sueldo de la cartera. Muestra la renta mensual sin vender nada (cupones + dividendos), el retiro que no achica el capital, el retiro que dura 30 años y cuánto haría falta para tu meta. Incluye un gráfico de lo que entra mes a mes en los próximos 12 meses y botones para probar cada monto en el simulador.',
   'v226 | 2026-10-13 | Nuevo recuadro 📊 ¿Cara o barata? en el Portafolio: para cada acción de EE.UU. (y Cedear) muestra el P/E de hoy contra su mediana de 5 años (barata / normal / cara), el rango de 52 semanas y cuánto está abajo del máximo. También aparece al abrir una fila y en el Modo foco. Datos de Finnhub, una vez por día.',
   'v225 | 2026-10-13 | El botón ⇔ "Cargar posiciones actuales en Comparación" aparece en la barra de las 5 carteras (antes solo en GDC; en las otras quedaba escondido).',
   'v224 | 2026-10-13 | Guardado seguro también en movimientos y dividendos (se actualizan las filas y después se borran las sobrantes: la nube nunca queda vacía si se corta la conexión) y en la sincronización GDC → Omar/Ana. Si una tabla no lo admite, vuelve solo al método anterior.',
@@ -9915,6 +9916,57 @@ function simrGuardarEsc(){var n=prompt('Nombre del escenario (ej. "Retiro en 5 a
 function simrCargarEsc(i){var x=SIMR.esc[i];if(!x)return;['cap','ret','ren','inf','apo','ani'].forEach(function(k){var e=document.getElementById('simr-'+k);if(e)e.value=x.v[k];});
   _simrCapAuto=false;SIMR.in={ret:x.v.ret,ren:x.v.ren,inf:x.v.inf,apo:x.v.apo,ani:x.v.ani};simrSave();simrResultado();}
 function simrBorrarEsc(i){SIMR.esc.splice(i,1);simrSave();simrRender(true);}
+function _sdDatos(){
+  var tc=(typeof MEP_HOY!=='undefined'&&MEP_HOY>0?MEP_HOY:CCL_HOY)||1,d=new Date(),M=[],idx={},src={},nDiv={};
+  for(var k=0;k<12;k++){var x=new Date(d.getFullYear(),d.getMonth()+k,1),key=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0');idx[key]=k;M.push({k:key,l:['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][x.getMonth()],r:0,a:0,det:[]});}
+  var hoy=d.toISOString().slice(0,10),lim=new Date(d.getTime()+365*864e5).toISOString().slice(0,10),desde=new Date(d.getTime()-365*864e5).toISOString().slice(0,10);
+  var add=function(key,t,r,a){var i=idx[key];if(i==null)return;M[i].r+=r;M[i].a+=a;M[i].det.push(t);};
+  try{calcularCalendarioCobros().items.forEach(function(it){if(it.fecha<hoy||it.fecha>lim)return;var f=it.moneda==='ARS'?1/tc:1,r=(it.renta||0)*f,a=(it.amort||0)*f;
+    add(it.fecha.slice(0,7),it.ticker,r,a);src[it.ticker]=src[it.ticker]||{r:0,a:0};src[it.ticker].r+=r;src[it.ticker].a+=a;});}catch(e){}
+  var Q={};(NV_ROWS||[]).forEach(function(o){if(o.rv&&o.q>0)Q[o.t]=(Q[o.t]||0)+o.q;});
+  var div=function(iso,t,u,ac){if(!iso||iso<desde||iso>hoy||!(u>0)||!Q[t])return;if(ac>0)u=u*Q[t]/ac;var p=iso.split('-'),key=(+p[0]+1)+'-'+p[1];if(idx[key]==null)key=M[11].k;add(key,t,u,0);nDiv[t]=(nDiv[t]||0)+u;};
+  (TRK.divs||[]).forEach(function(x){if(x.estado==='pendiente')return;var f=String(x.fecha||''),iso=f.indexOf('/')>0?_phIso(f):f;div(iso,x.ticker,divUSD(x)||0,+x.acciones||0);});
+  (movimientos||[]).forEach(function(m){if(!m||m.tipo!=='dividendo')return;div(_phIso(m.fecha),m.ticker,+m.precioUSD||0,0);});
+  var dv=Object.keys(nDiv).reduce(function(s,t){return s+nDiv[t];},0);
+  return {M:M,src:src,dv:dv,nd:Object.keys(nDiv).length,tc:tc};
+}
+function sdUsar(v){var e=document.getElementById('simr-ret');if(e){e.value=Math.round(v);simrInput('ret');}}
+function sueldoRender(){
+  if(!CFG.simRetiro)return;var pg=document.getElementById('page-simretiro'),sc=document.getElementById('simr-card');if(!pg||!sc)return;
+  var card=document.getElementById('sd-card');if(!card){card=document.createElement('div');card.className='card';card.id='sd-card';card.style.marginBottom='1rem';}
+  if(card.nextSibling!==sc)pg.insertBefore(card,sc);
+  var v=_simrVals(),cap=v.cap||_simrCapHoy||0;if(!(cap>0)){card.style.display='none';return;}card.style.display='';
+  var D=_sdDatos(),n0=function(x){return Math.round(x).toLocaleString('es-AR');},mono='font-family:var(--mono)';
+  var renta=D.M.reduce(function(s,m){return s+m.r;},0),amort=D.M.reduce(function(s,m){return s+m.a;},0),real=4.5,ru=v.ren-v.inf;
+  var ip=function(r){return Math.pow(1+r/100,1/12)-1;},i=ip(real),perp=cap*i,a30=cap*i/(1-Math.pow(1+i,-360)),p3=cap*ip(3),pu=ru>0?cap*ip(ru):0,nec=v.ret>0?v.ret/i:Infinity;
+  var kp=function(l,val,sub,c,btn){return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 11px;min-width:0"><div style="'+mono+';font-size:.56rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">'+l+'</div><div class="port-sensitive" style="'+mono+';font-size:1.2rem;font-weight:800;margin:3px 0 2px;color:'+(c||'var(--text)')+'">'+val+'</div><div style="'+mono+';font-size:.62rem;color:var(--text2);line-height:1.4">'+sub+'</div>'+(btn||'')+'</div>';};
+  var ub=function(x){return '<button class="btn btn-sm" style="font-size:.6rem;padding:1px 7px;margin-top:5px" onclick="sdUsar('+Math.round(x)+')">probar en el simulador ↓</button>';};
+  var rs='4,5',rus=String(Math.round(ru*10)/10).replace('.',',');
+  var K='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">'+
+    kp('Renta sin vender nada','USD '+n0(renta/12),'por mes · cupones + dividendos<br>'+(renta/cap*100).toFixed(1).replace('.',',')+'% de la cartera por año')+
+    kp('Sueldo que no come capital','USD '+n0(perp),'por mes · con 4,5% real<br>conservador 3%: USD '+n0(p3)+(ru>0&&Math.abs(ru-4.5)>.4?' · con tu simulador ('+rus+'%): USD '+n0(pu):''),'var(--accent)',ub(perp))+
+    kp('Sueldo a 30 años','USD '+n0(a30),'por mes · a los 30 años queda en cero','#f59e0b',ub(a30))+
+    kp('Tu meta de retiro',v.ret>0?'USD '+n0(v.ret):'—',v.ret>0?(isFinite(nec)?'por mes · harían falta USD '+(nec>=1e6?(nec/1e6).toFixed(2).replace('.',',')+' M':n0(nec))+' con 4,5% real':'')+'<br>hoy cubre el '+Math.round(perp/v.ret*100)+'%':'cargala en el simulador')+'</div>';
+  var mx=Math.max.apply(null,D.M.map(function(m){return m.r+m.a;}).concat([v.ret||0,1]))*1.08,H=140;
+  var bars=D.M.map(function(m){var t='<b>'+m.l+'</b>: renta USD '+n0(m.r)+(m.a?' · amortización USD '+n0(m.a):'')+(m.det.length?' · '+m.det.filter(function(x,j,a){return a.indexOf(x)===j;}).join(', '):'');
+    return '<div title="'+t.replace(/<[^>]+>/g,'')+'" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative;min-width:0">'+
+      '<i style="display:block;height:'+(m.a/mx*100)+'%;background:var(--border2);border-radius:3px 3px 0 0"></i><i style="display:block;height:'+(m.r/mx*100)+'%;background:var(--blue);border-radius:'+(m.a?'0':'3px 3px 0 0')+'"></i>'+
+      '<em style="position:absolute;bottom:-16px;left:0;right:0;text-align:center;font-style:normal;font-size:.56rem;color:var(--text3);'+mono+'">'+m.l+'</em></div>';}).join('');
+  var line=v.ret>0?'<div style="position:absolute;left:0;right:0;bottom:'+(v.ret/mx*100)+'%;border-top:1px dashed #f59e0b;z-index:2"><span style="position:absolute;right:0;top:-15px;'+mono+';font-size:.58rem;color:#f59e0b">tu retiro USD '+n0(v.ret)+'</span></div>':'';
+  var rows=Object.keys(D.src).filter(function(t){return D.src[t].r>0.5;}).sort(function(a,b){return D.src[b].r-D.src[a].r;}).map(function(t){return [t,D.src[t].r];});
+  if(D.dv>0)rows.unshift(['Dividendos ('+D.nd+' acciones)',D.dv]);
+  var tb='<table style="width:100%;border-collapse:collapse;font-size:.76rem;'+mono+'"><tr style="color:var(--text3);font-size:.6rem;text-transform:uppercase"><td style="padding:4px">Fuente</td><td style="text-align:right;padding:4px">Por año</td><td style="text-align:right;padding:4px">Por mes</td></tr>'+
+    rows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:5px 4px">'+r[0]+'</td><td class="port-sensitive" style="text-align:right;padding:5px 4px">'+n0(r[1])+'</td><td class="port-sensitive" style="text-align:right;padding:5px 4px">'+n0(r[1]/12)+'</td></tr>';}).join('')+
+    '<tr style="border-top:1px solid var(--border2);font-weight:700"><td style="padding:5px 4px">Total renta</td><td class="port-sensitive" style="text-align:right;padding:5px 4px">'+n0(renta)+'</td><td class="port-sensitive" style="text-align:right;padding:5px 4px">'+n0(renta/12)+'</td></tr></table>';
+  card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="card-title">💼 Sueldo de la cartera</span><span class="tag">cuánto podés retirar por mes · en dólares de hoy</span></div>'+
+    '<div style="padding:.7rem 1rem 1rem">'+K+
+    '<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-top:14px" class="sd-g">'+
+      '<div><div style="'+mono+';font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:flex;gap:12px;flex-wrap:wrap">Qué entra mes a mes · próximos 12 meses<span><i style="display:inline-block;width:8px;height:8px;background:var(--blue);border-radius:2px"></i> renta</span><span><i style="display:inline-block;width:8px;height:8px;background:var(--border2);border-radius:2px"></i> amortización (capital que vuelve)</span></div>'+
+        '<div class="port-sensitive" style="display:flex;align-items:flex-end;gap:5px;height:'+H+'px;margin:10px 0 22px;position:relative">'+bars+line+'</div>'+
+        (amort>0?'<div style="font-size:.7rem;color:var(--text3);line-height:1.5">Las amortizaciones (USD <span class="port-sensitive">'+n0(amort)+'</span> en el año) no son sueldo: es tu capital que vuelve. Conviene reinvertirlas o usarlas solo si el retiro lo necesita.</div>':'')+'</div>'+
+      '<div>'+tb+'</div></div>'+
+    '<div style="'+mono+';font-size:.58rem;color:var(--text3);margin-top:10px;line-height:1.5">Cupones y amortizaciones salen de los flujos de tus bonos (los de pesos pasados a dólares a $ '+n0(D.tc)+'). Dividendos: los cobrados en los últimos 12 meses, suponiendo que se repiten en el mismo mes. "No come capital" = cartera × 4,5% real ÷ 12 (mezcla de la TIR de bonos en dólares menos inflación y el histórico real de acciones). "A 30 años" = cuota fija que deja la cartera en cero al año 30. Un año malo al principio del retiro pesa más que uno al final: mirá también el conservador.</div></div>';
+}
 var _simrCapHoy=0;
 function simrRender(force){
   if(!CFG.simRetiro||!_simrLoaded)return;
@@ -9950,7 +10002,7 @@ function simrRender(force){
   simrResultado();
 }
 function simrResultado(){
-  var el=document.getElementById('simr-res');if(!el)return;var v=_simrVals(),s=simrCalc(v.cap,v.ret,v.ren,v.inf,v.apo,v.ani),real=v.ren-v.inf;
+  var el=document.getElementById('simr-res');if(!el)return;try{sueldoRender();}catch(e){console.warn('sueldo',e);}var v=_simrVals(),s=simrCalc(v.cap,v.ret,v.ren,v.inf,v.apo,v.ani),real=v.ren-v.inf;
   var nec=real>0?v.ret*12/(real/100):Infinity,et=real>0?v.cap*(real/100)/12:0,n0=function(x){return Math.round(x).toLocaleString('es-AR');};
   var capRet=(s.pts.filter(function(p){return p[0]<=v.ani;}).pop()||[0,v.cap])[1];
   var dur=s.dura==null?null:s.dura-v.ani,cl=dur==null?'var(--accent)':dur<15?'var(--red)':'#eab308';
@@ -10250,7 +10302,7 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-root td.hoy{font-size:.74rem;font-weight:700}'+
  '#nv-val .vtb{width:100%;border-collapse:collapse;font-size:.78rem}#nv-val .vtb td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;height:auto;white-space:nowrap}#nv-val .vtb td.r{text-align:right;font-family:var(--mono)}#nv-val .hh td{color:var(--text3);font-family:var(--mono);font-size:.58rem;text-transform:uppercase}@media(max-width:760px){#nv-val .vhm{display:none}}'+
  '.vpl{display:inline-block;border-radius:999px;padding:1px 8px;font-size:.66rem;font-weight:700;white-space:nowrap}.vbarata{background:rgba(34,197,94,.13);color:#22c55e}.vcara{background:rgba(239,68,68,.13);color:#ef4444}.vnormal,.vsn{background:rgba(122,156,197,.13);color:var(--text2)}.vrg{position:relative;width:100px;height:6px;border-radius:3px;background:linear-gradient(90deg,#22c55e55,#7a9cc555,#ef444455);display:inline-block;vertical-align:middle}.vrg i{position:absolute;top:-3px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:var(--text)}'+
- '#nv-root #nv-ops>.card{margin:0;width:fit-content!important;max-width:100%;display:block}#nv-root #nv-opw{width:fit-content;max-width:100%}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
+ '#nv-root #nv-ops>.card{margin:0;width:fit-content!important;max-width:100%;display:block}#nv-root #nv-opw{width:fit-content;max-width:100%}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}#sd-card .sd-g{grid-template-columns:1fr!important}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
 function nvVender(t){nvModo('v');try{if(typeof vsellPopulateSelect==='function')vsellPopulateSelect();}catch(e){}var sel=document.getElementById('vsell-ticker');if(sel){sel.value=t;var o=NV_ROWS.filter(function(x){return x.t===t;})[0];var q=document.getElementById('vsell-qty');if(q&&o)q.value=o.q;try{vsellPreview();}catch(e){}}
