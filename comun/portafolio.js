@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=227, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=228, APP_VERSION_FECHA='14/10/2026';
 var APP_CHANGELOG=[
+  'v228 | 2026-10-14 | Arreglo: en GDC y Ana aparecía el error "Cannot read properties of null (trkCalcCCL)" al actualizarse el CCL, porque esas carteras no tienen la calculadora de CCL implícito. Ahora se saltea si la calculadora no está.',
   'v227 | 2026-10-13 | GDC · Simulador de retiro: nuevo recuadro 💼 Sueldo de la cartera. Muestra la renta mensual sin vender nada (cupones + dividendos), el retiro que no achica el capital, el retiro que dura 30 años y cuánto haría falta para tu meta. Incluye un gráfico de lo que entra mes a mes en los próximos 12 meses y botones para probar cada monto en el simulador.',
   'v226 | 2026-10-13 | Nuevo recuadro 📊 ¿Cara o barata? en el Portafolio: para cada acción de EE.UU. (y Cedear) muestra el P/E de hoy contra su mediana de 5 años (barata / normal / cara), el rango de 52 semanas y cuánto está abajo del máximo. También aparece al abrir una fila y en el Modo foco. Datos de Finnhub, una vez por día.',
   'v225 | 2026-10-13 | El botón ⇔ "Cargar posiciones actuales en Comparación" aparece en la barra de las 5 carteras (antes solo en GDC; en las otras quedaba escondido).',
@@ -7091,6 +7092,7 @@ window.trkAutoImportFromXLSX = function(base64, fname){
 };
 
 function trkCalcCCL(){
+  if(!document.getElementById('trk-calc-ars')||!document.getElementById('trk-ccl-result'))return;
   var ars=parseFloat(document.getElementById('trk-calc-ars').value);
   var usd=parseFloat(document.getElementById('trk-calc-usd').value);
   var activo=document.getElementById('trk-calc-activo').value.trim();
