@@ -1,0 +1,67 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel macro — propuesta</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#4b6a92;--g:#22c55e;--r:#ef4444;--bl:#448aff;--am:#f59e0b;--mono:ui-monospace,"JetBrains Mono",Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif;font-size:14px}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.note{font-size:.72rem;color:var(--t3);margin:0 0 10px}
+h2{font-size:1rem;margin:0 0 10px;display:flex;align-items:center;gap:8px}.src{margin-left:auto;font-family:var(--mono);font-size:.62rem;color:var(--t3);font-weight:400}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.lbl{font-family:var(--mono);font-size:.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:.07em}
+.v{font-family:var(--mono);font-size:1.45rem;font-weight:800;margin:4px 0 2px}.s{font-family:var(--mono);font-size:.68rem;color:var(--t2)}
+.up{color:var(--r)}.dn{color:var(--g)}.mu{color:var(--t3)}.am{color:var(--am)}
+.g2{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin-top:12px}
+.dol{width:100%;border-collapse:collapse;font-size:.8rem}.dol td{padding:6px 4px;border-top:1px solid var(--b);font-family:var(--mono)}.dol td:nth-child(n+2){text-align:right}
+.imp{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--b);align-items:flex-start}.imp:first-of-type{border-top:0}
+.imp .ic{width:34px;height:34px;border-radius:9px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
+.imp b{font-size:.84rem}.imp p{margin:3px 0 0;font-size:.76rem;color:var(--t2);line-height:1.45}.imp .n{margin-left:auto;text-align:right;font-family:var(--mono);white-space:nowrap}.imp .n b{display:block;font-size:.95rem}.imp .n small{font-size:.62rem;color:var(--t3)}
+.bars{display:flex;align-items:flex-end;gap:5px;height:70px;margin-top:8px}.bars div{flex:1;background:#448aff;border-radius:3px 3px 0 0;position:relative}.bars span{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:.55rem;color:var(--t3);font-family:var(--mono)}
+.sim{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:.78rem}.sim input{flex:1;min-width:160px;accent-color:var(--am)}.sim b{font-family:var(--mono)}
+.chip{font-family:var(--mono);font-size:.62rem;border:1px solid var(--b2);border-radius:999px;padding:1px 8px;color:var(--t2)}
+.exp{margin-top:18px;font-size:.76rem;color:var(--t2);line-height:1.6}.exp b{color:var(--t)}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<p class="note">Propuesta · los datos del mercado son reales al 13/10/2026 (argentinadatos.com y data912). Las sensibilidades usan tus posiciones de GDC y el historial real de los bonos de los últimos 12 meses.</p>
+
+<div class="card"><h2>🇦🇷 Panel macro <span class="src">actualizado 13/10 · fuente: argentinadatos.com</span></h2>
+ <div class="kpis">
+  <div><div class="lbl">Riesgo país</div><div class="v">589</div><div class="s"><span class="up">▲ +83 en el mes</span> · mín. del año 405 (jul)</div></div>
+  <div><div class="lbl">Dólar CCL</div><div class="v">$ 1.607</div><div class="s"><span class="dn">▼ −1,1% en 10 días</span></div></div>
+  <div><div class="lbl">Brecha CCL / oficial</div><div class="v">4,7%</div><div class="s">oficial $ 1.535 · MEP $ 1.543</div></div>
+  <div><div class="lbl">Inflación (agosto)</div><div class="v">1,7%</div><div class="s">12 meses: 33,6% · venía de 3,4% en marzo</div></div>
+  <div><div class="lbl">Plazo fijo (TNA)</div><div class="v">20%</div><div class="s">mediana de 32 bancos · máx. 23,5%</div></div>
+ </div>
+</div>
+
+<div class="g2">
+ <div class="card"><h2>Riesgo país · 12 meses</h2>
+  <svg viewBox="0 0 600 140" width="100%" aria-label="Riesgo país, de 1026 en octubre 2025 a 589 en octubre 2026">
+   <g stroke="#1e3050"><line x1="30" y1="10" x2="590" y2="10"/><line x1="30" y1="62" x2="590" y2="62"/><line x1="30" y1="115" x2="590" y2="115"/></g>
+   <g fill="#4b6a92" font-size="10" font-family="monospace"><text x="26" y="14" text-anchor="end">1100</text><text x="26" y="66" text-anchor="end">740</text><text x="26" y="119" text-anchor="end">380</text><text x="30" y="134">oct 25</text><text x="300" y="134">abr 26</text><text x="590" y="134" text-anchor="end">oct 26</text></g>
+   <g transform="translate(30,5)"><polyline fill="none" stroke="#f59e0b" stroke-width="2" points="0.0,11.3 10.8,3.8 21.5,63.4 32.3,67.2 43.1,76.7 53.8,74.2 64.6,67.8 75.4,69.2 86.2,71.2 96.9,80.5 107.7,80.2 118.5,81.1 129.2,81.6 140.0,79.3 150.8,81.1 161.5,92.6 172.3,91.2 183.1,90.6 193.8,90.0 204.6,84.8 215.4,80.5 226.2,83.3 236.9,78.4 247.7,75.9 258.5,73.8 269.2,74.9 280.0,87.8 290.8,86.6 301.5,78.8 312.3,83.4 323.1,90.0 333.8,84.5 344.6,90.4 355.4,93.5 366.2,92.0 376.9,102.4 387.7,101.9 398.5,103.0 409.2,106.2 420.0,105.4 430.8,103.7 441.5,100.7 452.3,103.7 463.1,96.9 473.8,90.0 484.6,89.8 495.4,91.5 506.2,92.6 516.9,90.8 527.7,83.3 538.5,75.3 549.2,80.5 560.0,78.1"/><circle cx="560" cy="78.1" r="3.5" fill="#f59e0b"/><circle cx="409.2" cy="106.2" r="3" fill="#22c55e"/></g>
+   <text x="439" y="127" fill="#22c55e" font-size="9.5" font-family="monospace">mín. 405</text>
+  </svg>
+  <div class="s" style="margin-top:4px">Desde el mínimo de julio subió 184 puntos: tus bonos en dólares lo sintieron (ver abajo).</div>
+ </div>
+ <div class="card"><h2>Dólares hoy</h2>
+  <table class="dol"><tr><td>Oficial</td><td>$ 1.535</td><td class="mu">—</td></tr><tr><td>Mayorista</td><td>$ 1.517</td><td class="mu">—</td></tr><tr><td>MEP</td><td>$ 1.543</td><td class="mu">+0,5% vs oficial</td></tr><tr><td><b>CCL</b> <span class="chip">el de tu cartera</span></td><td><b>$ 1.607</b></td><td class="mu">+4,7% vs oficial</td></tr><tr><td>Blue</td><td>$ 1.540</td><td class="mu">+0,3% vs oficial</td></tr><tr><td>Cripto</td><td>$ 1.610</td><td class="mu">+4,9% vs oficial</td></tr></table>
+  <div class="lbl" style="margin-top:12px">Inflación mensual · 12 meses</div>
+  <div class="bars"><div style="height:62%"><span>sep</span></div><div style="height:68%"></div><div style="height:74%"></div><div style="height:82%"><span>dic</span></div><div style="height:85%"></div><div style="height:85%"></div><div style="height:100%"><span>mar</span></div><div style="height:76%"></div><div style="height:62%"></div><div style="height:56%"><span>jun</span></div><div style="height:62%"></div><div style="height:50%;background:#22c55e"><span>ago</span></div></div>
+ </div>
+</div>
+
+<div class="card" style="margin-top:12px"><h2>🎯 Cómo le pega a tu cartera (GDC) <span class="src">estimación con el historial real de 12 meses</span></h2>
+ <div class="imp"><span class="ic">📉</span><div><b>Riesgo país</b><p>Tenés <b>USD 28.830 en bonos en dólares</b> (AO29, BC37D, BB37D). En los últimos 12 meses, cada vez que el riesgo país subió 100 puntos, estos bonos cayeron entre 3,6% y 5,8% en dólares (BB37D −5,8%, AL30 −4,4%, GD30 −3,6%).</p></div><div class="n"><b class="up">−USD 1.300</b><small>por cada +100 pts</small></div></div>
+ <div class="imp"><span class="ic">💵</span><div><b>Dólar CCL</b><p>El <b>49% de tu cartera está en pesos</b> (TX31, acciones argentinas, liquidez). Si el CCL sube 10%, esa parte vale 10% menos en dólares. Los bonos CER (TX31) lo recuperan de a poco con la inflación.</p>
+   <div class="sim">Si el CCL sube <input type="range" min="0" max="30" value="10" id="ccl"> <b id="cclv">10%</b> → <b class="up" id="cclr">−USD 7.900</b> hoy</div></div><div class="n"><b>USD 86.800</b><small>expuesto al peso</small></div></div>
+ <div class="imp"><span class="ic">📈</span><div><b>Inflación</b><p><b>TX31 (USD 56.331)</b> ajusta por CER: con la inflación de agosto (1,7%), su capital sube ~1,7% por mes en pesos. Si la inflación queda por encima de la devaluación del CCL, ganás en dólares; si queda por debajo, perdés.</p></div><div class="n"><b class="dn">+1,7%</b><small>ajuste CER / mes</small></div></div>
+ <div class="imp"><span class="ic">🏦</span><div><b>Tasas en pesos</b><p>Un plazo fijo paga 20% anual (≈1,6% por mes), por debajo de la inflación de agosto. Tu liquidez en pesos es chica (USD 68), así que hoy casi no te afecta.</p></div><div class="n"><b class="mu">—</b><small>sin impacto</small></div></div>
+</div>
+
+<div class="exp"><b>Dónde iría:</b> una pestaña nueva "🇦🇷 Macro" en el index (vale para las 5 carteras) y un recuadro chico en cada cartera con su propia sensibilidad. La sección "Cómo le pega a tu cartera" se calcula en cada cartera con sus posiciones reales y el historial de precios que la app ya baja.<br>
+<b>Avisos opcionales:</b> que llegue un aviso al celular si el riesgo país se mueve más de 50 puntos en el día o si la brecha pasa del 10%.<br>
+<b>Costo:</b> cero. argentinadatos.com es gratuito, sin clave, y responde directo al navegador (lo probé). Se consulta una vez por día y se guarda.</div>
+</div>
+<script>var r=document.getElementById('ccl');r.oninput=function(){var p=+r.value;document.getElementById('cclv').textContent=p+'%';var x=86800*(1-1/(1+p/100));document.getElementById('cclr').textContent=(p?'−USD '+Math.round(x).toLocaleString('es-AR'):'USD 0');};r.oninput();</script>
+</body></html>

@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=225, APP_VERSION_FECHA='05/10/2026';
+var APP_VERSION=226, APP_VERSION_FECHA='05/10/2026';
 var APP_CHANGELOG=[
+  'v226 | 2026-10-13 | Nuevo recuadro 📊 ¿Cara o barata? en el Portafolio: para cada acción de EE.UU. (y Cedear) muestra el P/E de hoy contra su mediana de 5 años (barata / normal / cara), el rango de 52 semanas y cuánto está abajo del máximo. También aparece al abrir una fila y en el Modo foco. Datos de Finnhub, una vez por día.',
   'v225 | 2026-10-13 | El botón ⇔ "Cargar posiciones actuales en Comparación" aparece en la barra de las 5 carteras (antes solo en GDC; en las otras quedaba escondido).',
   'v224 | 2026-10-13 | Guardado seguro también en movimientos y dividendos (se actualizan las filas y después se borran las sobrantes: la nube nunca queda vacía si se corta la conexión) y en la sincronización GDC → Omar/Ana. Si una tabla no lo admite, vuelve solo al método anterior.',
   'v223 | 2026-10-13 | Revisión general: (1) los proxies gratuitos caídos (allorigins, codetabs, corsproxy) ya no se reintentan en cada carga: si fallan se saltean 6 h (antes cada uno esperaba 7–12 s); (2) el RSI se calcula con el historial de data912 (sin proxy) y los que no se consiguen se reintentan a las 12 h; (3) el historial se pide una sola vez (antes 3 a la vez); (4) guardar configuración es una sola operación (antes borrar + insertar, con riesgo de perder el dato si fallaba en el medio); (5) se borra código de la vista vieja (toggles de columnas, orden de tablas, estilos) y fetchSPYHist.',
@@ -10247,6 +10248,8 @@ function _nvCss(){if(document.getElementById('nv-css'))return;var st=document.cr
  '#nv-ideal .itr{position:relative;height:10px;background:var(--bg);border-radius:5px}#nv-ideal .itr i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}#nv-ideal .itr b{position:absolute;top:-4px;bottom:-4px;width:2px;background:#fff}#nv-ideal .ied{cursor:pointer;border-bottom:1px dotted var(--text3)}'+
  '#nv-ideal .isug{margin:0 1rem 1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 12px}#nv-ideal .iop{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 14px;font-family:var(--mono);font-size:.74rem;align-items:center}#nv-ideal .iop small{color:var(--text3);font-family:var(--sans)}#nv-ideal .iv{color:#ef4444;font-weight:800}#nv-ideal .ic{color:#22c55e;font-weight:800}'+
  '#nv-root td.hoy{font-size:.74rem;font-weight:700}'+
+ '#nv-val .vtb{width:100%;border-collapse:collapse;font-size:.78rem}#nv-val .vtb td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;height:auto;white-space:nowrap}#nv-val .vtb td.r{text-align:right;font-family:var(--mono)}#nv-val .hh td{color:var(--text3);font-family:var(--mono);font-size:.58rem;text-transform:uppercase}@media(max-width:760px){#nv-val .vhm{display:none}}'+
+ '.vpl{display:inline-block;border-radius:999px;padding:1px 8px;font-size:.66rem;font-weight:700;white-space:nowrap}.vbarata{background:rgba(34,197,94,.13);color:#22c55e}.vcara{background:rgba(239,68,68,.13);color:#ef4444}.vnormal,.vsn{background:rgba(122,156,197,.13);color:var(--text2)}.vrg{position:relative;width:100px;height:6px;border-radius:3px;background:linear-gradient(90deg,#22c55e55,#7a9cc555,#ef444455);display:inline-block;vertical-align:middle}.vrg i{position:absolute;top:-3px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:var(--text)}'+
  '#nv-root #nv-ops>.card{margin:0;width:fit-content!important;max-width:100%;display:block}#nv-root #nv-opw{width:fit-content;max-width:100%}@media(max-width:860px){#nv-root .nvdist{grid-template-columns:1fr}}';document.head.appendChild(st);}
 function nvModo(m){NV.modo=m;nvSave();var b=document.getElementById('vbuy-card'),s=document.getElementById('vsell-card');if(b)b.style.display=m==='c'?'':'none';if(s)s.style.display=m==='v'?'':'none';
  var sg=document.getElementById('nv-seg');if(sg)sg.innerHTML='<span class="'+(m==='c'?'on':'')+'" onclick="nvModo(\'c\')">🛒 Comprar</span><span class="'+(m==='v'?'on v':'')+'" onclick="nvModo(\'v\')">💸 Vender</span>';}
@@ -10306,7 +10309,7 @@ function nvRender(){
    var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');document.documentElement.classList.remove('nv-pre');}catch(e){}
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
- _nvMover();try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();}catch(e){console.warn('nv extras',e);}
+ _nvMover();try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();}catch(e){console.warn('nv extras',e);}
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
@@ -10341,6 +10344,8 @@ function nvRender(){
     '<div onclick="event.stopPropagation()"><div class="nvlbl">P. Venta USD ✎</div><input class="nvpv" type="text" inputmode="decimal" value="'+(o.pvU!=null&&isFinite(o.pvU)?String(o.pvU).replace('.',','):'')+'" placeholder="sin P. Venta" title="Escribí el nuevo P. Venta y Enter (vacío = sacarlo)" onkeydown="if(event.key===\'Enter\'){this.blur();}else if(event.key===\'Escape\'){this.value=this.defaultValue;this.blur();}" onblur="if(this.value!==this.defaultValue)nvSetPV(\''+o.t+'\',this.value)"></div>'+
     '<div title="Vender todos los nominales" style="cursor:pointer" onclick="event.stopPropagation();nvVender(\''+o.t+'\')"><div class="nvlbl">Nominales ↓</div><b class="port-sensitive" style="text-decoration:underline dotted;text-underline-offset:3px">'+(o.q%1===0?_nvN(o.q):o.q.toLocaleString('es-AR',{maximumFractionDigits:2}))+'</b></div>'+
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
+    (function(){var x=_valOn()&&_valOk(o)?_valDe(o.t):null;if(!x)return '';var nf=function(v){return v.toLocaleString('es-AR',{maximumFractionDigits:v<100?2:0});};
+     return (x.pe>0?'<div><div class="nvlbl">P/E vs mediana 5 años</div><b>'+x.pe.toFixed(1).replace('.',',')+'</b> '+_valPill(x)+'</div>':'')+(x.pos!=null?'<div><div class="nvlbl">52 semanas (USD)</div><b>'+nf(x.lo)+' – '+nf(x.hi)+'</b> <span style="font-size:.7rem;color:var(--text2)">'+(x.dmax<0?'−':'')+Math.abs(x.dmax).toFixed(1).replace('.',',')+'% del máx.</span></div>':'');})()+
     '<div style="margin-left:auto;align-self:center;display:flex;gap:6px"><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
     '</div></td></tr>';
    it.push({r:r});});});
@@ -10523,7 +10528,8 @@ async function nvFoco(t){if(!_focoOn())return;var o=NV_ROWS.filter(function(x){r
    (TRK.divs||[]).forEach(function(x){if(x.ticker!==t||x.estado==='pendiente')return;var f=String(x.fecha||''),iso=f.indexOf('/')>0?_phIso(f):f;if(!iso||iso<st)return;var u=divUSD(x)||0;if(u>0){cob+=u;nc++;if(!ult||iso>ult)ult=iso;}});
    movimientos.forEach(function(m){if(!m||m.ticker!==t||m.tipo!=='dividendo')return;var iso=_phIso(m.fecha);if(!iso||iso<st)return;var u=+m.precioUSD||0;if(u>0){cob+=u;nc++;if(!ult||iso>ult)ult=iso;}});
    inv=(o.tc>0&&o.inv>0)?o.inv/o.tc:0;
-   return kp(o.rv?'Dividendos cobrados':'Rentas cobradas',nc?'<span class="port-sensitive">USD '+cob.toLocaleString('es-AR',{maximumFractionDigits:0})+'</span>':'—',nc?(inv>0?(cob/inv*100).toFixed(1).replace('.',',')+'% de lo invertido · ':'')+nc+' cobro'+(nc>1?'s':'')+' · último '+ult.split('-').reverse().join('/'):'sin cobros desde que lo tenés');})();})()+'</div></div>'+
+   return kp(o.rv?'Dividendos cobrados':'Rentas cobradas',nc?'<span class="port-sensitive">USD '+cob.toLocaleString('es-AR',{maximumFractionDigits:0})+'</span>':'—',nc?(inv>0?(cob/inv*100).toFixed(1).replace('.',',')+'% de lo invertido · ':'')+nc+' cobro'+(nc>1?'s':'')+' · último '+ult.split('-').reverse().join('/'):'sin cobros desde que lo tenés');})();})()+(function(){var x=_valOn()&&_valOk(o)?_valDe(t):null;if(!x)return '';var nf=function(v){return v.toLocaleString('es-AR',{maximumFractionDigits:v<100?2:0});};
+   return (x.pe>0?kp('P/E',x.pe.toFixed(1).replace('.',','),x.med?_valPill(x)+' mediana 5 años '+x.med.toFixed(1).replace('.',','):'sin historia de P/E'):'')+(x.pos!=null?kp('52 semanas',nf(x.lo)+' – '+nf(x.hi),'hoy '+nf(x.px)+' · '+(x.dmax<0?'−':'')+Math.abs(x.dmax).toFixed(1).replace('.',',')+'% del máximo'):'');})()+'</div></div>'+
   '<div style="display:flex;flex-direction:column;gap:10px"><div class="fb"><div class="fl">Historia de la posición</div><div class="fev">'+(ev.length?ev.slice(0,14).map(function(x){return x.h;}).join(''):'<span style="grid-column:1/-1;color:var(--text3)">Sin movimientos cargados</span>')+'</div></div>'+
   '<div class="fb"><div class="fl">Noticias</div><div id="foco-nw" style="font-size:.74rem;color:var(--text3)">'+(NWS_SECTORS&&NWS_SECTORS[o.s]?'Buscando…':'La fuente no cubre este activo · <a href="'+nwsGLink(t)+'" target="_blank" rel="noopener" style="color:var(--blue)">Google Noticias →</a>')+'</div></div>'+
   '<div class="fb"><div class="fl">Tu nota</div><textarea id="foco-nota" placeholder="Escribí una nota para este activo…" onblur="_focoNota()">'+_whyEsc(m.note||'')+'</textarea></div></div></div></div>';
@@ -10541,6 +10547,47 @@ var IDEAL=null,_idealLoading=false,_IDEAL_DEF={nyse:40,brasil:12,argentina:10,eu
 var _IDEAL_G=[['nyse','🇺🇸','USA'],['brasil','🇧🇷','Brasil'],['argentina','🇦🇷','Argentina'],['europa','🇪🇺','Europa'],['china','🇨🇳','China'],['cripto','₿','Cripto'],['rf','📜','Renta fija']];
 function _idealG(s){return (s==='bonos'||s==='on'||s==='fci')?'rf':s;}
 function _idealLoad(){if(IDEAL||_idealLoading)return;_idealLoading=true;Promise.resolve(sbGetConfig('cartera_ideal')).then(function(v){IDEAL=(v&&typeof v==='object'&&v.p)?v:{p:Object.assign({},_IDEAL_DEF),ejemplo:true};}).catch(function(){IDEAL={p:Object.assign({},_IDEAL_DEF),ejemplo:true};}).then(function(){_idealLoading=false;try{nvIdeal();}catch(e){}});}
+// ─── 📊 ¿Cara o barata? P/E de hoy vs su mediana de 5 años y rango de 52 semanas (Finnhub, 1 vez por día) ───
+var _valT=0,VAL=(function(){try{return JSON.parse(localStorage.getItem('val_v1')||'{}')||{};}catch(e){return {};}})(),_valRun=false,_valProg=null;
+function _valOn(){return CFG.valuacion!==false;}
+function _valOk(o){return o&&o.rv&&['nyse','europa','china','brasil'].indexOf(o.s)>=0;}
+function _valMed(a){a=a.filter(function(v){return v!=null&&isFinite(v)&&v>0;}).sort(function(x,y){return x-y;});if(!a.length)return null;var m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function _valDe(t){var v=VAL[t];if(!v||v.px==null)return null;var r={pe:v.pe,med:v.med,hi:v.hi,lo:v.lo,px:v.px,dy:v.dy,dif:null,est:'sin',pos:null,dmax:null};
+  if(v.pe>0&&v.med>0){r.dif=(v.pe/v.med-1)*100;r.est=r.dif<=-15?'barata':r.dif>=15?'cara':'normal';}
+  if(v.hi>0&&v.lo>0&&v.hi>v.lo&&v.px>=v.lo*.8&&v.px<=v.hi*1.25){r.pos=Math.max(0,Math.min(100,(v.px-v.lo)/(v.hi-v.lo)*100));r.dmax=(v.px/v.hi-1)*100;}return r;}
+function _valPill(x){if(!x)return '<span style="color:var(--text3)">—</span>';var f=function(n){return (n>0?'+':'−')+Math.abs(Math.round(n))+'%';};
+  if(x.est==='sin')return '<span class="vpl vsn" title="Sin P/E: ETF o empresa sin ganancias">sin P/E</span>';
+  return '<span class="vpl v'+x.est+'" title="P/E '+x.pe.toFixed(1).replace('.',',')+' contra su mediana de 5 años '+x.med.toFixed(1).replace('.',',')+'">'+(x.est==='barata'?'barata ':x.est==='cara'?'cara ':'normal ')+f(x.dif)+'</span>';}
+async function valCargar(){if(_valRun||!_valOn())return;_valRun=true;
+  try{var seen={},L=NV_ROWS.filter(function(o){if(!_valOk(o)||seen[o.t])return false;seen[o.t]=1;return true;}).map(function(o){return o.t;});
+    var P=L.filter(function(t){return !VAL[t]||Date.now()-VAL[t].ts>20*3600e3;});_valProg=P.length?[0,P.length]:null;
+    for(var i=0;i<P.length;i++){var t=P[i],s=getFinnhubTicker(t);
+      try{var m=await (await fetchWithTimeout(FBASE+'/stock/metric?symbol='+encodeURIComponent(s)+'&metric=all&token='+FKEY,{},10000)).json();
+        var q=await (await fetchWithTimeout(FBASE+'/quote?symbol='+encodeURIComponent(s)+'&token='+FKEY,{},10000)).json();
+        var M=(m&&m.metric)||{},ser=((m&&m.series&&m.series.annual&&m.series.annual.pe)||[]).slice(0,5).map(function(x){return x.v;});
+        VAL[t]={ts:Date.now(),s:s,pe:M.peTTM||M.peBasicExclExtraTTM||null,med:_valMed(ser),hi:M['52WeekHigh']||null,lo:M['52WeekLow']||null,px:(q&&q.c>0)?q.c:null,dy:M.currentDividendYieldTTM||null};
+      }catch(e){VAL[t]={ts:Date.now(),s:s,px:null};}
+      _valProg=[i+1,P.length];if(i%4===3){try{localStorage.setItem('val_v1',JSON.stringify(VAL));}catch(e){}nvVal();}
+      await new Promise(function(r){setTimeout(r,2500);});}
+  }finally{_valRun=false;_valProg=null;try{localStorage.setItem('val_v1',JSON.stringify(VAL));}catch(e){}nvVal();}}
+function valTog(){NV.vc=!NV.vc;nvSave();nvVal();}
+function nvVal(){if(!_valOn())return;var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
+  var card=document.getElementById('nv-val');if(!card){card=document.createElement('div');card.className='card';card.id='nv-val';card.style.cssText='margin-top:1rem';}cw.appendChild(card);
+  var seen={},R=NV_ROWS.filter(function(o){if(!_valOk(o)||seen[o.t])return false;seen[o.t]=1;return true;});if(!R.length){card.style.display='none';return;}card.style.display='';
+  var falta=R.some(function(o){return !VAL[o.t]||Date.now()-VAL[o.t].ts>20*3600e3;});if(falta&&!_valRun&&!_valT)_valT=setTimeout(function(){_valT=0;valCargar();},4000);
+  var X=R.map(function(o){return {o:o,x:_valDe(o.t)};}),n={barata:0,cara:0};X.forEach(function(z){if(z.x&&n[z.x.est]!=null)n[z.x.est]++;});
+  X.sort(function(a,b){var da=a.x&&a.x.dif!=null?a.x.dif:999,db=b.x&&b.x.dif!=null?b.x.dif:999;return da-db;});
+  var nf=function(v,d){return v==null?'—':v.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});};
+  var col=NV.vc===true;
+  var rows=X.map(function(z){var x=z.x,o=z.o;return '<tr><td><b class="nvtk"'+(typeof _focoOn==='function'&&_focoOn()?' style="cursor:pointer" onclick="nvFoco(\''+o.t+'\')"':'')+'>'+o.t+'</b>'+(VAL[o.t]&&VAL[o.t].s&&VAL[o.t].s!==o.t?' <span style="color:var(--text3);font-size:.62rem">'+VAL[o.t].s+'</span>':'')+'</td>'+
+    '<td class="r">'+(x?nf(x.px,2):'<span style="color:var(--text3)">…</span>')+'</td><td class="r">'+(x&&x.pe>0?nf(x.pe,1):'—')+'</td><td class="r vhm">'+(x&&x.med?nf(x.med,1):'—')+'</td><td>'+_valPill(x)+'</td>'+
+    '<td>'+(x&&x.pos!=null?'<span class="vrg" title="52 semanas: '+nf(x.lo,2)+' – '+nf(x.hi,2)+'"><i style="left:'+x.pos.toFixed(0)+'%"></i></span>':'—')+'</td>'+
+    '<td class="r" style="color:'+(x&&x.dmax!=null?(x.dmax<=-20?'#ef4444':x.dmax<=-5?'var(--text2)':'#f59e0b'):'var(--text3)')+'">'+(x&&x.dmax!=null?(x.dmax<0?'−':'')+Math.abs(x.dmax).toFixed(1).replace('.',',')+'%':'—')+'</td>'+
+    '<td class="r vhm port-sensitive">USD '+_nvN(o.usd||0)+'</td></tr>';}).join('');
+  card.innerHTML='<div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="valTog()"><span style="color:var(--text3);font-size:.8rem;width:12px">'+(col?'▸':'▾')+'</span><span class="card-title">📊 ¿Cara o barata?</span><span class="tag">P/E de hoy vs su mediana de 5 años · rango de 52 semanas</span>'+
+    '<span style="margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--text2)">'+(_valProg?'actualizando '+_valProg[0]+' de '+_valProg[1]+'… · ':'')+'<b style="color:#22c55e">'+n.barata+' baratas</b> · <b style="color:#ef4444">'+n.cara+' caras</b> de '+R.length+'</span></div>'+(col?'':
+    '<div style="padding:.3rem 0 .2rem;overflow-x:auto"><table class="itb vtb"><tr class="hh"><td>Acción</td><td class="r">Precio USD</td><td class="r">P/E hoy</td><td class="r vhm">Mediana 5 años</td><td>Valuación</td><td>Rango 52 sem.</td><td class="r">Desde el máx.</td><td class="r vhm">Tu posición</td></tr>'+rows+'</table></div>'+
+    '<div style="font-size:.7rem;color:var(--text3);line-height:1.5;padding:.2rem 0 .5rem">El P/E compara precio con ganancias: <b>"barata" no quiere decir "comprá"</b>, quiere decir que hoy se paga menos por cada dólar de ganancia que lo habitual para esa empresa (±15% = normal). Rayita: izquierda = cerca del mínimo del año, derecha = cerca del máximo. Precio de la acción en EE.UU. (no del Cedear). Datos de Finnhub, se actualizan una vez por día. Sin P/E = ETF o empresa sin ganancias.</div>');}
 function idealTog(){NV.ic=!NV.ic;nvSave();nvIdeal();}
 function idealEditar(k){var g=_IDEAL_G.filter(function(x){return x[0]===k;})[0],v=prompt('% ideal para '+g[2]+' (sobre el total de la cartera):',String(IDEAL.p[k]||0));if(v==null)return;var n=parseFloat(String(v).replace(',','.'));if(!(n>=0&&n<=100)){alert('Ingresá un % entre 0 y 100');return;}
  IDEAL.p[k]=Math.round(n*10)/10;delete IDEAL.ejemplo;try{sbSetConfig('cartera_ideal',IDEAL);}catch(e){}nvIdeal();}
