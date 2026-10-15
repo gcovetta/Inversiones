@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=229, APP_VERSION_FECHA='15/10/2026';
+var APP_VERSION=230, APP_VERSION_FECHA='15/10/2026';
 var APP_CHANGELOG=[
+  'v230 | 2026-10-15 | Arreglo importante: las marcas (Comprar / Vender / Seguir / nota) se pedían a la nube antes de iniciar sesión, así que la app arrancaba sin marcas y al poner una nueva se borraban las anteriores. Ahora se cargan después de iniciar sesión y, al guardar, se combinan con lo que hay en la nube: un cambio en el celular ya no pisa las marcas puestas en la PC.',
   'v229 | 2026-10-15 | Nuevo gráfico 🧭 Línea de vida financiera al final del Portafolio (cerrado; se abre tocando el título): lo que entra por año hasta el último vencimiento. Muestra la renta (cupones + dividendos) y el capital que vuelve (amortizaciones y vencimientos), con una marca en el último pago de cada bono u ON.',
   'v228 | 2026-10-14 | Arreglo: en GDC y Ana aparecía el error "Cannot read properties of null (trkCalcCCL)" al actualizarse el CCL, porque esas carteras no tienen la calculadora de CCL implícito. Ahora se saltea si la calculadora no está.',
   'v227 | 2026-10-13 | GDC · Simulador de retiro: nuevo recuadro 💼 Sueldo de la cartera. Muestra la renta mensual sin vender nada (cupones + dividendos), el retiro que no achica el capital, el retiro que dura 30 años y cuánto haría falta para tu meta. Incluye un gráfico de lo que entra mes a mes en los próximos 12 meses y botones para probar cada monto en el simulador.',
@@ -1316,13 +1317,17 @@ function loadLiquidez(){
 var MARKS = {};
 var _markPopTicker = null;
 
+var _marksBase=null;
+function _marksClon(o){return JSON.parse(JSON.stringify(o||{}));}
 async function loadMarks(){
   try{
     var d = await sbGetConfig('marks');
     if(d && typeof d === 'object' && !Array.isArray(d)){
-      MARKS = d;
+      Object.keys(MARKS).forEach(function(t){if(!(t in d))d[t]=MARKS[t];});
+      MARKS = d;_marksBase=_marksClon(d);
       return;
     }
+    _marksBase={};
     var s = localStorage.getItem((PFX+'marks'));
     if(s){
       MARKS = JSON.parse(s);
@@ -1333,10 +1338,25 @@ async function loadMarks(){
   }catch(e){ console.warn('[marks] loadMarks error', e); }
 }
 
+var _marksT=0;
 async function saveMarks(){
+  clearTimeout(_marksT);
   try{
-    await sbSetConfig('marks', MARKS);
-  }catch(e){ console.warn('[marks] saveMarks error', e); }
+    var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.marks&select=value',{headers:sbHeaders()});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var d=await r.json(),nube=d&&d[0]?d[0].value:{};if(typeof nube==='string'){try{nube=JSON.parse(nube);}catch(e){nube={};}}
+    if(!nube||typeof nube!=='object'||Array.isArray(nube))nube={};
+    var base=_marksBase||{},cambio=false;
+    Object.keys(Object.assign({},base,MARKS)).forEach(function(t){
+      if(JSON.stringify(MARKS[t])===JSON.stringify(base[t]))return;
+      if(MARKS[t])nube[t]=MARKS[t];else delete nube[t];});
+    Object.keys(nube).forEach(function(t){if(JSON.stringify(nube[t])!==JSON.stringify(MARKS[t]))cambio=true;});
+    MARKS=nube;
+    var ok=await sbSetConfig('marks', MARKS);
+    if(ok===false)throw new Error('no se pudo guardar');
+    _marksBase=_marksClon(MARKS);
+    if(cambio){try{renderPortfolio();}catch(e){}}
+  }catch(e){ console.warn('[marks] saveMarks error, reintento en 15 s', e); _marksT=setTimeout(saveMarks,15000); }
 }
 
 function openMarkPopover(ticker, el){
@@ -1525,7 +1545,6 @@ function portToggleBlur(){
   }
 }
 
-loadMarks();
 // ─────────────────────────────────────────────────────────────────────────
 
 var _gdcInitDone = false;
@@ -7118,6 +7137,7 @@ function trkCalcCCL(){
     _ifsOk=true;
     document.getElementById('lupd').textContent='Cargando desde Supabase...';
     _sbCfgPrefetch();
+    await loadMarks();
     var _pingP=sbPing();
     var _movP=sbLoadArray('movimientos'),_trkDivsP=sbLoadArray('trk_divs');
     _precargaLocal();
