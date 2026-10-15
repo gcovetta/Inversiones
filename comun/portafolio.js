@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=228, APP_VERSION_FECHA='14/10/2026';
+var APP_VERSION=229, APP_VERSION_FECHA='15/10/2026';
 var APP_CHANGELOG=[
+  'v229 | 2026-10-15 | Nuevo gráfico 🧭 Línea de vida financiera al final del Portafolio (cerrado; se abre tocando el título): lo que entra por año hasta el último vencimiento. Muestra la renta (cupones + dividendos) y el capital que vuelve (amortizaciones y vencimientos), con una marca en el último pago de cada bono u ON.',
   'v228 | 2026-10-14 | Arreglo: en GDC y Ana aparecía el error "Cannot read properties of null (trkCalcCCL)" al actualizarse el CCL, porque esas carteras no tienen la calculadora de CCL implícito. Ahora se saltea si la calculadora no está.',
   'v227 | 2026-10-13 | GDC · Simulador de retiro: nuevo recuadro 💼 Sueldo de la cartera. Muestra la renta mensual sin vender nada (cupones + dividendos), el retiro que no achica el capital, el retiro que dura 30 años y cuánto haría falta para tu meta. Incluye un gráfico de lo que entra mes a mes en los próximos 12 meses y botones para probar cada monto en el simulador.',
   'v226 | 2026-10-13 | Nuevo recuadro 📊 ¿Cara o barata? en el Portafolio: para cada acción de EE.UU. (y Cedear) muestra el P/E de hoy contra su mediana de 5 años (barata / normal / cara), el rango de 52 semanas y cuánto está abajo del máximo. También aparece al abrir una fila y en el Modo foco. Datos de Finnhub, una vez por día.',
@@ -10363,7 +10364,7 @@ function nvRender(){
    var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');document.documentElement.classList.remove('nv-pre');}catch(e){}
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
- _nvMover();try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();}catch(e){console.warn('nv extras',e);}
+ _nvMover();try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();nvLinea();}catch(e){console.warn('nv extras',e);}
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
@@ -10626,7 +10627,7 @@ async function valCargar(){if(_valRun||!_valOn())return;_valRun=true;
   }finally{_valRun=false;_valProg=null;try{localStorage.setItem('val_v1',JSON.stringify(VAL));}catch(e){}nvVal();}}
 function valTog(){NV.vc=!NV.vc;nvSave();nvVal();}
 function nvVal(){if(!_valOn())return;var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
-  var card=document.getElementById('nv-val');if(!card){card=document.createElement('div');card.className='card';card.id='nv-val';card.style.cssText='margin-top:1rem';}cw.appendChild(card);
+  var card=document.getElementById('nv-val');if(!card){card=document.createElement('div');card.className='card';card.id='nv-val';card.style.cssText='margin-top:1rem';}cw.insertBefore(card,document.getElementById('nv-linea'));
   var seen={},R=NV_ROWS.filter(function(o){if(!_valOk(o)||seen[o.t])return false;seen[o.t]=1;return true;});if(!R.length){card.style.display='none';return;}card.style.display='';
   var falta=R.some(function(o){return !VAL[o.t]||Date.now()-VAL[o.t].ts>20*3600e3;});if(falta&&!_valRun&&!_valT)_valT=setTimeout(function(){_valT=0;valCargar();},4000);
   var X=R.map(function(o){return {o:o,x:_valDe(o.t)};}),n={barata:0,cara:0};X.forEach(function(z){if(z.x&&n[z.x.est]!=null)n[z.x.est]++;});
@@ -10642,6 +10643,36 @@ function nvVal(){if(!_valOn())return;var cw=document.getElementById('nv-cards');
     '<span style="margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--text2)">'+(_valProg?'actualizando '+_valProg[0]+' de '+_valProg[1]+'… · ':'')+'<b style="color:#22c55e">'+n.barata+' baratas</b> · <b style="color:#ef4444">'+n.cara+' caras</b> de '+R.length+'</span></div>'+(col?'':
     '<div style="padding:.3rem 0 .2rem;overflow-x:auto"><table class="itb vtb"><tr class="hh"><td>Acción</td><td class="r">Precio USD</td><td class="r">P/E hoy</td><td class="r vhm">Mediana 5 años</td><td>Valuación</td><td>Rango 52 sem.</td><td class="r">Desde el máx.</td><td class="r vhm">Tu posición</td></tr>'+rows+'</table></div>'+
     '<div style="font-size:.7rem;color:var(--text3);line-height:1.5;padding:.2rem 0 .5rem">El P/E compara precio con ganancias: <b>"barata" no quiere decir "comprá"</b>, quiere decir que hoy se paga menos por cada dólar de ganancia que lo habitual para esa empresa (±15% = normal). Rayita: izquierda = cerca del mínimo del año, derecha = cerca del máximo. Precio de la acción en EE.UU. (no del Cedear). Datos de Finnhub, se actualizan una vez por día. Sin P/E = ETF o empresa sin ganancias.</div>');}
+function lvTog(){NV.lv=!NV.lv;nvSave();nvLinea();}
+function nvLinea(){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
+  var card=document.getElementById('nv-linea');if(!card){card=document.createElement('div');card.className='card';card.id='nv-linea';card.style.cssText='margin-top:1rem';}cw.appendChild(card);
+  var tc=(typeof MEP_HOY!=='undefined'&&MEP_HOY>0?MEP_HOY:CCL_HOY)||1,hoy=new Date(),y0=hoy.getFullYear(),Y={},fin={},it=[];
+  try{it=calcularCalendarioCobros().items;}catch(e){}
+  it.forEach(function(x){var y=+x.fecha.slice(0,4),f=x.moneda==='ARS'?1/tc:1;if(y>y0+15)return;Y[y]=Y[y]||{r:0,a:0,d:{}};Y[y].r+=(x.renta||0)*f;var a=(x.amort||0)*f;Y[y].a+=a;if(a>0)Y[y].d[x.ticker]=(Y[y].d[x.ticker]||0)+a;if(!fin[x.ticker]||x.fecha>fin[x.ticker])fin[x.ticker]=x.fecha;});
+  var dv=0;try{dv=_sdDatos().dv||0;}catch(e){}
+  var ys=Object.keys(Y).map(Number);if(!ys.length&&!dv){card.style.display='none';return;}card.style.display='';
+  var yN=Math.max(y0+3,ys.length?Math.max.apply(null,ys):y0);var L=[];for(var y=y0;y<=yN;y++){var o=Y[y]||{r:0,a:0,d:{}};L.push({y:y,r:o.r+dv*(y===y0?(11-hoy.getMonth())/12:1),a:o.a,d:o.d});}
+  var n0=function(x){return Math.round(x).toLocaleString('es-AR');},col=!NV.lv;
+  var head='<div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="lvTog()"><span style="color:var(--text3);font-size:.8rem;width:12px">'+(col?'▸':'▾')+'</span><span class="card-title">🧭 Línea de vida financiera</span><span class="tag">lo que entra por año · '+y0+' → '+yN+'</span>'+
+    '<span class="port-sensitive" style="margin-left:auto;font-family:var(--mono);font-size:.74rem;color:var(--text2)">renta '+y0+'–'+yN+': USD '+n0(L.reduce(function(s,o){return s+o.r;},0))+' · capital que vuelve: USD '+n0(L.reduce(function(s,o){return s+o.a;},0))+'</span></div>';
+  if(col){card.innerHTML=head;return;}
+  var W=1100,H=320,Lm=56,B=62,T=20,bw=(W-Lm-16)/L.length,mx=Math.max.apply(null,L.map(function(o){return o.r+o.a;}).concat([1]))*1.12;
+  var st=mx>40000?10000:mx>16000?5000:mx>6000?2000:mx>2500?1000:500,yv=function(v){return T+(1-v/mx)*(H-T-B);},g='';
+  for(var v=0;v<=mx;v+=st)g+='<line x1="'+Lm+'" x2="'+(W-10)+'" y1="'+yv(v)+'" y2="'+yv(v)+'" stroke="var(--border)"/><text x="'+(Lm-6)+'" y="'+(yv(v)+3)+'" fill="var(--text3)" font-size="10" text-anchor="end">'+(v>=1000?(v/1000)+'k':v)+'</text>';
+  L.forEach(function(o,k){var x=Lm+k*bw+bw*.18,w=bw*.64,t1=yv(o.r),t2=yv(o.r+o.a),dd=Object.keys(o.d).map(function(t){return t+' '+n0(o.d[t]);}).join(', ');
+    g+='<rect x="'+x+'" y="'+t1+'" width="'+w+'" height="'+Math.max(0,yv(0)-t1)+'" rx="2" fill="var(--blue)"><title>'+o.y+' · renta USD '+n0(o.r)+'</title></rect>';
+    if(o.a>0)g+='<rect x="'+x+'" y="'+t2+'" width="'+w+'" height="'+Math.max(0,t1-t2)+'" rx="2" fill="#f59e0b"><title>'+o.y+' · vuelve USD '+n0(o.a)+(dd?': '+dd:'')+'</title></rect>';
+    var tot=o.r+o.a;g+='<text x="'+(x+w/2)+'" y="'+(t2-5)+'" fill="var(--text2)" font-size="9.5" text-anchor="middle">'+(tot>=1000?(tot/1000).toFixed(tot>=10000?0:1).replace('.',',')+'k':n0(tot))+'</text>';
+    g+='<text x="'+(x+w/2)+'" y="'+(H-B+15)+'" fill="var(--text3)" font-size="11" text-anchor="middle">'+o.y+'</text>';});
+  var mk=Object.keys(fin).filter(function(t){var y=+fin[t].slice(0,4);return y>=y0&&y<=yN;}).sort(function(a,b){return fin[a]<fin[b]?-1:1;}),fila=[];
+  mk.forEach(function(t){var f=fin[t],p=(+f.slice(0,4)-y0)+(+f.slice(5,7)-.5)/12,x=Lm+p*bw,r=0;while(fila[r]!=null&&x-fila[r]<90)r++;fila[r]=x;if(r>2)return;
+    g+='<text x="'+x+'" y="'+(H-B+32+r*12)+'" fill="#f59e0b" font-size="9.5" text-anchor="middle">▲ '+t+' '+f.slice(5,7)+'/'+f.slice(2,4)+'</text>';});
+  card.innerHTML=head+'<div style="padding:.4rem 0 .6rem"><div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.66rem;color:var(--text2);font-family:var(--mono);margin:0 0 6px">'+
+    '<span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--blue);margin-right:4px;vertical-align:-1px"></i>renta (cupones + dividendos)</span>'+
+    '<span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;margin-right:4px;vertical-align:-1px"></i>capital que vuelve (amortizaciones y vencimientos)</span>'+
+    '<span style="color:#f59e0b">▲ último pago de cada bono / ON</span></div>'+
+    '<svg class="port-sensitive" viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Lo que entra por año" style="font-family:var(--mono)">'+g+'</svg>'+
+    '<div style="font-size:.66rem;color:var(--text3);line-height:1.5">Flujos de tus bonos y ONs (los de pesos pasados a dólares a $ '+n0(tc)+', así que dependen de la inflación y del dólar) + dividendos de los últimos 12 meses repetidos cada año. Pasá el mouse por una barra para ver el detalle.</div></div>';}
 function idealTog(){NV.ic=!NV.ic;nvSave();nvIdeal();}
 function idealEditar(k){var g=_IDEAL_G.filter(function(x){return x[0]===k;})[0],v=prompt('% ideal para '+g[2]+' (sobre el total de la cartera):',String(IDEAL.p[k]||0));if(v==null)return;var n=parseFloat(String(v).replace(',','.'));if(!(n>=0&&n<=100)){alert('Ingresá un % entre 0 y 100');return;}
  IDEAL.p[k]=Math.round(n*10)/10;delete IDEAL.ejemplo;try{sbSetConfig('cartera_ideal',IDEAL);}catch(e){}nvIdeal();}
