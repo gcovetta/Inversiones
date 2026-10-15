@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=230, APP_VERSION_FECHA='15/10/2026';
+var APP_VERSION=231, APP_VERSION_FECHA='15/10/2026';
 var APP_CHANGELOG=[
+  'v231 | 2026-10-15 | Dividendos más seguros: antes de guardar se mira la nube y, si otro equipo cargó cobros que acá no están, se suman en lugar de pisarse. Además nunca se sube una lista vacía si en la nube hay más de un cobro (protege contra borrados por una carga fallida).',
   'v230 | 2026-10-15 | Arreglo importante: las marcas (Comprar / Vender / Seguir / nota) se pedían a la nube antes de iniciar sesión, así que la app arrancaba sin marcas y al poner una nueva se borraban las anteriores. Ahora se cargan después de iniciar sesión y, al guardar, se combinan con lo que hay en la nube: un cambio en el celular ya no pisa las marcas puestas en la PC.',
   'v229 | 2026-10-15 | Nuevo gráfico 🧭 Línea de vida financiera al final del Portafolio (cerrado; se abre tocando el título): lo que entra por año hasta el último vencimiento. Muestra la renta (cupones + dividendos) y el capital que vuelve (amortizaciones y vencimientos), con una marca en el último pago de cada bono u ON.',
   'v228 | 2026-10-14 | Arreglo: en GDC y Ana aparecía el error "Cannot read properties of null (trkCalcCCL)" al actualizarse el CCL, porque esas carteras no tienen la calculadora de CCL implícito. Ahora se saltea si la calculadora no está.',
@@ -5994,10 +5995,25 @@ function trkSave(){
   try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));}catch(e){}
   try{localStorage.setItem((PFX+'trk_pending'),JSON.stringify(TRK.divs));}catch(e){}
   if(typeof _gdcInitDone==='undefined'||!_gdcInitDone){console.warn('[trkSave] init no terminó — no se sube todavía ('+TRK.divs.length+' cobros)');return;}
-  sbSaveArrayRetry('trk_divs', TRK.divs).then(function(ok){
-    if(ok){try{localStorage.removeItem((PFX+'trk_pending'));}catch(e){}saveFailClear('trk_divs');}
+  _trkMezclar().then(function(r){
+    if(r==='no'){try{localStorage.setItem(TRK.DKEY,JSON.stringify(TRK.divs));localStorage.removeItem((PFX+'trk_pending'));}catch(e){}return null;}
+    return sbSaveArrayRetry('trk_divs', TRK.divs);}).then(function(ok){if(ok===null)return;
+    if(ok){_trkBase=_trkIds(TRK.divs);try{localStorage.removeItem((PFX+'trk_pending'));}catch(e){}saveFailClear('trk_divs');}
     else warnSaveFailed('trk_divs');
   });
+}
+// Antes de guardar los cobros se mira la nube: si otro equipo agregó cobros que acá no están, se suman (no se pisan),
+// y nunca se sube una lista vacía si en la nube hay más de un cobro (eso sería un borrado masivo por una carga fallida).
+var _trkBase=null;
+function _trkIds(a){var o={};(a||[]).forEach(function(d){if(d&&d.id!=null)o[String(d.id)]=1;});return o;}
+async function _trkMezclar(){
+  var nube=await sbLoadArray('trk_divs');if(!Array.isArray(nube))return true;
+  if(!TRK.divs.length&&nube.length>1){console.warn('[trkSave] lista vacía y la nube tiene '+nube.length+' cobros: no se guarda');try{_errAnotar&&_errAnotar('trkSave: se evitó borrar '+nube.length+' cobros de la nube','dividendos');}catch(e){}
+    TRK.divs=nube;try{trkRender();renderPortfolio();}catch(e){}return 'no';}
+  var loc=_trkIds(TRK.divs),base=_trkBase||{},sum=0;
+  nube.forEach(function(d){if(!d||d.id==null)return;var k=String(d.id);if(!loc[k]&&!base[k]){TRK.divs.push(d);sum++;}});
+  if(sum){TRK.divs.sort(function(a,b){return String(b.fecha).localeCompare(String(a.fecha));});console.warn('[trkSave] se sumaron '+sum+' cobros cargados desde otro equipo');try{trkRender();renderPortfolio();}catch(e){}}
+  return true;
 }
 function trkLoad(){
   if(!TRK.divs||!TRK.divs.length){
@@ -7194,7 +7210,7 @@ function trkCalcCCL(){
       }
     }catch(e){}
 
-    var sbTrkDivs = await _trkDivsP;
+    var sbTrkDivs = await _trkDivsP;if(Array.isArray(sbTrkDivs))_trkBase=_trkIds(sbTrkDivs);
     setTimeout(divsReparar,4000);
     var _trkPend=null;try{_trkPend=JSON.parse(localStorage.getItem((PFX+'trk_pending'))||'null');}catch(e){}
     if(Array.isArray(_trkPend)&&sbTrkDivs!==null){
