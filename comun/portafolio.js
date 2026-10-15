@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=231, APP_VERSION_FECHA='15/10/2026';
+var APP_VERSION=232, APP_VERSION_FECHA='15/10/2026';
 var APP_CHANGELOG=[
+  'v232 | 2026-10-15 | El resumen que lee el index ahora incluye cuánto se operó en los últimos 30 días (compras y ventas en USD, todas las carteras de la persona).',
   'v231 | 2026-10-15 | Dividendos más seguros: antes de guardar se mira la nube y, si otro equipo cargó cobros que acá no están, se suman en lugar de pisarse. Además nunca se sube una lista vacía si en la nube hay más de un cobro (protege contra borrados por una carga fallida).',
   'v230 | 2026-10-15 | Arreglo importante: las marcas (Comprar / Vender / Seguir / nota) se pedían a la nube antes de iniciar sesión, así que la app arrancaba sin marcas y al poner una nueva se borraban las anteriores. Ahora se cargan después de iniciar sesión y, al guardar, se combinan con lo que hay en la nube: un cambio en el celular ya no pisa las marcas puestas en la PC.',
   'v229 | 2026-10-15 | Nuevo gráfico 🧭 Línea de vida financiera al final del Portafolio (cerrado; se abre tocando el título): lo que entra por año hasta el último vencimiento. Muestra la renta (cupones + dividendos) y el capital que vuelve (amortizaciones y vencimientos), con una marca en el último pago de cada bono u ON.',
@@ -4884,6 +4885,7 @@ async function famSaveSnapshot(d){
       var u=divUSD(x);if(!(u>0))return;var k=f.slice(0,7);_cm[k]=Math.round(((_cm[k]||0)+u)*100)/100;var tp=divTipo(x),b=_ct[k]||(_ct[k]={div:0,renta:0,amort:0});b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']=Math.round((b[tp==='DIV'?'div':tp==='AMORT'?'amort':'renta']+u)*100)/100;});
       if(cart==='principal'){doc.cobradosMes=_cm;doc.cobradosTipo=_ct;}}catch(e){}
     try{doc.salud=saludCalc(d);}catch(e){}
+    try{doc.ops30=_ops30();}catch(e){}
     if(cart==='principal'&&CFG.vistaFamiliar){try{await vistaPublicar(d);}catch(e){}}
     if(cart==='principal'&&CFG.push){try{await pushWatchPublicar(d);}catch(e){}}
     if(cart==='principal'){try{doc.sist={vista:CFG.vistaFamiliar?Date.now():null,aportes:(CFG.aportes&&_aporLoaded)?APOR.length:null,avisos:CFG.push?true:null,bk:(function(){try{return localStorage.getItem(PFX+'bk_last')||null;}catch(e){return null;}})()};}catch(e){}}
@@ -6015,6 +6017,13 @@ async function _trkMezclar(){
   if(sum){TRK.divs.sort(function(a,b){return String(b.fecha).localeCompare(String(a.fecha));});console.warn('[trkSave] se sumaron '+sum+' cobros cargados desde otro equipo');try{trkRender();renderPortfolio();}catch(e){}}
   return true;
 }
+// Compras y ventas de los últimos 30 días en USD (todas las carteras de la persona), para la tarjeta del index.
+function _ops30(){var lim=new Date(Date.now()-30*864e5).toISOString().slice(0,10),c=0,v=0,n=0;
+  (movimientos||[]).forEach(function(m){if(!m||(m.tipo!=='compra'&&m.tipo!=='venta')||m.owner==='cristian')return;var f=_phIso(m.fecha);if(!f||f<lim)return;
+    var bon=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI'),tc=bon?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
+    var u=isBonoUSDDirecto(m.ticker)?(+m.precioARS||0)*m.qty:(tc>0&&(+m.precioARS||0)>0?(+m.precioARS)*m.qty/tc:(+m.precioUSD||0)*m.qty);if(!(u>0))return;
+    if(m.tipo==='compra')c+=u;else v+=u;n++;});
+  return {c:Math.round(c),v:Math.round(v),n:n};}
 function trkLoad(){
   if(!TRK.divs||!TRK.divs.length){
     try{var d=localStorage.getItem(TRK.DKEY);if(d)TRK.divs=JSON.parse(d);}catch(e){TRK.divs=[];}
