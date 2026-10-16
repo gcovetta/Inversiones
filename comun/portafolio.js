@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=235, APP_VERSION_FECHA='16/10/2026';
+var APP_VERSION=236, APP_VERSION_FECHA='16/10/2026';
 var APP_CHANGELOG=[
+  'v236 | 2026-10-16 | GDC vuelve a guardar sus datos del navegador con su prefijo propio (ptNYSE_; desde hace un tiempo usaba "undefined" y quedaban duplicados). La primera vez que abrís GDC se mudan solos y se borra la copia vieja: libera ~2 MB. Además, aviso en ⚠️ si el espacio del navegador pasa del 80%.',
   'v235 | 2026-10-16 | "Desde tu última visita": ahora también aparece si dejás la cartera abierta en una pestaña y volvés a mirarla después de 30 minutos (antes solo contaba como visita nueva al abrir la página de cero, por eso en GDC casi nunca salía).',
   'v234 | 2026-10-16 | Movimientos: siempre del más nuevo al más viejo. Antes las fechas con día o mes de un dígito (ej. 1/10) quedaban mal ordenadas, y dentro del mismo día el orden era el de carga al revés; ahora el último cargado va primero.',
   'v233 | 2026-10-15 | Portafolio: nuevo recuadro al lado de los filtros con el % de la cartera en Bono CER, Bono HD (dólares), RV y Otros (pesos a tasa, dólar linked, FCI). Pasando el mouse se ve el monto en USD.',
@@ -86,7 +87,7 @@ var APP_CHANGELOG=[
 // ─── Configuración por portafolio ──────────────────────────────────────────
 var CFG=Object.assign({
   id:'gdc', nombre:'GDC',
-  lsPrefix:(PFX+''),
+  lsPrefix:'ptNYSE_',
   trkSuffix:'_gdc',
   supabaseUrl:'https://wstnseufzyavgdovrehu.supabase.co',
   supabaseKey:'',
@@ -101,7 +102,16 @@ var CFG=Object.assign({
   periodoInicio:'01-01',
   historial:true
 }, window.PORTFOLIO_CONFIG||{});
-var PFX=CFG.lsPrefix;
+var PFX=CFG.lsPrefix||('pt'+String(CFG.id||'x')+'_');
+// v236: hasta v235 GDC guardaba en el navegador con el prefijo "undefined" (se había perdido su prefijo "ptNYSE_").
+// Una sola vez: se pasan esos datos (más nuevos) al prefijo correcto, pisando la copia vieja; después se borran los restos.
+(function(){try{if(PFX!=='ptNYSE_')return;var ks=[],i,k;for(i=0;i<localStorage.length;i++){k=localStorage.key(i);if(k&&k.indexOf('undefined')===0&&k.length>9)ks.push(k);}
+  var hecho=localStorage.getItem('ptNYSE_mig_pfx');
+  ks.forEach(function(k){var v=localStorage.getItem(k);localStorage.removeItem(k);if(hecho||v==null)return;var nk='ptNYSE_'+k.slice(9);try{localStorage.removeItem(nk);localStorage.setItem(nk,v);}catch(e){}});
+  if(!hecho)localStorage.setItem('ptNYSE_mig_pfx','1');}catch(e){}})();
+// Aviso si el espacio del navegador (compartido por las 5 carteras y el index) pasa del 80% de lo habitual (~5 millones de caracteres).
+setTimeout(function(){try{var n=0,i,k;for(i=0;i<localStorage.length;i++){k=localStorage.key(i);n+=k.length+(localStorage.getItem(k)||'').length;}
+  if(n>4e6)_errAnotar('Espacio del navegador casi lleno: '+(n/1e6).toFixed(1).replace('.',',')+' millones de caracteres de ~5. Puede dejar de guardar copias locales.','almacenamiento');}catch(e){}},15000);
 
 // ── Soporte coma como separador decimal ──────────────────────────────────
 (function(){
