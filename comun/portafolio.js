@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=234, APP_VERSION_FECHA='16/10/2026';
+var APP_VERSION=235, APP_VERSION_FECHA='16/10/2026';
 var APP_CHANGELOG=[
+  'v235 | 2026-10-16 | "Desde tu última visita": ahora también aparece si dejás la cartera abierta en una pestaña y volvés a mirarla después de 30 minutos (antes solo contaba como visita nueva al abrir la página de cero, por eso en GDC casi nunca salía).',
   'v234 | 2026-10-16 | Movimientos: siempre del más nuevo al más viejo. Antes las fechas con día o mes de un dígito (ej. 1/10) quedaban mal ordenadas, y dentro del mismo día el orden era el de carga al revés; ahora el último cargado va primero.',
   'v233 | 2026-10-15 | Portafolio: nuevo recuadro al lado de los filtros con el % de la cartera en Bono CER, Bono HD (dólares), RV y Otros (pesos a tasa, dólar linked, FCI). Pasando el mouse se ve el monto en USD.',
   'v232 | 2026-10-15 | El resumen que lee el index ahora incluye cuánto se operó en los últimos 30 días (compras y ventas en USD, todas las carteras de la persona).',
@@ -8982,7 +8983,13 @@ function tcFechaMask(el){
 })();
 
 // ─── "Desde tu última visita" ─────────────────────────────────────────────────
-var _uvCerrado=false;
+var _uvCerrado=false,_uvHid=null;
+// Si la pestaña queda abierta (GDC suele estar siempre abierta), la "visita" se corta al ocultarla: al volver después de 30 min
+// se compara contra cómo estaba cuando la dejaste de mirar.
+document.addEventListener('visibilitychange',function(){try{
+  if(document.hidden){_uvHid={ts:Date.now(),act:JSON.parse(localStorage.getItem(PFX+'uv_act')||'null')};return;}
+  var h=_uvHid;_uvHid=null;if(!h||!h.act||Date.now()-h.ts<30*60000)return;
+  localStorage.setItem(PFX+'uv_prev',JSON.stringify(h.act));_uvCerrado=false;if(typeof INF_LAST!=='undefined'&&INF_LAST)uvActualizar(INF_LAST);}catch(e){}});
 function uvActualizar(d){
   if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA!=='principal')return;
   var now=Date.now(),tot=(d.totalVal||0)+(d.liqTotalUSD||0),pr={};
