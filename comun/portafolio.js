@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=233, APP_VERSION_FECHA='15/10/2026';
+var APP_VERSION=234, APP_VERSION_FECHA='16/10/2026';
 var APP_CHANGELOG=[
+  'v234 | 2026-10-16 | Movimientos: siempre del más nuevo al más viejo. Antes las fechas con día o mes de un dígito (ej. 1/10) quedaban mal ordenadas, y dentro del mismo día el orden era el de carga al revés; ahora el último cargado va primero.',
   'v233 | 2026-10-15 | Portafolio: nuevo recuadro al lado de los filtros con el % de la cartera en Bono CER, Bono HD (dólares), RV y Otros (pesos a tasa, dólar linked, FCI). Pasando el mouse se ve el monto en USD.',
   'v232 | 2026-10-15 | El resumen que lee el index ahora incluye cuánto se operó en los últimos 30 días (compras y ventas en USD, todas las carteras de la persona).',
   'v231 | 2026-10-15 | Dividendos más seguros: antes de guardar se mira la nube y, si otro equipo cargó cobros que acá no están, se suman en lugar de pisarse. Además nunca se sube una lista vacía si en la nube hay más de un cobro (protege contra borrados por una carga fallida).',
@@ -2856,7 +2857,8 @@ function renderMovimientos(){
 
   var filterVal=currentFilterVal;
 
-  var lista=movimientos.slice().sort(function(a,b){var fa=(a.fecha||'').split('/'),fb=(b.fecha||'').split('/');var da=fa.length===3?fa[2]+fa[1]+fa[0]:'0',db=fb.length===3?fb[2]+fb[1]+fb[0]:'0';return db.localeCompare(da);});
+  var _fk=function(m){var f=String(m.fecha||'');if(/^\d{4}-\d{2}-\d{2}/.test(f))return f.slice(0,10).replace(/-/g,'');var p=f.split('/');return p.length===3?p[2]+String(p[1]).padStart(2,'0')+String(p[0]).padStart(2,'0'):'0';};
+  var lista=movimientos.slice().sort(function(a,b){var c=_fk(b).localeCompare(_fk(a));if(c)return c;return (+b.id||0)-(+a.id||0);});
   var filterCartera=(document.getElementById('mov-filter-cartera')||{value:''}).value;
   if(filterCartera) lista=lista.filter(function(m){return (m.cartera||'principal')===filterCartera;});
   if(filterVal) lista=lista.filter(function(m){return (m.ticker||'').toUpperCase().indexOf(filterVal)>=0;});
