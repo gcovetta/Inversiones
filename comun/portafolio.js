@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=242, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=243, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v243 | 2026-10-20 | Control de precio al cargar o editar una compra/venta: ahora también funciona con activos que todavía no tenés (usa el precio de mercado de data912) y al editar un movimiento. Si el precio es muy distinto (ej. 100.000 veces, como pasó con SNDK) avisa antes de guardar. En operaciones de más de 7 días solo avisa si la diferencia es enorme (más de 4 veces).',
   'v242 | 2026-10-20 | Comparación con Bull: ahora reconoce tickers de una sola letra (ej. O · Realty Income). Antes el lector pedía al menos 2 letras y lo salteaba.',
   'v241 | 2026-10-19 | Vista familiar: de las operaciones de los últimos 30 días solo se publica la cantidad y el total operado en USD (sin detalle de activos ni compras/ventas).',
   'v240 | 2026-10-19 | La vista familiar (lo que ven Hilda, Omar y los demás) ahora recibe las operaciones de los últimos 30 días en USD: cantidad, compras, ventas y el detalle por día y activo.',
@@ -1683,6 +1684,8 @@ function movModalSave(){
   var notas=document.getElementById('me-notas').value||'';
   var tipo=document.getElementById('me-tipo').value;
   if(!fechaVal){flash(sel,'Ingresá la fecha',true);return;}
+  if((tipo==='compra'||tipo==='venta')&&!isNaN(ars)&&ars>0){var _bo=(document.getElementById('me-mkt')||{}).value,_prev=(m.precioARS||0)*((_bo==='BONOS'||_bo==='ON')?100:1);
+    if(Math.abs(ars-_prev)>0.005&&!precioGuard(ticker||m.ticker,ars,fechaVal.split('-').reverse().join('/')))return;}
   var _antes=JSON.parse(JSON.stringify(m));
   m.fecha=fechaVal.split('-').reverse().join('/');
   m.tipo=tipo;
@@ -7424,6 +7427,7 @@ function trkCalcCCL(){
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();ventahistResetFecha();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     _gdcInitDone = true;
+    setTimeout(_live912Cargar,3000);
     if(window._sinSenal||navigator.onLine===false){var _lu=document.getElementById('lupd');if(_lu)_lu.textContent='📡 Sin conexión · mostrando lo último guardado';}
     if(SB_STATUS&&SB_STATUS.ok!==false)setTimeout(function(){bkDaily();},6000);
     if(initFromSupabase._done) initFromSupabase._done();
@@ -9241,8 +9245,11 @@ async function raAudSync(){
 (function(){var go=function(){try{raAudUI();}catch(e){}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 
 // ─── Control de precio al cargar compras y ventas ─────────────────────────────
+// Precios en vivo de data912 (todas las especies, aunque no estén en cartera), para controlar precios al cargar.
+var _LIVE912=null,_LIVE912ts=0;
+function _live912Cargar(){if(_LIVE912&&Date.now()-_LIVE912ts<20*60000)return;_LIVE912ts=Date.now();_rotLiveP=null;_rotLive().then(function(m){if(m&&Object.keys(m).length)_LIVE912=m;}).catch(function(){});}
 function _precioMercadoARS(t){
-  var q=quotes[t];if(!q||!(q.price>0))return null;
+  var q=quotes[t];if(!q||!(q.price>0)){var lv=_LIVE912&&_LIVE912[t];return (lv>0&&!isBonoUSDDirecto(t))?lv:null;}
   if(isBonoUSDDirecto(t))return null;
   var s=getSector(t);
   if(q.fromByma||['argentina','bonos','on','fci'].indexOf(s)>=0||BRL_TICKERS.has(t))return q.price;
@@ -9251,12 +9258,14 @@ function _precioMercadoARS(t){
 function precioGuard(t,precio,fecha){
   try{
     if(!t||!(precio>0))return true;
-    var p=String(fecha||'').split('/');if(p.length===3){var f=new Date(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'));if((Date.now()-f)/86400000>7)return true;}
+    var p=String(fecha||'').split('/'),viejo=false;if(p.length===3){var f=new Date(p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'));viejo=(Date.now()-f)/86400000>7;}
     var m=_precioMercadoARS(t);if(!(m>0))return true;
     var r=precio/m;if(r>=0.9&&r<=1.1)return true;
+    if(viejo&&r>=0.25&&r<=4)return true;
     var f2=function(x){return '$'+x.toLocaleString('es-AR',{maximumFractionDigits:2});};
     var pista=(r>7&&r<13)||(r>70&&r<130)?'\n\n¿Te sobró un cero?':(r>0.07&&r<0.13)||(r>0.007&&r<0.013)?'\n\n¿Te faltó un cero?':'';
-    return confirm('⚠ Revisá el precio de '+t+'\n\nCargaste '+f2(precio)+' y el mercado está en '+f2(m)+' ('+(r>1?'+':'')+Math.round((r-1)*100)+'%).'+pista+'\n\n¿Guardar igual?');
+    var dif=r>=10?'es '+Math.round(r).toLocaleString('es-AR')+' veces el precio de mercado':r<=0.1?'es '+Math.round(1/r).toLocaleString('es-AR')+' veces más bajo que el de mercado':'('+(r>1?'+':'')+Math.round((r-1)*100)+'% contra el mercado)';
+    return confirm('⚠ Revisá el precio de '+t+'\n\nCargaste '+f2(precio)+' y el mercado está en '+f2(m)+(viejo?' hoy':'')+': '+dif+'.'+pista+'\n\n¿Guardar igual?');
   }catch(e){return true;}
 }
 
