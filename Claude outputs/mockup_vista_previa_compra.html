@@ -1,0 +1,74 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vista previa de la operación — propuesta</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#4b6a92;--g:#22c55e;--r:#ef4444;--bl:#448aff;--am:#f59e0b;--pu:#a78bfa;--mono:ui-monospace,"JetBrains Mono",Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif;font-size:14px}
+.wrap{max-width:760px;margin:0 auto;padding:16px}.note{font-size:.72rem;color:var(--t3);margin:0 0 12px;line-height:1.5}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:16px}
+h2{font-size:1rem;margin:0 0 12px;display:flex;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--b2);border-radius:999px;overflow:hidden;font-size:.78rem}.seg span{padding:4px 14px;cursor:pointer;color:var(--t2)}.seg span.on{background:var(--g);color:#04110a;font-weight:700}.seg span.on.v{background:var(--r);color:#fff}
+.form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0}
+.form label{font-family:var(--mono);font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}
+.form input{width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--b2);border-radius:8px;color:var(--t);font-family:var(--mono);font-size:.95rem;padding:8px 10px}
+.tot{font-family:var(--mono);font-size:.8rem;color:var(--t2);margin-bottom:12px}.tot b{color:var(--t)}
+.pv{background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:12px 14px}
+.pv h3{margin:0 0 8px;font-size:.78rem;color:var(--t2);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-family:var(--mono)}
+.row{display:grid;grid-template-columns:1.3fr 1fr 18px 1fr;gap:6px;align-items:center;padding:7px 0;border-top:1px solid var(--b);font-size:.82rem}.row:first-of-type{border-top:0}
+.row .a{color:var(--t3);font-family:var(--mono);text-align:right}.row .b{font-family:var(--mono);font-weight:700;text-align:right}.row .ar{color:var(--t3);text-align:center}
+.g{color:var(--g)}.r{color:var(--r)}.am{color:var(--am)}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:4px 0}.bar i{display:block;height:100%}
+.leg{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:.62rem;color:var(--t2)}.leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px}
+.warn{margin-top:10px;border-left:3px solid var(--am);background:#f59e0b14;border-radius:6px;padding:8px 10px;font-size:.78rem;line-height:1.5}
+.ok{border-left-color:var(--g);background:#22c55e10}
+.btns{display:flex;gap:8px;margin-top:14px}.btns button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--b2);background:var(--s2);color:var(--t);font-weight:600;cursor:pointer}.btns .pri{background:var(--g);border-color:var(--g);color:#04110a}
+.exp{font-size:.74rem;color:var(--t2);line-height:1.6;margin-top:12px}.exp b{color:var(--t)}
+</style></head><body><div class="wrap">
+<p class="note">Propuesta · posición real de MELI en GDC (481 Cedears, PPC $26.151, hoy $24.890) y distribución real de la cartera. Cambiá cantidad o precio y mirá cómo se actualiza.</p>
+<div class="card">
+ <h2>🛒 Operar MELI <span class="seg" id="sg"><span class="on" data-t="c">Comprar</span><span data-t="v">Vender</span></span></h2>
+ <div class="form">
+  <div><label>Cantidad</label><input id="q" type="number" value="40"></div>
+  <div><label>Precio ($)</label><input id="p" type="number" value="24890"></div>
+  <div><label>Fecha</label><input value="20/10/2026" disabled></div>
+ </div>
+ <div class="tot" id="tot"></div>
+ <div class="pv"><h3>Así queda después de la operación</h3><div id="rows"></div>
+  <div style="margin-top:10px;font-family:var(--mono);font-size:.58rem;color:var(--t3);text-transform:uppercase">Distribución por tipo</div>
+  <div class="bar" id="b0"></div><div class="bar" id="b1"></div>
+  <div class="leg"><span><i style="background:#a78bfa"></i>CER</span><span><i style="background:#38bdf8"></i>HD</span><span><i style="background:#22c55e"></i>RV</span><span><i style="background:#64748b"></i>Otros</span><span style="color:var(--t3)">arriba hoy · abajo después</span></div>
+  <div id="w"></div>
+ </div>
+ <div class="btns"><button>Cancelar</button><button class="pri" id="ok">Confirmar compra</button></div>
+</div>
+<p class="exp"><b>Qué muestra:</b> el PPC y resultado nuevos, cuántos Cedears quedan, el peso del activo en la cartera, la distancia al P. Venta y la distribución por tipo antes y después. <b>Avisos</b> si el activo pasa a pesar más de lo que querés (ej. 5%), si no alcanza la liquidez, si vendés por debajo del PPC (realizás pérdida) o si el precio está muy lejos del de mercado.<br>
+<b>Dónde iría:</b> en el módulo rápido Comprar/Vender del Portafolio, se actualiza mientras escribís. En las 5 carteras.</p>
+</div>
+<script>
+var C={q:481,ppc:26151,px:24890,usd:7753,ccl:1625.6,ratio:120,pvU:2645,tot:175635,liq:17,S:{cer:34.4,hd:17.1,rv:47.2,otro:1.3},max:5};
+var T='c';function n0(x){return Math.round(x).toLocaleString('es-AR');}function p1(x){return x.toFixed(1).replace('.',',')+'%';}
+function bar(S,id){var col={cer:'#a78bfa',hd:'#38bdf8',rv:'#22c55e',otro:'#64748b'};document.getElementById(id).innerHTML=['cer','hd','rv','otro'].map(function(k){return '<i style="width:'+S[k]+'%;background:'+col[k]+'" title="'+k+' '+p1(S[k])+'"></i>';}).join('');}
+function draw(){var q=+document.getElementById('q').value||0,p=+document.getElementById('p').value||0,s=T==='c'?1:-1;
+ var monto=q*p,usd=monto/C.ccl,nq=C.q+s*q;
+ var nppc=T==='c'?(C.q*C.ppc+q*p)/nq:C.ppc;
+ var res0=(C.px/C.ppc-1)*100,res1=(C.px/nppc-1)*100;
+ var nusd=C.usd+s*usd*(C.px/p),ntot=C.tot+(T==='c'?usd:0)-(T==='c'?0:0);
+ var w0=C.usd/C.tot*100,w1=nusd/(T==='c'?C.tot+usd:C.tot)*100;
+ var rvU=C.S.rv/100*C.tot,S1={};var tt=T==='c'?C.tot+usd:C.tot;
+ ['cer','hd','otro'].forEach(function(k){S1[k]=C.S[k]/100*C.tot/tt*100;});S1.rv=(rvU+s*usd)/tt*100;if(T==='v'){S1.otro=(C.S.otro/100*C.tot+usd)/tt*100;}
+ var real=T==='v'?(p-C.ppc)*q/C.ccl:null;
+ document.getElementById('tot').innerHTML=(T==='c'?'Pagás ':'Cobrás ')+'<b>$ '+n0(monto)+'</b> ≈ <b>USD '+n0(usd)+'</b> (CCL '+n0(C.ccl)+')';
+ var R=function(l,a,b,c){return '<div class="row"><span>'+l+'</span><span class="a">'+a+'</span><span class="ar">→</span><span class="b '+(c||'')+'">'+b+'</span></div>';};
+ var up=(C.pvU/(C.px/C.ccl*C.ratio)-1)*100;
+ document.getElementById('rows').innerHTML=R('Cedears',n0(C.q),n0(nq))+R('PPC','$ '+n0(C.ppc),'$ '+n0(nppc),nppc<C.ppc?'g':nppc>C.ppc?'am':'')+
+  R('Resultado',p1(res0),p1(res1),res1>=0?'g':'r')+R('Peso en la cartera',p1(w0),p1(w1),w1>C.max?'am':'')+R('Distancia al P. Venta (USD 2.645)','↑ '+p1(up),'↑ '+p1(up))+
+  (T==='v'?R('Ganancia realizada','—',(real>=0?'+':'−')+'USD '+n0(Math.abs(real)),real>=0?'g':'r'):'');
+ bar(C.S,'b0');bar(S1,'b1');
+ var W=[];if(T==='c'&&usd>C.liq)W.push('💵 La liquidez de la cartera es USD '+n0(C.liq)+': para esta compra te faltan <b>USD '+n0(usd-C.liq)+'</b> (¿vendés algo antes o es un aporte?).');
+ if(w1>C.max)W.push('⚖️ MELI pasaría a pesar <b>'+p1(w1)+'</b> de la cartera, más que tu máximo de '+C.max+'% por activo.');
+ if(T==='v'&&p<C.ppc)W.push('📉 Vendés por debajo de tu PPC: realizás una pérdida de <b>USD '+n0(Math.abs(real))+'</b>.');
+ if(T==='c'&&nppc<C.ppc)W.push('✅ Bajás tu PPC de $ '+n0(C.ppc)+' a $ '+n0(nppc)+' (promediás a la baja).');
+ document.getElementById('w').innerHTML=W.map(function(x){return '<div class="warn'+(x.indexOf('✅')===0?' ok':'')+'">'+x+'</div>';}).join('');
+ document.getElementById('ok').textContent=T==='c'?'Confirmar compra':'Confirmar venta';document.getElementById('ok').style.background=T==='c'?'':'var(--r)';}
+document.querySelectorAll('#sg span').forEach(function(e){e.onclick=function(){document.querySelectorAll('#sg span').forEach(function(z){z.classList.remove('on','v');});e.classList.add('on');if(e.dataset.t==='v')e.classList.add('v');T=e.dataset.t;draw();};});
+document.getElementById('q').oninput=draw;document.getElementById('p').oninput=draw;draw();
+</script></body></html>
