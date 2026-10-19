@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=241, APP_VERSION_FECHA='19/10/2026';
+var APP_VERSION=242, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v242 | 2026-10-20 | Comparación con Bull: ahora reconoce tickers de una sola letra (ej. O · Realty Income). Antes el lector pedía al menos 2 letras y lo salteaba.',
   'v241 | 2026-10-19 | Vista familiar: de las operaciones de los últimos 30 días solo se publica la cantidad y el total operado en USD (sin detalle de activos ni compras/ventas).',
   'v240 | 2026-10-19 | La vista familiar (lo que ven Hilda, Omar y los demás) ahora recibe las operaciones de los últimos 30 días en USD: cantidad, compras, ventas y el detalle por día y activo.',
   'v239 | 2026-10-19 | Rotaciones: resumen arriba con las 5 que más sumaron y las 5 que más restaron (tocando una te lleva a su detalle).',
@@ -4728,7 +4729,7 @@ function cmpLoadPortfolio(input){
 }
 function cmpParseBullText(txt){
   var lines=txt.split(/\r?\n/);
-  var tickerRe=/^[A-Z][A-Z0-9]{1,7}$/;
+  var tickerRe=/^[A-Z][A-Z0-9]{0,7}$/;
   var map={};
   for(var i=0;i<lines.length;i++){
     var line=lines[i].trim();
