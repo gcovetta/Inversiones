@@ -21,8 +21,10 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=239, APP_VERSION_FECHA='19/10/2026';
+var APP_VERSION=241, APP_VERSION_FECHA='19/10/2026';
 var APP_CHANGELOG=[
+  'v241 | 2026-10-19 | Vista familiar: de las operaciones de los últimos 30 días solo se publica la cantidad y el total operado en USD (sin detalle de activos ni compras/ventas).',
+  'v240 | 2026-10-19 | La vista familiar (lo que ven Hilda, Omar y los demás) ahora recibe las operaciones de los últimos 30 días en USD: cantidad, compras, ventas y el detalle por día y activo.',
   'v239 | 2026-10-19 | Rotaciones: resumen arriba con las 5 que más sumaron y las 5 que más restaron (tocando una te lleva a su detalle).',
   'v238 | 2026-10-19 | Rotaciones: el resultado ahora suma lo cobrado desde la rotación en los dos lados (cupones y amortizaciones de bonos según sus flujos, p. ej. AO29 mensual, y dividendos cargados). En el detalle se ve cuántos cobros y cuánto.',
   'v237 | 2026-10-19 | Nueva sección ↔ Rotaciones (en el menú, debajo de Movimientos): detecta sola cuando vendiste algo y en los 5 días siguientes compraste otra cosa con esa plata, y muestra si la rotación te sumó (lo comprado hoy vs. lo vendido si te lo quedabas, en USD). Tocando una fila se ve el detalle; ✕ para descartar una que no fue rotación.',
@@ -9964,6 +9966,7 @@ async function vistaPublicar(d){
       per:per,acum:Math.round((acc-1)*10000)/100,capital:capital!=null?Math.round(capital):null,
       dist:{rf:Math.round(rf),rv:Math.round(rv),liq:Math.round(d.liqTotalUSD||0),dolz:d.dolzPct!=null?Math.round(d.dolzPct):null},
       cobros:cob,cobradoAnio:Math.round(cobAnio),aportes:apor,serie:serie,wa:CFG.whatsapp||null};
+    try{var _o3=_ops30();doc.ops30={n:_o3.n,u:(_o3.c||0)+(_o3.v||0)};}catch(e){}
     await sbSetConfig('vista_familiar',doc);
   }catch(e){console.warn('vistaPublicar',e);}
 }

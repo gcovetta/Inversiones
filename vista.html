@@ -137,6 +137,11 @@ function render(d,s){
   h+='<div class="blk"><div class="lbl" style="margin-bottom:4px">Vas a cobrar (próximos 30 días)</div>'+
     (cb.length?cb.map(function(x){return '<div class="row"><span>'+fd(x.f)+' · '+esc(x.t)+'</span><span class="g">'+(x.m==='USD'?'USD ':'$ ')+n0(x.x)+'</span></div>';}).join(''):'<div class="m" style="font-size:.76rem">Nada en los próximos 30 días</div>')+
     '<div class="row tot"><span class="m">Cobrado en '+new Date().getFullYear()+'</span><span><b>USD '+n0(d.cobradoAnio)+'</b></span></div></div>';
+  // 6b. operaciones de los últimos 30 días: solo cantidad y total en USD
+  if(d.ops30){var q=d.ops30;
+    h+='<div class="blk"><div class="lbl" style="margin-bottom:4px">Movimientos de los últimos 30 días</div>'+
+      (q.n?'<div class="two" style="margin-top:4px"><div><div class="lbl">Operaciones</div><div class="v">'+q.n+'</div></div><div><div class="lbl">Total operado</div><div class="v">USD '+n0(q.u!=null?q.u:(q.c||0)+(q.v||0))+'</div></div></div>'
+      :'<div class="m" style="font-size:.76rem">No hubo operaciones en los últimos 30 días</div>')+'</div>';}
   // 7. aportes
   var ap=d.aportes||[];
   if(ap.length||d.capital){var g={};ap.forEach(function(a){var k=a.f.slice(0,7);g[k]=(g[k]||0)+(a.t==='retiro'?-1:1)*a.u;});
