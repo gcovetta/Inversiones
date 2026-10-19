@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=237, APP_VERSION_FECHA='19/10/2026';
+var APP_VERSION=238, APP_VERSION_FECHA='19/10/2026';
 var APP_CHANGELOG=[
+  'v238 | 2026-10-19 | Rotaciones: el resultado ahora suma lo cobrado desde la rotación en los dos lados (cupones y amortizaciones de bonos según sus flujos, p. ej. AO29 mensual, y dividendos cargados). En el detalle se ve cuántos cobros y cuánto.',
   'v237 | 2026-10-19 | Nueva sección ↔ Rotaciones (en el menú, debajo de Movimientos): detecta sola cuando vendiste algo y en los 5 días siguientes compraste otra cosa con esa plata, y muestra si la rotación te sumó (lo comprado hoy vs. lo vendido si te lo quedabas, en USD). Tocando una fila se ve el detalle; ✕ para descartar una que no fue rotación.',
   'v236 | 2026-10-16 | GDC vuelve a guardar sus datos del navegador con su prefijo propio (ptNYSE_; desde hace un tiempo usaba "undefined" y quedaban duplicados). La primera vez que abrís GDC se mudan solos y se borra la copia vieja: libera ~2 MB. Además, aviso en ⚠️ si el espacio del navegador pasa del 80%.',
   'v235 | 2026-10-16 | "Desde tu última visita": ahora también aparece si dejás la cartera abierta en una pestaña y volvés a mirarla después de 30 minutos (antes solo contaba como visita nueva al abrir la página de cero, por eso en GDC casi nunca salía).',
@@ -10744,7 +10745,14 @@ var _rotLiveP=null;
 function _rotLive(){if(_rotLiveP)return _rotLiveP;var M={};
   _rotLiveP=Promise.all(['arg_stocks','arg_cedears','arg_bonds','arg_corp','arg_notes'].map(function(k){return fetchWithTimeout('https://data912.com/live/'+k,{},12000).then(function(r){return r.ok?r.json():[];}).then(function(a){(Array.isArray(a)?a:[]).forEach(function(x){var c=parseFloat(x.c);if(x.symbol&&c>0)M[x.symbol]=c;});}).catch(function(){});})).then(function(){return M;});
   return _rotLiveP;}
-async function _rotRatio(g){var row=(NV_ROWS||[]).filter(function(o){return o.t===g.t&&o.q>0&&o.usd>0;})[0];
+// Cobros por unidad (USD) entre la fecha de la operación y hoy: cupones y amortizaciones de bonos/ON (FLUJOS_BONOS)
+// y dividendos cargados (TRK.divs con cantidad de acciones). Se suman al precio de hoy para comparar rendimiento total.
+function _rotCobros(g){var hoy=_flujosHoyStr(),u=0,n=0;
+  try{var fl=flujoDe(g.t);if(fl&&fl.flujos)fl.flujos.forEach(function(x){if(x.f<=g.f||x.f>hoy)return;var v=((+x.r||0)+(+x.a||0))/100;if(fl.moneda==='ARS'){var tc=getMEP(x.f.split('-').reverse().join('/'))||MEP_HOY||CCL_HOY;v=v/tc;}u+=v;n++;});}catch(e){}
+  if(!n)(TRK.divs||[]).forEach(function(x){if(x.ticker!==g.t||x.estado==='pendiente'||!(+x.acciones>0))return;var f=String(x.fecha||'');if(f.indexOf('/')>0)f=_phIso(f);if(!f||f<=g.f)return;var d=divUSD(x);if(d>0){u+=d/(+x.acciones);n++;}});
+  return {u:u,n:n};}
+async function _rotRatio(g){var k=await _rotRatio0(g);if(k==null)return null;var c=_rotCobros(g);g.cob=c.u*g.q;g.ncob=c.n;return k+c.u/(g.u/g.q);}
+async function _rotRatio0(g){var row=(NV_ROWS||[]).filter(function(o){return o.t===g.t&&o.q>0&&o.usd>0;})[0];
   if(row)return (row.usd/row.q)/(g.u/g.q);
   try{var r=await _phSerie(g.t,g.s),S=r&&r.ser||[];if(S.length>=2){var a=null;for(var i=0;i<S.length;i++){if(S[i][0]>=g.f){a=S[i];break;}}
     if(a&&(new Date(a[0])-new Date(g.f))/864e5<=5)return S[S.length-1][1]/a[1];}}catch(e){}
@@ -10770,13 +10778,13 @@ async function rotRender(){var pg=document.getElementById('page-rotaciones');if(
   pg.innerHTML='<div class="card" style="margin-bottom:1rem"><div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="card-title">↔ Rotaciones</span><span class="tag">vendiste algo y en los 5 días siguientes compraste otra cosa con esa plata</span>'+
     '<span id="rot-tot" style="margin-left:auto;font-family:var(--mono);font-size:.78rem;color:var(--text2)"></span></div>'+
     (R.length?'<div style="overflow-x:auto;padding:.3rem 0"><table class="rot-tb" style="width:100%;border-collapse:collapse;font-size:.8rem;font-family:var(--mono)"><tr style="color:var(--text3);font-size:.6rem;text-transform:uppercase"><td>Fecha</td><td>Vendiste</td><td></td><td>Compraste</td><td class="r">USD</td><td class="r">¿Sumó?</td><td></td></tr>'+rows+'</table></div>':'<div style="padding:1rem;color:var(--text3)">No se detectaron rotaciones en los últimos 6 meses.</div>')+
-    '<div style="font-size:.7rem;color:var(--text3);line-height:1.55;padding:.4rem 0 .6rem"><b>¿Sumó?</b> compara lo que vale hoy lo que compraste contra lo que valdría hoy lo que vendiste si te lo quedabas (en dólares, sin contar cupones ni dividendos cobrados después). Verde = la rotación te sumó. Tocá una fila para ver el detalle; ✕ si no fue una rotación. Se detectan solas: ventas de un día y las compras de los 5 días siguientes en la misma cartera que suman parecido.</div></div>';
+    '<div style="font-size:.7rem;color:var(--text3);line-height:1.55;padding:.4rem 0 .6rem"><b>¿Sumó?</b> compara lo que vale hoy lo que compraste contra lo que valdría hoy lo que vendiste si te lo quedabas (en dólares y <b>sumando lo cobrado desde la rotación</b> en los dos lados: cupones y amortizaciones de bonos según sus flujos, y dividendos cargados. Verde = la rotación te sumó. Tocá una fila para ver el detalle; ✕ si no fue una rotación. Se detectan solas: ventas de un día y las compras de los 5 días siguientes en la misma cartera que suman parecido.</div></div>';
   pg.querySelectorAll('.rot-tb td').forEach(function(td){td.style.padding='7px 8px';td.style.borderBottom='1px solid var(--border)';td.style.textAlign=td.classList.contains('r')?'right':'left';});
   var tot=0,okn=0;
   for(var i=0;i<R.length;i++){var r=R[i],x=await _rotEval(r),el=document.getElementById('rotres-'+r.id);if(!el)return;
     el.innerHTML=x.ok?'<span class="port-sensitive" style="color:'+(x.res>=0?'var(--accent)':'var(--red)')+'">'+(x.res>=0?'+':'−')+'USD '+n0(Math.abs(x.res))+'</span> '+P(x.resp):'<span class="mu" title="Falta el precio histórico de algún activo">sin precio</span>';
     if(x.ok){tot+=x.res;okn++;}
-    var leg=function(g,lbl){return '<div>'+lbl+' <b>'+g.t+'</b> · '+n0(g.q)+' a USD '+(g.u/g.q).toLocaleString('es-AR',{maximumFractionDigits:g.u/g.q<10?4:2})+' = <span class="port-sensitive">USD '+n0(g.u)+'</span> · desde entonces '+P(g.k==null?null:(g.k-1)*100)+'</div>';};
+    var leg=function(g,lbl){return '<div>'+lbl+' <b>'+g.t+'</b> · '+n0(g.q)+' a USD '+(g.u/g.q).toLocaleString('es-AR',{maximumFractionDigits:g.u/g.q<10?4:2})+' = <span class="port-sensitive">USD '+n0(g.u)+'</span> · desde entonces '+P(g.k==null?null:(g.k-1)*100)+(g.ncob?' <span class="mu">(incluye '+g.ncob+' cobro'+(g.ncob>1?'s':'')+' por <span class="port-sensitive">USD '+n0(g.cob)+'</span>)</span>':'')+'</div>';};
     var dd=document.getElementById('rotdd-'+r.id);if(dd)dd.innerHTML=x.V.map(function(g){return leg(g,'🔴 vendiste');}).join('')+x.C.map(function(g){return leg(g,'🟢 compraste');}).join('')+
       (x.ok?'<div style="margin-top:4px;color:var(--text2)">Si te quedabas con lo vendido: '+P(x.pv)+' · lo que compraste: '+P(x.pc)+'</div>':'');
     var tt=document.getElementById('rot-tot');if(tt)tt.innerHTML=R.length+' rotaciones · resultado '+(okn?'<b class="port-sensitive" style="color:'+(tot>=0?'var(--accent)':'var(--red)')+'">'+(tot>=0?'+':'−')+'USD '+n0(Math.abs(tot))+'</b>':'…');}
