@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=236, APP_VERSION_FECHA='16/10/2026';
+var APP_VERSION=237, APP_VERSION_FECHA='19/10/2026';
 var APP_CHANGELOG=[
+  'v237 | 2026-10-19 | Nueva sección ↔ Rotaciones (en el menú, debajo de Movimientos): detecta sola cuando vendiste algo y en los 5 días siguientes compraste otra cosa con esa plata, y muestra si la rotación te sumó (lo comprado hoy vs. lo vendido si te lo quedabas, en USD). Tocando una fila se ve el detalle; ✕ para descartar una que no fue rotación.',
   'v236 | 2026-10-16 | GDC vuelve a guardar sus datos del navegador con su prefijo propio (ptNYSE_; desde hace un tiempo usaba "undefined" y quedaban duplicados). La primera vez que abrís GDC se mudan solos y se borra la copia vieja: libera ~2 MB. Además, aviso en ⚠️ si el espacio del navegador pasa del 80%.',
   'v235 | 2026-10-16 | "Desde tu última visita": ahora también aparece si dejás la cartera abierta en una pestaña y volvés a mirarla después de 30 minutos (antes solo contaba como visita nueva al abrir la página de cero, por eso en GDC casi nunca salía).',
   'v234 | 2026-10-16 | Movimientos: siempre del más nuevo al más viejo. Antes las fechas con día o mes de un dígito (ej. 1/10) quedaban mal ordenadas, y dentro del mismo día el orden era el de carga al revés; ahora el último cargado va primero.',
@@ -938,6 +939,7 @@ function showPage(id,btn){
   if(id==='dividendos') divPopulateSelect();
   if(id==='movimientos') resetMFechaHoy();
   if(id==='arbitraje') arbRender();
+  if(id==='rotaciones') rotRender();
   if(id==='noticias') nwsLoad(false);
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
@@ -10721,6 +10723,68 @@ function nvTipos(){var el=document.getElementById('nv-dT');if(!el)return;
   NV_ROWS.forEach(function(o){var u=o.usd||0;if(!(u>0))return;var k=_nvTipo(o);S[k]=(S[k]||0)+u;tot+=u;});
   el.innerHTML=B.filter(function(b){return b[0]!=='otro'||S.otro>0;}).map(function(b){var u=S[b[0]]||0,p=tot>0?u/tot*100:0;
     return '<div class="nvbk" style="cursor:default" title="USD '+_nvN(u)+'"><span>'+b[1]+'</span><div class="tr"><span style="width:'+p.toFixed(1)+'%;background:'+b[2]+'"></span></div><span class="c">'+Math.round(p)+'%</span></div>';}).join('');}
+// ─── ↔ Rotaciones: ventas seguidas de compras con esa plata (detectadas solas) y si la rotación sumó ───
+var ROT_OCU=null,_rotCalc={};
+function _rotUSD(m){var bon=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI'),tc=bon?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
+  return isBonoUSDDirecto(m.ticker)?(+m.precioARS||0)*m.qty:(tc>0&&(+m.precioARS||0)>0?(+m.precioARS)*m.qty/tc:(+m.precioUSD||0)*m.qty);}
+function rotDetectar(){var lim=new Date(Date.now()-200*864e5).toISOString().slice(0,10),T=[];
+  (movimientos||[]).forEach(function(m){if(!m||(m.tipo!=='compra'&&m.tipo!=='venta')||m.owner==='cristian')return;var f=_phIso(m.fecha);if(!f||f<lim)return;var u=_rotUSD(m);if(!(u>0)||!(m.qty>0))return;
+    T.push({id:m.id,f:f,tp:m.tipo,t:m.ticker,q:+m.qty,u:u,c:m.cartera||'principal',s:getSector(m.ticker)});});
+  T.sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:(+a.id||0)-(+b.id||0);});
+  var usada={},R=[],dias=function(a,b){return (new Date(b)-new Date(a))/864e5;};
+  T.forEach(function(v,i){if(v.tp!=='venta'||usada[v.id])return;
+    var V=T.filter(function(x){return x.tp==='venta'&&!usada[x.id]&&x.c===v.c&&x.f===v.f;}),tv=V.reduce(function(s,x){return s+x.u;},0),vt={};V.forEach(function(x){vt[x.t]=1;});
+    var C=[],tc=0;T.forEach(function(x){if(x.tp!=='compra'||usada[x.id]||x.c!==v.c||vt[x.t])return;var d=dias(v.f,x.f);if(d<0||d>5)return;if(tc+x.u>tv*1.3&&tc>=tv*0.4)return;C.push(x);tc+=x.u;});
+    if(!C.length||tc<tv*0.4){return;}
+    V.forEach(function(x){usada[x.id]=1;});C.forEach(function(x){usada[x.id]=1;});
+    R.push({id:String(V[0].id),f:v.f,c:v.c,V:V,C:C,tv:tv,tc:tc});});
+  return R.reverse();}
+function _rotAgr(L){var o={};L.forEach(function(x){var g=o[x.t]||(o[x.t]={t:x.t,s:x.s,q:0,u:0,f:x.f});g.q+=x.q;g.u+=x.u;});return Object.keys(o).map(function(k){return o[k];}).sort(function(a,b){return b.u-a.u;});}
+var _rotLiveP=null;
+function _rotLive(){if(_rotLiveP)return _rotLiveP;var M={};
+  _rotLiveP=Promise.all(['arg_stocks','arg_cedears','arg_bonds','arg_corp','arg_notes'].map(function(k){return fetchWithTimeout('https://data912.com/live/'+k,{},12000).then(function(r){return r.ok?r.json():[];}).then(function(a){(Array.isArray(a)?a:[]).forEach(function(x){var c=parseFloat(x.c);if(x.symbol&&c>0)M[x.symbol]=c;});}).catch(function(){});})).then(function(){return M;});
+  return _rotLiveP;}
+async function _rotRatio(g){var row=(NV_ROWS||[]).filter(function(o){return o.t===g.t&&o.q>0&&o.usd>0;})[0];
+  if(row)return (row.usd/row.q)/(g.u/g.q);
+  try{var r=await _phSerie(g.t,g.s),S=r&&r.ser||[];if(S.length>=2){var a=null;for(var i=0;i<S.length;i++){if(S[i][0]>=g.f){a=S[i];break;}}
+    if(a&&(new Date(a[0])-new Date(g.f))/864e5<=5)return S[S.length-1][1]/a[1];}}catch(e){}
+  try{if(isBonoUSDDirecto(g.t))return null;var L=await _rotLive(),c=L[g.t];if(!(c>0))return null;var bon=(g.s==='bonos'||g.s==='on'),tc=bon?(MEP_HOY||CCL_HOY):CCL_HOY;
+    var k=(c/(bon?100:1)/tc)/(g.u/g.q);return (k>0.2&&k<5)?k:null;}catch(e){return null;}}
+async function _rotEval(r){if(_rotCalc[r.id])return _rotCalc[r.id];
+  var V=_rotAgr(r.V),C=_rotAgr(r.C),hoyV=0,hoyC=0,okV=true,okC=true;
+  for(var i=0;i<V.length;i++){var k=await _rotRatio(V[i]);V[i].k=k;if(k==null)okV=false;else hoyV+=V[i].u*k;}
+  for(i=0;i<C.length;i++){k=await _rotRatio(C[i]);C[i].k=k;if(k==null)okC=false;else hoyC+=C[i].u*k;}
+  var x={V:V,C:C,ok:okV&&okC};
+  if(x.ok){var kv=hoyV/r.tv,kc=hoyC/r.tc;x.pv=(kv-1)*100;x.pc=(kc-1)*100;x.res=r.tc*(kc-kv);x.resp=(kc-kv)*100;}
+  return _rotCalc[r.id]=x;}
+async function rotOcultar(id){ROT_OCU=ROT_OCU||[];if(ROT_OCU.indexOf(id)<0)ROT_OCU.push(id);try{await sbSetConfig('rot_ocultas',ROT_OCU);}catch(e){}rotRender();}
+function rotTog(id){var e=document.getElementById('rotd-'+id);if(e)e.style.display=e.style.display==='none'?'':'none';}
+async function rotRender(){var pg=document.getElementById('page-rotaciones');if(!pg)return;
+  if(ROT_OCU===null){try{ROT_OCU=await sbGetConfig('rot_ocultas');}catch(e){}if(!Array.isArray(ROT_OCU))ROT_OCU=[];}
+  var R=rotDetectar().filter(function(r){return ROT_OCU.indexOf(r.id)<0;}),n0=function(x){return Math.round(x).toLocaleString('es-AR');};
+  var P=function(x){return x==null||!isFinite(x)?'<span class="mu">—</span>':'<span style="color:'+(x>=0.05?'var(--accent)':x<=-0.05?'var(--red)':'var(--text3)')+'">'+(x>=0?'+':'−')+Math.abs(x).toFixed(1).replace('.',',')+'%</span>';};
+  var nm=function(L){return L.map(function(g){return '<b>'+g.t+'</b>';}).join(' · ');},fd=function(f){return f.split('-').reverse().slice(0,2).join('/')+'/'+f.slice(2,4);};
+  var multi=R.some(function(r){return r.c!=='principal';});
+  var rows=R.map(function(r){var V=_rotAgr(r.V),C=_rotAgr(r.C);return '<tr class="rotr" onclick="rotTog(\''+r.id+'\')" style="cursor:pointer"><td>'+fd(r.f)+(multi?' <span class="mu" style="font-size:.62rem">'+r.c+'</span>':'')+'</td><td>'+nm(V)+'</td><td>→</td><td>'+nm(C)+'</td><td class="r port-sensitive">'+n0(r.tv)+'</td><td class="r" id="rotres-'+r.id+'"><span class="mu">calculando…</span></td>'+
+    '<td class="r"><span title="No es una rotación (ocultar)" onclick="event.stopPropagation();rotOcultar(\''+r.id+'\')" style="cursor:pointer;color:var(--text3)">✕</span></td></tr><tr id="rotd-'+r.id+'" style="display:none"><td colspan="7" id="rotdd-'+r.id+'" style="background:var(--surface2);font-size:.74rem"></td></tr>';}).join('');
+  pg.innerHTML='<div class="card" style="margin-bottom:1rem"><div class="card-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="card-title">↔ Rotaciones</span><span class="tag">vendiste algo y en los 5 días siguientes compraste otra cosa con esa plata</span>'+
+    '<span id="rot-tot" style="margin-left:auto;font-family:var(--mono);font-size:.78rem;color:var(--text2)"></span></div>'+
+    (R.length?'<div style="overflow-x:auto;padding:.3rem 0"><table class="rot-tb" style="width:100%;border-collapse:collapse;font-size:.8rem;font-family:var(--mono)"><tr style="color:var(--text3);font-size:.6rem;text-transform:uppercase"><td>Fecha</td><td>Vendiste</td><td></td><td>Compraste</td><td class="r">USD</td><td class="r">¿Sumó?</td><td></td></tr>'+rows+'</table></div>':'<div style="padding:1rem;color:var(--text3)">No se detectaron rotaciones en los últimos 6 meses.</div>')+
+    '<div style="font-size:.7rem;color:var(--text3);line-height:1.55;padding:.4rem 0 .6rem"><b>¿Sumó?</b> compara lo que vale hoy lo que compraste contra lo que valdría hoy lo que vendiste si te lo quedabas (en dólares, sin contar cupones ni dividendos cobrados después). Verde = la rotación te sumó. Tocá una fila para ver el detalle; ✕ si no fue una rotación. Se detectan solas: ventas de un día y las compras de los 5 días siguientes en la misma cartera que suman parecido.</div></div>';
+  pg.querySelectorAll('.rot-tb td').forEach(function(td){td.style.padding='7px 8px';td.style.borderBottom='1px solid var(--border)';td.style.textAlign=td.classList.contains('r')?'right':'left';});
+  var tot=0,okn=0;
+  for(var i=0;i<R.length;i++){var r=R[i],x=await _rotEval(r),el=document.getElementById('rotres-'+r.id);if(!el)return;
+    el.innerHTML=x.ok?'<span class="port-sensitive" style="color:'+(x.res>=0?'var(--accent)':'var(--red)')+'">'+(x.res>=0?'+':'−')+'USD '+n0(Math.abs(x.res))+'</span> '+P(x.resp):'<span class="mu" title="Falta el precio histórico de algún activo">sin precio</span>';
+    if(x.ok){tot+=x.res;okn++;}
+    var leg=function(g,lbl){return '<div>'+lbl+' <b>'+g.t+'</b> · '+n0(g.q)+' a USD '+(g.u/g.q).toLocaleString('es-AR',{maximumFractionDigits:g.u/g.q<10?4:2})+' = <span class="port-sensitive">USD '+n0(g.u)+'</span> · desde entonces '+P(g.k==null?null:(g.k-1)*100)+'</div>';};
+    var dd=document.getElementById('rotdd-'+r.id);if(dd)dd.innerHTML=x.V.map(function(g){return leg(g,'🔴 vendiste');}).join('')+x.C.map(function(g){return leg(g,'🟢 compraste');}).join('')+
+      (x.ok?'<div style="margin-top:4px;color:var(--text2)">Si te quedabas con lo vendido: '+P(x.pv)+' · lo que compraste: '+P(x.pc)+'</div>':'');
+    var tt=document.getElementById('rot-tot');if(tt)tt.innerHTML=R.length+' rotaciones · resultado '+(okn?'<b class="port-sensitive" style="color:'+(tot>=0?'var(--accent)':'var(--red)')+'">'+(tot>=0?'+':'−')+'USD '+n0(Math.abs(tot))+'</b>':'…');}
+}
+function rotInit(){if(document.getElementById('page-rotaciones'))return;var pp=document.getElementById('page-portafolio'),mb=document.querySelector('.nav-item[onclick*="\'movimientos\'"]');if(!pp||!mb)return;
+  var pg=document.createElement('div');pg.className='page';pg.id='page-rotaciones';pp.parentNode.appendChild(pg);
+  var b=document.createElement('button');b.className='nav-item';b.setAttribute('onclick',"showPage('rotaciones',this)");b.innerHTML='<span>↔</span>Rotaciones';mb.parentNode.insertBefore(b,mb.nextSibling);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rotInit);else setTimeout(rotInit,0);
 function lvTog(){NV.lv=!NV.lv;nvSave();nvLinea();}
 function nvLinea(){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
   var card=document.getElementById('nv-linea');if(!card){card=document.createElement('div');card.className='card';card.id='nv-linea';card.style.cssText='margin-top:1rem';}cw.appendChild(card);
