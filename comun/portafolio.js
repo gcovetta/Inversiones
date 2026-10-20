@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=246, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=247, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v247 | 2026-10-20 | Dashboard: nuevo 🏆 ¿Quién hizo tu resultado? Gráfico en cascada con lo que sumó o restó cada activo en USD (no realizado + realizado + dividendos y cupones), incluidos los que ya vendiste, con el resto agrupado y el total. Resumen por tipo y abiertas vs cerradas. Además la app empieza a guardar una foto diaria por activo (la última de cada mes queda como cierre) para poder ver "mes anterior → hoy" y "este año".',
   'v246 | 2026-10-20 | Nuevo 🧾 Historia del PPC: tocando el PPC de cualquier fila (o el botón en la fila abierta) se abre cómo fue cambiando tu PPC con cada compra, venta y dividendo: gráfico, frase con lo que más lo movió y tabla de eventos (PPC antes/después). En USD o en pesos al dólar de hoy.',
   'v245 | 2026-10-20 | Comparación de portafolios mejorada: resumen (coinciden / para revisar / no coinciden) y, para cada diferencia, la causa probable con su botón: split o cambio de ratio (Ajustar n→m), mismo bono en pesos/dólares (sumados coinciden), compra cargada dos veces, o compra/venta sin cargar (la precarga en el módulo rápido). Además: cargar operaciones escribiendo en el módulo rápido ("compré 30 SNDK a 13250", "vendí 100 AO29 a 1329 ayer", "... el 13/10").',
   'v244 | 2026-10-20 | Comprar/Vender (módulo rápido): vista previa mientras cargás la operación. Muestra cuánto pagás o cobrás en USD, cómo quedan la cantidad, el PPC, el resultado, el peso en la cartera y la distribución CER/HD/RV, y avisa si no alcanza la liquidez, si el activo supera el 5% de la cartera, si vendés por debajo del PPC o si vendés más de lo que tenés.',
@@ -10994,6 +10995,62 @@ function ppcHist(t,mon){if(mon)_ppchMon=mon;var ov=document.getElementById('ppch
     '<div style="background:var(--surface2);border-left:3px solid var(--blue);border-radius:6px;padding:8px 11px;font-size:.78rem;line-height:1.55;font-family:var(--sans);margin-bottom:8px">'+say+'</div>'+
     '<div style="overflow-x:auto;max-height:42vh"><table class="ppch-tb port-sensitive" style="width:100%;border-collapse:collapse;font-size:.74rem"><tr style="color:var(--text3);font-size:.56rem;text-transform:uppercase"><td>Fecha</td><td>Evento</td><td class="r">Cant.</td><td class="r">Precio</td><td class="r">Tenencia</td><td class="r">PPC antes</td><td class="r">PPC después</td><td class="r">Efecto</td></tr>'+rows+'</table></div></div>';
   ov.querySelectorAll('.ppch-tb td').forEach(function(td){td.style.padding='5px 7px';td.style.borderTop='1px solid var(--border)';td.style.textAlign=td.classList.contains('r')?'right':'left';});}
+// ─── v247 ¿Quién hizo tu resultado? (Dashboard) ─────────────────────────────
+var QH={per:'all',fotos:null};
+function _qhValUSD(p){var q=quotes[p.ticker];if(!(p.qty>0.000001))return 0;var sector=getSector(p.ticker),tc=CCL_HOY||1,mep=MEP_HOY||tc,ratio=RATIOS_TABLE[p.ticker]||1;
+  if(!(q&&q.price))return p.costUSDpuro||0;
+  return (sector==='bonos'||sector==='on')?(q.price/mep)*p.qty/100:sector==='fci'?(q.price/mep)*p.qty:(sector==='argentina'||BRL_TICKERS.has(p.ticker)||q.fromByma)?(q.price/tc)*p.qty:(q.price/ratio)*p.qty;}
+function _qhAportes(){var noA={};if(typeof TRK!=='undefined'&&TRK.divs)TRK.divs.forEach(function(d){if(d.pncApplied||!d.montoUSD)return;if(d.cartera&&typeof CARTERA_ACTIVA!=='undefined'&&d.cartera!==CARTERA_ACTIVA)return;noA[d.ticker]=(noA[d.ticker]||0)+(+d.montoUSD||0);});
+  var R={};getPositions().forEach(function(p){var v=_qhValUSD(p),ab=p.qty>0.000001,nr=ab?v-(p.costUSDpuro||0):0,re=p.realizedPnl||0,co=(p.dividendsUSD||0)+(noA[p.ticker]||0);
+    R[p.ticker]={t:p.ticker,s:getSector(p.ticker),ab:ab,nr:nr,re:re,co:co,c:nr+re+co,sp:ab&&!(quotes[p.ticker]&&quotes[p.ticker].price)};});return R;}
+function _qhCart(){return (typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA)||'principal';}
+function _qhYM(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+async function _qhFotoGuardar(R){try{if(!QH.fotos)return;var hoy=new Date(),ym=_qhYM(hoy),fd=hoy.toLocaleDateString('es-AR'),ca=_qhCart();QH.fotos[ca]=QH.fotos[ca]||{};var f=QH.fotos[ca][ym];
+  if(f&&f.d===fd)return;if(!Object.keys(quotes||{}).length)return;var c={};Object.keys(R).forEach(function(k){c[k]=Math.round(R[k].c*100)/100;});QH.fotos[ca][ym]={d:fd,c:c};await sbSetConfig('qh_fotos',QH.fotos);}catch(e){}}
+function _qhBase(){var ca=_qhCart(),F=(QH.fotos&&QH.fotos[ca])||{},hoy=new Date(),k;
+  if(QH.per==='mes'){var d=new Date(hoy.getFullYear(),hoy.getMonth()-1,1);k=_qhYM(d);}else if(QH.per==='anio'){k=(hoy.getFullYear()-1)+'-12';}else return {ok:1,c:{}};
+  return F[k]?{ok:1,c:F[k].c,d:F[k].d}:{ok:0,k:k};}
+function qhPer(p){QH.per=p;qhRender();}
+function _qhN(x){return Math.round(Math.abs(x)).toLocaleString('es-AR');}
+function _qhS(x){return (x>=0?'+':'−')+_qhN(x);}
+async function qhRender(){var sc=document.getElementById('db-scroll');if(!sc)return;var el=document.getElementById('qh-card');
+  if(!el){el=document.createElement('div');el.id='qh-card';el.className='card';el.style.cssText='padding:1rem;margin-bottom:1rem';var f=sc.firstElementChild;if(f&&f.nextSibling)sc.insertBefore(el,f.nextSibling);else sc.appendChild(el);}
+  if(QH.fotos===null){try{QH.fotos=await sbGetConfig('qh_fotos');}catch(e){}if(!QH.fotos||typeof QH.fotos!=='object')QH.fotos={};}
+  var R=_qhAportes();_qhFotoGuardar(R);var B=_qhBase();
+  var seg='<span style="display:inline-flex;border:1px solid var(--border2);border-radius:999px;overflow:hidden;font-size:.66rem;font-family:var(--mono);font-weight:400">'+[['all','Desde que lo tenés'],['mes','Mes anterior → hoy'],['anio','Este año']].map(function(o){var on=QH.per===o[0];return '<span onclick="qhPer(\''+o[0]+'\')" style="padding:3px 10px;cursor:pointer;'+(on?'background:var(--blue,#448aff);color:#fff':'color:var(--text2)')+'">'+o[1]+'</span>';}).join('')+'</span>';
+  var h='<div class="card-title" style="margin-bottom:.8rem;font-size:.78rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap">🏆 ¿Quién hizo tu resultado? '+seg+'<span style="margin-left:auto;font-size:.62rem;color:var(--text3);font-weight:400;font-family:var(--mono)">USD · por activo · incluye vendidos y cobros</span></div>';
+  if(!B.ok){var mm=B.k.split('-');el.innerHTML=h+'<div style="background:var(--surface2);border-left:3px solid var(--blue,#448aff);border-radius:6px;padding:9px 12px;font-size:.78rem;line-height:1.55">📅 Todavía no hay foto guardada de cierre de '+(QH.per==='anio'?'diciembre '+mm[0]:mm[1]+'/'+mm[0])+'. Desde ahora la app guarda una foto por activo cada día y la última de cada mes queda como cierre: '+(QH.per==='anio'?'el año completo se va a poder ver desde enero.':'a partir del mes que viene vas a poder ver el mes.')+'</div>';return;}
+  var L=Object.keys(R).concat(Object.keys(B.c).filter(function(k){return !R[k];})).map(function(k){var r=R[k]||{t:k,s:getSector(k),ab:false,c:0};return {t:k,s:r.s,ab:r.ab,sp:r.sp,nr:r.nr,re:r.re,co:r.co,v:r.c-(B.c[k]||0)};}).filter(function(x){return Math.abs(x.v)>=0.5;});
+  if(!L.length){el.innerHTML=h+'<div style="font-size:.78rem;color:var(--text3)">Sin movimientos en el período.</div>';return;}
+  L.sort(function(a,b){return b.v-a.v;});var tot=L.reduce(function(a,x){return a+x.v;},0),pos=L.filter(function(x){return x.v>0;}),neg=L.filter(function(x){return x.v<0;});
+  var sp=pos.reduce(function(a,x){return a+x.v;},0),sn=neg.reduce(function(a,x){return a+x.v;},0);
+  var top=pos.slice(0,10),bot=neg.slice(-10),rest=L.filter(function(x){return top.indexOf(x)<0&&bot.indexOf(x)<0;}),rv=rest.reduce(function(a,x){return a+x.v;},0);
+  var W=top.map(function(x){return {l:x.t+(x.ab?'':' ·v'),v:x.v,k:x.v>=0?'g':'r',x:x};});if(rest.length)W.push({l:'resto ('+rest.length+')',v:rv,k:'o'});bot.forEach(function(x){W.push({l:x.t+(x.ab?'':' ·v'),v:x.v,k:'r',x:x});});W.push({l:'TOTAL',v:tot,k:'t'});
+  var acc=0,P=W.map(function(w){if(w.k==='t')return [0,w.v];var a=acc;acc+=w.v;return [a,acc];});
+  var mn=Math.min(0,Math.min.apply(null,P.map(function(p){return Math.min(p[0],p[1]);}))),mx=Math.max(0,Math.max.apply(null,P.map(function(p){return Math.max(p[0],p[1]);})));if(mx===mn)mx=mn+1;
+  var VW=920,rh=22,H=W.length*rh+24,Lm=120,X=function(v){return Lm+(v-mn)/(mx-mn)*(VW-Lm-80);};
+  var C={g:'#22c55e',r:'#ef4444',o:'#4b6a92',t:'#7a9cc5'};
+  var g='<line x1="'+X(0)+'" x2="'+X(0)+'" y1="2" y2="'+(H-16)+'" stroke="#4b6a92" stroke-dasharray="3 3"/>';
+  W.forEach(function(w,i){var y=4+i*rh,a=P[i][0],b=P[i][1],x0=X(Math.min(a,b)),wd=Math.max(2,Math.abs(X(b)-X(a))),col=C[w.k];
+    var tip=w.x?(w.x.t+': '+_qhS(w.v)+' USD'+(QH.per==='all'?' · no realizado '+_qhS(w.x.nr||0)+' · realizado '+_qhS(w.x.re||0)+' · cobros '+_qhS(w.x.co||0):'')+(w.x.ab?'':' · ya vendido')+(w.x.sp?' · sin precio (valuado al costo)':'')):w.l;
+    g+='<g><title>'+tip+'</title><text x="'+(Lm-8)+'" y="'+(y+13)+'" fill="'+(w.k==='t'?'#e8f0ff':'#a9bfe0')+'" font-size="11" text-anchor="end" font-weight="'+(w.k==='t'?700:400)+'">'+w.l+'</text>';
+    g+='<rect x="'+x0+'" y="'+(y+3)+'" width="'+wd+'" height="'+(rh-8)+'" rx="2" fill="'+col+'"/>';
+    g+='<text x="'+(x0+wd+6)+'" y="'+(y+13)+'" fill="'+col+'" font-size="10.5">'+_qhS(w.v)+'</text></g>';
+    if(w.k!=='t'&&i<W.length-2)g+='<line x1="'+X(b)+'" x2="'+X(b)+'" y1="'+(y+rh-5)+'" y2="'+(y+rh+3)+'" stroke="#4b6a92"/>';});
+  var kb=function(t,v,s,c){return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:7px 10px"><div style="font-family:var(--mono);font-size:.56rem;color:var(--text3);text-transform:uppercase">'+t+'</div><div style="font-family:var(--mono);font-size:1.02rem;font-weight:700;color:'+(c||'var(--text)')+'">'+v+'</div><div style="font-family:var(--mono);font-size:.62rem;color:var(--text2)">'+s+'</div></div>';};
+  var per={'all':'no realizado + realizado + cobros','mes':'desde el cierre del '+(B.d||''),'anio':'desde el cierre del '+(B.d||'')}[QH.per];
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px">'+kb('Resultado',(tot>=0?'+':'−')+'USD '+_qhN(tot),per,tot>=0?'#22c55e':'#ef4444')+kb('Sumaron',pos.length+' activos','+USD '+_qhN(sp),'#22c55e')+kb('Restaron',neg.length+' activos','−USD '+_qhN(sn),'#ef4444')+kb('Mejor / peor',(pos[0]?pos[0].t:'—')+' / '+(neg.length?neg[neg.length-1].t:'—'),(pos[0]?_qhS(pos[0].v):'')+(neg.length?' / '+_qhS(neg[neg.length-1].v):''))+'</div>';
+  h+='<svg viewBox="0 0 '+VW+' '+H+'" width="100%" style="font-family:JetBrains Mono,ui-monospace,monospace">'+g+'</svg>';
+  var gs={},NOM={nyse:'Cedears / exterior',argentina:'Acciones argentinas',bonos:'Bonos',on:'ONs',brasil:'Brasil',europa:'Europa',china:'China',cripto:'Cripto',fci:'FCI'};L.forEach(function(x){var k=NOM[x.s]?x.s:'otro';gs[k]=(gs[k]||0)+x.v;});
+  var ab=L.filter(function(x){return x.ab;}),ce=L.filter(function(x){return !x.ab;});var su=function(a){return a.reduce(function(s,x){return s+x.v;},0);};
+  var rw=function(l,v){return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--border)"><span>'+l+'</span><span style="color:'+(v>=0?'#22c55e':'#ef4444')+'">'+_qhS(v)+'</span></div>';};
+  h+='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.62rem;color:var(--text2);font-family:var(--mono);margin:2px 0 8px"><span>🟩 sumó</span><span>🟥 restó</span><span>·v = ya vendido</span><span>pasá el mouse por una barra para ver el detalle</span></div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:var(--mono);font-size:.72rem"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px"><b>Por tipo</b>'+Object.keys(gs).sort(function(a,b){return gs[b]-gs[a];}).map(function(k){return rw(NOM[k]||'Otros',gs[k]);}).join('')+'</div>'+
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px"><b>Abiertas vs cerradas</b>'+rw('En cartera ('+ab.length+')',su(ab))+rw('Ya vendidas ('+ce.length+')',su(ce))+'</div></div>';
+  var spn=L.filter(function(x){return x.sp;}).map(function(x){return x.t;});
+  if(spn.length)h+='<div style="font-size:.66rem;color:var(--text3);margin-top:8px">Sin precio de mercado (valuados al costo): '+spn.join(', ')+'.</div>';
+  el.innerHTML=h;}
+(function(){var _rd=renderDashboard;renderDashboard=function(){var r=_rd.apply(this,arguments);try{qhRender();}catch(e){}return r;};})();
 function lvTog(){NV.lv=!NV.lv;nvSave();nvLinea();}
 function nvLinea(){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
   var card=document.getElementById('nv-linea');if(!card){card=document.createElement('div');card.className='card';card.id='nv-linea';card.style.cssText='margin-top:1rem';}cw.appendChild(card);
