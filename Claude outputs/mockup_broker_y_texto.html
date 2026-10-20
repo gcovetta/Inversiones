@@ -1,0 +1,67 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparar con el broker y carga por texto — propuesta</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#4b6a92;--g:#22c55e;--r:#ef4444;--bl:#448aff;--am:#f59e0b;--mono:ui-monospace,"JetBrains Mono",Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif;font-size:14px}
+.wrap{max-width:980px;margin:0 auto;padding:16px}.note{font-size:.72rem;color:var(--t3);margin:0 0 12px;line-height:1.5}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+h2{font-size:1rem;margin:0 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.src{margin-left:auto;font-family:var(--mono);font-size:.62rem;color:var(--t3);font-weight:400}
+.sum{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}.sum div{background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:8px 12px;font-family:var(--mono);font-size:.78rem}.sum b{font-size:1.1rem;display:block}
+table{width:100%;border-collapse:collapse;font-size:.8rem}th{font-family:var(--mono);font-size:.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;text-align:right;padding:6px;font-weight:500}td{padding:8px 6px;border-top:1px solid var(--b);text-align:right;font-family:var(--mono)}th:first-child,td:first-child{text-align:left}
+tr.bad td{background:#ef44440f}tr.warn td{background:#f59e0b0f}
+.g{color:var(--g)}.r{color:var(--r)}.am{color:var(--am)}.mu{color:var(--t3)}
+.why{font-family:Inter,sans-serif;font-size:.74rem;color:var(--t2);text-align:left}
+.btn{border:1px solid var(--b2);background:var(--s2);color:var(--t);border-radius:8px;padding:4px 10px;font-size:.72rem;cursor:pointer;white-space:nowrap}.btn.pri{background:var(--bl);border-color:var(--bl);color:#fff}
+.tog{font-size:.74rem;color:var(--t2);cursor:pointer;margin-top:8px;display:inline-block}
+.inp{display:flex;gap:8px}.inp input{flex:1;background:var(--bg);border:1px solid var(--b2);border-radius:10px;color:var(--t);font-size:1rem;padding:10px 12px}
+.ex{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.ex span{font-family:var(--mono);font-size:.7rem;border:1px solid var(--b2);border-radius:999px;padding:2px 9px;color:var(--t2);cursor:pointer}
+.res{background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:12px 14px;margin-top:10px}
+.kv{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.kv div{background:var(--s);border:1px solid var(--b);border-radius:9px;padding:7px 9px}.kv small{display:block;font-family:var(--mono);font-size:.56rem;color:var(--t3);text-transform:uppercase}.kv b{font-family:var(--mono);font-size:.95rem}
+.w{margin-top:8px;border-left:3px solid var(--am);padding:6px 9px;border-radius:5px;background:#f59e0b12;font-size:.78rem}.w.ok{border-left-color:var(--g);background:#22c55e10}.w.bad{border-left-color:var(--r);background:#ef444412}
+.exp{font-size:.74rem;color:var(--t2);line-height:1.6;margin-top:10px}.exp b{color:var(--t)}
+@media(max-width:760px){.kv{grid-template-columns:repeat(2,minmax(0,1fr))}.hm{display:none}}
+</style></head><body><div class="wrap">
+<p class="note">Propuesta · la primera parte usa lo que pegaste de Bull y las cantidades reales de Omar en la app (cartera Principal); la fila de ETHA es el caso de Hilda de esta semana, para mostrar cómo se vería un split.</p>
+
+<div class="card"><h2>② Comparar con el broker · Omar vs Bull <span class="src">pegaste el resumen de Bull · 20/10</span></h2>
+<div class="sum"><div><b class="g">44</b>coinciden</div><div><b class="am">1</b>para revisar</div><div><b class="r">1</b>no coincide</div><div><b class="mu">0</b>solo en uno de los dos</div></div>
+<table>
+<tr><th>Activo</th><th>En la app</th><th>En Bull</th><th>Diferencia</th><th class="hm" style="text-align:left">Causa probable</th><th></th></tr>
+<tr class="warn"><td><b>AO29</b> + AO29C</td><td>26.320 + 482</td><td>26.802</td><td class="am">0</td><td class="why hm">La app los tiene separados (AO29 en pesos y AO29C en dólar cable) y Bull los suma. <b>Sumados coinciden.</b></td><td><button class="btn">Unificar</button></td></tr>
+<tr class="bad"><td><b>ETHA</b> <span class="mu">(Hilda)</span></td><td>70</td><td>30</td><td class="r">−40</td><td class="why hm">La relación es exacta 7 → 3 y el precio del Cedear subió ×2,33 sin que se moviera el ETF en dólares: <b>split / reverse split</b>.</td><td><button class="btn pri">Ajustar 7→3</button></td></tr>
+<tr><td>AMZN</td><td>1.465</td><td>1.465</td><td class="g">✓</td><td class="hm"></td><td></td></tr>
+<tr><td>MELI</td><td>93</td><td>93</td><td class="g">✓</td><td class="hm"></td><td></td></tr>
+<tr><td>O</td><td>146</td><td>146</td><td class="g">✓</td><td class="hm"></td><td></td></tr>
+<tr><td>TX31</td><td>1.731.438</td><td>1.731.438</td><td class="g">✓</td><td class="hm"></td><td></td></tr>
+</table>
+<span class="tog">▸ Ver las otras 40 que coinciden</span>
+<p class="exp"><b>Causas que reconoce sola:</b> split o reverse split (diferencia en proporción exacta y salto de precio), mismo bono en otra moneda (AO29 / AO29C / AO29D), operación sin cargar (la diferencia coincide con una compra o venta de los últimos días en el broker), venta o compra duplicada (la diferencia es igual a una operación cargada dos veces), y activo que está en un solo lado. Cada una trae su botón para resolverla: <b>ajustar</b>, <b>unificar</b>, <b>cargar la operación que falta</b> o <b>ir al movimiento</b>.<br><b>Dónde iría:</b> en la página de comparación que ya usás (Bull en Omar, Hilda y Juli; Veta en GDC).</p>
+</div>
+
+<div class="card"><h2>③ Cargar escribiendo <span class="src">módulo rápido del Portafolio</span></h2>
+<div class="inp"><input id="tx" value="compré 30 SNDK a 13250" autocomplete="off"></div>
+<div class="ex"><span>vendí 100 AO29 a 1329</span><span>compré 40 MELI a 24890 ayer</span><span>compre 1000 tx31 a 14,58</span><span>vendi 20 meta a 51600 el 13/10</span><span>compré 30 SNDK a 1330013280</span></div>
+<div class="res" id="res"></div>
+<p class="exp"><b>Qué entiende:</b> compré / vendí (con o sin tilde), cantidad, ticker (en mayúscula o minúscula), "a" + precio con coma o punto, y opcionalmente la fecha ("ayer", "el 13/10"; si no decís nada es hoy). Completa el mercado, el dólar del día y la cartera, y te muestra la vista previa y el control de precio antes de confirmar. <b>Funciona igual desde el celular</b>, incluso dictando con el micrófono del teclado.</p>
+</div>
+</div>
+<script>
+var POS={SNDK:{q:75,ppc:13275,px:13320},MELI:{q:93,ppc:24310,px:24890},AO29:{q:26320,ppc:136000,px:132900,bono:1},TX31:{q:1731438,ppc:1453,px:1458,bono:1},META:{q:131,ppc:41100,px:50600}};
+var MKT={SNDK:13320,MELI:24890,AO29:132900,TX31:1458,META:50600};
+function n0(x){return Math.round(x).toLocaleString('es-AR');}
+function parse(s){s=s.trim().toLowerCase();var m=/^(compr[eé]|vend[ií])\s+([\d.,]+)\s+([a-z0-9]+)\s+a\s+\$?\s*([\d.,]+)(.*)$/.exec(s);if(!m)return null;
+ var num=function(x){return parseFloat(x.replace(/\./g,'').replace(',','.'));};var f='hoy (20/10)';var rest=m[5]||'';if(/ayer/.test(rest))f='ayer (19/10)';var d=/(\d{1,2})\/(\d{1,2})/.exec(rest);if(d)f=d[1].padStart(2,'0')+'/'+d[2].padStart(2,'0');
+ return {t:/compr/.test(m[1])?'compra':'venta',q:num(m[2]),tk:m[3].toUpperCase(),p:num(m[4]),f:f};}
+function draw(){var x=parse(document.getElementById('tx').value),el=document.getElementById('res');
+ if(!x){el.innerHTML='<span class="mu">Escribí algo como "compré 30 SNDK a 13250"…</span>';return;}
+ var P=POS[x.tk]||{q:0,ppc:0,px:MKT[x.tk]||x.p},bono=P.bono,ccl=1625.6,mep=1547;var pu=bono?x.p:x.p;var usd=(bono?x.p/100:x.p)*x.q/(bono?mep:ccl);
+ var buy=x.t==='compra',q1=buy?P.q+x.q:P.q-x.q,ppc1=buy?(P.q*P.ppc+x.q*x.p)/q1:P.ppc;var mk=MKT[x.tk];var r=mk?x.p/mk:1;
+ var h='<div class="kv"><div><small>Operación</small><b class="'+(buy?'g':'r')+'">'+(buy?'Compra':'Venta')+'</b></div><div><small>Activo</small><b>'+x.tk+'</b></div><div><small>Cantidad</small><b>'+n0(x.q)+'</b></div><div><small>Precio</small><b>$ '+x.p.toLocaleString('es-AR')+'</b></div><div><small>Fecha</small><b>'+x.f+'</b></div></div>';
+ h+='<div style="font-family:var(--mono);font-size:.78rem;color:var(--t2);margin-top:8px">'+(buy?'Pagás':'Cobrás')+' <b style="color:var(--t)">$ '+n0((bono?x.p/100:x.p)*x.q)+'</b> ≈ <b style="color:var(--t)">USD '+n0(usd)+'</b> · '+x.tk+': '+n0(P.q)+' → '+n0(q1)+(q1>0&&P.ppc?' · PPC $ '+n0(P.ppc)+' → $ '+n0(ppc1):'')+'</div>';
+ if(r>4||r<0.25)h+='<div class="w bad">⚠ El precio que escribiste es <b>'+(r>1?n0(r)+' veces':n0(1/r)+' veces más bajo que')+'</b> el de mercado ($ '+n0(mk)+'). ¿Te sobró algún número?</div>';
+ else if(!buy&&P.ppc&&x.p<P.ppc)h+='<div class="w">📉 Vendés por debajo de tu PPC ($ '+n0(P.ppc)+').</div>';
+ else h+='<div class="w ok">✓ Precio en línea con el mercado.</div>';
+ h+='<div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" style="padding:8px 14px">Confirmar '+x.t+'</button><button class="btn" style="padding:8px 14px">Editar campos</button></div>';
+ el.innerHTML=h;}
+document.getElementById('tx').oninput=draw;document.querySelectorAll('.ex span').forEach(function(e){e.onclick=function(){document.getElementById('tx').value=e.textContent;draw();};});draw();
+</script></body></html>
