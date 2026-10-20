@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=253, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=254, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v254 | 2026-10-20 | Curva CER: además de los cero cupón y TX31 ahora suma TX28, DICP y PARP (bonos CER con cupones, ubicados por duration; DICP y PARP con CER aproximado). Los swaps sugeridos pueden ser entre cualquier bono CER de duration parecida (avisa cuando uno paga cupones y su vencimiento final). El eje de años se estira para que entren los largos. PARP y DICP ahora muestran TIR real (CER + x%).',
   'v253 | 2026-10-20 | TIR de bonos que pagan en dólar cable (BC37D, BB37D y Globales GD): el precio en pesos se pasa a dólares con el CCL en vez del MEP, así la TIR incluye la brecha CCL/MEP (hoy ~5%) que cobrás en cada pago. Se ve en la columna TIR y en la ventana 📈 TIR CER (barras y comparación con el dólar de empate).',
   'v252 | 2026-10-20 | Ventana 📈 TIR CER: las barras de tasa efectiva anual en pesos suman los 3 bonos que más pesan en tu cartera (CER: TIR real + inflación; en dólares: TIR en USD + suba del dólar). Nueva barra para la suba anual del dólar (por defecto igual a la inflación) y las barras se recalculan al soltar. El aviso de rotación de bonos CER ahora aparece arriba (vista completa, antes de la distribución) y en Alertas de la vista simple; tocándolo se abre la ventana del bono.',
   'v251 | 2026-10-20 | Ventana 📈 TIR CER: comparación contra tu bono en dólares (por defecto AO29; se puede elegir otro de la cartera). Muestra cuánto tiene que subir el dólar MEP por año y acumulado hasta el vencimiento del bono CER para que el bono en dólares empate, con el valor del dólar de empate, y cuánto rinde cada uno en pesos si el dólar acompaña la inflación elegida.',
@@ -11085,7 +11086,7 @@ function bcTIR(t,precio,fechaISO){if(!precio||precio<=0)return null;var d=fechaI
   var f=FLUJOS_BONOS[b].flujos.filter(function(x){return x.f>iso;}).map(function(x){return {f:x.f,m:((x.r||0)+(x.a||0))*cr/k};});if(!f.length)return null;
   var u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())),lo=-0.5,hi=3,flo=_xirrNPV(precio,f,u,lo),fhi=_xirrNPV(precio,f,u,hi);if(isNaN(flo)||flo*fhi>0)return null;
   for(var i=0;i<80;i++){var mid=(lo+hi)/2,fm=_xirrNPV(precio,f,u,mid);if(flo*fm<0)hi=mid;else{lo=mid;flo=fm;}}
-  return {tir:(lo+hi)/2,cer:cr,vto:f[f.length-1].f,y:(new Date(f[f.length-1].f+'T12:00:00')-d)/864e5/365,fl:f,vt:null,zc:0};}
+  return {tir:(lo+hi)/2,cer:cr,vto:f[f.length-1].f,y:(new Date(f[f.length-1].f+'T12:00:00')-d)/864e5/365,fl:f,vt:null,zc:0,ap:!!(typeof BONCER_AP!=='undefined'&&BONCER_AP[b])};}
 function _bcPx(t){var q=quotes[t];if(!q||!q.price)return null;return q.price*(getRatio(t)||1);}
 function _bcTuya(t){var L=movimientos.filter(function(m){return m&&m.ticker===t&&m.tipo==='compra'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);}),s=0,w=0,n=0;
   L.forEach(function(m){var p=(m.fecha||'').split('/');if(p.length!==3)return;var iso=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'),px=(+m.precioARS||0)*100,r=bcTIR(t,px,iso);if(!r)return;var q=+m.qty||0;s+=r.tir*q;w+=q;n++;});
@@ -11188,14 +11189,14 @@ function _bcLivePx(t){return (typeof _LIVE912!=='undefined'&&_LIVE912&&_LIVE912[
 function _bcMercado(){var L=[];if(typeof BONCER_ZC==='undefined')return L;
   Object.keys(BONCER_ZC).forEach(function(t){var px=_bcLivePx(t);if(!px)return;var r=bcTIR(t,px);if(!r||r.y<0.15||!isFinite(r.tir)||r.tir<-0.2||r.tir>0.5)return;L.push({t:t,y:r.y,tir:r.tir,px:px,zc:1,vto:r.vto,ap:r.ap});});
   Object.keys(typeof BONCER_CERFL!=='undefined'?BONCER_CERFL:{}).forEach(function(t){var px=_bcLivePx(t);if(!px)return;var r=bcTIR(t,px);if(!r||!r.fl)return;var h=new Date(),u=Date.UTC(h.getFullYear(),h.getMonth(),h.getDate()),sw=0,sv=0;
-    r.fl.forEach(function(f){var y=(new Date(f.f+'T00:00:00Z')-u)/864e5/365;if(y<0)return;var pv=f.m/Math.pow(1+r.tir,y);sw+=pv;sv+=pv*y;});if(sw>0)L.push({t:t,y:sv/sw,tir:r.tir,px:px,zc:0,vto:r.vto});});
+    r.fl.forEach(function(f){var y=(new Date(f.f+'T00:00:00Z')-u)/864e5/365;if(y<0)return;var pv=f.m/Math.pow(1+r.tir,y);sw+=pv;sv+=pv*y;});if(sw>0)L.push({t:t,y:sv/sw,tir:r.tir,px:px,zc:0,vto:r.vto,ap:r.ap});});
   return L.sort(function(a,b){return a.y-b.y;});}
 // Curva: promedio ponderado de los cero cupón de plazo parecido (ancho 0,3 en log-años). sin = bono a excluir.
 function _bcCurva(L,y,sin){var sw=0,sv=0,mx=0;L.forEach(function(z){if(z.zc&&z.y>mx)mx=z.y;});var yy=Math.min(y,mx||y);L.forEach(function(z){if(!z.zc||z.t===sin)return;var w=Math.exp(-Math.pow((Math.log(z.y)-Math.log(yy))/0.3,2));sw+=w;sv+=w*z.tir;});return sw>0.05?sv/sw:null;}
 function _bcCom(){return (typeof CFG!=='undefined'&&CFG.comisionBonos!=null)?+CFG.comisionBonos:0.0025;}
 function _bcSwaps(L){L=L||_bcMercado();var pos=getPositions().filter(function(p){return p.qty>0.000001;}),out=[];
-  pos.forEach(function(p){var h=L.filter(function(x){return x.t===p.ticker&&x.zc;})[0];if(!h)return;var monto=p.qty/100*h.px,best=null;
-    L.forEach(function(c){if(!c.zc||c.t===h.t||Math.abs(c.y-h.y)>0.6||c.ap&&h.ap)return;var dt=c.tir-h.tir;if(dt<0.003)return;
+  pos.forEach(function(p){var h=L.filter(function(x){return x.t===p.ticker;})[0];if(!h)return;var monto=p.qty/100*h.px,best=null;
+    L.forEach(function(c){if(c.t===h.t||Math.abs(c.y-h.y)>0.6||c.ap&&h.ap)return;var dt=c.tir-h.tir;if(dt<0.003)return;
       var gan=monto*(Math.pow(1+c.tir,h.y)/Math.pow(1+h.tir,h.y)-1),costo=monto*_bcCom()*2,net=gan-costo;if(net<=0)return;
       if(!best||net>best.net)best={de:h,a:c,dt:dt,vn:p.qty,monto:monto,gan:gan,costo:costo,net:net,vnA:Math.floor(monto*(1-_bcCom())*(1-_bcCom())/(c.px/100))};});
     if(best)out.push(best);});
@@ -11203,24 +11204,24 @@ function _bcSwaps(L){L=L||_bcMercado();var pos=getPositions().filter(function(p)
 function _bcN(x){return Math.round(x).toLocaleString('es-AR');}
 function _bcP2(x){return (x*100).toFixed(2).replace('.',',');}
 function _bcSwapHtml(s,btn){return '<div style="background:var(--surface2);border:1px solid var(--border2);border-left:3px solid #a78bfa;border-radius:10px;padding:10px 12px;margin-top:8px;font-family:var(--sans)">'+
-  '<div style="font-weight:700;font-size:.86rem;margin-bottom:4px">💡 Swap sugerido: '+s.de.t+' → '+s.a.t+'</div><div style="font-size:.76rem;line-height:1.55;color:var(--text2)">'+s.a.t+' vence '+(function(){var d=Math.round((s.a.y-s.de.y)*12);return d===0?'casi al mismo tiempo':Math.abs(d)+' mes'+(Math.abs(d)!==1?'es':'')+(d>0?' después':' antes');})()+' ('+s.a.vto.split('-').reverse().join('/')+') y rinde <b style="color:#22c55e">'+(s.dt*100).toFixed(2).replace('.',',')+' puntos más</b> de TIR real (CER + '+_bcP2(s.a.tir)+'% vs. CER + '+_bcP2(s.de.tir)+'%).'+(s.a.ap?' Ojo: el CER de emisión de '+s.a.t+' es aproximado.':'')+'</div>'+
+  '<div style="font-weight:700;font-size:.86rem;margin-bottom:4px">💡 Swap sugerido: '+s.de.t+' → '+s.a.t+'</div><div style="font-size:.76rem;line-height:1.55;color:var(--text2)">'+s.a.t+' vence '+(function(){var d=Math.round((s.a.y-s.de.y)*12);return d===0?'casi al mismo tiempo':Math.abs(d)+' mes'+(Math.abs(d)!==1?'es':'')+(d>0?' después':' antes');})()+' ('+s.a.vto.split('-').reverse().join('/')+') y rinde <b style="color:#22c55e">'+(s.dt*100).toFixed(2).replace('.',',')+' puntos más</b> de TIR real (CER + '+_bcP2(s.a.tir)+'% vs. CER + '+_bcP2(s.de.tir)+'%).'+(s.a.ap?' Ojo: los datos de CER de '+s.a.t+' son aproximados.':'')+(!s.a.zc||!s.de.zc?' Como '+(!s.a.zc?s.a.t:s.de.t)+' paga cupones, se compara por duration ('+(!s.a.zc?s.a.y:s.de.y).toFixed(1).replace('.',',')+' años); su vencimiento final es el '+(!s.a.zc?s.a.vto:s.de.vto).split('-').reverse().join('/')+'.':'')+'</div>'+
   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:8px 0;font-family:var(--mono);font-size:.72rem">'+
   '<div>Vendés<br><b>'+_bcN(s.vn)+' '+s.de.t+'</b><br><span style="color:var(--text3)">a $ '+s.de.px.toLocaleString('es-AR')+' · $ '+_bcN(s.monto)+'</span></div>'+
   '<div>Comprás<br><b>'+_bcN(s.vnA)+' '+s.a.t+'</b><br><span style="color:var(--text3)">a $ '+s.a.px.toLocaleString('es-AR')+'</span></div>'+
   '<div>Ganancia real extra<br><b style="color:#22c55e">≈ $ '+_bcN(s.gan)+'</b><br><span style="color:var(--text3)">hasta el vto. de '+s.de.t+', en $ de hoy</span></div>'+
   '<div>Comisiones ('+(_bcCom()*100).toFixed(2).replace('.',',')+'% x 2)<br><b style="color:#f59e0b">≈ $ '+_bcN(s.costo)+'</b><br><span style="color:var(--text3)">neto <b style="color:#22c55e">+$ '+_bcN(s.net)+'</b></span></div></div>'+
   (btn?'<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="nvchip" onclick="bcCerrar();nvVender(\''+s.de.t+'\')">💸 Vender '+s.de.t+'</span><span class="nvchip" onclick="bcCerrar();nvComprar(\''+s.a.t+'\')">🛒 Comprar '+s.a.t+'</span></div>':'')+'</div>';}
-function _bcCurvaSvg(L,t){if(L.length<4)return '';var W=760,H=250,l=40,r=12,tp=10,b=26,mxY=Math.min(3.5,Math.max(2.5,L.reduce(function(a,x){return Math.max(a,x.y);},0)+.2));
+function _bcCurvaSvg(L,t){if(L.length<4)return '';var W=760,H=250,l=40,r=12,tp=10,b=26,mxY=Math.min(8,Math.max(2.5,L.reduce(function(a,x){return Math.max(a,x.y);},0)+.3));
   var tv=L.map(function(x){return x.tir*100;}),lo=Math.floor(Math.min.apply(null,tv.concat([0]))),hi=Math.ceil(Math.max.apply(null,tv))+1;
-  var X=function(y){return l+Math.min(y,mxY)/mxY*(W-l-r);},Y=function(v){return tp+(1-(v-lo)/(hi-lo))*(H-tp-b);},g='',st=(hi-lo)>8?2:1;
+  var X=function(y){return l+Math.sqrt(Math.min(y,mxY)/mxY)*(W-l-r);},Y=function(v){return tp+(1-(v-lo)/(hi-lo))*(H-tp-b);},g='',st=(hi-lo)>8?2:1;
   for(var v=lo;v<=hi;v+=st)g+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#1e3050"/><text x="'+(l-5)+'" y="'+(Y(v)+3)+'" fill="#4b6a92" font-size="9.5" text-anchor="end">'+v+'%</text>';
-  for(var a=0;a<=mxY+0.01;a+=0.5)g+='<text x="'+X(a)+'" y="'+(H-8)+'" fill="#4b6a92" font-size="9.5" text-anchor="middle">'+String(a).replace('.',',')+(a===0?' años':'')+'</text>';
+  [0,0.25,0.5,1,1.5,2,3,4,5,7].filter(function(a){return a<=mxY+0.01;}).forEach(function(a){g+='<text x="'+X(a)+'" y="'+(H-8)+'" fill="#4b6a92" font-size="9.5" text-anchor="middle">'+String(a).replace('.',',')+(a===0?' años':'')+'</text>';});
   var p='',z0=L.filter(function(x){return x.zc;});if(z0.length){for(var y=z0[0].y;y<=Math.min(mxY,z0[z0.length-1].y+.3);y+=.04){var c=_bcCurva(L,y);if(c!=null)p+=(p?'L':'M')+X(y).toFixed(1)+' '+Y(c*100).toFixed(1);}}
   g+='<path d="'+p+'" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5 4"/>';
   var held={};getPositions().forEach(function(q){if(q.qty>0.000001)held[q.ticker]=1;});
   L.forEach(function(x){var me=x.t===t,mine=!!held[x.t],col=me?'#e8f0ff':mine?'#a78bfa':x.zc?'#4b6a92':'#64748b',cx=X(x.y),cy=Y(x.tir*100);
     g+='<g><title>'+x.t+' · CER + '+_bcP2(x.tir)+'% · '+x.y.toFixed(2).replace('.',',')+' años'+(x.zc?'':' (duration)')+'</title>'+(x.zc?'<circle cx="'+cx+'" cy="'+cy+'" r="'+(me?6.5:mine?5.5:4)+'" fill="'+col+'"'+(me?' stroke="#a78bfa" stroke-width="2"':'')+'/>':'<rect x="'+(cx-4.5)+'" y="'+(cy-4.5)+'" width="9" height="9" rx="2" fill="'+col+'"/>')+'</g>';
-    if(me||mine||x.y>1.6)g+='<text x="'+(cx-7)+'" y="'+(cy-8)+'" fill="'+(me||mine?'#e8f0ff':'#7a9cc5')+'" font-size="10" text-anchor="end" font-weight="'+(me||mine?700:400)+'">'+x.t+'</text>';});
+    if(me||mine||x.y>1.6||!x.zc)g+='<text x="'+(cx-7)+'" y="'+(cy-8)+'" fill="'+(me||mine?'#e8f0ff':'#7a9cc5')+'" font-size="10" text-anchor="end" font-weight="'+(me||mine?700:400)+'">'+x.t+'</text>';});
   return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="font-family:JetBrains Mono,ui-monospace,monospace">'+g+'</svg><div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.62rem;color:var(--text2);margin-top:2px"><span>⚪ este bono</span><span style="color:#a78bfa">● los que tenés</span><span style="color:#4b6a92">● mercado (cero cupón)</span><span style="color:#64748b">■ con cupones (por duration)</span><span style="color:#a78bfa">- - curva</span></div>';}
 async function _bcPrepCurva(){var w=[];if(!CER.m)w.push(cerCargar());if(typeof _LIVE912!=='undefined'&&!_LIVE912)w.push(_rotLive().then(function(m){if(m&&Object.keys(m).length){_LIVE912=m;_LIVE912ts=Date.now();}}).catch(function(){}));if(w.length)await Promise.all(w);}
 function bcCurvaHtml(t){var L=_bcMercado();if(L.length<4)return '';var me=L.filter(function(x){return x.t===t;})[0],cv=me?_bcCurva(L,me.y,me.zc?t:null):null,d=me&&cv!=null?me.tir-cv:null;
