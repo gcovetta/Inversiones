@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=252, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=253, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v253 | 2026-10-20 | TIR de bonos que pagan en dólar cable (BC37D, BB37D y Globales GD): el precio en pesos se pasa a dólares con el CCL en vez del MEP, así la TIR incluye la brecha CCL/MEP (hoy ~5%) que cobrás en cada pago. Se ve en la columna TIR y en la ventana 📈 TIR CER (barras y comparación con el dólar de empate).',
   'v252 | 2026-10-20 | Ventana 📈 TIR CER: las barras de tasa efectiva anual en pesos suman los 3 bonos que más pesan en tu cartera (CER: TIR real + inflación; en dólares: TIR en USD + suba del dólar). Nueva barra para la suba anual del dólar (por defecto igual a la inflación) y las barras se recalculan al soltar. El aviso de rotación de bonos CER ahora aparece arriba (vista completa, antes de la distribución) y en Alertas de la vista simple; tocándolo se abre la ventana del bono.',
   'v251 | 2026-10-20 | Ventana 📈 TIR CER: comparación contra tu bono en dólares (por defecto AO29; se puede elegir otro de la cartera). Muestra cuánto tiene que subir el dólar MEP por año y acumulado hasta el vencimiento del bono CER para que el bono en dólares empate, con el valor del dólar de empate, y cuánto rinde cada uno en pesos si el dólar acompaña la inflación elegida.',
   'v250 | 2026-10-20 | 📉 Curva CER: la ventana 📈 TIR CER ahora muestra la curva con todos los BONCER del mercado (precios data912, TIR real con el CER del BCRA), dónde está tu bono y si rinde más o menos que sus vecinos. Si hay otro cero cupón de plazo parecido (±7 meses) que rinde al menos 0,3 puntos más y la ganancia supera las comisiones (0,25% por operación), te sugiere el swap con nominales, ganancia y botones para vender y comprar. En el Portafolio aparece una tarjeta 💡 cuando hay swaps así.',
@@ -647,6 +648,10 @@ function _xirrCalc(precio,flujos){
 var FLUJOS_ALIAS={'AO29C':'AO29','AO29D':'AO29'};
 function flujoBase(t){if(FLUJOS_BONOS[t])return t;var b=FLUJOS_ALIAS[t]||(isBonoUSDDirecto(t)?t.slice(0,-1):null);return b&&FLUJOS_BONOS[b]?b:null;}
 function flujoDe(t){var b=flujoBase(t);return b?FLUJOS_BONOS[b]:null;}
+// Bonos que pagan en dólar cable (CCL): ley Nueva York (Provincia de Buenos Aires 2037 y Globales). Su precio en pesos
+// se pasa a dólares con el CCL (no con el MEP), así la TIR incluye la brecha CCL/MEP que cobrás en cada pago.
+var BONOS_CABLE=new Set(['BC37D','BB37D','GD29','GD30','GD35','GD38','GD41','GD46']);
+function esBonoCable(t){var b=(typeof flujoBase==='function'&&flujoBase(t))||t;return BONOS_CABLE.has(t)||BONOS_CABLE.has(b);}
 function calcularTIRReal(ticker){
   var tabla=flujoDe(ticker);
   if(!tabla) return null;
@@ -659,7 +664,7 @@ function calcularTIRReal(ticker){
   if(tabla.moneda==='USD'&&isBonoUSDDirecto(ticker)){
     precio=q.price*ratio;
   } else if(tabla.moneda==='USD'){
-    var tc=MEP_HOY||CCL_HOY;
+    var tc=(esBonoCable(ticker)?CCL_HOY:MEP_HOY)||MEP_HOY||CCL_HOY;
     if(!tc) return null;
     precio=q.price*ratio/tc;
   } else {
@@ -11093,14 +11098,14 @@ var _bcHD=null,_bcDev=null;
 // Los 3 bonos que más pesan en la cartera (CER o en dólares), para comparar en las barras
 function _bcTop(excl){var out=[],mep=MEP_HOY||CCL_HOY;getPositions().forEach(function(p){if(!(p.qty>0.000001)||p.ticker===excl)return;var sec=getSector(p.ticker);if(sec!=='bonos'&&sec!=='on')return;var px=quotes[p.ticker]&&quotes[p.ticker].price;if(!px||!mep)return;
   var c=_bcEs(p.ticker)?bcTIR(p.ticker,_bcPx(p.ticker)):null;if(c){out.push({t:p.ticker,k:'cer',tir:c.tir,v:p.qty/100*px/mep});return;}
-  var f=flujoDe(p.ticker);if(!f||f.moneda!=='USD'||flujoBase(p.ticker)!==p.ticker)return;var r=calcularTIRReal(p.ticker);if(!r||!isFinite(r.tir))return;out.push({t:p.ticker,k:'hd',tir:r.tir/100,v:p.qty/100*px/mep});});
+  var f=flujoDe(p.ticker);if(!f||f.moneda!=='USD'||flujoBase(p.ticker)!==p.ticker)return;var r=calcularTIRReal(p.ticker);if(!r||!isFinite(r.tir))return;out.push({t:p.ticker,k:'hd',cb:esBonoCable(p.ticker),tir:r.tir/100,v:p.qty/100*px/mep});});
   return out.sort(function(a,b){return b.v-a.v;}).slice(0,3);}
-function _bcHDs(){var out=[];getPositions().forEach(function(p){if(!(p.qty>0.000001))return;var f=flujoDe(p.ticker);if(!f||f.moneda!=='USD'||flujoBase(p.ticker)!==p.ticker)return;var r=calcularTIRReal(p.ticker);if(!r||!isFinite(r.tir))return;var px=quotes[p.ticker]&&quotes[p.ticker].price||0;out.push({t:p.ticker,tir:r.tir/100,v:p.qty*px});});return out.sort(function(a,b){return b.v-a.v;});}
+function _bcHDs(){var out=[];getPositions().forEach(function(p){if(!(p.qty>0.000001))return;var f=flujoDe(p.ticker);if(!f||f.moneda!=='USD'||flujoBase(p.ticker)!==p.ticker)return;var r=calcularTIRReal(p.ticker);if(!r||!isFinite(r.tir))return;var px=quotes[p.ticker]&&quotes[p.ticker].price||0;out.push({t:p.ticker,tir:r.tir/100,v:p.qty*px,cb:esBonoCable(p.ticker)});});return out.sort(function(a,b){return b.v-a.v;});}
 function _bcHDHtml(t,r,inf,inf0,bon,dev){if(dev==null)dev=inf;var H=_bcHDs();if(!H.length||!r)return '';var sel=H.filter(function(x){return x.t===_bcHD;})[0]||H.filter(function(x){return x.t==='AO29';})[0]||H[0];
   var mep=MEP_HOY||CCL_HOY,dAn=(1+r.tir)*(1+inf0)/(1+sel.tir)-1,y=r.y||0,cum=Math.pow(1+dAn,y)-1,hdP=(1+sel.tir)*(1+dev/100)-1,P=function(x){return (x*100).toFixed(1).replace('.',',')+'%';},vto=r.vto.split('-').reverse().join('/');
   var ch=H.length>1?'<span style="display:inline-flex;gap:4px;flex-wrap:wrap;margin-left:6px">'+H.slice(0,5).map(function(x){var on=x.t===sel.t;return '<span onclick="_bcHD=\''+x.t+'\';bcModal(\''+t+'\','+inf+')" style="cursor:pointer;font-size:.64rem;padding:1px 8px;border-radius:999px;border:1px solid '+(on?'#38bdf8;color:#38bdf8':'var(--border2);color:var(--text2)')+'">'+x.t+'</span>';}).join('')+'</span>':'';
   return '<div style="background:var(--surface2);border-left:3px solid #38bdf8;border-radius:6px;padding:9px 12px;font-size:.78rem;line-height:1.6;margin:10px 0;font-family:var(--sans)">'+
-    '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px"><b>⚖️ '+t+' vs. '+sel.t+'</b><span style="font-size:.7rem;color:var(--text3)">(TIR en dólares '+P(sel.tir)+')</span>'+ch+'</div>'+
+    '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px"><b>⚖️ '+t+' vs. '+sel.t+'</b><span style="font-size:.7rem;color:var(--text3)">(TIR en dólares '+(sel.cb?'cable ':'')+P(sel.tir)+(sel.cb&&MEP_HOY&&CCL_HOY?' · paga en dólar cable: incluye la brecha CCL/MEP de '+P(CCL_HOY/MEP_HOY-1):'')+')</span>'+ch+'</div>'+
     'Para que <b>'+sel.t+'</b> empate a <b>'+t+'</b> hasta el '+vto+', el dólar MEP tiene que subir <b style="color:#38bdf8">'+P(dAn)+' por año</b>: '+P(cum)+' acumulado, de $ '+Math.round(mep).toLocaleString('es-AR')+' a <b>$ '+Math.round(mep*(1+cum)).toLocaleString('es-AR')+'</b>. '+
     'Si el dólar sube menos, gana el CER; si sube más, gana '+sel.t+'.<br><span style="color:var(--text2)">Si el dólar sube '+dev+'% por año'+(dev===inf?' (igual que la inflación)':'')+', '+sel.t+' rinde <b>'+P(hdP)+'</b> en pesos contra <b>'+P(bon)+'</b> de '+t+'.</span></div>';}
 function bcCerrar(){var o=document.getElementById('bc-ov');if(o)o.style.display='none';}
@@ -11123,7 +11128,7 @@ async function bcModal(t,inf){var ov=document.getElementById('bc-ov');
     (vn?kb('Tu posición',N(vn)+' VN','≈ $ '+N(vn/100*px)+' hoy'):'')+'</div>';
   h+='<div style="display:flex;gap:10px;align-items:center;font-size:.78rem;margin:4px 0 10px;flex-wrap:wrap;font-family:var(--sans)"><span style="min-width:170px">Inflación anual esperada:</span> <input type="range" min="3" max="60" value="'+inf+'" style="flex:1;min-width:160px" oninput="this.nextElementSibling.textContent=this.value+\'%\'" onchange="bcModal(\''+t+'\',+this.value)"><b style="font-family:var(--mono);min-width:36px">'+inf+'%</b>'+(cerM!=null?'<span style="font-size:.68rem;color:var(--text3)">(el CER del último mes anualizado da '+P(cerM)+')</span>':'')+'</div>'+
     '<div style="display:flex;gap:10px;align-items:center;font-size:.78rem;margin:-4px 0 10px;flex-wrap:wrap;font-family:var(--sans)"><span style="min-width:170px">Suba anual del dólar:</span> <input type="range" min="0" max="80" value="'+dev+'" style="flex:1;min-width:160px" oninput="this.nextElementSibling.textContent=this.value+\'%\'" onchange="_bcDev=+this.value;bcModal(\''+t+'\','+inf+')"><b style="font-family:var(--mono);min-width:36px">'+dev+'%</b><span style="font-size:.68rem;color:var(--text3)">'+(_bcDev==null?'(igual a la inflación)':'<span style="cursor:pointer;text-decoration:underline" onclick="_bcDev=null;bcModal(\''+t+'\','+inf+')">igualar a la inflación</span>')+' · para los bonos en dólares</span></div>';
-  var L=[[t+' (precio hoy)',bon,'#a78bfa']];if(tub!=null)L.push([t+' (tus compras)',tub,'#c4b5fd']);try{_bcTop(t).forEach(function(b){L.push(b.k==='cer'?[b.t+' (CER + '+P(b.tir)+')',(1+b.tir)*(1+inf0)-1,'#c084fc']:[b.t+' (USD '+P(b.tir)+' + dólar)',(1+b.tir)*(1+dev0)-1,'#fbbf24']);});}catch(e){}if(pf!=null)L.push(['Plazo fijo '+_bcPF.e+' ('+P(_bcPF.tna)+' TNA)',pf,'#38bdf8']);L.push(['Inflación',inf0,'#64748b']);
+  var L=[[t+' (precio hoy)',bon,'#a78bfa']];if(tub!=null)L.push([t+' (tus compras)',tub,'#c4b5fd']);try{_bcTop(t).forEach(function(b){L.push(b.k==='cer'?[b.t+' (CER + '+P(b.tir)+')',(1+b.tir)*(1+inf0)-1,'#c084fc']:[b.t+' (USD '+(b.cb?'cable ':'')+P(b.tir)+' + dólar)',(1+b.tir)*(1+dev0)-1,'#fbbf24']);});}catch(e){}if(pf!=null)L.push(['Plazo fijo '+_bcPF.e+' ('+P(_bcPF.tna)+' TNA)',pf,'#38bdf8']);L.push(['Inflación',inf0,'#64748b']);
   var mx=Math.max.apply(null,L.map(function(x){return x[1];}))||1;
   h+='<div style="font-size:.58rem;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Tasa efectiva anual en pesos</div>'+L.map(function(x){return '<div style="display:grid;grid-template-columns:minmax(120px,210px) 1fr 64px;gap:8px;align-items:center;font-size:.74rem;padding:3px 0"><span>'+x[0]+'</span><i style="display:block;height:13px;border-radius:3px;width:'+Math.max(1,x[1]/mx*100)+'%;background:'+x[2]+'"></i><span style="text-align:right">'+P(x[1])+'</span></div>';}).join('');
   try{h+=_bcHDHtml(t,r,inf,inf0,bon,dev);}catch(e){}
