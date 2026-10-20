@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=248, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=249, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v249 | 2026-10-20 | Evolución: botón ⚖️ vs. índices. Cambia el gráfico a rendimiento % y suma el S&P 500 (Cedear SPY en dólares CCL) y un plazo fijo en pesos pasado a dólar CCL (tasa de depósitos a 30 días del BCRA), todos desde el mismo día. Arriba muestra cuánto le ganaste o perdiste a cada uno en puntos. Tu rendimiento descuenta aportes y retiros. Respeta el rango elegido (Período, 1M…Todo).',
   'v248 | 2026-10-20 | Bonos CER (BONCER): la TIR ahora es la TIR real (CER + x%) calculada con el CER del BCRA (10 días hábiles de rezago). Para los cero cupón (TZX) con el CER de emisión; para TX31 con sus flujos ajustados al CER de hoy (antes quedaban al CER de cuando se cargaron). Tocando la TIR o el botón 📈 TIR CER de la fila abierta: tu TIR según tus compras, valor técnico, comparación contra plazo fijo con la inflación que elijas, punto de equilibrio y cuánto cobrás al vencimiento.',
   'v247 | 2026-10-20 | Dashboard: nuevo 🏆 ¿Quién hizo tu resultado? Gráfico en cascada con lo que sumó o restó cada activo en USD (no realizado + realizado + dividendos y cupones), incluidos los que ya vendiste, con el resto agrupado y el total. Resumen por tipo y abiertas vs cerradas. Además la app empieza a guardar una foto diaria por activo (la última de cada mes queda como cierre) para poder ver "mes anterior → hoy" y "este año".',
   'v246 | 2026-10-20 | Nuevo 🧾 Historia del PPC: tocando el PPC de cualquier fila (o el botón en la fila abierta) se abre cómo fue cambiando tu PPC con cada compra, venta y dividendo: gráfico, frase con lo que más lo movió y tabla de eventos (PPC antes/después). En USD o en pesos al dólar de hoy.',
@@ -11108,6 +11109,53 @@ async function bcModal(t,inf){var ov=document.getElementById('bc-ov');
   if(vn&&r.zc){var E=[['Baja',0.12],['Elegida',inf0],['Alta',0.35]];h+='<table style="width:100%;border-collapse:collapse;font-size:.74rem;margin-top:6px"><tr style="color:var(--text3);font-size:.58rem;text-transform:uppercase"><td>Escenario</td><td style="text-align:right">Inflación</td><td style="text-align:right">Cobrás al vencimiento</td><td style="text-align:right">vs. valor de hoy</td></tr>'+E.map(function(e){var cob=vn/100*r.vt*Math.pow(1+e[1],r.y),hoy=vn/100*px;return '<tr style="border-top:1px solid var(--border)"><td style="padding:5px 0">'+e[0]+'</td><td style="text-align:right">'+P(e[1])+'</td><td style="text-align:right">$ '+N(cob)+'</td><td style="text-align:right;color:#22c55e">+'+P(cob/hoy-1)+'</td></tr>';}).join('')+'</table>';}
   h+='<div style="font-size:.66rem;color:var(--text3);margin-top:10px;line-height:1.5;font-family:var(--sans)">'+(r.zc?'Paga al vencimiento 100 × CER (10 días hábiles antes) ÷ CER de emisión'+(r.ap?' (para este bono el CER de emisión es aproximado)':'')+'.':'Flujos de la tabla de bonos ajustados al CER de hoy.')+' La TIR real es la que sumás por encima de la inflación (CER); la tasa en pesos depende de la inflación que elijas. CER: BCRA · plazo fijo: ArgentinaDatos.</div></div>';
   ov.innerHTML=h;}
+// ─── v249 ⚖️ Evolución vs. índices (S&P 500 y plazo fijo en USD) ────────────
+var BM={on:null,spy:null,pf:null,ccl:null,cargando:false};
+function bmOn(){if(BM.on===null){try{BM.on=localStorage.getItem(PFX+'hist_cmp')==='1';}catch(e){BM.on=false;}}return BM.on;}
+function bmTog(){BM.on=!bmOn();try{localStorage.setItem(PFX+'hist_cmp',BM.on?'1':'0');}catch(e){}histRender();}
+function bmCargar(){if(BM.cargando||BM.tried||(BM.spy&&BM.pf&&BM.ccl))return;BM.cargando=true;BM.tried=true;
+  Promise.all([_phSerie('SPY','nyse').catch(function(){return null;}),
+    fetchWithTimeout('https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/12?desde=2022-12-01&limit=3000',{},12000).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+    _phFxLoad('contadoconliqui')]).then(function(a){
+    if(a[0]&&a[0].ser&&a[0].ser.length)BM.spy=a[0].ser;
+    var d=a[1]&&a[1].results&&a[1].results[0]&&a[1].results[0].detalle;if(d&&d.length)BM.pf=d.map(function(x){return [x.fecha,+x.valor];}).sort(function(x,y){return x[0]<y[0]?-1:1;});
+    var c=a[2]||{},k=Object.keys(c).sort();if(k.length)BM.ccl=k.map(function(x){return [x,c[x]];});
+  }).finally(function(){BM.cargando=false;try{if(bmOn())histRender();}catch(e){}});}
+function _bmEn(ser,d){if(!ser||!ser.length||d<ser[0][0])return null;var lo=0,hi=ser.length-1;while(lo<hi){var m=(lo+hi+1)>>1;if(ser[m][0]<=d)lo=m;else hi=m-1;}return ser[lo][1];}
+// Índice del plazo fijo en USD: pesos que crecen a la tasa de depósitos a 30 días (BCRA) ÷ CCL del día.
+function _bmPF(d0,ds){if(!BM.pf||!BM.ccl)return null;var c0=_bmEn(BM.ccl,d0);if(!c0||d0<BM.pf[0][0])return null;var out=[],acc=1,cur=new Date(d0+'T12:00:00'),j=0;
+  ds.forEach(function(d){var fin=new Date(d+'T12:00:00');while(cur<fin){var iso=_isoD(cur),t=_bmEn(BM.pf,iso);if(t)acc*=1+t/36500;cur.setDate(cur.getDate()+1);}var c=_bmEn(BM.ccl,d);out.push(c?acc*c0/c:null);});return out;}
+// Índice de la cartera: dentro de cada período usa su rendimiento (valor ÷ inversión, que ya descuenta aportes y retiros) y encadena los períodos.
+function _bmCartera(s){var cut=function(d){if(!CFG.periodoInicio)return '0';var y=+d.slice(0,4),c=y+'-'+CFG.periodoInicio;return c<=d?c:(y-1)+'-'+CFG.periodoInicio;};
+  var ra=CFG.rendAnual||{},base=1,key=null,ini=null,lastF=1,out=[];s.forEach(function(x){var k=x.previo?'p'+x.inv:'c'+cut(x.d),nuevo=k!==key;if(nuevo){if(key!==null)base*=lastF;key=k;ini=x.d;}
+    var f;if(!x.previo)f=x.rend!=null?1+x.rend/100:(x.inv>0?x.v/x.inv:1);else if(nuevo)f=1;else{var y=ini.slice(0,4);f=ra[y]!=null?1+ra[y]/100:(x.inv>0?x.v/x.inv:1);}
+    if(!(f>0)||!isFinite(f))f=1;lastF=f;out.push(base*f);});return out;}
+function _bmPp(x){return (x>=0?'+':'−')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
+function bmDibujar(){if(!bmOn()||!HIST)return;var cv=document.getElementById('hist-canvas');if(!cv||cv.style.display==='none'||typeof Chart==='undefined')return;
+  var serie=histSerie(),corte=histUltimoCorte(),desde=null,hoy=new Date();
+  if(HIST_RANGO==='periodo')desde=corte;else if(HIST_RANGO&&HIST_RANGO!=='todo'){var m={'1m':1,'3m':3,'6m':6,'1a':12}[HIST_RANGO]||0;var dd=new Date(hoy);dd.setMonth(dd.getMonth()-m);desde=dd.toISOString().slice(0,10);}
+  var full=_bmCartera(serie),s=[],ci=[];serie.forEach(function(x,i){if(!desde||x.d>=desde){s.push(x);ci.push(full[i]);}});
+  if(HIST_RANGO==='periodo'&&corte&&s.length&&s[0].d>corte&&!s[0].previo&&s[0].rend!=null){s.unshift({d:corte,v:null});ci.unshift(ci[0]/(1+s[1].rend/100));}
+  if(s.length<2)return;
+  var meta=document.getElementById('hist-meta'),nota=document.getElementById('hist-nota');
+  if(!(BM.spy&&BM.pf&&BM.ccl)){bmCargar();if(meta){meta.style.display='';meta.textContent=BM.cargando?'Cargando S&P 500 y plazo fijo…':'No pude traer el S&P 500 o el plazo fijo';}}
+  var d0=s[0].d,ds=[],cv0=[];s.forEach(function(x,i){if(i){var a=new Date(s[i-1].d+'T12:00:00'),b=new Date(x.d+'T12:00:00'),g=(b-a)/864e5;if(g>20){var st=Math.max(7,Math.round(g/24));for(var t=new Date(a.getTime()+st*864e5);(b-t)/864e5>st/2;t=new Date(t.getTime()+st*864e5)){ds.push(_isoD(t));cv0.push(null);}}}ds.push(x.d);cv0.push(ci[i]);});
+  var sp0=_bmEn(BM.spy,d0)||(BM.spy&&BM.spy.length&&BM.spy[0][0]<=_isoD(new Date(new Date(d0+'T12:00:00').getTime()+45*864e5))?BM.spy[0][1]:null);
+  var C=cv0.map(function(v){return v==null?null:(v/ci[0]-1)*100;}),S=sp0?ds.map(function(d){var v=_bmEn(BM.spy,d);return v?(v/sp0-1)*100:null;}):null,pfI=_bmPF(d0,ds),P=pfI?pfI.map(function(v){return v==null?null:(v-1)*100;}):null;
+  var lab=ds.map(function(d){return d.slice(8,10)+'/'+d.slice(5,7)+(HIST_RANGO==='todo'||HIST_RANGO==='1a'||HIST_RANGO==='periodo'?'/'+d.slice(2,4):'');});
+  var ds2=[{label:'Tu cartera',data:C.map(function(v){return v==null?null:Math.round(v*10)/10;}),borderColor:'#00e676',backgroundColor:'rgba(0,230,118,.06)',fill:true,tension:.25,spanGaps:true,pointRadius:s.length<40?3:0,borderWidth:2.2}];
+  if(S)ds2.push({label:'S&P 500 (SPY)',data:S.map(function(v){return v==null?null:Math.round(v*10)/10;}),borderColor:'#448aff',tension:.25,pointRadius:0,borderWidth:1.6,spanGaps:true});
+  if(P)ds2.push({label:'Plazo fijo en USD',data:P.map(function(v){return v==null?null:Math.round(v*10)/10;}),borderColor:'#f59e0b',borderDash:[5,4],tension:.25,pointRadius:0,borderWidth:1.6,spanGaps:true});
+  if(_histChart){try{_histChart.destroy();}catch(e){}}
+  _histChart=new Chart(cv.getContext('2d'),{type:'line',data:{labels:lab,datasets:ds2},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:'#7a9cc5',font:{family:'JetBrains Mono',size:10},boxWidth:10}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+_bmPp(c.parsed.y);}}}},
+    scales:{x:{ticks:{color:'#3d5a80',font:{size:9},maxTicksLimit:8},grid:{color:'rgba(30,48,80,.4)'}},y:{ticks:{color:'#3d5a80',font:{size:9},callback:function(v){return v+'%';}},grid:{color:function(c){return c.tick&&c.tick.value===0?'rgba(122,156,197,.6)':'rgba(30,48,80,.4)';}}}}}});
+  var lc=C[C.length-1],ls=S?S[S.length-1]:null,lp=P?P[P.length-1]:null,w=function(a,b,n){if(b==null)return '';var d=a-b;return '<span style="color:'+(d>=0?'var(--accent)':'var(--red)')+'">'+(d>=0?'le ganaste al':'perdiste contra el')+' '+n+' por '+Math.abs(d).toFixed(1).replace('.',',')+' pp</span>';};
+  if(meta){meta.style.display='';meta.innerHTML='Tu cartera <b style="color:'+(lc>=0?'var(--accent)':'var(--red)')+'">'+_bmPp(lc)+'</b>'+(ls!=null?' · S&P '+_bmPp(ls):'')+(lp!=null?' · PF '+_bmPp(lp):'');}
+  if(nota)nota.innerHTML=[w(lc,ls,'S&P 500'),w(lc,lp,'plazo fijo')].filter(Boolean).join(' · ')+(ls!=null||lp!=null?'<br>':'')+'Todo en USD y desde el '+d0.split('-').reverse().join('/')+'. Tu cartera: rendimiento de cada período (descuenta aportes y retiros) encadenado; los puntos son los días con dato y entre ellos la línea es recta. S&P 500: Cedear SPY ÷ CCL. Plazo fijo: tasa de depósitos a 30 días del BCRA, pasado a dólar CCL.'+(s.some(function(x){return x.previo;})?' Los años anteriores al historial diario van de punta a punta.':'');}
+(function(){var _hr=histRender;histRender=function(){var r=_hr.apply(this,arguments);try{var rg=document.getElementById('hist-rangos');if(rg&&!document.getElementById('bm-btn')){var b=document.createElement('button');b.id='bm-btn';b.className='btn btn-sm';b.title='Comparar con el S&P 500 y el plazo fijo en dólares';b.onclick=bmTog;rg.appendChild(b);}
+  var bb=document.getElementById('bm-btn');if(bb){bb.textContent='⚖️ vs. índices';bb.style.cssText='font-size:.64rem;padding:2px 8px;margin-left:6px;'+(bmOn()?'border-color:#448aff;color:#448aff':'');}
+  if(bmOn())bmDibujar();}catch(e){}return r;};})();
 function lvTog(){NV.lv=!NV.lv;nvSave();nvLinea();}
 function nvLinea(){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
   var card=document.getElementById('nv-linea');if(!card){card=document.createElement('div');card.className='card';card.id='nv-linea';card.style.cssText='margin-top:1rem';}cw.appendChild(card);
