@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=247, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=248, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v248 | 2026-10-20 | Bonos CER (BONCER): la TIR ahora es la TIR real (CER + x%) calculada con el CER del BCRA (10 días hábiles de rezago). Para los cero cupón (TZX) con el CER de emisión; para TX31 con sus flujos ajustados al CER de hoy (antes quedaban al CER de cuando se cargaron). Tocando la TIR o el botón 📈 TIR CER de la fila abierta: tu TIR según tus compras, valor técnico, comparación contra plazo fijo con la inflación que elijas, punto de equilibrio y cuánto cobrás al vencimiento.',
   'v247 | 2026-10-20 | Dashboard: nuevo 🏆 ¿Quién hizo tu resultado? Gráfico en cascada con lo que sumó o restó cada activo en USD (no realizado + realizado + dividendos y cupones), incluidos los que ya vendiste, con el resto agrupado y el total. Resumen por tipo y abiertas vs cerradas. Además la app empieza a guardar una foto diaria por activo (la última de cada mes queda como cierre) para poder ver "mes anterior → hoy" y "este año".',
   'v246 | 2026-10-20 | Nuevo 🧾 Historia del PPC: tocando el PPC de cualquier fila (o el botón en la fila abierta) se abre cómo fue cambiando tu PPC con cada compra, venta y dividendo: gráfico, frase con lo que más lo movió y tabla de eventos (PPC antes/después). En USD o en pesos al dólar de hoy.',
   'v245 | 2026-10-20 | Comparación de portafolios mejorada: resumen (coinciden / para revisar / no coinciden) y, para cada diferencia, la causa probable con su botón: split o cambio de ratio (Ajustar n→m), mismo bono en pesos/dólares (sumados coinciden), compra cargada dos veces, o compra/venta sin cargar (la precarga en el módulo rápido). Además: cargar operaciones escribiendo en el módulo rápido ("compré 30 SNDK a 13250", "vendí 100 AO29 a 1329 ayer", "... el 13/10").',
@@ -3238,7 +3239,9 @@ function renderPortfolio(){
     var _flujoEv=_flujoProx30Map[p.ticker];
     var _flujoTitle=_flujoEv?('Próximo cobro: '+_flujosFechaDDMM(_flujoEv.fecha)+' — '+_flujosFmtMoneda(_flujoEv.moneda,_flujoEv.total)):'';
     var rsiCell;
-    if(_isBonoON){
+    var _bcC=_isBonoON&&typeof bcCelda==='function'&&_bcEs(p.ticker)?bcCelda(p.ticker):null;
+    if(_bcC){rsiCell=_bcC;}
+    else if(_isBonoON){
       var _tirReal=(typeof FLUJOS_BONOS!=='undefined'&&flujoDe(p.ticker))?calcularTIRReal(p.ticker):null;
       if(_tirReal){
         var _tirTip='TIR real: XIRR (act/365) del flujo exacto de FLUJOS_BONOS contra el precio de mercado de hoy, en '+_tirReal.moneda;
@@ -7432,6 +7435,7 @@ function trkCalcCCL(){
     document.getElementById('lupd').textContent='Datos cargados ✓';
     _gdcInitDone = true;
     setTimeout(_live912Cargar,3000);
+    setTimeout(function(){try{cerCargar();}catch(e){}},2500);
     if(window._sinSenal||navigator.onLine===false){var _lu=document.getElementById('lupd');if(_lu)_lu.textContent='📡 Sin conexión · mostrando lo último guardado';}
     if(SB_STATUS&&SB_STATUS.ok!==false)setTimeout(function(){bkDaily();},6000);
     if(initFromSupabase._done) initFromSupabase._done();
@@ -10487,7 +10491,7 @@ function nvRender(){
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
     (function(){var x=_valOn()&&_valOk(o)?_valDe(o.t):null;if(!x)return '';var nf=function(v){return v.toLocaleString('es-AR',{maximumFractionDigits:v<100?2:0});};
      return (x.pe>0?'<div><div class="nvlbl">P/E vs mediana 5 años</div><b>'+x.pe.toFixed(1).replace('.',',')+'</b> '+_valPill(x)+'</div>':'')+(x.pos!=null?'<div><div class="nvlbl">52 semanas (USD)</div><b>'+nf(x.lo)+' – '+nf(x.hi)+'</b> <span style="font-size:.7rem;color:var(--text2)">'+(x.dmax<0?'−':'')+Math.abs(x.dmax).toFixed(1).replace('.',',')+'% del máx.</span></div>':'');})()+
-    '<div style="margin-left:auto;align-self:center;display:flex;gap:6px"><span class="nvchip" onclick="event.stopPropagation();ppcHist(\''+o.t+'\')">🧾 Historia del PPC</span><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
+    '<div style="margin-left:auto;align-self:center;display:flex;gap:6px">'+(typeof _bcEs==='function'&&_bcEs(o.t)?'<span class="nvchip" onclick="event.stopPropagation();bcModal(\''+o.t+'\')">📈 TIR CER</span>':'')+'<span class="nvchip" onclick="event.stopPropagation();ppcHist(\''+o.t+'\')">🧾 Historia del PPC</span><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
     '</div></td></tr>';
    it.push({r:r});});});
  var tb=function(arr){return '<div class="nvtw"><table>'+h+arr.join('')+'</tbody></table></div>';},nA=it.filter(function(x){return x.r;}).length;
@@ -11051,6 +11055,59 @@ async function qhRender(){var sc=document.getElementById('db-scroll');if(!sc)ret
   if(spn.length)h+='<div style="font-size:.66rem;color:var(--text3);margin-top:8px">Sin precio de mercado (valuados al costo): '+spn.join(', ')+'.</div>';
   el.innerHTML=h;}
 (function(){var _rd=renderDashboard;renderDashboard=function(){var r=_rd.apply(this,arguments);try{qhRender();}catch(e){}return r;};})();
+// ─── v248 📈 TIR real de BONCER (CER del BCRA) ──────────────────────────────
+var CER={m:null,ts:0},_cerP=null,_bcPF=null;
+function _isoD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _bcEs(t){var b=(typeof flujoBase==='function')?flujoBase(t):null;return !!((typeof BONCER_ZC!=='undefined'&&BONCER_ZC[t])||(b&&typeof BONCER_CERFL!=='undefined'&&BONCER_CERFL[b]));}
+function cerCargar(){if(!CER.m){try{var c=JSON.parse(localStorage.getItem('cer_v1')||'null');if(c&&c.m)CER=c;}catch(e){}}
+  if(CER.m&&Date.now()-CER.ts<6*3600e3)return Promise.resolve(CER.m);if(_cerP)return _cerP;
+  _cerP=fetchWithTimeout('https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/30?desde=2024-01-01&limit=3000',{},12000).then(function(r){return r.ok?r.json():null;}).then(function(j){
+    var d=j&&j.results&&j.results[0]&&j.results[0].detalle;if(!d||!d.length)return CER.m;var m={};d.forEach(function(x){if(x&&x.fecha&&x.valor)m[x.fecha]=+x.valor;});
+    CER={m:m,ts:Date.now()};try{localStorage.setItem('cer_v1',JSON.stringify(CER));}catch(e){}
+    try{var pg=document.getElementById('page-portafolio');if(pg&&pg.classList.contains('active')&&typeof renderPortfolio==='function')renderPortfolio();}catch(e){}return m;}).catch(function(){return CER.m;}).finally(function(){_cerP=null;});return _cerP;}
+function _cerEn(iso){if(!CER.m)return null;var d=new Date(iso+'T12:00:00');for(var i=0;i<12;i++){var v=CER.m[_isoD(d)];if(v)return v;d.setDate(d.getDate()-1);}return null;}
+function _cerRef(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate(),12),n=0;while(n<10){x.setDate(x.getDate()-1);var w=x.getDay();if(w>0&&w<6)n++;}return _cerEn(_isoD(x));}
+// precio en $ por 100 VN; fechaISO opcional (por defecto hoy). Devuelve TIR real (CER + x) anual efectiva.
+function bcTIR(t,precio,fechaISO){if(!precio||precio<=0)return null;var d=fechaISO?new Date(fechaISO+'T12:00:00'):new Date();var cr=_cerRef(d);if(!cr)return null;
+  var z=typeof BONCER_ZC!=='undefined'&&BONCER_ZC[t];
+  if(z){var vt=100*cr/z.cer,y=(new Date(z.v+'T12:00:00')-d)/864e5/365;if(y<=0.01)return null;return {tir:Math.pow(vt/precio,1/y)-1,vt:vt,cer:cr,y:y,vto:z.v,zc:1,ap:!!z.ap};}
+  var b=flujoBase(t),k=b&&typeof BONCER_CERFL!=='undefined'&&BONCER_CERFL[b];if(!k)return null;var iso=_isoD(d);
+  var f=FLUJOS_BONOS[b].flujos.filter(function(x){return x.f>iso;}).map(function(x){return {f:x.f,m:((x.r||0)+(x.a||0))*cr/k};});if(!f.length)return null;
+  var u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())),lo=-0.5,hi=3,flo=_xirrNPV(precio,f,u,lo),fhi=_xirrNPV(precio,f,u,hi);if(isNaN(flo)||flo*fhi>0)return null;
+  for(var i=0;i<80;i++){var mid=(lo+hi)/2,fm=_xirrNPV(precio,f,u,mid);if(flo*fm<0)hi=mid;else{lo=mid;flo=fm;}}
+  return {tir:(lo+hi)/2,cer:cr,vto:f[f.length-1].f,y:(new Date(f[f.length-1].f+'T12:00:00')-d)/864e5/365,fl:f,vt:null,zc:0};}
+function _bcPx(t){var q=quotes[t];if(!q||!q.price)return null;return q.price*(getRatio(t)||1);}
+function _bcTuya(t){var L=movimientos.filter(function(m){return m&&m.ticker===t&&m.tipo==='compra'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);}),s=0,w=0,n=0;
+  L.forEach(function(m){var p=(m.fecha||'').split('/');if(p.length!==3)return;var iso=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'),px=(+m.precioARS||0)*100,r=bcTIR(t,px,iso);if(!r)return;var q=+m.qty||0;s+=r.tir*q;w+=q;n++;});
+  return w>0?{tir:s/w,n:n,de:L.length}:null;}
+function _bcPct(x){return (x>=0?'+ ':'− ')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';}
+function bcCelda(t){var px=_bcPx(t),r=px?bcTIR(t,px):null;if(!r)return null;
+  return '<span style="color:#a78bfa;font-weight:600;cursor:pointer" title="TIR real: CER '+_bcPct(r.tir)+' anual (CER BCRA con 10 días hábiles de rezago'+(r.ap?' · CER de emisión aproximado':'')+'). Tocá para ver la comparación." onclick="event.stopPropagation();bcModal(\''+t+'\')">CER '+_bcPct(r.tir)+'</span>';}
+function bcCerrar(){var o=document.getElementById('bc-ov');if(o)o.style.display='none';}
+async function bcModal(t,inf){var ov=document.getElementById('bc-ov');
+  if(!ov){ov=document.createElement('div');ov.id='bc-ov';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 12px';ov.onclick=function(e){if(e.target===ov)bcCerrar();};document.body.appendChild(ov);}
+  ov.style.display='flex';await cerCargar();
+  if(_bcPF===null){_bcPF=0;try{var r0=await fetchWithTimeout('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo',{},8000);var j0=r0.ok?await r0.json():[];var bn=(j0||[]).filter(function(x){return /NACION/i.test(x.entidad||'');})[0];_bcPF=bn&&bn.tnaClientes?{e:'Banco Nación',tna:+bn.tnaClientes}:0;}catch(e){_bcPF=0;}}
+  var px=_bcPx(t),r=px?bcTIR(t,px):null,tu=_bcTuya(t),pos=getPositions().filter(function(p){return p.ticker===t;})[0],vn=pos?pos.qty:0;
+  var cerM=(function(){var h=new Date(),a=_cerEn(_isoD(h)),b0=new Date(h);b0.setDate(b0.getDate()-30);var b=_cerEn(_isoD(b0));return a&&b?Math.pow(a/b,365/30)-1:null;})();
+  if(inf==null)inf=cerM!=null?Math.round(cerM*100):25;
+  var N=function(x){return Math.round(x).toLocaleString('es-AR');},P=function(x){return (x*100).toFixed(1).replace('.',',')+'%';};
+  var kb=function(l,v,s,c){return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px"><div style="font-size:.56rem;color:var(--text3);text-transform:uppercase">'+l+'</div><div style="font-size:1.05rem;font-weight:700;color:'+(c||'var(--text)')+'">'+v+'</div><div style="font-size:.64rem;color:var(--text2)">'+s+'</div></div>';};
+  var h='<div class="card" style="max-width:820px;width:100%;padding:14px 16px;font-family:var(--mono)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-family:var(--sans)"><b style="font-size:1.05rem">📈 '+t+' · BONCER'+(r&&r.zc?' cero cupón':'')+(r?' · vence '+r.vto.split('-').reverse().join('/'):'')+'</b><span style="margin-left:auto;cursor:pointer;font-size:1.2rem;color:var(--text2)" onclick="bcCerrar()">✕</span></div>';
+  if(!r){ov.innerHTML=h+'<div style="color:var(--text2);font-size:.8rem">No pude calcular la TIR: falta el precio de hoy o el CER del BCRA no respondió. Probá de nuevo en un rato.</div></div>';return;}
+  var inf0=inf/100,bon=(1+r.tir)*(1+inf0)-1,tub=tu?(1+tu.tir)*(1+inf0)-1:null,pf=_bcPF?Math.pow(1+_bcPF.tna/12,12)-1:null,be=pf!=null?(1+pf)/(1+r.tir)-1:null;
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px">'+kb('TIR real hoy','CER '+_bcPct(r.tir),'a $ '+px.toLocaleString('es-AR')+' · faltan '+r.y.toFixed(1).replace('.',',')+' años','#a78bfa')+
+    (tu?kb('Tu TIR (tus compras)','CER '+_bcPct(tu.tir),'promedio de '+tu.n+' compra'+(tu.n>1?'s':'')+(tu.n<tu.de?' (de '+tu.de+')':''),tu.tir>=r.tir?'#22c55e':'#f59e0b'):'')+
+    (r.zc?kb('Valor técnico','$ '+r.vt.toFixed(2).replace('.',','),'paridad '+P(px/r.vt)+' · CER '+r.cer.toFixed(2).replace('.',',')):kb('CER usado',r.cer.toFixed(2).replace('.',','),'10 días hábiles antes de hoy'))+
+    (vn?kb('Tu posición',N(vn)+' VN','≈ $ '+N(vn/100*px)+' hoy'):'')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;font-size:.78rem;margin:4px 0 10px;flex-wrap:wrap;font-family:var(--sans)">Inflación anual esperada: <input type="range" min="3" max="60" value="'+inf+'" style="flex:1;min-width:160px" oninput="bcModal(\''+t+'\',+this.value)"><b style="font-family:var(--mono)">'+inf+'%</b>'+(cerM!=null?'<span style="font-size:.68rem;color:var(--text3)">(el CER del último mes anualizado da '+P(cerM)+')</span>':'')+'</div>';
+  var L=[[t+' (precio hoy)',bon,'#a78bfa']];if(tub!=null)L.push([t+' (tus compras)',tub,'#c4b5fd']);if(pf!=null)L.push(['Plazo fijo '+_bcPF.e+' ('+P(_bcPF.tna)+' TNA)',pf,'#38bdf8']);L.push(['Inflación',inf0,'#64748b']);
+  var mx=Math.max.apply(null,L.map(function(x){return x[1];}))||1;
+  h+='<div style="font-size:.58rem;color:var(--text3);text-transform:uppercase;margin-bottom:4px">Tasa efectiva anual en pesos</div>'+L.map(function(x){return '<div style="display:grid;grid-template-columns:minmax(120px,210px) 1fr 64px;gap:8px;align-items:center;font-size:.74rem;padding:3px 0"><span>'+x[0]+'</span><i style="display:block;height:13px;border-radius:3px;width:'+Math.max(1,x[1]/mx*100)+'%;background:'+x[2]+'"></i><span style="text-align:right">'+P(x[1])+'</span></div>';}).join('');
+  if(be!=null)h+='<div style="background:var(--surface2);border-left:3px solid #a78bfa;border-radius:6px;padding:9px 12px;font-size:.78rem;line-height:1.55;margin:10px 0;font-family:var(--sans)">'+(inf0>be?'✅ Con '+inf+'% de inflación, '+t+' rinde <b>'+P(bon)+'</b> en pesos contra <b>'+P(pf)+'</b> del plazo fijo. El plazo fijo solo le gana si la inflación anual baja de <b>'+P(be)+'</b>.':'⚠️ Con '+inf+'% de inflación, el plazo fijo ('+P(pf)+') le gana a '+t+' ('+P(bon)+'). El punto de equilibrio es <b>'+P(be)+'</b> de inflación anual.')+'</div>';
+  if(vn&&r.zc){var E=[['Baja',0.12],['Elegida',inf0],['Alta',0.35]];h+='<table style="width:100%;border-collapse:collapse;font-size:.74rem;margin-top:6px"><tr style="color:var(--text3);font-size:.58rem;text-transform:uppercase"><td>Escenario</td><td style="text-align:right">Inflación</td><td style="text-align:right">Cobrás al vencimiento</td><td style="text-align:right">vs. valor de hoy</td></tr>'+E.map(function(e){var cob=vn/100*r.vt*Math.pow(1+e[1],r.y),hoy=vn/100*px;return '<tr style="border-top:1px solid var(--border)"><td style="padding:5px 0">'+e[0]+'</td><td style="text-align:right">'+P(e[1])+'</td><td style="text-align:right">$ '+N(cob)+'</td><td style="text-align:right;color:#22c55e">+'+P(cob/hoy-1)+'</td></tr>';}).join('')+'</table>';}
+  h+='<div style="font-size:.66rem;color:var(--text3);margin-top:10px;line-height:1.5;font-family:var(--sans)">'+(r.zc?'Paga al vencimiento 100 × CER (10 días hábiles antes) ÷ CER de emisión'+(r.ap?' (para este bono el CER de emisión es aproximado)':'')+'.':'Flujos de la tabla de bonos ajustados al CER de hoy.')+' La TIR real es la que sumás por encima de la inflación (CER); la tasa en pesos depende de la inflación que elijas. CER: BCRA · plazo fijo: ArgentinaDatos.</div></div>';
+  ov.innerHTML=h;}
 function lvTog(){NV.lv=!NV.lv;nvSave();nvLinea();}
 function nvLinea(){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
   var card=document.getElementById('nv-linea');if(!card){card=document.createElement('div');card.className='card';card.id='nv-linea';card.style.cssText='margin-top:1rem';}cw.appendChild(card);
