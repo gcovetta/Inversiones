@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=245, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=246, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v246 | 2026-10-20 | Nuevo 🧾 Historia del PPC: tocando el PPC de cualquier fila (o el botón en la fila abierta) se abre cómo fue cambiando tu PPC con cada compra, venta y dividendo: gráfico, frase con lo que más lo movió y tabla de eventos (PPC antes/después). En USD o en pesos al dólar de hoy.',
   'v245 | 2026-10-20 | Comparación de portafolios mejorada: resumen (coinciden / para revisar / no coinciden) y, para cada diferencia, la causa probable con su botón: split o cambio de ratio (Ajustar n→m), mismo bono en pesos/dólares (sumados coinciden), compra cargada dos veces, o compra/venta sin cargar (la precarga en el módulo rápido). Además: cargar operaciones escribiendo en el módulo rápido ("compré 30 SNDK a 13250", "vendí 100 AO29 a 1329 ayer", "... el 13/10").',
   'v244 | 2026-10-20 | Comprar/Vender (módulo rápido): vista previa mientras cargás la operación. Muestra cuánto pagás o cobrás en USD, cómo quedan la cantidad, el PPC, el resultado, el peso en la cartera y la distribución CER/HD/RV, y avisa si no alcanza la liquidez, si el activo supera el 5% de la cartera, si vendés por debajo del PPC o si vendés más de lo que tenés.',
   'v243 | 2026-10-20 | Control de precio al cargar o editar una compra/venta: ahora también funciona con activos que todavía no tenés (usa el precio de mercado de data912) y al editar un movimiento. Si el precio es muy distinto (ej. 100.000 veces, como pasó con SNDK) avisa antes de guardar. En operaciones de más de 7 días solo avisa si la diferencia es enorme (más de 4 veces).',
@@ -10476,7 +10477,7 @@ function nvRender(){
     '<td class="up">'+upC(o.up)+'</td>'+
     '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
     '<td class="hoy">'+(o.ch==null||!isFinite(o.ch)?'<span style="color:var(--text3)">—</span>':'<span style="color:'+(o.ch>0?'var(--accent)':o.ch<0?'var(--red)':'var(--text3)')+'">'+(o.ch>0?'▲ ':o.ch<0?'▼ ':'')+Math.abs(o.ch).toFixed(1).replace('.',',')+'%</span>'+(_whyOn()&&Math.abs(o.ch)>=3?'<span class="nvwhy" title="¿Por qué se movió?" onclick="event.stopPropagation();nvWhy(\''+o.t+'\',this)">?</span>':''))+'</td>'+
-    '<td class="mut">'+_nvF(o.ppc,o)+'</td>'+
+    '<td class="mut" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px" title="Ver cómo fue cambiando tu PPC" onclick="event.stopPropagation();ppcHist(\''+o.t+'\')">'+_nvF(o.ppc,o)+'</td>'+
     '<td><span class="port-sensitive" style="color:'+o.invCol+';font-weight:'+(o.invCol!=='var(--text)'?700:400)+'">'+_nvM()+_nvN(_nvInv(o))+'</span></td>'+
     '<td class="ptb"><span class="pt"><span class="b"><span style="width:'+Math.min(100,o.pt/6*100)+'%;background:'+pc+'"></span></span><span style="color:'+(o.pt>2?pc:'var(--text2)')+'">'+o.pt.toFixed(1).replace('.',',')+'%</span></span></td></tr>';
    if(ab)r+='<tr class="det"><td colspan="8"><div class="nvdet">'+
@@ -10485,7 +10486,7 @@ function nvRender(){
     '<div><div class="nvlbl">'+(o.rv?'RSI':'TIR')+'</div><b>'+(o.rsiH||'<span style="color:var(--text3)">—</span>')+'</b></div>'+
     (function(){var x=_valOn()&&_valOk(o)?_valDe(o.t):null;if(!x)return '';var nf=function(v){return v.toLocaleString('es-AR',{maximumFractionDigits:v<100?2:0});};
      return (x.pe>0?'<div><div class="nvlbl">P/E vs mediana 5 años</div><b>'+x.pe.toFixed(1).replace('.',',')+'</b> '+_valPill(x)+'</div>':'')+(x.pos!=null?'<div><div class="nvlbl">52 semanas (USD)</div><b>'+nf(x.lo)+' – '+nf(x.hi)+'</b> <span style="font-size:.7rem;color:var(--text2)">'+(x.dmax<0?'−':'')+Math.abs(x.dmax).toFixed(1).replace('.',',')+'% del máx.</span></div>':'');})()+
-    '<div style="margin-left:auto;align-self:center;display:flex;gap:6px"><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
+    '<div style="margin-left:auto;align-self:center;display:flex;gap:6px"><span class="nvchip" onclick="event.stopPropagation();ppcHist(\''+o.t+'\')">🧾 Historia del PPC</span><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
     '</div></td></tr>';
    it.push({r:r});});});
  var tb=function(arr){return '<div class="nvtw"><table>'+h+arr.join('')+'</tbody></table></div>';},nA=it.filter(function(x){return x.r;}).length;
@@ -10933,6 +10934,66 @@ function txAplicar(){var inp=document.getElementById('tx-op'),st=document.getEle
   d.innerHTML='<div style="display:flex;gap:6px"><input id="tx-op" type="text" autocomplete="off" placeholder="✍️ Escribí la operación: compré 30 SNDK a 13250 · vendí 100 AO29 a 1329 ayer" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:.45rem .6rem;font-size:.85rem" onkeydown="if(event.key===\'Enter\'){event.preventDefault();txAplicar();}"><button class="btn btn-a" onclick="txAplicar()">Armar</button></div><div id="tx-st" style="font-size:.7rem;color:var(--text3);margin-top:4px">Entiende compré/vendí, cantidad, ticker, "a" precio y opcional "ayer" o "el 13/10". Completa el formulario de abajo; vos confirmás.</div>';
   var hd=card.querySelector('.card-header');if(hd&&hd.parentNode===card)card.insertBefore(d,hd.nextSibling);else card.insertBefore(d,card.firstChild);};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else setTimeout(go,0);})();
+// ─── 🧾 Historia del PPC: cómo fue cambiando el PPC de un activo con cada compra, venta o dividendo ───
+function _ppcEventos(t){var M=(movimientos||[]).filter(function(m){return m&&m.ticker===t&&(m.tipo==='compra'||m.tipo==='venta');}),
+  D=((typeof TRK!=='undefined'&&TRK.divs)||[]).filter(function(d){return d&&d.ticker===t&&d.pncApplied&&d.estado!=='pendiente';});
+  var E=M.map(function(m){return {f:_phIso(m.fecha)||'',tp:m.tipo,m:m,id:+m.id||0};}).concat(D.map(function(d){var f=String(d.fecha||'');return {f:f.indexOf('/')>0?_phIso(f):f,tp:'div',d:d,id:+d.id||0};}))
+    .filter(function(e){return e.f;}).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:a.id-b.id;});
+  var all=movimientos,divs=TRK.divs,out=[];
+  try{for(var i=0;i<E.length;i++){var sub=E.slice(0,i+1);movimientos=sub.filter(function(e){return e.m;}).map(function(e){return e.m;});TRK.divs=sub.filter(function(e){return e.d;}).map(function(e){return e.d;});
+      var p=getPositions().filter(function(x){return x.ticker===t;})[0];E[i].q=p?p.qty:0;E[i].ppc=p&&p.qty>1e-9?p.costUSDpuro/p.qty:null;E[i].real=p?p.realizedPnl:0;}}
+  finally{movimientos=all;TRK.divs=divs;}
+  E.forEach(function(e){if(e.m){var u=_rotUSD(e.m);e.qq=+e.m.qty;e.pu=e.qq>0?u/e.qq:null;}else{e.qq=null;e.pu=null;e.u=divUSD(e.d)||0;}});
+  var G=[];E.forEach(function(e){var g=G[G.length-1];if(g&&g.f===e.f&&g.tp===e.tp&&e.tp!=='div'){g.n++;g.qq+=e.qq;g.usd+=e.pu*e.qq;g.q=e.q;g.ppc=e.ppc;g.real=e.real;}
+    else G.push({f:e.f,tp:e.tp,n:1,qq:e.qq,usd:e.pu!=null?e.pu*e.qq:0,u:e.u||0,q:e.q,ppc:e.ppc,real:e.real});});
+  for(var j=0;j<G.length;j++){G[j].p0=j?G[j-1].ppc:null;G[j].pu=G[j].qq>0?G[j].usd/G[j].qq:null;}
+  return G;}
+var _ppchMon='usd';
+function ppcHistCerrar(){var o=document.getElementById('ppch-ov');if(o)o.style.display='none';}
+function ppcHist(t,mon){if(mon)_ppchMon=mon;var ov=document.getElementById('ppch-ov');
+  if(!ov){ov=document.createElement('div');ov.id='ppch-ov';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 12px';ov.onclick=function(e){if(e.target===ov)ppcHistCerrar();};document.body.appendChild(ov);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')ppcHistCerrar();});}
+  ov.style.display='flex';
+  var G=_ppcEventos(t),o=(NV_ROWS||[]).filter(function(x){return x.t===t;})[0],s=getSector(t),bono=(s==='bonos'||s==='on'),k=bono?100:1;
+  var fx=o&&o.ppcU>0&&o.ppc>0?o.ppc/o.ppcU:(bono?(MEP_HOY||CCL_HOY):CCL_HOY),pxU=o&&o.px>0?o.px/fx:null,ars=_ppchMon==='ars';
+  var n0=function(x){return Math.round(x).toLocaleString('es-AR');},n2=function(x){return x.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var F=function(x){if(x==null||!isFinite(x))return '—';var u=x*k;return ars?'$ '+n0(u*fx/k*k):'USD '+n2(u);};
+  var Fa=function(x){return x==null?'—':(ars?'$ '+n0(x*fx):'USD '+n2(x*k));};
+  if(!G.length){ov.innerHTML='<div class="card" style="max-width:520px;width:100%;padding:16px">No hay operaciones de '+t+'. <button class="btn btn-sm" onclick="ppcHistCerrar()">Cerrar</button></div>';return;}
+  var last=G[G.length-1],first=G.filter(function(g){return g.pu!=null;})[0];
+  var V=G.filter(function(g){return g.ppc!=null;}).map(function(g){return g.ppc;}).concat(G.filter(function(g){return g.pu!=null;}).map(function(g){return g.pu;}));if(pxU)V.push(pxU);
+  var mx=Math.max.apply(null,V)*1.05,mn=Math.min.apply(null,V)*0.95;if(!(mx>mn)){mx=mn*1.1+1;}
+  var W=900,H=250,Lm=70,B=30,Tp=12,t0=new Date(G[0].f).getTime(),t1=Date.now();if(t1<=t0)t1=t0+864e5;
+  var X=function(d){return Lm+(new Date(d).getTime()-t0)/(t1-t0)*(W-Lm-14);},Y=function(p){return Tp+(1-(p-mn)/(mx-mn))*(H-Tp-B);};
+  var g='';for(var i=0;i<=4;i++){var pv=mn+(mx-mn)*i/4;g+='<line x1="'+Lm+'" x2="'+(W-10)+'" y1="'+Y(pv)+'" y2="'+Y(pv)+'" stroke="var(--border)"/><text x="'+(Lm-6)+'" y="'+(Y(pv)+3)+'" fill="var(--text3)" font-size="10" text-anchor="end">'+(ars?n0(pv*fx):n2(pv*k))+'</text>';}
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'],d0=new Date(t0),nT=6;for(i=0;i<=nT;i++){var tt=new Date(t0+(t1-t0)*i/nT);g+='<text x="'+X(tt.toISOString().slice(0,10))+'" y="'+(H-10)+'" fill="var(--text3)" font-size="10" text-anchor="middle">'+meses[tt.getMonth()]+'-'+String(tt.getFullYear()).slice(2)+'</text>';}
+  var path='',hoyS=new Date().toISOString().slice(0,10);G.forEach(function(e,j){if(e.ppc==null)return;path+=(path?'L':'M')+X(e.f)+' '+Y(e.ppc)+' ';var nx=G[j+1];path+='L'+X(nx?nx.f:hoyS)+' '+Y(e.ppc)+' ';});
+  if(pxU)g+='<line x1="'+Lm+'" x2="'+(W-10)+'" y1="'+Y(pxU)+'" y2="'+Y(pxU)+'" stroke="#7a9cc5" stroke-dasharray="5 4"/><text x="'+(W-12)+'" y="'+(Y(pxU)-5)+'" fill="#7a9cc5" font-size="10" text-anchor="end">hoy '+Fa(pxU)+'</text>';
+  g+='<path d="'+path+'" fill="none" stroke="var(--blue)" stroke-width="2.5"/>';
+  G.forEach(function(e){if(e.pu==null)return;g+='<circle cx="'+X(e.f)+'" cy="'+Y(e.pu)+'" r="'+Math.max(3,Math.min(9,Math.sqrt(e.qq/(bono?100:1))*0.9))+'" fill="'+(e.tp==='venta'?'#ef4444':'#f59e0b')+'" fill-opacity=".85"><title>'+e.f.split('-').reverse().join('/')+': '+(e.tp==='venta'?'venta':'compra')+' de '+n0(e.qq)+' a '+Fa(e.pu)+'</title></circle>';});
+  G.forEach(function(e){if(e.tp==='div')g+='<text x="'+X(e.f)+'" y="'+(Y(e.ppc||mn)-8)+'" font-size="12" text-anchor="middle">💵</text>';});
+  var fd=function(f){return f.slice(8,10)+'/'+f.slice(5,7)+'/'+f.slice(2,4);};
+  var mov=G.filter(function(e){return e.p0!=null&&e.ppc!=null;}).map(function(e){return {e:e,d:e.ppc-e.p0};}).sort(function(a,b){return a.d-b.d;});
+  var say='Tu PPC '+(first?'empezó en '+Fa(first.pu)+' ('+fd(first.f)+') y ':'')+(last.ppc!=null?'hoy está en <b>'+Fa(last.ppc)+'</b>':'hoy no tenés posición')+'.';
+  if(mov.length&&mov[0].d<0)say+=' Lo que más lo bajó: '+(mov[0].e.tp==='div'?'el dividendo':'la compra')+' del <b>'+fd(mov[0].e.f)+'</b> ('+Fa(-mov[0].d)+' menos).';
+  if(mov.length&&mov[mov.length-1].d>0)say+=' Lo que más lo subió: la compra del <b>'+fd(mov[mov.length-1].e.f)+'</b> ('+Fa(mov[mov.length-1].d)+' más).';
+  if(ars)say+='<br><span style="color:var(--text3)">En pesos se muestra al dólar de hoy: el PPC en pesos sube cuando sube el dólar, aunque no compres nada.</span>';
+  var rows=G.slice().reverse().map(function(e){var d=(e.p0!=null&&e.ppc!=null)?e.ppc-e.p0:null,ev=e.tp==='compra'?'🟢 Compra':e.tp==='venta'?'🔴 Venta':'💵 Dividendo';
+    return '<tr><td>'+fd(e.f)+'</td><td>'+ev+(e.n>1?' <span style="color:var(--text3)">('+e.n+')</span>':'')+'</td><td class="r">'+(e.qq!=null?n0(e.qq):'')+'</td><td class="r">'+(e.tp==='div'?'USD '+n2(e.u):Fa(e.pu))+'</td><td class="r" style="color:var(--text3)">'+n0(e.q)+'</td><td class="r" style="color:var(--text3)">'+Fa(e.p0)+'</td><td class="r">'+Fa(e.ppc)+'</td><td class="r" style="color:'+(d==null?'var(--text3)':d<0?'var(--accent)':d>0?'#f59e0b':'var(--text3)')+'">'+(e.p0==null?'inicio':d==null?'cerró':Math.abs(d)<1e-9?'=':(d<0?'▼ ':'▲ ')+(ars?'$ '+n0(Math.abs(d)*fx):n2(Math.abs(d)*k)))+'</td></tr>';}).join('');
+  var b=function(m,l){return '<span onclick="ppcHist(\''+t+'\',\''+m+'\')" style="padding:3px 12px;cursor:pointer;'+(_ppchMon===m?'background:var(--blue);color:#fff':'color:var(--text2)')+'">'+l+'</span>';};
+  ov.innerHTML='<div class="card" style="max-width:980px;width:100%;padding:14px 16px;font-family:var(--mono)"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-family:var(--sans)"><b style="font-size:1.05rem">🧾 Historia del PPC · '+t+'</b>'+
+    '<span style="display:inline-flex;border:1px solid var(--border2);border-radius:999px;overflow:hidden;font-size:.72rem;font-family:var(--mono)">'+b('usd','USD')+b('ars','$ al dólar de hoy')+'</span>'+
+    '<span style="margin-left:auto;font-size:.7rem;color:var(--text3)">'+(bono?'por 100 nominales · ':'')+n0(last.q)+' '+(bono?'nominales':'unidades')+'</span><button class="btn btn-sm" onclick="ppcHistCerrar()">✕</button></div>'+
+    '<div class="port-sensitive" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px">'+
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px"><div style="font-size:.56rem;color:var(--text3);text-transform:uppercase">PPC hoy</div><b>'+Fa(last.ppc)+'</b></div>'+
+      (pxU?'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px"><div style="font-size:.56rem;color:var(--text3);text-transform:uppercase">Precio hoy</div><b>'+Fa(pxU)+'</b>'+(last.ppc>0?' <span style="font-size:.7rem;color:'+(pxU>=last.ppc?'var(--accent)':'var(--red)')+'">'+(pxU>=last.ppc?'+':'−')+Math.abs((pxU/last.ppc-1)*100).toFixed(1).replace('.',',')+'%</span>':'')+'</div>':'')+
+      (first?'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px"><div style="font-size:.56rem;color:var(--text3);text-transform:uppercase">Primera compra</div><b>'+Fa(first.pu)+'</b> <span style="font-size:.66rem;color:var(--text3)">'+fd(first.f)+'</span></div>':'')+
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px"><div style="font-size:.56rem;color:var(--text3);text-transform:uppercase">Operaciones</div><b>'+G.filter(function(e){return e.tp!=='div';}).reduce(function(a,e){return a+e.n;},0)+'</b>'+(G.some(function(e){return e.tp==='div';})?' <span style="font-size:.66rem;color:var(--text3)">+ dividendos</span>':'')+'</div></div>'+
+    '<svg class="port-sensitive" viewBox="0 0 '+W+' '+H+'" width="100%" style="font-family:var(--mono)">'+g+'</svg>'+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.64rem;color:var(--text2);margin:4px 0 8px"><span><i style="display:inline-block;width:12px;height:3px;background:var(--blue);vertical-align:middle;margin-right:4px"></i>tu PPC</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:4px"></i>compra</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:4px"></i>venta</span><span>💵 dividendo que bajó el PPC</span><span style="color:#7a9cc5">- - precio hoy</span></div>'+
+    '<div style="background:var(--surface2);border-left:3px solid var(--blue);border-radius:6px;padding:8px 11px;font-size:.78rem;line-height:1.55;font-family:var(--sans);margin-bottom:8px">'+say+'</div>'+
+    '<div style="overflow-x:auto;max-height:42vh"><table class="ppch-tb port-sensitive" style="width:100%;border-collapse:collapse;font-size:.74rem"><tr style="color:var(--text3);font-size:.56rem;text-transform:uppercase"><td>Fecha</td><td>Evento</td><td class="r">Cant.</td><td class="r">Precio</td><td class="r">Tenencia</td><td class="r">PPC antes</td><td class="r">PPC después</td><td class="r">Efecto</td></tr>'+rows+'</table></div></div>';
+  ov.querySelectorAll('.ppch-tb td').forEach(function(td){td.style.padding='5px 7px';td.style.borderTop='1px solid var(--border)';td.style.textAlign=td.classList.contains('r')?'right':'left';});}
 function lvTog(){NV.lv=!NV.lv;nvSave();nvLinea();}
 function nvLinea(){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
   var card=document.getElementById('nv-linea');if(!card){card=document.createElement('div');card.className='card';card.id='nv-linea';card.style.cssText='margin-top:1rem';}cw.appendChild(card);

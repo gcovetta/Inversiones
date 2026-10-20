@@ -1,0 +1,58 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Historia del PPC — propuesta</title>
+<style>
+:root{--bg:#0b1120;--s:#111927;--s2:#172035;--b:#1e3050;--b2:#264070;--t:#e8f0ff;--t2:#7a9cc5;--t3:#4b6a92;--g:#22c55e;--r:#ef4444;--bl:#448aff;--am:#f59e0b;--mono:ui-monospace,"JetBrains Mono",Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font-family:Inter,system-ui,sans-serif;font-size:14px}
+.wrap{max-width:980px;margin:0 auto;padding:16px}.note{font-size:.72rem;color:var(--t3);margin:0 0 12px;line-height:1.5}
+.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+h2{font-size:1rem;margin:0 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.src{margin-left:auto;font-family:var(--mono);font-size:.62rem;color:var(--t3);font-weight:400}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}.kv div{background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:8px 10px}.kv small{display:block;font-family:var(--mono);font-size:.56rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em}.kv b{font-family:var(--mono);font-size:1.05rem}.kv i{display:block;font-style:normal;font-family:var(--mono);font-size:.64rem;color:var(--t2)}
+.seg{display:inline-flex;border:1px solid var(--b2);border-radius:999px;overflow:hidden;font-size:.72rem;font-family:var(--mono)}.seg span{padding:3px 12px;cursor:pointer;color:var(--t2)}.seg span.on{background:var(--bl);color:#fff}
+.lg{display:flex;gap:14px;flex-wrap:wrap;font-size:.66rem;color:var(--t2);font-family:var(--mono);margin:6px 0}.lg i{display:inline-block;width:10px;height:3px;margin-right:4px;vertical-align:middle}
+.say{background:var(--s2);border-left:3px solid var(--bl);border-radius:6px;padding:9px 12px;font-size:.8rem;line-height:1.55;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:.78rem}th{font-family:var(--mono);font-size:.56rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;text-align:right;padding:6px;font-weight:500}td{padding:6px;border-top:1px solid var(--b);text-align:right;font-family:var(--mono)}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+.g{color:var(--g)}.r{color:var(--r)}.am{color:var(--am)}.mu{color:var(--t3)}
+.exp{font-size:.74rem;color:var(--t2);line-height:1.6}.exp b{color:var(--t)}
+@media(max-width:760px){.kv{grid-template-columns:repeat(2,minmax(0,1fr))}.hm{display:none}}
+</style></head><body><div class="wrap">
+<p class="note">Propuesta · movimientos reales de MELI en GDC (19 compras, oct-2025 → abr-2026) y CCL real de cada fecha. Se abriría desde el Modo foco o tocando el PPC en la tabla.</p>
+<div class="card"><h2>🧾 Historia del PPC · MELI <span class="seg" id="mon"><span class="on" data-m="usd">USD</span><span data-m="ars">$ al CCL de hoy</span></span><span class="src">481 Cedears · ratio 120</span></h2>
+<div class="kv" id="kv"></div>
+<svg id="ch" viewBox="0 0 900 260" width="100%" role="img" aria-label="Evolución del PPC de MELI con cada compra"></svg>
+<div class="lg"><span><i style="background:#448aff"></i>tu PPC</span><span><i style="background:#f59e0b;height:8px;width:8px;border-radius:50%"></i>precio de cada compra</span><span><i style="background:#7a9cc5;height:1px;border-top:1px dashed #7a9cc5"></i>precio de hoy</span></div>
+<div class="say" id="say"></div>
+<table id="tb"></table>
+<p class="exp"><b>Cómo se calcula:</b> el PPC de la app está en dólares por Cedear (costo de cada compra al CCL de su fecha). En pesos se muestra al CCL de hoy, por eso puede ser distinto del promedio de pesos que pagaste: el PPC en pesos sube cuando sube el dólar. Si hay dividendos que bajan el PPC, splits o ventas, aparecen como eventos en la misma línea.<br>
+<b>Dónde iría:</b> tocando el PPC de cualquier fila del Portafolio o en el Modo foco, para todas las carteras.</p>
+</div></div>
+<script>
+var L=[["2025-10-28",17,28420,1474],["2025-10-29",17,28040,1474],["2025-11-03",17,29240,1518],["2025-11-06",18,27140,1506],["2025-11-06",29,27000,1506],["2025-11-17",15,25520,1480],["2025-11-17",9,25580,1480],["2025-11-17",19,25540,1480],["2025-11-17",19,25460,1480],["2025-11-21",10,24050,1510],["2025-12-16",32,24580,1549],["2026-01-21",19,26300,1516],["2026-03-02",50,20990,1456],["2026-03-02",50,21530,1456],["2026-03-04",40,21600,1464],["2026-03-09",46,21610,1474],["2026-03-09",23,21590,1474],["2026-04-01",1,21180,1486],["2026-04-17",50,22480,1453]];
+var CCL=1625.6,PX=24890,MON='usd';
+// agrupar por día
+var G={};L.forEach(function(x){var g=G[x[0]]||(G[x[0]]={f:x[0],q:0,usd:0,ars:0,n:0});g.q+=x[1];g.usd+=x[1]*x[2]/x[3];g.ars+=x[1]*x[2];g.n++;});
+var E=Object.keys(G).sort().map(function(k){return G[k];}),q=0,c=0,ca=0;E.forEach(function(e){var p0=q?c/q:null;q+=e.q;c+=e.usd;ca+=e.ars;e.Q=q;e.ppc=c/q;e.p0=p0;e.pu=e.usd/e.q;e.pa=e.ars/e.q;e.avgArs=ca/q;});
+function n0(x){return Math.round(x).toLocaleString('es-AR');}function n2(x){return x.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function v(x){return MON==='usd'?x:x*CCL;}function f(x){return MON==='usd'?'USD '+n2(x):'$ '+n0(x*CCL);}
+function fd(s){return s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(2,4);}
+function draw(){var last=E[E.length-1],pxU=PX/CCL,first=E[0];
+ var maxP=Math.max.apply(null,E.map(function(e){return e.pu;}).concat([last.ppc,pxU]))*1.05,minP=Math.min.apply(null,E.map(function(e){return e.pu;}).concat([last.ppc,pxU]))*0.95;
+ document.getElementById('kv').innerHTML='<div><small>PPC hoy</small><b>'+f(last.ppc)+'</b><i>'+(MON==='usd'?'≈ $ '+n0(last.ppc*CCL)+' al CCL de hoy':'USD '+n2(last.ppc)+' por Cedear')+'</i></div>'+
+  '<div><small>Precio hoy</small><b>'+f(pxU)+'</b><i class="'+(pxU>=last.ppc?'g':'r')+'">'+(pxU>=last.ppc?'+':'−')+Math.abs((pxU/last.ppc-1)*100).toFixed(1).replace('.',',')+'% contra tu PPC</i></div>'+
+  '<div><small>Primera compra</small><b>'+f(first.pu)+'</b><i>'+fd(first.f)+' · PPC arrancó ahí</i></div>'+
+  '<div><small>Pesos pagados (promedio)</small><b>$ '+n0(last.avgArs)+'</b><i>sin ajustar por dólar</i></div>';
+ var W=900,H=260,Lm=64,B=34,T=12,t0=new Date(first.f).getTime(),t1=new Date('2026-10-20').getTime(),X=function(d){return Lm+(new Date(d).getTime()-t0)/(t1-t0)*(W-Lm-14);},Y=function(p){return T+(1-(p-minP)/(maxP-minP))*(H-T-B);};
+ var g='';for(var i=0;i<=4;i++){var pv=minP+(maxP-minP)*i/4;g+='<line x1="'+Lm+'" x2="'+(W-10)+'" y1="'+Y(pv)+'" y2="'+Y(pv)+'" stroke="#1e3050"/><text x="'+(Lm-6)+'" y="'+(Y(pv)+3)+'" fill="#4b6a92" font-size="10" text-anchor="end" font-family="monospace">'+(MON==='usd'?n2(pv):n0(pv*CCL))+'</text>';}
+ ['2025-11-01','2026-01-01','2026-03-01','2026-05-01','2026-07-01','2026-09-01'].forEach(function(d){g+='<text x="'+X(d)+'" y="'+(H-12)+'" fill="#4b6a92" font-size="10" text-anchor="middle" font-family="monospace">'+['','ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+d.slice(5,7)]+'-'+d.slice(2,4)+'</text>';});
+ var pts='';E.forEach(function(e,i){pts+=(i?'L':'M')+X(e.f)+' '+Y(e.ppc)+' ';if(E[i+1])pts+='L'+X(E[i+1].f)+' '+Y(e.ppc)+' ';});pts+='L'+X('2026-10-20')+' '+Y(last.ppc);
+ g+='<line x1="'+Lm+'" x2="'+(W-10)+'" y1="'+Y(pxU)+'" y2="'+Y(pxU)+'" stroke="#7a9cc5" stroke-dasharray="5 4"/><text x="'+(W-12)+'" y="'+(Y(pxU)-5)+'" fill="#7a9cc5" font-size="10" text-anchor="end" font-family="monospace">hoy '+f(pxU)+'</text>';
+ g+='<path d="'+pts+'" fill="none" stroke="#448aff" stroke-width="2.5"/>';
+ E.forEach(function(e){g+='<circle cx="'+X(e.f)+'" cy="'+Y(e.pu)+'" r="'+Math.max(3,Math.min(9,Math.sqrt(e.q)*0.9))+'" fill="#f59e0b" fill-opacity=".8"><title>'+fd(e.f)+': '+e.q+' a '+f(e.pu)+'</title></circle>';});
+ document.getElementById('ch').innerHTML=g;
+ var big=E.filter(function(e){return e.p0!=null;}).map(function(e){return {e:e,d:e.ppc-e.p0};}).sort(function(a,b){return a.d-b.d;});var b0=big[0];
+ document.getElementById('say').innerHTML='📉 Tu PPC empezó en '+f(first.pu)+' y hoy está en <b>'+f(last.ppc)+'</b>. Lo que más lo bajó fueron las compras de <b>marzo 2026</b> (209 Cedears a ~'+f(21500/1460)+'), que te dejaron promediando a la baja. '+
+  (MON==='ars'?'<br>💡 En pesos, el PPC al CCL de hoy ($ '+n0(last.ppc*CCL)+') es más alto que el promedio de pesos que pagaste ($ '+n0(last.avgArs)+') porque el dólar subió desde tus compras.':'');
+ var rows='<tr><th>Fecha</th><th>Evento</th><th>Cant.</th><th>Precio</th><th class="hm">Cedears</th><th>PPC antes</th><th>PPC después</th><th>Efecto</th></tr>';
+ E.slice().reverse().forEach(function(e){var d=e.p0==null?null:e.ppc-e.p0;rows+='<tr><td>'+fd(e.f)+'</td><td>🟢 Compra'+(e.n>1?' <span class="mu">('+e.n+')</span>':'')+'</td><td>'+e.q+'</td><td>'+f(e.pu)+'</td><td class="hm">'+e.Q+'</td><td class="mu">'+(e.p0==null?'—':f(e.p0))+'</td><td>'+f(e.ppc)+'</td><td class="'+(d==null?'mu':d<0?'g':'am')+'">'+(d==null?'inicio':(d<0?'▼ bajó ':'▲ subió ')+(MON==='usd'?n2(Math.abs(d)):'$ '+n0(Math.abs(d)*CCL)))+'</td></tr>';});
+ document.getElementById('tb').innerHTML=rows;}
+document.querySelectorAll('#mon span').forEach(function(s){s.onclick=function(){document.querySelectorAll('#mon span').forEach(function(z){z.classList.remove('on');});s.classList.add('on');MON=s.dataset.m;draw();};});draw();
+</script></body></html>
