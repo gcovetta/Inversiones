@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=258, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=259, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v259 | 2026-10-20 | Big Tech arriba de 6% de la renta variable: ahora en rojo (antes lila), para respetar los mismos colores que el resto.',
   'v258 | 2026-10-20 | % tipo: las Big Tech (AMZN, GOOGL/GOOG, NVDA, META, MSFT, AAPL) tienen su propio umbral: pueden pesar hasta 6% de la renta variable y recién arriba de eso se pintan de lila (no se ponen amarillas ni rojas en 2% y 3%). Nuevo filtro "Big Tech > 6%" en el recuadro de % tipo; "menos de 2%" pasa a llamarse "en rango".',
   'v257 | 2026-10-20 | Rotaciones: ahora empareja primero las ventas con las compras del mismo día y recién después con las de los días siguientes (las más cercanas primero). Antes una venta de días anteriores se quedaba con las compras de hoy y la rotación de hoy no aparecía (ej. GDC: TZXM9 → NVDA/WDC del 20/10).',
   'v256 | 2026-10-20 | "Desde tu última visita" corregido: quedaba fijo en una visita vieja (ej. "el sábado") porque dependía de la sesión del navegador, que en el celular y en pestañas restauradas dura días, y porque una pestaña abierta de fondo seguía renovando la visita. Ahora cuenta como visita nueva cuando pasaron más de 30 minutos desde la última vez que miraste la cartera, y solo se renueva con la página visible.',
@@ -10334,11 +10335,11 @@ if(NV.dfv!==2){(function(){var o=NV.df||{},n={};[0,1,2].forEach(function(i){if(o
 function nvSave(){try{localStorage.setItem(PFX+'nv',JSON.stringify(NV));}catch(e){}}
 var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
 var NV_GD=[['Ganando',function(o){return o.d!=null&&o.d>0;},'#5cc06e'],['0% a −2%',function(o){return o.d!=null&&o.d<=0&&o.d>-2;},'#8a94a6'],['Pérdida',function(o){return o.d!=null&&o.d<=-2;},'#e05a52']];
-// Big Tech: pueden pesar hasta 6% de la renta variable; arriba de eso van en lila (y no cuentan en los umbrales de 2% y 3%).
+// Big Tech: pueden pesar hasta 6% de la renta variable; arriba de eso van en rojo (y no cuentan en los umbrales de 2% y 3%).
 var BIG_TECH=new Set((typeof CFG!=='undefined'&&CFG.bigTech)||['AMZN','GOOGL','GOOG','NVDA','META','MSFT','AAPL']),BIG_TECH_MAX=(typeof CFG!=='undefined'&&CFG.bigTechMax)||6;
 function _nvBT(o){return !!(o&&o.rv&&BIG_TECH.has(o.t));}
-function _nvPtCol(o){if(_nvBT(o))return o.pt>BIG_TECH_MAX?'#a78bfa':'var(--blue)';return o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)';}
-var NV_MD=[['más de 3%',function(o){return !_nvBT(o)&&o.pt>3;},'#e05a52'],['2% a 3%',function(o){return !_nvBT(o)&&o.pt>2&&o.pt<=3;},'#e3b341'],['en rango',function(o){return _nvBT(o)?o.pt<=BIG_TECH_MAX:o.pt<=2;},'#5b8def'],['Big Tech > '+BIG_TECH_MAX+'%',function(o){return _nvBT(o)&&o.pt>BIG_TECH_MAX;},'#a78bfa']];
+function _nvPtCol(o){if(_nvBT(o))return o.pt>BIG_TECH_MAX?'var(--red)':'var(--blue)';return o.pt>3?'var(--red)':o.pt>2?'#eab308':'var(--blue)';}
+var NV_MD=[['más de 3%',function(o){return !_nvBT(o)&&o.pt>3;},'#e05a52'],['2% a 3%',function(o){return !_nvBT(o)&&o.pt>2&&o.pt<=3;},'#e3b341'],['en rango',function(o){return _nvBT(o)?o.pt<=BIG_TECH_MAX:o.pt<=2;},'#5b8def'],['Big Tech > '+BIG_TECH_MAX+'%',function(o){return _nvBT(o)&&o.pt>BIG_TECH_MAX;},'#e05a52']];
 function _nvSel(m){return Object.keys(m||{}).filter(function(k){return m[k];}).map(Number);}
 function _nvEn(m,B,o){var L=_nvSel(m);return !L.length||L.some(function(i){return B[i]&&B[i][1](o);});}
 var NV_TS=[['nyse','🇺🇸 USA'],['argentina','🇦🇷 Argentina'],['brasil','🇧🇷 Brasil'],['europa','🇪🇺 Europa'],['china','🇨🇳 China'],['cripto','₿ Cripto'],['bonos','📜 Bonos'],['on','🏢 ONs'],['fci','📈 FCI']];
