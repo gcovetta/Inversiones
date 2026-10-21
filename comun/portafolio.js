@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=260, APP_VERSION_FECHA='21/10/2026';
+var APP_VERSION=261, APP_VERSION_FECHA='21/10/2026';
 var APP_CHANGELOG=[
+  'v261 | 2026-10-21 | Valuación de bonos que cotizan directo en dólares (ej. AO29C, AO29D): su precio ya está en USD y se estaba dividiendo otra vez por el MEP, así que valían casi 0 en el total (en Omar, 482 AO29C ≈ USD 396 que no se sumaban). Corregido en el total del Portafolio, el Dashboard y ¿Quién hizo tu resultado?.',
   'v260 | 2026-10-21 | Bonos en dólares: nueva ventana 📈 TIR USD (tocando la TIR o el botón de la fila abierta) con TIR en dólares (CCL si paga cable, MEP si no), tu TIR según tus compras, duration, barras con tus bonos en dólares y la curva con los soberanos (AL29/GD29, AL30/GD30, AL35/GD35, AE38/GD38, AL41/GD41, GD46) y los de tu tabla (AO27/28/29, BB37D, BC37D…). Sugiere swaps entre bonos en dólares de duration parecida y los suma al aviso 💡 de rotación. Las comparaciones quedan por tipo: en la ventana de un CER las barras muestran solo CER, y en la de un bono en dólares solo bonos en dólares.',
   'v259 | 2026-10-20 | Big Tech arriba de 6% de la renta variable: ahora en rojo (antes lila), para respetar los mismos colores que el resto.',
   'v258 | 2026-10-20 | % tipo: las Big Tech (AMZN, GOOGL/GOOG, NVDA, META, MSFT, AAPL) tienen su propio umbral: pueden pesar hasta 6% de la renta variable y recién arriba de eso se pintan de lila (no se ponen amarillas ni rojas en 2% y 3%). Nuevo filtro "Big Tech > 6%" en el recuadro de % tipo; "menos de 2%" pasa a llamarse "en rango".',
@@ -3181,7 +3182,7 @@ function renderPortfolio(){
     var mercadoCedearARS=price!=null?(_sectorIsARS||_isBRL?price:fromByma?price:(price/ratio)*CCL_HOY):null;
     var inversionCedearARS=isBonoUSDDirecto(p.ticker)?p.costUSDpuro*100:(mercadoCedearARS!=null?(_isBonoON?mercadoCedearARS*p.qty/100:mercadoCedearARS*p.qty):p.costARS);
     var _tcVal=(CFG.valuarMEP!==false&&MEP_HOY>0)?MEP_HOY:CCL_HOY;
-    var valueUSD=price!=null?(sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/_tcVal)*p.qty):_isBRL?(price/_tcVal)*p.qty:fromByma?(price/_tcVal)*p.qty:(price/ratio)*p.qty*(CCL_HOY/_tcVal)):null;
+    var valueUSD=price!=null?(isBonoUSDDirecto(p.ticker)?price*p.qty/100:sector==='fci'?(price/(MEP_HOY||CCL_HOY))*p.qty:_sectorIsARS?(_isBonoON?(price/MEP_HOY)*p.qty/100:(price/_tcVal)*p.qty):_isBRL?(price/_tcVal)*p.qty:fromByma?(price/_tcVal)*p.qty:(price/ratio)*p.qty*(CCL_HOY/_tcVal)):null;
     if(valueUSD!=null){totalVal+=valueUSD;sectorVal[sector]=(sectorVal[sector]||0)+valueUSD;}p._valueUSD=valueUSD;
     totalCost+=p.costUSDpuro;
     sectorCost[sector]=(sectorCost[sector]||0)+p.costUSDpuro;
@@ -8106,7 +8107,8 @@ function renderDashboard(){
     var _isBRL=BRL_TICKERS.has(p.ticker);
     var valUSD;
     if(q&&q.price){
-      valUSD=isBonoON ? (q.price/mep)*p.qty/100
+      valUSD=isBonoUSDDirecto(p.ticker) ? q.price*p.qty/100
+            :isBonoON ? (q.price/mep)*p.qty/100
             :sector==='fci' ? (q.price/mep)*p.qty
             :isArgentina ? (q.price/tcHoy)*p.qty
             :_isBRL ? (q.price/tcHoy)*p.qty
@@ -11030,7 +11032,7 @@ function ppcHist(t,mon){if(mon)_ppchMon=mon;var ov=document.getElementById('ppch
 var QH={per:'all',fotos:null};
 function _qhValUSD(p){var q=quotes[p.ticker];if(!(p.qty>0.000001))return 0;var sector=getSector(p.ticker),tc=CCL_HOY||1,mep=MEP_HOY||tc,ratio=RATIOS_TABLE[p.ticker]||1;
   if(!(q&&q.price))return p.costUSDpuro||0;
-  return (sector==='bonos'||sector==='on')?(q.price/mep)*p.qty/100:sector==='fci'?(q.price/mep)*p.qty:(sector==='argentina'||BRL_TICKERS.has(p.ticker)||q.fromByma)?(q.price/tc)*p.qty:(q.price/ratio)*p.qty;}
+  return isBonoUSDDirecto(p.ticker)?q.price*p.qty/100:(sector==='bonos'||sector==='on')?(q.price/mep)*p.qty/100:sector==='fci'?(q.price/mep)*p.qty:(sector==='argentina'||BRL_TICKERS.has(p.ticker)||q.fromByma)?(q.price/tc)*p.qty:(q.price/ratio)*p.qty;}
 function _qhAportes(){var noA={};if(typeof TRK!=='undefined'&&TRK.divs)TRK.divs.forEach(function(d){if(d.pncApplied||!d.montoUSD)return;if(d.cartera&&typeof CARTERA_ACTIVA!=='undefined'&&d.cartera!==CARTERA_ACTIVA)return;noA[d.ticker]=(noA[d.ticker]||0)+(+d.montoUSD||0);});
   var R={};getPositions().forEach(function(p){var v=_qhValUSD(p),ab=p.qty>0.000001,nr=ab?v-(p.costUSDpuro||0):0,re=p.realizedPnl||0,co=(p.dividendsUSD||0)+(noA[p.ticker]||0);
     R[p.ticker]={t:p.ticker,s:getSector(p.ticker),ab:ab,nr:nr,re:re,co:co,c:nr+re+co,sp:ab&&!(quotes[p.ticker]&&quotes[p.ticker].price)};});return R;}
