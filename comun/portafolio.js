@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=255, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=256, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v256 | 2026-10-20 | "Desde tu última visita" corregido: quedaba fijo en una visita vieja (ej. "el sábado") porque dependía de la sesión del navegador, que en el celular y en pestañas restauradas dura días, y porque una pestaña abierta de fondo seguía renovando la visita. Ahora cuenta como visita nueva cuando pasaron más de 30 minutos desde la última vez que miraste la cartera, y solo se renueva con la página visible.',
   'v255 | 2026-10-20 | Bonos CER: flujos de DICP y CUAP cargados desde Bull (20/10, al CER 850,15): su TIR real ya no es aproximada y CUAP se suma a la curva. Comisión para los swaps por cartera: GDC sin comisión, Omar y Hilda 0,25%, Ana y Juli 0,5% por operación.',
   'v254 | 2026-10-20 | Curva CER: además de los cero cupón y TX31 ahora suma TX28, DICP y PARP (bonos CER con cupones, ubicados por duration; DICP y PARP con CER aproximado). Los swaps sugeridos pueden ser entre cualquier bono CER de duration parecida (avisa cuando uno paga cupones y su vencimiento final). El eje de años se estira para que entren los largos. PARP y DICP ahora muestran TIR real (CER + x%).',
   'v253 | 2026-10-20 | TIR de bonos que pagan en dólar cable (BC37D, BB37D y Globales GD): el precio en pesos se pasa a dólares con el CCL en vez del MEP, así la TIR incluye la brecha CCL/MEP (hoy ~5%) que cobrás en cada pago. Se ve en la columna TIR y en la ventana 📈 TIR CER (barras y comparación con el dólar de empate).',
@@ -9035,9 +9036,11 @@ function uvActualizar(d){
   var now=Date.now(),tot=(d.totalVal||0)+(d.liqTotalUSD||0),pr={};
   (d.pos||[]).forEach(function(p){if(p.q>0&&p.v>0)pr[p.t]=p.v/p.q;});
   var act=null,prev=null;try{act=JSON.parse(localStorage.getItem(PFX+'uv_act')||'null');prev=JSON.parse(localStorage.getItem(PFX+'uv_prev')||'null');}catch(e){}
-  var nueva=false;try{nueva=!sessionStorage.getItem(PFX+'uv_ses');sessionStorage.setItem(PFX+'uv_ses','1');}catch(e){}
-  if(act&&nueva&&now-act.ts>30*60000){prev=act;try{localStorage.setItem(PFX+'uv_prev',JSON.stringify(prev));}catch(e){}}
-  try{localStorage.setItem(PFX+'uv_act',JSON.stringify({ts:now,tot:tot,pr:pr}));}catch(e){}
+  // Visita nueva = pasaron más de 30 min desde la última vez que la miraste (antes dependía de la sesión del navegador,
+  // que en el celular y en pestañas restauradas sobrevive días y dejaba "el sábado" fijo).
+  if(act&&now-act.ts>30*60000){prev=act;try{localStorage.setItem(PFX+'uv_prev',JSON.stringify(prev));}catch(e){}}
+  // Solo cuenta como "mirada" si la página está visible (una pestaña abierta de fondo no renueva la visita).
+  if(!document.hidden){try{localStorage.setItem(PFX+'uv_act',JSON.stringify({ts:now,tot:tot,pr:pr}));}catch(e){}}
   if(prev&&!_uvCerrado)uvMostrar(prev,tot,pr);
 }
 function uvMostrar(prev,tot,pr){
