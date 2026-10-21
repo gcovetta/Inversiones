@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=256, APP_VERSION_FECHA='20/10/2026';
+var APP_VERSION=257, APP_VERSION_FECHA='20/10/2026';
 var APP_CHANGELOG=[
+  'v257 | 2026-10-20 | Rotaciones: ahora empareja primero las ventas con las compras del mismo día y recién después con las de los días siguientes (las más cercanas primero). Antes una venta de días anteriores se quedaba con las compras de hoy y la rotación de hoy no aparecía (ej. GDC: TZXM9 → NVDA/WDC del 20/10).',
   'v256 | 2026-10-20 | "Desde tu última visita" corregido: quedaba fijo en una visita vieja (ej. "el sábado") porque dependía de la sesión del navegador, que en el celular y en pestañas restauradas dura días, y porque una pestaña abierta de fondo seguía renovando la visita. Ahora cuenta como visita nueva cuando pasaron más de 30 minutos desde la última vez que miraste la cartera, y solo se renueva con la página visible.',
   'v255 | 2026-10-20 | Bonos CER: flujos de DICP y CUAP cargados desde Bull (20/10, al CER 850,15): su TIR real ya no es aproximada y CUAP se suma a la curva. Comisión para los swaps por cartera: GDC sin comisión, Omar y Hilda 0,25%, Ana y Juli 0,5% por operación.',
   'v254 | 2026-10-20 | Curva CER: además de los cero cupón y TX31 ahora suma TX28, DICP y PARP (bonos CER con cupones, ubicados por duration; DICP y PARP con CER aproximado). Los swaps sugeridos pueden ser entre cualquier bono CER de duration parecida (avisa cuando uno paga cupones y su vencimiento final). El eje de años se estira para que entren los largos. PARP y DICP ahora muestran TIR real (CER + x%).',
@@ -10769,13 +10770,17 @@ function rotDetectar(){var lim=new Date(Date.now()-200*864e5).toISOString().slic
   (movimientos||[]).forEach(function(m){if(!m||(m.tipo!=='compra'&&m.tipo!=='venta')||m.owner==='cristian')return;var f=_phIso(m.fecha);if(!f||f<lim)return;var u=_rotUSD(m);if(!(u>0)||!(m.qty>0))return;
     T.push({id:m.id,f:f,tp:m.tipo,t:m.ticker,q:+m.qty,u:u,c:m.cartera||'principal',s:getSector(m.ticker)});});
   T.sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:(+a.id||0)-(+b.id||0);});
-  var usada={},R=[],dias=function(a,b){return (new Date(b)-new Date(a))/864e5;};
-  T.forEach(function(v,i){if(v.tp!=='venta'||usada[v.id])return;
-    var V=T.filter(function(x){return x.tp==='venta'&&!usada[x.id]&&x.c===v.c&&x.f===v.f;}),tv=V.reduce(function(s,x){return s+x.u;},0),vt={};V.forEach(function(x){vt[x.t]=1;});
-    var C=[],tc=0;T.forEach(function(x){if(x.tp!=='compra'||usada[x.id]||x.c!==v.c||vt[x.t])return;var d=dias(v.f,x.f);if(d<0||d>5)return;if(tc+x.u>tv*1.3&&tc>=tv*0.4)return;C.push(x);tc+=x.u;});
-    if(!C.length||tc<tv*0.4){return;}
-    V.forEach(function(x){usada[x.id]=1;});C.forEach(function(x){usada[x.id]=1;});
-    R.push({id:String(V[0].id),f:v.f,c:v.c,V:V,C:C,tv:tv,tc:tc});});
+  // Agrupa las ventas de un mismo día y cartera. Primero las empareja con compras del MISMO día; recién después, a las que
+  // quedaron sin completar, con compras de los 5 días siguientes (las más cercanas primero). Antes una venta vieja se
+  // quedaba con las compras de hoy y la rotación de hoy no aparecía.
+  var usada={},R=[],dias=function(a,b){return (new Date(b)-new Date(a))/864e5;},G=[],gk={};
+  T.forEach(function(v){if(v.tp!=='venta')return;var k=v.c+'|'+v.f;if(!gk[k]){gk[k]={f:v.f,c:v.c,V:[],tv:0,vt:{},C:[],tc:0};G.push(gk[k]);}var g=gk[k];g.V.push(v);g.tv+=v.u;g.vt[v.t]=1;});
+  var tomar=function(g,dmin,dmax){var L=T.filter(function(x){if(x.tp!=='compra'||usada[x.id]||x.c!==g.c||g.vt[x.t])return false;var d=dias(g.f,x.f);return d>=dmin&&d<=dmax;}).sort(function(a,b){return dias(g.f,a.f)-dias(g.f,b.f)||(+a.id||0)-(+b.id||0);});
+    L.forEach(function(x){if(g.tc+x.u>g.tv*1.3&&g.tc>=g.tv*0.4)return;g.C.push(x);g.tc+=x.u;usada[x.id]=1;});};
+  G.forEach(function(g){tomar(g,0,0);});
+  G.forEach(function(g){if(g.tc<g.tv*0.4)tomar(g,1,5);});
+  G.forEach(function(g){if(!g.C.length||g.tc<g.tv*0.4){g.C.forEach(function(x){delete usada[x.id];});return;}
+    R.push({id:String(g.V[0].id),f:g.f,c:g.c,V:g.V,C:g.C,tv:g.tv,tc:g.tc});});
   return R.reverse();}
 function _rotAgr(L){var o={};L.forEach(function(x){var g=o[x.t]||(o[x.t]={t:x.t,s:x.s,q:0,u:0,f:x.f});g.q+=x.q;g.u+=x.u;});return Object.keys(o).map(function(k){return o[k];}).sort(function(a,b){return b.u-a.u;});}
 var _rotLiveP=null;
