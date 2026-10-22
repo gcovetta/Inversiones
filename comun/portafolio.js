@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=261, APP_VERSION_FECHA='21/10/2026';
+var APP_VERSION=262, APP_VERSION_FECHA='22/10/2026';
 var APP_CHANGELOG=[
+  'v262 | 2026-10-22 | Filtros del Portafolio: el bloque de ganancia (Ganando / 0% a −2% / Pérdida) pasa a ser una barra "Δ% desde": elegís un piso y muestra los activos con Δ% desde ese valor hacia arriba, con cuántos quedan. Todo a la izquierda = todos; doble click en el número = sin filtro. Se combina con los otros filtros y queda guardado.',
   'v261 | 2026-10-21 | Valuación de bonos que cotizan directo en dólares (ej. AO29C, AO29D): su precio ya está en USD y se estaba dividiendo otra vez por el MEP, así que valían casi 0 en el total (en Omar, 482 AO29C ≈ USD 396 que no se sumaban). Corregido en el total del Portafolio, el Dashboard y ¿Quién hizo tu resultado?.',
   'v260 | 2026-10-21 | Bonos en dólares: nueva ventana 📈 TIR USD (tocando la TIR o el botón de la fila abierta) con TIR en dólares (CCL si paga cable, MEP si no), tu TIR según tus compras, duration, barras con tus bonos en dólares y la curva con los soberanos (AL29/GD29, AL30/GD30, AL35/GD35, AE38/GD38, AL41/GD41, GD46) y los de tu tabla (AO27/28/29, BB37D, BC37D…). Sugiere swaps entre bonos en dólares de duration parecida y los suma al aviso 💡 de rotación. Las comparaciones quedan por tipo: en la ventana de un CER las barras muestran solo CER, y en la de un bono en dólares solo bonos en dólares.',
   'v259 | 2026-10-20 | Big Tech arriba de 6% de la renta variable: ahora en rojo (antes lila), para respetar los mismos colores que el resto.',
@@ -10333,7 +10334,7 @@ function tipoVistaPintar(){var w=document.getElementById('tipo-vista');if(!w)ret
 
 // ─── 🧪 Vista nueva del portafolio (CFG.vistaNueva, página de prueba) ─────────
 var NV_ROWS=[],NV_K={};
-var NV=(function(){var d={ts:{},df:{},dg:{},dm:{},sk:'inv',sd:-1,modo:'c',op:{},dfv:0,mon:'ars',ic:true};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
+var NV=(function(){var d={ts:{},df:{},dg:{},gmin:null,dm:{},sk:'inv',sd:-1,modo:'c',op:{},dfv:0,mon:'ars',ic:true};try{var x=JSON.parse(localStorage.getItem(PFX+'nv')||'null');if(x)for(var k in d)if(x[k]!=null)d[k]=x[k];}catch(e){}return d;})();
 if(NV.dfv!==2){(function(){var o=NV.df||{},n={};[0,1,2].forEach(function(i){if(o[i])n[i]=1;});if(o[4])n[3]=1;NV.df=n;NV.dfv=2;})();}
 function nvSave(){try{localStorage.setItem(PFX+'nv',JSON.stringify(NV));}catch(e){}}
 var NV_FD=[['🎯 llegó',function(o){return o.up!=null&&o.up<=0;},'#e3b341'],['≤ 5%',function(o){return o.up>0&&o.up<=5;},'#e3b341'],['5% a 30%',function(o){return o.up>5&&o.up<=30;},'#5b8def'],['sin P. Venta',function(o){return o.up==null;},'#64779c']];
@@ -10351,7 +10352,18 @@ function _nvPaisI(s){for(var i=0;i<NV_TS.length;i++)if(NV_TS[i][0]===s)return i;
 function _nvTsSel(){return Object.keys(NV.ts||{}).filter(function(k){return NV.ts[k];});}
 function nvTs(k){if(!NV.ts)NV.ts={};NV.ts[k]=!NV.ts[k];nvSave();nvRender();}
 function _nvBase(o){NV.tipo='ambas';if(NV.mk&&!MARKS[o.t])return false;var ts=_nvTsSel();if(ts.length&&ts.indexOf(o.s)<0)return false;if(NV.tipo==='rv'&&!o.rv)return false;if(NV.tipo==='rf'&&o.rv)return false;return true;}
-function _nvOk(o,sin){if(NV.q)return o.t.indexOf(NV.q)>=0;return _nvBase(o)&&(sin==='f'||_nvEn(NV.df,NV_FD,o))&&(sin==='g'||_nvEn(NV.dg,NV_GD,o))&&(sin==='m'||_nvEn(NV.dm,NV_MD,o));}
+// Filtro de ganancia con barra: muestra los activos con Δ% desde NV.gmin hacia arriba (null = todos).
+function _nvGOk(o){return NV.gmin==null||(o.d!=null&&o.d>=NV.gmin);}
+function _nvGF(v){return v==null?'todos':(v>0?'+':v<0?'−':'')+Math.abs(v)+'%';}
+function _nvGCol(v){return v==null?'var(--text2)':v>0?'var(--accent)':v>-2?'#8a94a6':'var(--red)';}
+function nvGVer(el){var v=+el.value,vv=v<=-31?null:v,L=NV_ROWS.filter(function(o){return _nvOk(o,'g');}),n=vv==null?L.length:L.filter(function(o){return o.d!=null&&o.d>=vv;}).length;
+  var b=document.getElementById('nv-gv'),c=document.getElementById('nv-gc');if(b){b.textContent=_nvGF(vv);b.style.color=_nvGCol(vv);}if(c)c.textContent=n+' de '+L.length;}
+function nvGSet(v){NV.gmin=v<=-31?null:v;nvSave();nvRender();}
+function _nvGRender(){var el=document.getElementById('nv-dG');if(!el)return;var L=NV_ROWS.filter(function(o){return _nvOk(o,'g');}),v=NV.gmin,n=v==null?L.length:L.filter(function(o){return o.d!=null&&o.d>=v;}).length;
+  el.innerHTML='<div style="display:flex;align-items:center;gap:6px;font-family:var(--mono)"><span style="font-size:.78rem;color:var(--text2);font-family:var(--sans)">Δ% desde</span><b id="nv-gv" title="Doble click: sin filtro" ondblclick="nvGSet(-31)" style="font-size:.9rem;cursor:pointer;color:'+_nvGCol(v)+'">'+_nvGF(v)+'</b><span id="nv-gc" style="margin-left:auto;font-size:.74rem;color:var(--text2)">'+n+' de '+L.length+'</span></div>'+
+    '<input type="range" min="-31" max="30" step="1" value="'+(v==null?-31:v)+'" style="width:100%;accent-color:#448aff;height:14px;margin:6px 0 0" oninput="nvGVer(this)" onchange="nvGSet(+this.value)" onclick="event.stopPropagation()">'+
+    '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;color:var(--text3)"><span>todos</span><span>−15%</span><span>0</span><span>+15%</span><span>+30%</span></div>';}
+function _nvOk(o,sin){if(NV.q)return o.t.indexOf(NV.q)>=0;return _nvBase(o)&&(sin==='f'||_nvEn(NV.df,NV_FD,o))&&(sin==='g'||_nvGOk(o))&&(sin==='m'||_nvEn(NV.dm,NV_MD,o));}
 function _nvN(x){return Math.round(x||0).toLocaleString('es-AR');}
 function _nvP(x){return x==null||!isFinite(x)?'—':(x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1).replace('.',',')+'%';}
 function _nvF(x,o){if(x==null||!isFinite(x))return '<span style="color:var(--text3)">—</span>';var u=NV.mon==='usd';if(u&&!o.usdD){if(!(o.tc>0))return '<span style="color:var(--text3)">—</span>';x=x/o.tc;}return (o.usdD||u?'US$ ':'$ ')+(x<200?x.toLocaleString('es-AR',{maximumFractionDigits:2}):_nvN(x));}
@@ -10487,11 +10499,11 @@ function nvRender(){
  var _nmk=NV_ROWS.filter(function(o){return MARKS[o.t];}).length;document.getElementById('nv-fbar').innerHTML=(_nmk||NV.mk?'<span class="nvchip'+(NV.mk?' on':'')+'" onclick="NV.mk=!NV.mk;nvSave();nvRender()" title="Ver solo los activos marcados">🏷 Marcados <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+_nmk+'</span></span>':'')+NV_TS.map(function(x){var n=tl.filter(function(o){return o.s===x[0];}).length;if(!n&&!(NV.ts||{})[x[0]])return '';var on=!!(NV.ts||{})[x[0]];return '<span class="nvchip'+(on?' on':'')+'"'+(tsel.length&&!on?' style="opacity:.5"':'')+' onclick="nvTs(\''+x[0]+'\')">'+x[1]+' <span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">'+n+'</span></span>';}).join('')+'';
  var dist=function(id,B,key,sin){var L=NV_ROWS.filter(function(o){return _nvOk(o,sin);}),cnt=B.map(function(b){return L.filter(b[1]).length;}),mx=Math.max.apply(null,cnt)||1,anySel=_nvSel(NV[key]).length;
   document.getElementById(id).innerHTML=B.map(function(b,i){var on=!!NV[key][i];return '<div class="nvbk'+(on?' on':'')+(anySel&&!on?' dim':'')+'" onclick="nvTog(\''+key+'\','+i+')"><span>'+b[0]+'</span><div class="tr"><span style="width:'+(cnt[i]/mx*100)+'%;background:'+b[2]+'"></span></div><span class="c">'+cnt[i]+'</span></div>';}).join('');};
- dist('nv-dF',NV_FD,'df','f');dist('nv-dG',NV_GD,'dg','g');dist('nv-dM',NV_MD,'dm','m');try{nvTipos();}catch(e){}
+ dist('nv-dF',NV_FD,'df','f');try{_nvGRender();}catch(e){}dist('nv-dM',NV_MD,'dm','m');try{nvTipos();}catch(e){}
  var nm=document.getElementById('nv-mon');if(nm)nm.innerHTML='<b'+(NV.mon!=='usd'?' class="on"':'')+'>$</b><b'+(NV.mon==='usd'?' class="on"':'')+'>US$</b>';
  var qx=document.getElementById('nv-qx');if(qx)qx.style.display=NV.q?'':'none';
  var L=NV_ROWS.filter(function(o){return _nvOk(o);}),desc=[],nom=function(m,B){return _nvSel(m).map(function(i){return B[i][0];}).join(' o ');};
- if(NV.q)desc=['búsqueda "'+NV.q+'" (sin filtros)'];else if(_nvTsSel().length)desc.push('tipo '+NV_TS.filter(function(x){return NV.ts[x[0]];}).map(function(x){return x[1];}).join(' o '));if(_nvSel(NV.df).length)desc.push('distancia '+nom(NV.df,NV_FD));if(_nvSel(NV.dg).length)desc.push('ganancia '+nom(NV.dg,NV_GD));if(_nvSel(NV.dm).length)desc.push('inversión '+nom(NV.dm,NV_MD));
+ if(NV.q)desc=['búsqueda "'+NV.q+'" (sin filtros)'];else if(_nvTsSel().length)desc.push('tipo '+NV_TS.filter(function(x){return NV.ts[x[0]];}).map(function(x){return x[1];}).join(' o '));if(_nvSel(NV.df).length)desc.push('distancia '+nom(NV.df,NV_FD));if(NV.gmin!=null)desc.push('Δ% desde '+_nvGF(NV.gmin));if(_nvSel(NV.dm).length)desc.push('inversión '+nom(NV.dm,NV_MD));
  var sh=function(k,t){return '<span class="s'+(NV.sk===k?' act':'')+'" onclick="nvSort(\''+k+'\')">'+t+(NV.sk===k?(NV.sd>0?' ▲':' ▼'):'')+'</span>';};
  var srt=function(a,b){if(NV.sk==='pais'){var ia=_nvPaisI(a.s),ib=_nvPaisI(b.s);return ia!==ib?(ia-ib)*NV.sd:a.t.localeCompare(b.t);}var x=a[NV.sk],y=b[NV.sk];if(NV.sk==='up'){x=x==null?9999:x;y=y==null?9999:y;}else{if(x==null)return 1;if(y==null)return -1;}return (typeof x==='string'?x.localeCompare(y):x-y)*NV.sd;};
  var upC=function(u){return u==null?'<span style="color:var(--text3)">—</span>':u<=0?'<span style="color:#e3b341;font-weight:700">🎯 llegó</span>':'<span style="color:'+(u<=5?'#e3b341':u<=15?'var(--blue)':'var(--text3)')+'">↑ '+u.toFixed(1).replace('.',',')+'%</span>';};
