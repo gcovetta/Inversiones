@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=265, APP_VERSION_FECHA='22/10/2026';
+var APP_VERSION=266, APP_VERSION_FECHA='22/10/2026';
 var APP_CHANGELOG=[
+  'v266 | 2026-10-22 | Swaps de bonos CER: se priorizan los cero cupón (TZX) porque aseguran la reinversión. Al comparar un cero cupón contra un CER con cupones, al de cupones se le restan 0,3 puntos: pasar de un TZX a uno con cupones se sugiere solo si rinde más de 0,6 puntos más, y pasar de uno con cupones a un TZX ya conviene apenas rinde algo más.',
   'v265 | 2026-10-22 | Tarjeta de tipos (Bono CER / Bono HD / RV / Otros) en 2 columnas para que quede de la misma altura que las barras de filtros.',
   'v264 | 2026-10-22 | Filtros del Portafolio: P. Venta y % tipo también pasan a ser barras, como Δ%. "Al P. Venta, hasta X%" muestra lo que está a esa distancia o menos de su P. Venta (todo a la izquierda = los que ya llegaron; a la derecha = todos). "% tipo desde X%" muestra lo que pesa X% o más en su tipo (a la izquierda = todos). Doble click en el número = sin filtro.',
   'v263 | 2026-10-22 | La página de Rotaciones pasa a llamarse 🧠 Tus decisiones y suma dos tarjetas arriba: Tu sesgo como inversor (qué porcentaje de tus ventas fueron con ganancia vs. cuánto de lo que te queda está en pérdida, días que tuviste cada cosa, ganadoras vendidas rápido y perdedoras de más de un año) y Lo que hubiera pasado si no vendías (valor de hoy de lo que vendiste en 1/3/6/12 meses, más cupones y dividendos). Con ✕ se excluye un activo que vendiste a propósito (en GDC, XP ya viene excluido); se guarda en la nube.',
@@ -11235,10 +11236,12 @@ function _bcMercado(){var L=[];if(typeof BONCER_ZC==='undefined')return L;
   return L.sort(function(a,b){return a.y-b.y;});}
 // Curva: promedio ponderado de los cero cupón de plazo parecido (ancho 0,3 en log-años). sin = bono a excluir.
 function _bcCurva(L,y,sin){var sw=0,sv=0,mx=0;L.forEach(function(z){if(z.zc&&z.y>mx)mx=z.y;});var yy=Math.min(y,mx||y);L.forEach(function(z){if(!z.zc||z.t===sin)return;var w=Math.exp(-Math.pow((Math.log(z.y)-Math.log(yy))/0.3,2));sw+=w;sv+=w*z.tir;});return sw>0.05?sv/sw:null;}
+// Los cero cupón (TZX) aseguran la reinversión: para comparar contra un CER con cupones, al de cupones se le restan 0,3 puntos.
+var BC_ZC_PREMIO=0.003;function _bcAdj(x){return x.zc?x.tir:x.tir-BC_ZC_PREMIO;}
 function _bcCom(){return (typeof CFG!=='undefined'&&CFG.comisionBonos!=null)?+CFG.comisionBonos:0.0025;}
 function _bcSwaps(L){L=L||_bcMercado();var pos=getPositions().filter(function(p){return p.qty>0.000001;}),out=[];
   pos.forEach(function(p){var h=L.filter(function(x){return x.t===p.ticker;})[0];if(!h)return;var monto=p.qty/100*h.px,best=null;
-    L.forEach(function(c){if(c.t===h.t||Math.abs(c.y-h.y)>0.6||c.ap&&h.ap)return;var dt=c.tir-h.tir;if(dt<0.003)return;
+    L.forEach(function(c){if(c.t===h.t||Math.abs(c.y-h.y)>0.6||c.ap&&h.ap)return;var dt=c.tir-h.tir;if(_bcAdj(c)-_bcAdj(h)<0.003||dt<=0)return;
       var gan=monto*(Math.pow(1+c.tir,h.y)/Math.pow(1+h.tir,h.y)-1),costo=monto*_bcCom()*2,net=gan-costo;if(net<=0)return;
       if(!best||net>best.net)best={de:h,a:c,dt:dt,vn:p.qty,monto:monto,gan:gan,costo:costo,net:net,vnA:Math.floor(monto*(1-_bcCom())*(1-_bcCom())/(c.px/100))};});
     if(best)out.push(best);});
@@ -11246,7 +11249,7 @@ function _bcSwaps(L){L=L||_bcMercado();var pos=getPositions().filter(function(p)
 function _bcN(x){return Math.round(x).toLocaleString('es-AR');}
 function _bcP2(x){return (x*100).toFixed(2).replace('.',',');}
 function _bcSwapHtml(s,btn){return '<div style="background:var(--surface2);border:1px solid var(--border2);border-left:3px solid #a78bfa;border-radius:10px;padding:10px 12px;margin-top:8px;font-family:var(--sans)">'+
-  '<div style="font-weight:700;font-size:.86rem;margin-bottom:4px">💡 Swap sugerido: '+s.de.t+' → '+s.a.t+'</div><div style="font-size:.76rem;line-height:1.55;color:var(--text2)">'+s.a.t+' vence '+(function(){var d=Math.round((s.a.y-s.de.y)*12);return d===0?'casi al mismo tiempo':Math.abs(d)+' mes'+(Math.abs(d)!==1?'es':'')+(d>0?' después':' antes');})()+' ('+s.a.vto.split('-').reverse().join('/')+') y rinde <b style="color:#22c55e">'+(s.dt*100).toFixed(2).replace('.',',')+' puntos más</b> de TIR real (CER + '+_bcP2(s.a.tir)+'% vs. CER + '+_bcP2(s.de.tir)+'%).'+(s.a.ap?' Ojo: los datos de CER de '+s.a.t+' son aproximados.':'')+(!s.a.zc||!s.de.zc?' Como '+(!s.a.zc?s.a.t:s.de.t)+' paga cupones, se compara por duration ('+(!s.a.zc?s.a.y:s.de.y).toFixed(1).replace('.',',')+' años); su vencimiento final es el '+(!s.a.zc?s.a.vto:s.de.vto).split('-').reverse().join('/')+'.':'')+'</div>'+
+  '<div style="font-weight:700;font-size:.86rem;margin-bottom:4px">💡 Swap sugerido: '+s.de.t+' → '+s.a.t+'</div><div style="font-size:.76rem;line-height:1.55;color:var(--text2)">'+s.a.t+' vence '+(function(){var d=Math.round((s.a.y-s.de.y)*12);return d===0?'casi al mismo tiempo':Math.abs(d)+' mes'+(Math.abs(d)!==1?'es':'')+(d>0?' después':' antes');})()+' ('+s.a.vto.split('-').reverse().join('/')+') y rinde <b style="color:#22c55e">'+(s.dt*100).toFixed(2).replace('.',',')+' puntos más</b> de TIR real (CER + '+_bcP2(s.a.tir)+'% vs. CER + '+_bcP2(s.de.tir)+'%).'+(s.a.ap?' Ojo: los datos de CER de '+s.a.t+' son aproximados.':'')+(s.de.zc&&!s.a.zc?' Ojo: dejás un cero cupón, que te asegura la reinversión; por eso solo se sugiere si rinde más de 0,3 puntos por encima de eso.':!s.de.zc&&s.a.zc?' Además pasás a un cero cupón, que te asegura la reinversión.':'')+(!s.a.zc||!s.de.zc?' Como '+(!s.a.zc?s.a.t:s.de.t)+' paga cupones, se compara por duration ('+(!s.a.zc?s.a.y:s.de.y).toFixed(1).replace('.',',')+' años); su vencimiento final es el '+(!s.a.zc?s.a.vto:s.de.vto).split('-').reverse().join('/')+'.':'')+'</div>'+
   '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin:8px 0;font-family:var(--mono);font-size:.72rem">'+
   '<div>Vendés<br><b>'+_bcN(s.vn)+' '+s.de.t+'</b><br><span style="color:var(--text3)">a $ '+s.de.px.toLocaleString('es-AR')+' · $ '+_bcN(s.monto)+'</span></div>'+
   '<div>Comprás<br><b>'+_bcN(s.vnA)+' '+s.a.t+'</b><br><span style="color:var(--text3)">a $ '+s.a.px.toLocaleString('es-AR')+'</span></div>'+
