@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=264, APP_VERSION_FECHA='22/10/2026';
+var APP_VERSION=265, APP_VERSION_FECHA='22/10/2026';
 var APP_CHANGELOG=[
+  'v265 | 2026-10-22 | Tarjeta de tipos (Bono CER / Bono HD / RV / Otros) en 2 columnas para que quede de la misma altura que las barras de filtros.',
   'v264 | 2026-10-22 | Filtros del Portafolio: P. Venta y % tipo también pasan a ser barras, como Δ%. "Al P. Venta, hasta X%" muestra lo que está a esa distancia o menos de su P. Venta (todo a la izquierda = los que ya llegaron; a la derecha = todos). "% tipo desde X%" muestra lo que pesa X% o más en su tipo (a la izquierda = todos). Doble click en el número = sin filtro.',
   'v263 | 2026-10-22 | La página de Rotaciones pasa a llamarse 🧠 Tus decisiones y suma dos tarjetas arriba: Tu sesgo como inversor (qué porcentaje de tus ventas fueron con ganancia vs. cuánto de lo que te queda está en pérdida, días que tuviste cada cosa, ganadoras vendidas rápido y perdedoras de más de un año) y Lo que hubiera pasado si no vendías (valor de hoy de lo que vendiste en 1/3/6/12 meses, más cupones y dividendos). Con ✕ se excluye un activo que vendiste a propósito (en GDC, XP ya viene excluido); se guarda en la nube.',
   'v262 | 2026-10-22 | Filtros del Portafolio: el bloque de ganancia (Ganando / 0% a −2% / Pérdida) pasa a ser una barra "Δ% desde": elegís un piso y muestra los activos con Δ% desde ese valor hacia arriba, con cuántos quedan. Todo a la izquierda = todos; doble click en el número = sin filtro. Se combina con los otros filtros y queda guardado.',
@@ -10790,8 +10791,10 @@ function _nvTipo(o){if(o.rv)return 'rv';var t=String(o.t||'');
 function nvTipos(){var el=document.getElementById('nv-dT');if(!el)return;
   var B=[['cer','Bono CER','#a78bfa'],['hd','Bono HD','#38bdf8'],['rv','RV','#22c55e'],['otro','Otros','#64748b']],S={},tot=0;
   NV_ROWS.forEach(function(o){var u=o.usd||0;if(!(u>0))return;var k=_nvTipo(o);S[k]=(S[k]||0)+u;tot+=u;});
+  // 2 columnas x 2 filas para que la tarjeta no quede más alta que las barras de filtros
+  el.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding:2px 2px 0';
   el.innerHTML=B.filter(function(b){return b[0]!=='otro'||S.otro>0;}).map(function(b){var u=S[b[0]]||0,p=tot>0?u/tot*100:0;
-    return '<div class="nvbk" style="cursor:default" title="USD '+_nvN(u)+'"><span>'+b[1]+'</span><div class="tr"><span style="width:'+p.toFixed(1)+'%;background:'+b[2]+'"></span></div><span class="c">'+Math.round(p)+'%</span></div>';}).join('');}
+    return '<div title="USD '+_nvN(u)+'"><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:.76rem;margin-bottom:4px"><span>'+b[1]+'</span><span style="font-family:var(--mono);color:var(--text2)">'+Math.round(p)+'%</span></div><div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;width:'+p.toFixed(1)+'%;background:'+b[2]+';border-radius:0 4px 4px 0"></span></div></div>';}).join('');}
 // ─── ↔ Rotaciones: ventas seguidas de compras con esa plata (detectadas solas) y si la rotación sumó ───
 var ROT_OCU=null,_rotCalc={};
 function _rotUSD(m){var bon=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI'),tc=bon?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl||MEP_HOY||CCL_HOY):(getCCL(m.fecha)||m.ccl||CCL_HOY);
