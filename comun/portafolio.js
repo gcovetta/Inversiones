@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=266, APP_VERSION_FECHA='22/10/2026';
+var APP_VERSION=267, APP_VERSION_FECHA='27/10/2026';
 var APP_CHANGELOG=[
+  'v267 | 2026-10-27 | Fix movimientos perdidos: una pestaña abierta hace días ya no pisa en la nube lo cargado desde otra pestaña o equipo. Antes de guardar se lee la nube y se mezcla por id (lo cambiado acá gana; lo agregado, editado o borrado en otro lado se respeta); al volver a la pestaña y cada 2 min se trae lo nuevo. La copia pendiente del navegador ya no reemplaza la nube entera (solo suma lo que falta) y no se sube a ciegas si la nube no respondió. Las correcciones automáticas al abrir la app se suben al terminar la carga (saveAndRender, movGuardarNube, initFromSupabase).',
   'v266 | 2026-10-22 | Swaps de bonos CER: se priorizan los cero cupón (TZX) porque aseguran la reinversión. Al comparar un cero cupón contra un CER con cupones, al de cupones se le restan 0,3 puntos: pasar de un TZX a uno con cupones se sugiere solo si rinde más de 0,6 puntos más, y pasar de uno con cupones a un TZX ya conviene apenas rinde algo más.',
   'v265 | 2026-10-22 | Tarjeta de tipos (Bono CER / Bono HD / RV / Otros) en 2 columnas para que quede de la misma altura que las barras de filtros.',
   'v264 | 2026-10-22 | Filtros del Portafolio: P. Venta y % tipo también pasan a ser barras, como Δ%. "Al P. Venta, hasta X%" muestra lo que está a esa distancia o menos de su P. Venta (todo a la izquierda = los que ya llegaron; a la derecha = todos). "% tipo desde X%" muestra lo que pesa X% o más en su tipo (a la izquierda = todos). Doble click en el número = sin filtro.',
@@ -1612,7 +1613,7 @@ function _saveFailRender(){
 async function saveFailRetry(){
   var b=document.getElementById('save-fail-bar');if(b){var bt=b.querySelector('button');if(bt)bt.textContent='Guardando…';}
   for(var k in _SAVE_FAIL){var arr=k==='movimientos'?movimientos:k==='trk_divs'?TRK.divs:null;if(!arr)continue;
-    var ok=await sbSaveArrayRetry(k,arr);if(ok){delete _SAVE_FAIL[k];try{localStorage.removeItem(PFX+(k==='movimientos'?'pending_sync':'trk_pending'));}catch(e){}}}
+    var ok=k==='movimientos'?await movGuardarNube():await sbSaveArrayRetry(k,arr);if(ok){delete _SAVE_FAIL[k];try{localStorage.removeItem(PFX+(k==='movimientos'?'pending_sync':'trk_pending'));}catch(e){}}}
   _saveFailRender();
   var l=document.getElementById('lupd');if(l&&!Object.keys(_SAVE_FAIL).length){l.style.color='var(--accent)';l.textContent='✓ Guardado en la nube';setTimeout(function(){l.style.color='';},4000);}
 }
@@ -1625,11 +1626,96 @@ function warnSaveFailed(tabla){
   console.error('[saveAndRender] sbSaveArray devolvió false — el movimiento NO llegó a Supabase, sólo quedó local en este dispositivo/navegador.');
   setTimeout(function(){ el.style.color=''; el.textContent=new Date().toLocaleTimeString('es-AR'); },10000);
 }
+// ─── Guardado seguro de movimientos ─────────────────────────────────────────────
+// Antes cada guardado subía la lista entera de ESTA pestaña y reemplazaba la de la nube: una pestaña abierta hace días
+// (con la lista vieja) borraba sin aviso lo cargado desde otra pestaña o equipo. Ahora, antes de subir, se lee la nube y
+// se mezcla por id contra la última versión conocida (_movBase): lo que cambiaste acá gana, lo que se agregó/editó/borró
+// en otro lado se respeta. Además, al volver a la pestaña (y cada 2 min) se trae lo nuevo de la nube.
+var _movBase=null; // {clave: serialización} de lo último que se sabe que está en la nube; null = desconocido (se suma todo, no se borra nada)
+var _movGuardarTrasInit=false;
+function _movSer(o){
+  if(o===null||typeof o!=='object')return JSON.stringify(o===undefined?null:o);
+  if(Array.isArray(o))return '['+o.map(_movSer).join(',')+']';
+  return '{'+Object.keys(o).filter(function(k){return o[k]!==undefined&&typeof o[k]!=='function';}).sort().map(function(k){return JSON.stringify(k)+':'+_movSer(o[k]);}).join(',')+'}';
+}
+function _movKey(m){return (m&&m.id!=null)?'i'+String(m.id):'s'+_movSer(m);}
+function _movMap(a){var o={};(a||[]).forEach(function(m){if(m!=null)o[_movKey(m)]=_movSer(m);});return o;}
+function _movMismo(a,b){var ka=Object.keys(a),kb=Object.keys(b);if(ka.length!==kb.length)return false;for(var i=0;i<ka.length;i++){if(a[ka[i]]!==b[ka[i]])return false;}return true;}
+function _movSetBase(a){_movBase=_movMap(a);}
+function _movMezclar(local,nube,base){
+  var N={},L={},out=[],r={agregados:0,actualizados:0,quitados:0};
+  nube.forEach(function(m){if(m!=null)N[_movKey(m)]=m;});
+  local.forEach(function(m){if(m==null)return;var k=_movKey(m),s=_movSer(m);L[k]=1;
+    if(!base||base[k]===undefined||base[k]!==s){out.push(m);return;}   // nuevo o cambiado en esta pestaña → gana lo de acá
+    if(N[k]){if(_movSer(N[k])!==s)r.actualizados++;out.push(N[k]);}     // sin cambios acá → la versión de la nube
+    else r.quitados++;                                                    // sin cambios acá y borrado en otro lado
+  });
+  nube.forEach(function(m){if(m==null)return;var k=_movKey(m);if(L[k])return;
+    if(base&&base[k]!==undefined)return;                                  // estaba y lo borraste acá
+    out.push(m);r.agregados++;                                            // cargado desde otra pestaña/equipo
+  });
+  r.movs=out;return r;
+}
+function _movMezclarSeguro(local,nube,base){
+  var r=_movMezclar(local,nube,base);
+  // Si la mezcla quitaría muchos movimientos de golpe (nube vaciada/rota), no se quita nada: se suma todo.
+  if(r.quitados>3&&r.quitados>local.length*0.2){
+    console.warn('[movGuardar] la nube no tiene '+r.quitados+' movimientos que acá sí: no se borran, se suman');
+    try{_errAnotar&&_errAnotar('movGuardar: se evitó borrar '+r.quitados+' movimientos','movimientos');}catch(e){}
+    r=_movMezclar(local,nube,null);
+  }
+  return r;
+}
+function _movAvisarMezcla(r){
+  var p=[];if(r.agregados)p.push(r.agregados+' nuevo'+(r.agregados>1?'s':''));if(r.actualizados)p.push(r.actualizados+' editado'+(r.actualizados>1?'s':''));if(r.quitados)p.push(r.quitados+' borrado'+(r.quitados>1?'s':''));
+  if(!p.length)return;
+  console.warn('[movGuardar] traídos de la nube (otra pestaña o equipo): '+p.join(', '));
+  var el=document.getElementById('lupd');if(el){el.textContent='↻ Movimientos de otra pestaña/equipo: '+p.join(', ');el.style.color='var(--accent)';setTimeout(function(){el.style.color='';},8000);}
+}
+async function _movGuardarUnaVez(){
+  var nube=null;
+  for(var i=0;i<3&&nube===null;i++){nube=await sbLoadArray('movimientos');if(nube===null&&i<2)await new Promise(function(res){setTimeout(res,1200*(i+1));});}
+  if(nube===null)return false; // no se pudo leer la nube: no se sube a ciegas (queda en pending_sync y se reintenta)
+  nube=nube.filter(function(m){return m!=null;});
+  var r=_movMezclarSeguro(movimientos,nube,_movBase);
+  if(r.agregados||r.actualizados||r.quitados){
+    movimientos=r.movs;
+    try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){}
+    _movAvisarMezcla(r);
+    try{renderMovimientos();renderPortfolio();vsellPopulateSelect();}catch(e){console.warn('[movGuardar] render',e);}
+  }
+  if(movimientos.length===nube.length&&_movMismo(_movMap(movimientos),_movMap(nube))){_movSetBase(nube);return true;} // ya está igual en la nube
+  var ok=await sbSaveArrayRetry('movimientos',movimientos);
+  if(ok)_movSetBase(movimientos);
+  return ok;
+}
+var _movCola=Promise.resolve(true);
+function movGuardarNube(){ // de a uno por vez, para que dos guardados de esta pestaña no se crucen
+  var p=_movCola.then(_movGuardarUnaVez,_movGuardarUnaVez);
+  _movCola=p.catch(function(){return false;});
+  return p.catch(function(e){console.warn('movGuardarNube',e);return false;});
+}
+function _movGuardarYAvisar(){
+  try{localStorage.setItem((PFX+'pending_sync'),JSON.stringify(movimientos));}catch(e){}
+  return movGuardarNube().then(function(ok){ if(!ok){ warnSaveFailed('movimientos'); } else { try{localStorage.removeItem((PFX+'pending_sync'));}catch(e){} saveFailClear('movimientos'); } return ok; });
+}
+// Trae lo nuevo de la nube al volver a la pestaña, al enfocarla y cada 2 minutos mientras está visible.
+var _movUltChequeo=0;
+function movRefrescarDesdeNube(){
+  if(typeof _gdcInitDone==='undefined'||!_gdcInitDone||document.hidden)return;
+  if(Date.now()-_movUltChequeo<15000)return;_movUltChequeo=Date.now();
+  movGuardarNube().then(function(ok){
+    if(ok){try{localStorage.removeItem((PFX+'pending_sync'));}catch(e){}if(_SAVE_FAIL.movimientos)saveFailClear('movimientos');}
+  });
+}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)movRefrescarDesdeNube();});
+window.addEventListener('focus',movRefrescarDesdeNube);
+setInterval(movRefrescarDesdeNube,120000);
+
 function saveAndRender(){
   try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){}
-  try{localStorage.setItem((PFX+'pending_sync'),JSON.stringify(movimientos));}catch(e){}
-  if(_gdcInitDone){ sbSaveArrayRetry('movimientos', movimientos).then(function(ok){ if(!ok){ warnSaveFailed('movimientos'); } else { try{localStorage.removeItem((PFX+'pending_sync'));}catch(e){} saveFailClear('movimientos'); } }); }
-  else { console.warn('[saveAndRender] init no terminó — skip sbSaveArray (movimientos:'+movimientos.length+')'); }
+  if(_gdcInitDone){ _movGuardarYAvisar(); }
+  else { _movGuardarTrasInit=true; console.warn('[saveAndRender] init no terminó — se sube al terminar la carga (movimientos:'+movimientos.length+')'); }
   renderMovimientos();renderPortfolio();vsellPopulateSelect();
   (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
   document.getElementById('lupd').textContent=new Date().toLocaleTimeString('es-AR');
@@ -7222,20 +7308,24 @@ function trkCalcCCL(){
     await _pingP;
 
     var sbMov = await _movP;
+    var _movBaseFijada=false;
     try{
       var _pendingRaw=localStorage.getItem((PFX+'pending_sync'));
-      if(_pendingRaw){
+      // Si la nube no respondió (sbMov null) lo pendiente se deja guardado: no se sube a ciegas, el próximo guardado lo mezcla.
+      if(_pendingRaw&&sbMov!==null){
         var _pending=JSON.parse(_pendingRaw);
         var _cloudIds={};(sbMov||[]).forEach(function(m){if(m&&m.id!=null)_cloudIds[m.id]=true;});
         var _missing=_pending.filter(function(m){return m&&m.id!=null&&!_cloudIds[m.id];});
         var _overlap=_pending.some(function(m){return m&&m.id!=null&&_cloudIds[m.id];});
         if(sbMov&&sbMov.length&&!_overlap){console.warn('[initFromSupabase] snapshot pendiente ajeno a este portafolio — descartado.');_missing=[];}
         if(_missing.length){
-          console.warn('[initFromSupabase] '+_missing.length+' movimiento(s) local(es) no estaban en Supabase — reintentando guardarlos.');
-          var _resynced=await sbSaveArrayRetry('movimientos',_pending);
-          sbMov=_pending;
-          if(_resynced){ localStorage.removeItem((PFX+'pending_sync')); }
-          else { setTimeout(function(){warnSaveFailed();},500); }
+          // Se SUMAN a lo de la nube solo los que faltan (antes la copia pendiente reemplazaba la nube entera y podía
+          // borrar lo cargado después desde otra pestaña). Se suben al terminar la carga, con el guardado que mezcla.
+          console.warn('[initFromSupabase] '+_missing.length+' movimiento(s) local(es) no estaban en Supabase — se suman y se suben.');
+          var _sbOrig=sbMov.filter(function(m){return m!=null;});
+          sbMov=_sbOrig.concat(_missing);
+          _movSetBase(_sbOrig);_movBaseFijada=true;
+          _movGuardarTrasInit=true;
         } else {
           localStorage.removeItem((PFX+'pending_sync'));
         }
@@ -7243,14 +7333,17 @@ function trkCalcCCL(){
     }catch(e){ console.warn('[initFromSupabase] reconciliación de pendientes falló',e); }
     if(sbMov !== null && sbMov.length){
       movimientos = sbMov.filter(function(m){return m!=null;});
+      if(!_movBaseFijada)_movSetBase(movimientos);
       try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));localStorage.setItem((PFX+'version'),DATA_VERSION);}catch(e){}
     } else if(sbMov === null){
+      _movBase=null; // no se sabe qué hay en la nube: el próximo guardado suma, no borra
       var storedVersion=null;try{storedVersion=localStorage.getItem((PFX+'version'));}catch(e){}
       var saved=null;try{saved=localStorage.getItem((PFX+'mov2'));}catch(e){}
       if(saved&&storedVersion===DATA_VERSION){
         try{movimientos=JSON.parse(saved).filter(function(m){return m!=null;});}catch(e){}
       }
     } else {
+      _movSetBase([]);
     }
 
     var sbDivs = await sbGetConfig('dividendos');
@@ -7448,7 +7541,7 @@ function trkCalcCCL(){
         }
       }
     });
-    if(_cclFixed){ sbSaveArray('movimientos',movimientos); try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){} }
+    if(_cclFixed){ _movGuardarTrasInit=true; try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){} }
 
     var sbDolz = await sbGetConfig('dolz_extra');
     if(Array.isArray(sbDolz)) DOLZ_EXTRA = new Set(sbDolz);
@@ -7456,6 +7549,8 @@ function trkCalcCCL(){
     renderMovimientos();renderPortfolio();renderRatios();renderTargets();renderDividendos();trkRender();portUnblur();vsellPopulateSelect();vsellResetFecha();vbuyResetFecha();ventahistResetFecha();
     document.getElementById('lupd').textContent='Datos cargados ✓';
     _gdcInitDone = true;
+    if(_movGuardarTrasInit){ _movGuardarTrasInit=false; _movGuardarYAvisar(); }
+    _movUltChequeo=Date.now();
     setTimeout(_live912Cargar,3000);
     setTimeout(function(){try{cerCargar();}catch(e){}},2500);
     if(window._sinSenal||navigator.onLine===false){var _lu=document.getElementById('lupd');if(_lu)_lu.textContent='📡 Sin conexión · mostrando lo último guardado';}
