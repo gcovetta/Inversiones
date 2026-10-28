@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=270, APP_VERSION_FECHA='28/10/2026';
+var APP_VERSION=271, APP_VERSION_FECHA='28/10/2026';
 var APP_CHANGELOG=[
+  'v271 | 2026-10-28 | Indicador de guardado: punto al lado de la hora. Verde = todo guardado en la nube (con la hora del último guardado al pasar el mouse); amarillo = guardando, cambios que todavía no llegaron a la nube u otra pestaña del mismo portafolio abierta; rojo = falló un guardado o no hay conexión (tocarlo reintenta). Al tocarlo muestra el detalle (syRender, syEstado).',
   'v270 | 2026-10-28 | Nueva página 📊 Balances (menú, debajo de Movimientos): calendario de presentación de resultados de los activos en cartera para los próximos 60 días (fecha, horario, trimestre, EPS e ingresos estimados) y los que presentaron en los últimos 7 días (si superaron o no el EPS estimado). En el Portafolio, 📊 al lado del ticker si presenta balance hoy o en los próximos 4 días. Fuente: Finnhub (empresas de EE.UU. y ADRs).',
   'v269 | 2026-10-27 | Tipo de cambio: cada portafolio completa solo los días de MEP y CCL que le falten (últimos 180) con el histórico diario de argentinadatos, sin pisar lo cargado. Una pestaña abierta hace días ya no borra los tipos de cambio que pasó el Sync de GDC (antes de guardar suma lo que hay en la nube). El Sync de GDC ahora suma a lo que tiene cada portafolio en vez de reemplazarlo (tcCompletarHuecos, _tcSbPersist, syncDataToOthers).',
   'v268 | 2026-10-27 | Comparación con Bull: lector nuevo del texto pegado (busca cada fila de cantidades y el ticker arriba). Reconoce O (Realty Income) y tickers de 1 letra aunque vengan con tabs o espacios invisibles, o con la descripción en la misma línea. Omar y Hilda usaban una copia propia del lector viejo: ahora usan el común (cmpParseBullText).',
@@ -1662,6 +1663,7 @@ var _gdcInitDone = false;
 var _SAVE_FAIL={};
 function saveFailClear(tabla){delete _SAVE_FAIL[tabla];_saveFailRender();}
 function _saveFailRender(){
+  try{if(typeof syRender==='function')syRender();}catch(e){}
   var ks=Object.keys(_SAVE_FAIL),b=document.getElementById('save-fail-bar');
   if(!ks.length){if(b)b.remove();return;}
   if(!b){b=document.createElement('div');b.id='save-fail-bar';document.body.appendChild(b);}
@@ -11867,3 +11869,61 @@ function balInit(){if(document.getElementById('page-balances'))return;var pp=doc
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',balInit);else setTimeout(balInit,0);
 (function _balBoot(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){balCargar().then(function(d){if(d){try{nvRender();}catch(e){}var pg=document.getElementById('page-balances');if(pg&&pg.classList.contains('active'))balRender();}});}else if(n<40)_balBoot(n+1);},2500);})(0);
 setInterval(function(){if(!document.hidden&&BAL.d&&Date.now()-BAL.d.ts>12*3600000)balCargar(true).then(function(){try{nvRender();}catch(e){}});},30*60000);
+
+// ─── ☁️ Indicador de guardado (punto al lado de la hora) ───────────────────────────────────────────
+// Verde: todo guardado en la nube. Amarillo: guardando, cambios que quedaron solo en este navegador, u otra pestaña
+// del mismo portafolio abierta (la que quede vieja ya no pisa, pero conviene trabajar en una sola). Rojo: falló un
+// guardado o no hay conexión (tocá el punto para reintentar).
+var SY={enCurso:0,ult:null,err:null,tabs:{},id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),desde:Date.now()};
+(function(){
+  var envolver=function(nombre){var f=window[nombre];if(typeof f!=='function')return;
+    window[nombre]=async function(){SY.enCurso++;syRender();try{var ok=await f.apply(this,arguments);if(ok){SY.ult=Date.now();SY.err=null;}else SY.err=Date.now();return ok;}catch(e){SY.err=Date.now();throw e;}finally{SY.enCurso--;syRender();}};};
+  envolver('sbSaveArrayRetry');envolver('sbSetConfig');
+})();
+try{
+  var _syCanal=('BroadcastChannel' in window)?new BroadcastChannel('pt_tabs_'+(CFG.id||PFX)):null;
+  if(_syCanal){
+    _syCanal.onmessage=function(e){var d=e.data||{};if(!d.id||d.id===SY.id)return;
+      if(d.t==='chau'){delete SY.tabs[d.id];}else{var nueva=!SY.tabs[d.id];SY.tabs[d.id]={ts:Date.now(),desde:d.desde};if(nueva&&d.t==='hola')_syCanal.postMessage({t:'aca',id:SY.id,desde:SY.desde});}
+      syRender();};
+    _syCanal.postMessage({t:'hola',id:SY.id,desde:SY.desde});
+    setInterval(function(){_syCanal.postMessage({t:'aca',id:SY.id,desde:SY.desde});},10000);
+    window.addEventListener('pagehide',function(){try{_syCanal.postMessage({t:'chau',id:SY.id});}catch(e){}});
+  }
+}catch(e){}
+function _syHora(ts){return new Date(ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});}
+function syEstado(){
+  var ahora=Date.now(),otras=Object.keys(SY.tabs).filter(function(k){return ahora-SY.tabs[k].ts<25000;});
+  Object.keys(SY.tabs).forEach(function(k){if(ahora-SY.tabs[k].ts>=25000)delete SY.tabs[k];});
+  var fallo=typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length,pend=false;
+  try{pend=!!(localStorage.getItem(PFX+'pending_sync')||localStorage.getItem(PFX+'trk_pending'));}catch(e){}
+  var L=[],c;
+  if(navigator.onLine===false){c='r';L.push('Sin conexión: lo que cargues queda en este navegador hasta que vuelva.');}
+  else if(fallo){c='r';L.push('No se guardaron en la nube los '+Object.keys(_SAVE_FAIL).map(function(k){return k==='trk_divs'?'dividendos':k;}).join(' y ')+'. Tocá para reintentar.');}
+  else if(SY.enCurso>0){c='a';L.push('Guardando en la nube…');}
+  else if(pend&&_gdcInitDone){c='a';L.push('Hay cambios que todavía no llegaron a la nube (se reintenta solo).');}
+  else{c='g';L.push(SY.ult?'Todo guardado en la nube · último guardado '+_syHora(SY.ult):'Todo al día con la nube');}
+  if(otras.length){if(c==='g')c='a';L.push('Hay '+(otras.length===1?'otra pestaña':otras.length+' pestañas más')+' de '+(CFG.nombre||'este portafolio')+' abierta'+(otras.length>1?'s':'')+' (desde '+otras.map(function(k){return _syHora(SY.tabs[k].desde||SY.tabs[k].ts);}).join(', ')+'). Conviene trabajar en una sola.');}
+  return {c:c,txt:L.join('\n'),otras:otras.length};
+}
+function syRender(){
+  try{
+    var ref=document.getElementById('lupd');if(!ref||!ref.parentNode)return;
+    var d=document.getElementById('sync-dot');
+    if(!d){d=document.createElement('span');d.id='sync-dot';d.onclick=syClick;}
+    if(d.nextSibling!==ref)ref.parentNode.insertBefore(d,ref);
+    var e=syEstado(),col={g:'var(--accent,#00e676)',a:'var(--amber,#f59e0b)',r:'var(--red,#ff5252)'}[e.c];
+    d.style.cssText='display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;cursor:pointer;flex:none;background:'+col+';box-shadow:0 0 0 2px color-mix(in srgb,'+col+' 25%,transparent)'+(e.c==='a'&&SY.enCurso>0?';animation:syLat 1s ease-in-out infinite':'');
+    d.title=e.txt;d.setAttribute('aria-label',e.txt);
+    if(!document.getElementById('sy-css')){var st=document.createElement('style');st.id='sy-css';st.textContent='@keyframes syLat{50%{opacity:.35}}';document.head.appendChild(st);}
+  }catch(e){}
+}
+function syClick(ev){
+  if(ev)ev.stopPropagation();var e=syEstado();
+  if(e.c==='r'&&typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length&&typeof saveFailRetry==='function'){saveFailRetry();return;}
+  if(typeof flash==='function'){var l=document.getElementById('lupd');if(l){var t=l.textContent,c=l.style.color;l.textContent=e.txt.split('\n').join(' · ');l.style.color={g:'var(--accent)',a:'var(--amber)',r:'var(--red)'}[e.c];setTimeout(function(){l.textContent=t;l.style.color=c;},6000);return;}}
+  alert(e.txt);
+}
+window.addEventListener('online',syRender);window.addEventListener('offline',syRender);
+setInterval(syRender,5000);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syRender);else setTimeout(syRender,0);
