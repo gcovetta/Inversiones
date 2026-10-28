@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=272, APP_VERSION_FECHA='28/10/2026';
+var APP_VERSION=273, APP_VERSION_FECHA='28/10/2026';
 var APP_CHANGELOG=[
+  'v273 | 2026-10-28 | 📓 Diario de inversión: al comprar o vender desde el Portafolio hay un campo opcional "¿Por qué?". Nueva página Diario (menú, debajo de Movimientos): a los 6 meses la operación pasa a "Para revisar" y muestra lo que pensabas y cómo salió (en una compra, cuánto subió o bajó desde entonces; en una venta, si te apuraste), con un campo para anotar qué aprendiste. También muestra las que esperan y deja anotar el porqué de las operaciones de los últimos 60 días. El menú marca cuántas hay para revisar.',
   'v272 | 2026-10-28 | 🌙 Modo madrugada: fuera del horario de mercado (lun a vie 10:30 a 18:20, hora Argentina) las cotizaciones no se actualizan solas cada 10 min; al lado de la hora dice "cierre · HH:MM · 🌙 mercado cerrado, abre mañana 10:30" y se programa una actualización para la apertura. El botón de actualizar sigue andando siempre (enRueda, _startCycle).',
   'v271 | 2026-10-28 | Indicador de guardado: punto al lado de la hora. Verde = todo guardado en la nube (con la hora del último guardado al pasar el mouse); amarillo = guardando, cambios que todavía no llegaron a la nube u otra pestaña del mismo portafolio abierta; rojo = falló un guardado o no hay conexión (tocarlo reintenta). Al tocarlo muestra el detalle (syRender, syEstado).',
   'v270 | 2026-10-28 | Nueva página 📊 Balances (menú, debajo de Movimientos): calendario de presentación de resultados de los activos en cartera para los próximos 60 días (fecha, horario, trimestre, EPS e ingresos estimados) y los que presentaron en los últimos 7 días (si superaron o no el EPS estimado). En el Portafolio, 📊 al lado del ticker si presenta balance hoy o en los próximos 4 días. Fuente: Finnhub (empresas de EE.UU. y ADRs).',
@@ -1036,6 +1037,7 @@ function showPage(id,btn){
   if(id==='arbitraje') arbRender();
   if(id==='rotaciones') rotRender();
   if(id==='balances') balRender();
+  if(id==='diario') diaRender();
   if(id==='noticias') nwsLoad(false);
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
@@ -1973,6 +1975,7 @@ function vbuyConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'compra', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Cargado desde módulo rápido (Portafolio)',
+    porque:_diaPorque('vbuy'),
     finish:finishEl&&finishEl.checked||false, cartera:(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:undefined)
   });
   saveAndRender();
@@ -2116,6 +2119,7 @@ function vsellConfirmar(){
     id:Date.now(), fecha:fecha, tipo:'venta', mercado:mkt, ticker:ticker, qty:qty,
     precioARS:precioARS, ccl:cclVal, ratio:ratio, precioUSD:precioUSD,
     comision:0, comisionPct:0, notas:'Vendido desde módulo rápido (Portafolio)',
+    porque:_diaPorque('vsell'),
     finish:false, loteMethod:'promedio', cartera:(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:undefined)
   });
   saveAndRender();
@@ -11969,3 +11973,67 @@ function syClick(ev){
 window.addEventListener('online',syRender);window.addEventListener('offline',syRender);
 setInterval(syRender,5000);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syRender);else setTimeout(syRender,0);
+
+// ─── 📓 Diario de inversión ─────────────────────────────────────────────────────────────────────────
+// Al comprar o vender desde el Portafolio se puede anotar "¿por qué?" (queda en el movimiento como m.porque).
+// A los 6 meses la operación pasa a "Para revisar": se muestra lo que pensabas y cómo salió (precio de hoy contra el de
+// la operación, con los cobros del medio). Al marcarla revisada se puede dejar una lección (m.porqueRev).
+var DIA_DIAS=180;
+function _diaPorque(k){var e=document.getElementById(k+'-porque');if(!e)return undefined;var v=(e.value||'').trim();e.value='';return v||undefined;}
+function _diaInputs(){
+  [['vbuy','vbuyConfirmar()','Ej.: barata contra su historia, quiero más tecnología'],['vsell','vsellConfirmar()','Ej.: llegó al precio objetivo, necesito liquidez']].forEach(function(x){
+    if(document.getElementById(x[0]+'-porque'))return;
+    var b=document.querySelector('button[onclick="'+x[1]+'"]');if(!b||!b.parentNode||!b.parentNode.parentNode)return;
+    var row=document.createElement('div');row.style.cssText='margin-top:8px;display:flex;align-items:center;gap:8px';
+    row.innerHTML='<span style="font-size:.7rem;color:var(--text3);white-space:nowrap">📓 ¿Por qué?</span><input type="text" id="'+x[0]+'-porque" maxlength="300" placeholder="'+x[2]+' (opcional)" style="flex:1;min-width:0">';
+    b.parentNode.parentNode.insertBefore(row,b.parentNode);
+  });
+}
+function _diaMovs(){
+  return (movimientos||[]).filter(function(m){return m&&(m.tipo==='compra'||m.tipo==='venta')&&m.ticker&&m.owner!=='cristian'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);});
+}
+function _diaEdad(m){var f=_phIso(m.fecha);if(!f)return 0;return Math.floor((Date.now()-new Date(f+'T12:00:00').getTime())/864e5);}
+function diaPendientes(){return _diaMovs().filter(function(m){return m.porque&&!m.porqueRev&&_diaEdad(m)>=DIA_DIAS;}).length;}
+function _diaNav(){var b=document.getElementById('nav-diario');if(!b)return;var n=0;try{n=diaPendientes();}catch(e){}
+  b.innerHTML='<span>📓</span>Diario'+(n?' <b style="margin-left:4px;background:var(--amber);color:#000;border-radius:999px;padding:0 6px;font-size:.62rem">'+n+'</b>':'');}
+function _diaEsc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+async function _diaResultado(m){
+  try{var u=_rotUSD(m);if(!(u>0)||!(m.qty>0))return null;var k=await _rotRatio({t:m.ticker,s:getSector(m.ticker),q:+m.qty,u:u,f:_phIso(m.fecha)});return k==null?null:(k-1)*100;}catch(e){return null;}
+}
+function _diaPct(m,x){
+  if(x==null)return '<span class="mu">sin precio</span>';
+  var col=function(v,bien){return '<b style="color:'+(bien?'var(--accent)':'var(--red)')+'">'+(v>=0?'+':'−')+Math.abs(v).toFixed(1).replace('.',',')+'%</b>';};
+  if(m.tipo==='compra')return 'desde que compraste '+col(x,x>=0);
+  return 'desde que vendiste el precio hizo '+col(x,x<=0)+(x>5?' <span class="mu">(te apuraste)</span>':x<-5?' <span class="mu">(bien vendida)</span>':'');
+}
+function diaRender(){
+  var pg=document.getElementById('page-diario');if(!pg)return;
+  var L=_diaMovs().slice().sort(function(a,b){return (_phIso(b.fecha)||'').localeCompare(_phIso(a.fecha)||'')||(+b.id||0)-(+a.id||0);});
+  var rev=L.filter(function(m){return m.porque&&!m.porqueRev&&_diaEdad(m)>=DIA_DIAS;}),esp=L.filter(function(m){return m.porque&&!m.porqueRev&&_diaEdad(m)<DIA_DIAS;}),
+      sin=L.filter(function(m){return !m.porque&&_diaEdad(m)<=60;}),hechas=L.filter(function(m){return m.porque&&m.porqueRev;});
+  var op=function(m){return '<b style="color:'+(m.tipo==='compra'?'var(--accent)':'var(--red)')+'">'+(m.tipo==='compra'?'Compraste':'Vendiste')+'</b> '+(+m.qty).toLocaleString('es-AR')+' <b style="font-family:var(--mono)">'+m.ticker+'</b> <span class="mu">el '+m.fecha+'</span>';};
+  var card=function(t,sub,html){return '<div class="card" style="margin-bottom:1rem"><div class="card-header"><span class="card-title">'+t+'</span></div>'+(sub?'<div style="font-size:.7rem;color:var(--text3);margin:-.2rem 0 .5rem">'+sub+'</div>':'')+html+'</div>';};
+  var item=function(m,extra){return '<div style="padding:.6rem 0;border-top:1px solid var(--border);font-size:.78rem">'+op(m)+' <span id="diar-'+m.id+'" style="margin-left:6px">…</span>'+
+    '<div style="margin-top:4px;padding:6px 10px;border-left:3px solid var(--border2,#445);color:var(--text2);font-style:italic">“'+_diaEsc(m.porque)+'”</div>'+(extra||'')+'</div>';};
+  var h='';
+  h+=card('📓 Para revisar ('+rev.length+')','Operaciones de hace 6 meses o más: lo que pensabas entonces y cómo salió.',
+    rev.length?rev.map(function(m){return item(m,'<div style="margin-top:6px;display:flex;gap:6px;align-items:center"><input type="text" id="dial-'+m.id+'" placeholder="¿Qué aprendiste? (opcional)" style="flex:1;min-width:0"><button class="btn btn-a btn-sm" onclick="diaRevisar(\''+m.id+'\')">✓ Revisada</button></div>');}).join(''):'<div class="mu" style="font-size:.76rem;padding:.4rem 0">Nada para revisar todavía. Cuando una operación con "por qué" cumpla 6 meses, aparece acá.</div>');
+  h+=card('⏳ Esperando ('+esp.length+')','Se revisan a los 6 meses. Mientras tanto, cómo vienen.',
+    esp.length?esp.map(function(m){var f=DIA_DIAS-_diaEdad(m);return item(m,'<div class="mu" style="font-size:.66rem;margin-top:3px">se revisa en '+f+' días</div>');}).join(''):'<div class="mu" style="font-size:.76rem;padding:.4rem 0">Todavía no anotaste el porqué de ninguna operación. Podés hacerlo al comprar o vender, o abajo.</div>');
+  h+=card('✍️ Sin anotar (últimos 60 días)','Si te acordás por qué las hiciste, anotalo ahora.',
+    sin.length?sin.map(function(m){return '<div style="padding:.5rem 0;border-top:1px solid var(--border);font-size:.78rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><span>'+op(m)+'</span><input type="text" id="diap-'+m.id+'" maxlength="300" placeholder="¿Por qué?" style="flex:1;min-width:180px"><button class="btn btn-sm" onclick="diaAnotar(\''+m.id+'\')">Guardar</button></div>';}).join(''):'<div class="mu" style="font-size:.76rem;padding:.4rem 0">Todas las operaciones recientes tienen su porqué.</div>');
+  if(hechas.length)h+=card('✅ Revisadas ('+hechas.length+')','',hechas.map(function(m){return item(m,(m.porqueRev.txt?'<div style="margin-top:4px;font-size:.74rem">💡 '+_diaEsc(m.porqueRev.txt)+'</div>':'')+'<div class="mu" style="font-size:.64rem;margin-top:2px">revisada el '+String(m.porqueRev.f||'').split('-').reverse().join('/')+'</div>');}).join(''));
+  pg.innerHTML=h;_diaNav();
+  rev.concat(esp,hechas).forEach(function(m){_diaResultado(m).then(function(x){var e=document.getElementById('diar-'+m.id);if(e)e.innerHTML=_diaPct(m,x);});});
+}
+function _diaBuscar(id){return (movimientos||[]).find(function(m){return m&&String(m.id)===String(id);});}
+function diaAnotar(id){var m=_diaBuscar(id),e=document.getElementById('diap-'+id);if(!m||!e)return;var v=(e.value||'').trim();if(!v)return;m.porque=v;saveAndRender();diaRender();}
+function diaRevisar(id){var m=_diaBuscar(id);if(!m)return;var e=document.getElementById('dial-'+id);m.porqueRev={f:_bkHoy(),txt:e&&e.value.trim()||undefined};saveAndRender();diaRender();}
+function diaInit(){
+  _diaInputs();
+  if(document.getElementById('page-diario'))return;var pp=document.getElementById('page-portafolio'),mb=document.querySelector('.nav-item[onclick*="\'movimientos\'"]');if(!pp||!mb)return;
+  var pg=document.createElement('div');pg.className='page';pg.id='page-diario';pp.parentNode.appendChild(pg);
+  var b=document.createElement('button');b.className='nav-item';b.id='nav-diario';b.setAttribute('onclick',"showPage('diario',this)");b.innerHTML='<span>📓</span>Diario';mb.parentNode.insertBefore(b,mb.nextSibling);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',diaInit);else setTimeout(diaInit,0);
+setInterval(function(){try{_diaInputs();if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone)_diaNav();}catch(e){}},5000);
