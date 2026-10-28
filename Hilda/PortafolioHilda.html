@@ -1260,7 +1260,7 @@ window.PORTFOLIO_CONFIG={"vistaNueva": true, "persona": "Hilda", "comisionBonos"
 };
 </script>
 <script src="../comun/datos.js?d=6"></script>
-<script src="../comun/portafolio.min.js?v=267"></script>
+<script src="../comun/portafolio.min.js?v=268"></script>
 <script>
 // ─── Funciones propias de Hilda (pisan las del código común) ───
 // importador de movimientos desde el Excel de Bull Market, importador de dividendos de Bull y comparación con Bull/Cocos
@@ -1450,34 +1450,6 @@ function cmpParseBrokerRows(ab,label){
     var q=parseFloat(String(r[qCol]||'').trim().replace(/\./g,'').replace(',','.'));
     if(t&&!isNaN(q)&&q>0)map[t]=q;
   });
-  return map;
-}
-function cmpParseBullText(txt){
-  var lines=txt.split(/\r?\n/);
-  var tickerRe=/^[A-Z][A-Z0-9]{0,7}$/;
-  var map={};
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim();
-    if(!tickerRe.test(line))continue;
-    var ticker=line;
-    var j=i+1;
-    while(j<lines.length&&!lines[j].trim())j++;
-    if(j>=lines.length)continue;
-    if(lines[j].indexOf('\t')===-1){
-      // Bull siempre agrega una línea de descripción del activo entre el ticker y la
-      // fila de datos (ej: 'ABEV' / 'CEDEAR AMBEV S.A.' / '106,00\tUSD 8,98\t...') — saltarla.
-      j++;
-      while(j<lines.length&&!lines[j].trim())j++;
-    }
-    if(j>=lines.length)continue;
-    var dataLine=lines[j];
-    if(dataLine.indexOf('\t')===-1)continue;
-    var cols=dataLine.trim().split('\t');
-    if(cols.length<2)continue;
-    // La primera columna de la fila de datos es la Cantidad (no la segunda).
-    var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
-    if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
-  }
   return map;
 }
 function cmpParseCocosCSV(ab){

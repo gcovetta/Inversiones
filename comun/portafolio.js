@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=267, APP_VERSION_FECHA='27/10/2026';
+var APP_VERSION=268, APP_VERSION_FECHA='27/10/2026';
 var APP_CHANGELOG=[
+  'v268 | 2026-10-27 | Comparación con Bull: lector nuevo del texto pegado (busca cada fila de cantidades y el ticker arriba). Reconoce O (Realty Income) y tickers de 1 letra aunque vengan con tabs o espacios invisibles, o con la descripción en la misma línea. Omar y Hilda usaban una copia propia del lector viejo: ahora usan el común (cmpParseBullText).',
   'v267 | 2026-10-27 | Fix movimientos perdidos: una pestaña abierta hace días ya no pisa en la nube lo cargado desde otra pestaña o equipo. Antes de guardar se lee la nube y se mezcla por id (lo cambiado acá gana; lo agregado, editado o borrado en otro lado se respeta); al volver a la pestaña y cada 2 min se trae lo nuevo. La copia pendiente del navegador ya no reemplaza la nube entera (solo suma lo que falta) y no se sube a ciegas si la nube no respondió. Las correcciones automáticas al abrir la app se suben al terminar la carga (saveAndRender, movGuardarNube, initFromSupabase).',
   'v266 | 2026-10-22 | Swaps de bonos CER: se priorizan los cero cupón (TZX) porque aseguran la reinversión. Al comparar un cero cupón contra un CER con cupones, al de cupones se le restan 0,3 puntos: pasar de un TZX a uno con cupones se sugiere solo si rinde más de 0,6 puntos más, y pasar de uno con cupones a un TZX ya conviene apenas rinde algo más.',
   'v265 | 2026-10-22 | Tarjeta de tipos (Bono CER / Bono HD / RV / Otros) en 2 columnas para que quede de la misma altura que las barras de filtros.',
@@ -4845,28 +4846,31 @@ function cmpLoadPortfolio(input){
   };
   reader.readAsArrayBuffer(f);
 }
+// Lee lo copiado de la tenencia de Bull. Cada activo viene como: ticker / descripción (opcional) / fila de datos con tabs
+// que empieza con la Cantidad. Se busca cada fila de datos y, hacia atrás (hasta la fila de datos anterior), el ticker.
+// Tolera tabs o espacios invisibles alrededor del ticker, ticker y descripción en la misma línea y tickers de 1 letra (O).
 function cmpParseBullText(txt){
-  var lines=txt.split(/\r?\n/);
-  var tickerRe=/^[A-Z][A-Z0-9]{0,7}$/;
+  var limpio=String(txt||'').replace(/[\u200B-\u200D\u2060\uFEFF]/g,'').replace(/[\u00A0\u2007\u202F]/g,' ');
+  var lines=limpio.split(/\r\n|\r|\n/);
+  var tickerRe=/^[A-Z][A-Z0-9]{0,7}$/,numRe=/^-?\d{1,3}(\.\d{3})*(,\d+)?$|^-?\d+(,\d+)?$/;
+  var cols=function(l){return l.split('\t').map(function(c){return c.trim();}).filter(function(c){return c!=='';});};
+  var esDatos=function(l){var c=cols(l);return c.length>=2&&numRe.test(c[0]);};
   var map={};
   for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim();
-    if(!tickerRe.test(line))continue;
-    var ticker=line;
-    var j=i+1;
-    while(j<lines.length&&!lines[j].trim())j++;
-    if(j>=lines.length)continue;
-    if(lines[j].indexOf('\t')===-1){
-      j++;
-      while(j<lines.length&&!lines[j].trim())j++;
+    if(!esDatos(lines[i]))continue;
+    var ticker=null,vistas=0;
+    for(var k=i-1;k>=0&&vistas<4;k--){
+      var l=lines[k];if(!l.trim())continue;
+      if(esDatos(l))break;
+      vistas++;
+      var c=cols(l),cand=null;
+      if(c.length===1&&tickerRe.test(c[0]))cand=c[0];                                   // "O" / "\tO\t"
+      else if(c.length>=2&&tickerRe.test(c[0])&&!numRe.test(c[1]))cand=c[0];            // "O\tCEDEAR REALTY..."
+      if(cand)ticker=cand; // se queda con el más lejano: el ticker va antes que la descripción (por si es una sola palabra)
     }
-    if(j>=lines.length)continue;
-    var dataLine=lines[j];
-    if(dataLine.indexOf('\t')===-1)continue;
-    var cols=dataLine.trim().split('\t');
-    if(cols.length<2)continue;
-    var qty=parseFloat(cols[0].trim().replace(/\./g,'').replace(',','.'));
-    if(!isNaN(qty)&&qty>0){map[ticker]=qty;i=j;}
+    if(!ticker)continue;
+    var qty=parseFloat(cols(lines[i])[0].replace(/\./g,'').replace(',','.'));
+    if(!isNaN(qty)&&qty>0)map[ticker]=qty;
   }
   return map;
 }
