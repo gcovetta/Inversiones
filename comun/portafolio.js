@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=268, APP_VERSION_FECHA='27/10/2026';
+var APP_VERSION=269, APP_VERSION_FECHA='27/10/2026';
 var APP_CHANGELOG=[
+  'v269 | 2026-10-27 | Tipo de cambio: cada portafolio completa solo los días de MEP y CCL que le falten (últimos 180) con el histórico diario de argentinadatos, sin pisar lo cargado. Una pestaña abierta hace días ya no borra los tipos de cambio que pasó el Sync de GDC (antes de guardar suma lo que hay en la nube). El Sync de GDC ahora suma a lo que tiene cada portafolio en vez de reemplazarlo (tcCompletarHuecos, _tcSbPersist, syncDataToOthers).',
   'v268 | 2026-10-27 | Comparación con Bull: lector nuevo del texto pegado (busca cada fila de cantidades y el ticker arriba). Reconoce O (Realty Income) y tickers de 1 letra aunque vengan con tabs o espacios invisibles, o con la descripción en la misma línea. Omar y Hilda usaban una copia propia del lector viejo: ahora usan el común (cmpParseBullText).',
   'v267 | 2026-10-27 | Fix movimientos perdidos: una pestaña abierta hace días ya no pisa en la nube lo cargado desde otra pestaña o equipo. Antes de guardar se lee la nube y se mezcla por id (lo cambiado acá gana; lo agregado, editado o borrado en otro lado se respeta); al volver a la pestaña y cada 2 min se trae lo nuevo. La copia pendiente del navegador ya no reemplaza la nube entera (solo suma lo que falta) y no se sube a ciegas si la nube no respondió. Las correcciones automáticas al abrir la app se suben al terminar la carga (saveAndRender, movGuardarNube, initFromSupabase).',
   'v266 | 2026-10-22 | Swaps de bonos CER: se priorizan los cero cupón (TZX) porque aseguran la reinversión. Al comparar un cero cupón contra un CER con cupones, al de cupones se le restan 0,3 puntos: pasar de un TZX a uno con cupones se sugiere solo si rinde más de 0,6 puntos más, y pasar de uno con cupones a un TZX ya conviene apenas rinde algo más.',
@@ -195,6 +196,14 @@ async function sbTokenFor(url,key){
     return (s&&s.user&&s.user.email===ALLOWED_EMAIL)?s.access_token:null;
   }catch(e){return null;}
 }
+async function _sbGetOther(baseUrl, apiKey, configKey) {
+  try {
+    var _tok = await sbTokenFor(baseUrl, apiKey);
+    var r = await fetch(baseUrl + '/rest/v1/config?key=eq.' + encodeURIComponent(configKey) + '&select=value', { headers: { 'apikey': apiKey, 'Authorization': 'Bearer ' + (_tok || apiKey) } });
+    if (!r.ok) return null; var d = await r.json(); if (!Array.isArray(d) || !d[0]) return null;
+    var v = d[0].value; if (typeof v === 'string') { try { v = JSON.parse(v); } catch (e) {} } return v;
+  } catch (e) { return null; }
+}
 async function _sbSetOther(baseUrl, apiKey, configKey, value) {
   try {
     var _tok = await sbTokenFor(baseUrl, apiKey);
@@ -231,8 +240,8 @@ async function syncDataToOthers(statusCallback) {
     { key: 'ratios',        value: Object.keys(RATIOS_TABLE).length ? RATIOS_TABLE : null },
     { key: 'targets',       value: Object.keys(realTargets).length ? realTargets : null },
     { key: 'rubros',        value: Object.keys(USER_RUBRO_TABLE).length ? USER_RUBRO_TABLE : null },
-    { key: 'ccl_override',  value: cclOvr || CCL_TABLE },
-    { key: 'mep_override',  value: mepOvr || MEP_TABLE }
+    { key: 'ccl_override',  value: Object.assign({}, cclOvr || {}, CCL_TABLE) },
+    { key: 'mep_override',  value: Object.assign({}, mepOvr || {}, MEP_TABLE) }
   ];
 
   var errors = [];
@@ -242,7 +251,13 @@ async function syncDataToOthers(statusCallback) {
     for (var ti = 0; ti < tables.length; ti++) {
       var t = tables[ti];
       if (!t.value || (typeof t.value === 'object' && Object.keys(t.value).length === 0)) continue;
-      var ok = await _sbSetOther(p.url, p.key, t.key, t.value);
+      var val = t.value;
+      if (t.key === 'ccl_override' || t.key === 'mep_override') {
+        // Se suma a lo que ya tiene ese portafolio (antes lo reemplazaba y le borraba días que solo tenía él)
+        var suyo = await _sbGetOther(p.url, p.key, t.key);
+        val = Object.assign({}, (suyo && typeof suyo === 'object') ? suyo : {}, t.value);
+      }
+      var ok = await _sbSetOther(p.url, p.key, t.key, val);
       if (!ok) errors.push(p.name + '/' + t.key);
     }
   }
@@ -923,6 +938,7 @@ function tcDel(tipo,fecha){
   if(!confirm('Eliminar '+fecha+' del '+tipo.toUpperCase()+'?')) return;
   if(tipo==='ccl') delete CCL_TABLE[fecha];
   else delete MEP_TABLE[fecha];
+  _tcBorrados[tipo==='ccl'?'ccl':'mep'][fecha]=1;
   tcSavePersist();
   tcRender();
 }
@@ -934,7 +950,48 @@ function tcSavePersist(){
   _tcSbPersist();
 }
 var _tcOvrLoaded=false,_tcOvrPend=false;
-function _tcSbPersist(){if(!_tcOvrLoaded){_tcOvrPend=true;return;}sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}
+// Tipos de cambio: antes cada guardado subía la tabla entera de ESTA pestaña y pisaba la de la nube, así que una pestaña
+// abierta hace días borraba lo que el Sync de GDC (u otra pestaña) había cargado. Ahora se lee la nube y se suma lo que
+// falta acá antes de subir; solo se quita lo que borraste a mano (tcDel).
+var _tcBorrados={ccl:{},mep:{}},_tcGuardCola=Promise.resolve();
+async function _sbGetConfigFresco(key){
+  try{
+    var r=await fetch(SUPABASE_URL+'/rest/v1/config?key=eq.'+encodeURIComponent(key)+'&select=value',{headers:sbHeaders()});
+    if(!r.ok)return undefined;var d=await r.json();if(!Array.isArray(d))return undefined;if(!d[0])return null;
+    var v=d[0].value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){}}return v;
+  }catch(e){return undefined;}
+}
+function _tcSbPersist(){
+  if(!_tcOvrLoaded){_tcOvrPend=true;return;}
+  _tcGuardCola=_tcGuardCola.then(async function(){
+    var pares=[['ccl_override',CCL_TABLE,'ccl'],['mep_override',MEP_TABLE,'mep']],sumados=0;
+    for(var i=0;i<pares.length;i++){
+      var par=pares[i],nube=await _sbGetConfigFresco(par[0]);
+      if(nube===undefined)continue; // no se pudo leer la nube: no se sube a ciegas (queda en este navegador)
+      if(nube&&typeof nube==='object')Object.keys(nube).forEach(function(k){if(!(par[1][k]>0)&&!_tcBorrados[par[2]][k]&&nube[k]>0){par[1][k]=nube[k];sumados++;}});
+      await sbSetConfig(par[0],par[1]);
+    }
+    if(sumados){try{localStorage.setItem((PFX+'ccl_override'),JSON.stringify(CCL_TABLE));localStorage.setItem((PFX+'mep_override'),JSON.stringify(MEP_TABLE));}catch(e){}
+      try{tcRefrescarHoy();tcRender();}catch(e){}}
+  }).catch(function(e){console.warn('[tc] guardado',e);});
+  return _tcGuardCola;
+}
+// Completa los días que falten (últimos 180, sin hoy) con el histórico diario de MEP y CCL de argentinadatos.
+// No pisa ningún valor ya cargado. Así cada portafolio tiene el MEP de un día aunque no se haya abierto ese día.
+async function tcCompletarHuecos(){
+  try{
+    var lim=new Date();lim.setDate(lim.getDate()-180);
+    var limIso=lim.getFullYear()+'-'+String(lim.getMonth()+1).padStart(2,'0')+'-'+String(lim.getDate()).padStart(2,'0'),hoyIso=_bkHoy();
+    var pares=[['bolsa',MEP_TABLE],['contadoconliqui',CCL_TABLE]],n=0;
+    for(var i=0;i<pares.length;i++){
+      var m=await _phFxLoad(pares[i][0]);
+      Object.keys(m||{}).forEach(function(iso){if(iso<limIso||iso>=hoyIso)return;var p=iso.split('-');if(p.length!==3)return;var k=p[2]+'/'+p[1]+'/'+p[0];
+        if(!(pares[i][1][k]>0)&&m[iso]>0){pares[i][1][k]=m[iso];n++;}});
+    }
+    if(n){console.log('[tc] '+n+' días de MEP/CCL completados con el histórico');tcSavePersist();try{tcRender();}catch(e){}
+      try{renderMovimientos();renderPortfolio();}catch(e){}}
+  }catch(e){console.warn('[tc] completar huecos',e);}
+}
 function cardToggle(btn){
   var card=btn.closest('.card');
   var collapsed=card.classList.toggle('card-collapsed');
@@ -7406,8 +7463,9 @@ function trkCalcCCL(){
     if(sbMepOvr){Object.assign(MEP_TABLE, sbMepOvr);}
     else{try{var sm=localStorage.getItem((PFX+'mep_override'));if(sm)Object.assign(MEP_TABLE,JSON.parse(sm));}catch(e){}}
     _tcOvrLoaded=true;
-    if(_tcOvrPend){_tcOvrPend=false;sbSetConfig('ccl_override',CCL_TABLE);sbSetConfig('mep_override',MEP_TABLE);}
+    if(_tcOvrPend){_tcOvrPend=false;_tcSbPersist();}
     tcRefrescarHoy();
+    setTimeout(tcCompletarHuecos,5000);
 
     var sbLiq = await sbGetConfig('liquidez');
     if(sbLiq){
