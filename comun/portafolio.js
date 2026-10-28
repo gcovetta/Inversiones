@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=271, APP_VERSION_FECHA='28/10/2026';
+var APP_VERSION=272, APP_VERSION_FECHA='28/10/2026';
 var APP_CHANGELOG=[
+  'v272 | 2026-10-28 | 🌙 Modo madrugada: fuera del horario de mercado (lun a vie 10:30 a 18:20, hora Argentina) las cotizaciones no se actualizan solas cada 10 min; al lado de la hora dice "cierre · HH:MM · 🌙 mercado cerrado, abre mañana 10:30" y se programa una actualización para la apertura. El botón de actualizar sigue andando siempre (enRueda, _startCycle).',
   'v271 | 2026-10-28 | Indicador de guardado: punto al lado de la hora. Verde = todo guardado en la nube (con la hora del último guardado al pasar el mouse); amarillo = guardando, cambios que todavía no llegaron a la nube u otra pestaña del mismo portafolio abierta; rojo = falló un guardado o no hay conexión (tocarlo reintenta). Al tocarlo muestra el detalle (syRender, syEstado).',
   'v270 | 2026-10-28 | Nueva página 📊 Balances (menú, debajo de Movimientos): calendario de presentación de resultados de los activos en cartera para los próximos 60 días (fecha, horario, trimestre, EPS e ingresos estimados) y los que presentaron en los últimos 7 días (si superaron o no el EPS estimado). En el Portafolio, 📊 al lado del ticker si presenta balance hoy o en los próximos 4 días. Fuente: Finnhub (empresas de EE.UU. y ADRs).',
   'v269 | 2026-10-27 | Tipo de cambio: cada portafolio completa solo los días de MEP y CCL que le falten (últimos 180) con el histórico diario de argentinadatos, sin pisar lo cargado. Una pestaña abierta hace días ya no borra los tipos de cambio que pasó el Sync de GDC (antes de guardar suma lo que hay en la nube). El Sync de GDC ahora suma a lo que tiene cada portafolio en vez de reemplazarlo (tcCompletarHuecos, _tcSbPersist, syncDataToOthers).',
@@ -7677,31 +7678,72 @@ function trkCalcCCL(){
   var _autoTimer = null;
   var _tickTimer = null;
 
+  // ── 🌙 Modo madrugada: fuera del horario de mercado no se actualizan cotizaciones solas ──
+  // Rueda (hora Argentina, lun a vie): 10:30 a 18:20 — cubre BYMA (11 a 17) y NYSE (10:30/11:30 a 17/18 según el horario
+  // de verano de EE.UU.), con margen para tomar el cierre. Afuera se muestra el cierre y se espera a la próxima apertura.
+  // El botón de actualizar sigue funcionando siempre.
+  var RUEDA_INI = 10*60+30, RUEDA_FIN = 18*60+20;
+  var _abreTimer = null;
+  function _horaAR(d){ // fecha/hora de Buenos Aires (UTC-3, sin horario de verano)
+    var u = (d||new Date()).getTime() + (new Date().getTimezoneOffset()*60000);
+    return new Date(u - 3*3600000);
+  }
+  function enRueda(d){var a=_horaAR(d),wd=a.getDay(),m=a.getHours()*60+a.getMinutes();return wd>=1&&wd<=5&&m>=RUEDA_INI&&m<RUEDA_FIN;}
+  window.enRueda = enRueda;
+  function _msHastaApertura(){
+    var ahora=new Date(),a=_horaAR(ahora),t=new Date(a);t.setHours(Math.floor(RUEDA_INI/60),RUEDA_INI%60,0,0);
+    if(t<=a)t.setDate(t.getDate()+1);
+    while(t.getDay()===0||t.getDay()===6)t.setDate(t.getDate()+1);
+    return {ms:t-a,t:t};
+  }
+  function _txtApertura(){var x=_msHastaApertura(),a=_horaAR(),t=x.t,dia;
+    var man=new Date(a);man.setDate(man.getDate()+1);
+    dia=(t.toDateString()===a.toDateString())?'hoy':(t.toDateString()===man.toDateString())?'mañana':['dom','lun','mar','mié','jue','vie','sáb'][t.getDay()];
+    return 'abre '+dia+' 10:30';}
+
   function _updateLabel(){
     var el = document.getElementById('lupd');
     if(!el) return;
     var last = el.dataset.lastupd || '';
+    if(!enRueda()){
+      el.textContent = (last ? 'cierre · ' + last + ' · ' : '') + '🌙 mercado cerrado, ' + _txtApertura();
+      el.title = 'Fuera del horario de mercado no se actualizan las cotizaciones solas (se muestran las del cierre). Con el botón de actualizar las podés traer igual.';
+      return;
+    }
+    el.title = '';
     var m = Math.floor(_countdown / 60);
     var s = _countdown % 60;
     var next = 'próx. ' + m + ':' + (s < 10 ? '0' : '') + s;
     el.textContent = (last ? last + ' · ' : '') + next;
   }
 
+  function _refrescarCuandoSeVea(){
+    if(document.hidden){
+      document.addEventListener('visibilitychange', function _onVis(){
+        if(!document.hidden){ document.removeEventListener('visibilitychange', _onVis); fetchAllQuotes(); }
+      });
+    } else {
+      fetchAllQuotes();
+    }
+  }
   function _startCycle(){
     if(_autoTimer)  clearTimeout(_autoTimer);
     if(_tickTimer)  clearInterval(_tickTimer);
+    if(_abreTimer)  clearTimeout(_abreTimer);
     _countdown = AUTO_MS / 1000;
+    if(!enRueda()){
+      // Mercado cerrado: nada de refrescos periódicos; se programa uno para la apertura (+2 min).
+      _updateLabel();
+      _tickTimer = setInterval(_updateLabel, 15*60000);
+      var x=_msHastaApertura();
+      _abreTimer = setTimeout(function(){ clearInterval(_tickTimer); _refrescarCuandoSeVea(); }, Math.min(x.ms + 2*60000, 2147000000));
+      return;
+    }
     _updateLabel();
     _tickTimer = setInterval(function(){ if(_countdown > 0){ _countdown = Math.max(0, _countdown - 180); _updateLabel(); } }, 180000);
     _autoTimer = setTimeout(function(){
       clearInterval(_tickTimer);
-      if(document.hidden){
-        document.addEventListener('visibilitychange', function _onVis(){
-          if(!document.hidden){ document.removeEventListener('visibilitychange', _onVis); fetchAllQuotes(); }
-        });
-      } else {
-        fetchAllQuotes();
-      }
+      _refrescarCuandoSeVea();
     }, AUTO_MS);
   }
 
