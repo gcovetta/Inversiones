@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=269, APP_VERSION_FECHA='27/10/2026';
+var APP_VERSION=270, APP_VERSION_FECHA='28/10/2026';
 var APP_CHANGELOG=[
+  'v270 | 2026-10-28 | Nueva página 📊 Balances (menú, debajo de Movimientos): calendario de presentación de resultados de los activos en cartera para los próximos 60 días (fecha, horario, trimestre, EPS e ingresos estimados) y los que presentaron en los últimos 7 días (si superaron o no el EPS estimado). En el Portafolio, 📊 al lado del ticker si presenta balance hoy o en los próximos 4 días. Fuente: Finnhub (empresas de EE.UU. y ADRs).',
   'v269 | 2026-10-27 | Tipo de cambio: cada portafolio completa solo los días de MEP y CCL que le falten (últimos 180) con el histórico diario de argentinadatos, sin pisar lo cargado. Una pestaña abierta hace días ya no borra los tipos de cambio que pasó el Sync de GDC (antes de guardar suma lo que hay en la nube). El Sync de GDC ahora suma a lo que tiene cada portafolio en vez de reemplazarlo (tcCompletarHuecos, _tcSbPersist, syncDataToOthers).',
   'v268 | 2026-10-27 | Comparación con Bull: lector nuevo del texto pegado (busca cada fila de cantidades y el ticker arriba). Reconoce O (Realty Income) y tickers de 1 letra aunque vengan con tabs o espacios invisibles, o con la descripción en la misma línea. Omar y Hilda usaban una copia propia del lector viejo: ahora usan el común (cmpParseBullText).',
   'v267 | 2026-10-27 | Fix movimientos perdidos: una pestaña abierta hace días ya no pisa en la nube lo cargado desde otra pestaña o equipo. Antes de guardar se lee la nube y se mezcla por id (lo cambiado acá gana; lo agregado, editado o borrado en otro lado se respeta); al volver a la pestaña y cada 2 min se trae lo nuevo. La copia pendiente del navegador ya no reemplaza la nube entera (solo suma lo que falta) y no se sube a ciegas si la nube no respondió. Las correcciones automáticas al abrir la app se suben al terminar la carga (saveAndRender, movGuardarNube, initFromSupabase).',
@@ -1032,6 +1033,7 @@ function showPage(id,btn){
   if(id==='movimientos') resetMFechaHoy();
   if(id==='arbitraje') arbRender();
   if(id==='rotaciones') rotRender();
+  if(id==='balances') balRender();
   if(id==='noticias') nwsLoad(false);
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
@@ -10682,7 +10684,7 @@ function nvRender(){
   var sh0='<tr class="sec"><td colspan="8">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">'+_nvM()+_nvN(X.reduce(function(s,o){return s+(_nvInv(o)||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
   X.forEach(function(o){var pc=_nvPtCol(o),ab=!!op[o.t];
    var mk=MARKS[o.t],mki=mk?({sell:'🔴',buy:'🟢',watch:'⭐',note:'📝'})[mk.type]||'🏷':'🏷';
-   var r='<tr class="pick'+(ab?' abierta':'')+(mk&&mk.type!=='note'?' marked-'+mk.type:'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<button class="mark-btn'+(mk?' active':'')+'" data-ticker="'+o.t+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar: Comprar, Vender, Seguir o nota">'+mki+'</button><b class="nvtk" style="font-family:var(--sans);font-size:.84rem"'+(_focoOn()?' onclick="event.stopPropagation();nvFoco(\''+o.t+'\')" title="Ver todo de '+o.t+'"':'')+'>'+o.t+'</b>'+(mk&&mk.note?'<span class="nvnote" data-tip="'+mk.note.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'+mk.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>':'')+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.dh?'<span class="nvf nvd" data-tip="Por tu historial, estimamos un dividendo dentro de 30 días" onclick="event.stopPropagation();nvTip(this,true)">D</span>':'')+(o.fin?'<span class="nvf nvfin" data-tip="A finish" onclick="event.stopPropagation();nvTip(this,true)">🏁</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
+   var r='<tr class="pick'+(ab?' abierta':'')+(mk&&mk.type!=='note'?' marked-'+mk.type:'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<button class="mark-btn'+(mk?' active':'')+'" data-ticker="'+o.t+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar: Comprar, Vender, Seguir o nota">'+mki+'</button><b class="nvtk" style="font-family:var(--sans);font-size:.84rem"'+(_focoOn()?' onclick="event.stopPropagation();nvFoco(\''+o.t+'\')" title="Ver todo de '+o.t+'"':'')+'>'+o.t+'</b>'+(mk&&mk.note?'<span class="nvnote" data-tip="'+mk.note.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'+mk.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>':'')+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.dh?'<span class="nvf nvd" data-tip="Por tu historial, estimamos un dividendo dentro de 30 días" onclick="event.stopPropagation();nvTip(this,true)">D</span>':'')+(typeof balBadge==='function'?balBadge(o.t):'')+(o.fin?'<span class="nvf nvfin" data-tip="A finish" onclick="event.stopPropagation();nvTip(this,true)">🏁</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span></td>'+
     '<td class="up">'+upC(o.up)+'</td>'+
     '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
@@ -11786,3 +11788,82 @@ function errVistos(){try{localStorage.setItem(_ERR_VISTO_K,String(Date.now()));}
 async function errBorrar(){if(!confirm('¿Borrar el registro de errores de esta cartera?'))return;await sbSetConfig('errores',[]);_ERR_LISTA=[];_errPintar([]);var o=document.getElementById('err-ov');if(o)o.remove();}
 (function _errBoot(n){setTimeout(function(){if(typeof _gdcInitDone==='undefined'||!_gdcInitDone){if(n<40)_errBoot(n+1);return;}
   sbGetConfig('errores').then(function(L){_errPintar(Array.isArray(L)?L:[]);_errProgramar();}).catch(function(){});},1500);})(0);
+
+// ─── 📊 Calendario de presentación de balances (resultados trimestrales) ─────────────────────────────
+// Fuente: calendario de resultados de Finnhub (empresas de EE.UU. y ADRs). Se baja por semanas desde 7 días atrás
+// hasta 60 adelante y se guarda 12 h en este navegador (compartido entre carteras). En la fila del Portafolio aparece
+// 📊 si el activo presenta balance hoy o en los próximos 4 días.
+var BAL={d:null,cargando:null},BAL_LS='bal_cal_v1',BAL_DIAS_AVISO=4;
+var _balHora={bmo:'antes de la apertura',amc:'después del cierre',dmh:'durante la rueda'};
+function _balIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _balDias(iso){var p=iso.split('-'),a=new Date(+p[0],+p[1]-1,+p[2]),h=new Date();h.setHours(0,0,0,0);return Math.round((a-h)/86400000);}
+function _balFecha(iso){var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);return ['dom','lun','mar','mié','jue','vie','sáb'][d.getDay()]+' '+p[2]+'/'+p[1];}
+// Tickers de la cartera (todas las carteras de la persona) → símbolo en EE.UU.
+function _balTickers(){
+  var out={},add=function(pos){(pos||[]).forEach(function(p){if(!(p.qty>0.000001))return;var s=getSector(p.ticker);if(s==='bonos'||s==='on'||s==='fci')return;
+    var sym=(s==='argentina')?(BYMA_TO_NYSE[p.ticker]||null):getFinnhubTicker(p.ticker);if(!sym)return;sym=String(sym).toUpperCase();(out[sym]=out[sym]||[]).indexOf(p.ticker)<0&&out[sym].push(p.ticker);});};
+  try{if(typeof CARTERA_ACTIVA!=='undefined'&&typeof getPositionsPrincipal==='function'){var orig=CARTERA_ACTIVA;['principal','cocos','vetajeep'].forEach(function(c){CARTERA_ACTIVA=c;try{add(getPositions());}catch(e){}});CARTERA_ACTIVA=orig;}else add(getPositions());}catch(e){}
+  return out;
+}
+async function balCargar(forzar){
+  if(BAL.cargando)return BAL.cargando;
+  if(!forzar&&!BAL.d){try{var c=JSON.parse(localStorage.getItem(BAL_LS)||'null');if(c&&c.ts&&Date.now()-c.ts<12*3600000&&Array.isArray(c.e))BAL.d=c;}catch(e){}}
+  if(!forzar&&BAL.d)return BAL.d;
+  BAL.cargando=(async function(){
+    var ini=new Date();ini.setDate(ini.getDate()-7);var fin=new Date();fin.setDate(fin.getDate()+60);var ev={},ok=0;
+    for(var d=new Date(ini);d<=fin;d.setDate(d.getDate()+7)){
+      var h=new Date(d);h.setDate(h.getDate()+6);if(h>fin)h=new Date(fin);
+      try{var r=await fetchWithTimeout(FBASE+'/calendar/earnings?from='+_balIso(d)+'&to='+_balIso(h)+'&token='+FKEY,{},12000);
+        if(r.ok){var j=await r.json();ok++;(j&&j.earningsCalendar||[]).forEach(function(x){if(!x||!x.symbol||!x.date)return;ev[x.symbol+'|'+x.date]={s:String(x.symbol).toUpperCase(),f:x.date,h:x.hour||'',q:x.quarter,y:x.year,ee:x.epsEstimate,ea:x.epsActual,re:x.revenueEstimate,ra:x.revenueActual};});}}catch(e){}
+      await new Promise(function(res){setTimeout(res,700);});
+    }
+    if(!ok)return BAL.d; // sin conexión: queda lo último guardado
+    var dat={ts:Date.now(),e:Object.keys(ev).map(function(k){return ev[k];})};
+    BAL.d=dat;try{localStorage.setItem(BAL_LS,JSON.stringify(dat));}catch(e){} // si no entra en el navegador, igual queda en memoria
+    return dat;
+  })();
+  try{return await BAL.cargando;}finally{BAL.cargando=null;}
+}
+// Eventos de la cartera: [{t:[tickers BYMA], s, f, h, ...}]
+function balDeCartera(){
+  if(!BAL.d)return [];var tk=_balTickers();
+  return BAL.d.e.filter(function(x){return tk[x.s];}).map(function(x){return Object.assign({t:tk[x.s]},x);}).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:a.s.localeCompare(b.s);});
+}
+function balProximo(ticker){
+  if(!BAL.d)return null;var sym=getSector(ticker)==='argentina'?BYMA_TO_NYSE[ticker]:getFinnhubTicker(ticker);if(!sym)return null;sym=String(sym).toUpperCase();
+  var best=null;BAL.d.e.forEach(function(x){if(x.s!==sym)return;var dd=_balDias(x.f);if(dd<0||dd>BAL_DIAS_AVISO)return;if(!best||x.f<best.f)best=x;});return best;
+}
+function balBadge(ticker){
+  var x=balProximo(ticker);if(!x)return '';var dd=_balDias(x.f);
+  var tip=(dd===0?'Presenta balance HOY':dd===1?'Presenta balance mañana':'Presenta balance en '+dd+' días')+' · '+_balFecha(x.f)+(_balHora[x.h]?' ('+_balHora[x.h]+')':'')+(x.ee!=null?' · EPS estimado '+x.ee:'');
+  return '<span class="nvf nvbal" data-tip="'+tip.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();nvTip(this,true)">📊</span>';
+}
+function balRender(){
+  var pg=document.getElementById('page-balances');if(!pg)return;
+  if(!BAL.d){pg.innerHTML='<div class="card"><div style="padding:1rem;color:var(--text3);font-size:.8rem">Cargando calendario de balances…</div></div>';balCargar().then(function(d){if(d)balRender();else pg.innerHTML='<div class="card"><div style="padding:1rem;color:var(--text3);font-size:.8rem">No se pudo bajar el calendario. Probá más tarde.</div></div>';});return;}
+  var L=balDeCartera(),prox=L.filter(function(x){return _balDias(x.f)>=0;}),rec=L.filter(function(x){return _balDias(x.f)<0;}).reverse();
+  var nf=function(v){return v==null?'—':Number(v).toLocaleString('es-AR',{maximumFractionDigits:2});};
+  var big=function(v){if(v==null)return '—';var a=Math.abs(v);return (a>=1e9?(v/1e9).toLocaleString('es-AR',{maximumFractionDigits:1})+' MM':a>=1e6?(v/1e6).toLocaleString('es-AR',{maximumFractionDigits:0})+' M':nf(v));};
+  var th='style="text-align:left;padding:6px 8px;font-size:.62rem;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)"',td='style="padding:7px 8px;border-bottom:1px solid var(--border);font-size:.76rem"';
+  var fila=function(x,pasado){var dd=_balDias(x.f),cerca=!pasado&&dd<=BAL_DIAS_AVISO;
+    var cuando=pasado?(dd===-1?'ayer':'hace '+(-dd)+' días'):(dd===0?'<b style="color:var(--amber)">HOY</b>':dd===1?'<b style="color:var(--amber)">mañana</b>':'en '+dd+' días');
+    var res='';if(pasado&&x.ea!=null&&x.ee!=null){var b=x.ea>=x.ee;res='<span style="color:'+(b?'var(--accent)':'var(--red)')+';font-weight:700">'+(b?'superó':'no llegó')+'</span> <span class="mu">('+nf(x.ea)+' vs '+nf(x.ee)+')</span>';}
+    return '<tr'+(cerca?' style="background:color-mix(in srgb,var(--amber) 9%,transparent)"':'')+'><td '+td+'>'+(cerca?'📊 ':'')+_balFecha(x.f)+'</td><td '+td+'>'+cuando+'</td><td '+td+'><b style="font-family:var(--mono)">'+x.t.join(' / ')+'</b>'+(x.t.indexOf(x.s)<0?' <span class="mu" style="font-size:.66rem">('+x.s+')</span>':'')+'</td>'+
+      '<td '+td+'>'+(_balHora[x.h]||'—')+'</td><td '+td+'>'+(x.q?'Q'+x.q+' '+(x.y||''):'—')+'</td>'+
+      (pasado?'<td '+td+'>'+res+'</td><td '+td+'>'+big(x.ra)+'</td>':'<td '+td+'>'+nf(x.ee)+'</td><td '+td+'>'+big(x.re)+'</td>')+'</tr>';};
+  var tabla=function(rows,pasado){return rows.length?'<div class="tw"><table style="width:100%;border-collapse:collapse"><thead><tr><th '+th+'>Fecha</th><th '+th+'>Cuándo</th><th '+th+'>Activo</th><th '+th+'>Horario</th><th '+th+'>Trimestre</th>'+
+    (pasado?'<th '+th+'>Resultado (EPS)</th><th '+th+'>Ingresos USD</th>':'<th '+th+'>EPS estimado</th><th '+th+'>Ingresos est. USD</th>')+'</tr></thead><tbody>'+rows.map(function(x){return fila(x,pasado);}).join('')+'</tbody></table></div>':'<div style="padding:.6rem 0;color:var(--text3);font-size:.76rem">'+(pasado?'Nada en los últimos 7 días.':'Ningún activo de tu cartera presenta balance en los próximos 60 días.')+'</div>';};
+  var act=new Date(BAL.d.ts);
+  pg.innerHTML='<div class="card" style="margin-bottom:1rem"><div class="card-header" style="display:flex;align-items:center;gap:10px"><span class="card-title">📊 Calendario de balances</span>'+
+    '<span class="mu" style="font-size:.66rem;margin-left:auto">Actualizado '+act.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span><button class="btn btn-sm" onclick="balActualizar(this)">⟳</button></div>'+
+    '<div style="padding:0 .2rem .4rem;font-size:.7rem;color:var(--text3)">Próximos 60 días de los activos que tenés en cartera. Los que presentan en '+BAL_DIAS_AVISO+' días o menos llevan 📊 en el Portafolio. Solo empresas que cotizan en EE.UU. (los Cedears y las argentinas con ADR); los ETF y los bonos no presentan balance.</div>'+
+    tabla(prox,false)+'</div>'+
+    '<div class="card"><div class="card-header"><span class="card-title">Ya presentaron (últimos 7 días)</span></div>'+tabla(rec,true)+'</div>';
+}
+async function balActualizar(b){if(b)b.textContent='…';await balCargar(true);balRender();try{nvRender();}catch(e){}}
+function balInit(){if(document.getElementById('page-balances'))return;var pp=document.getElementById('page-portafolio'),mb=document.querySelector('.nav-item[onclick*="\'movimientos\'"]');if(!pp||!mb)return;
+  var pg=document.createElement('div');pg.className='page';pg.id='page-balances';pp.parentNode.appendChild(pg);
+  var b=document.createElement('button');b.className='nav-item';b.setAttribute('onclick',"showPage('balances',this)");b.innerHTML='<span>📊</span>Balances';mb.parentNode.insertBefore(b,mb.nextSibling);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',balInit);else setTimeout(balInit,0);
+(function _balBoot(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){balCargar().then(function(d){if(d){try{nvRender();}catch(e){}var pg=document.getElementById('page-balances');if(pg&&pg.classList.contains('active'))balRender();}});}else if(n<40)_balBoot(n+1);},2500);})(0);
+setInterval(function(){if(!document.hidden&&BAL.d&&Date.now()-BAL.d.ts>12*3600000)balCargar(true).then(function(){try{nvRender();}catch(e){}});},30*60000);
