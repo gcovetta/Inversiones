@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=276, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=277, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v277 | 2026-10-29 | 📈 Tu cartera y lo que pasaba: selector de período (Último mes, 3M, 1 año, 2 años, Total), que se recuerda. El último año ahora va día a día (antes semana a semana) y las fechas del eje se adaptan al período (años, meses o semanas).',
   'v276 | 2026-10-29 | DashBoard: 🎬 La película de tu cartera (los 10 activos más grandes mes a mes desde el primer movimiento, con entradas y salidas, play/pausa, velocidad y barra para ir a cualquier mes) y 📈 Tu cartera y lo que pasaba (valor semana a semana con tus compras y ventas grandes y los hechos del mercado; al tocarlos muestra qué pasó, qué hiciste esa quincena y cómo siguió a 3 meses y hasta hoy; se pueden agregar hechos propios). El valor se reconstruye con tus movimientos y los precios históricos de cada activo (hpDatos).',
   'v275 | 2026-10-29 | La app de inicio del celular abre directo la vista mini de GDC (en la compu y en el navegador común sigue abriendo Carteras administradas). Desde la vista mini de GDC, botón 👨‍👩‍👧 Carteras administradas para ir al índice.',
   'v274 | 2026-10-29 | 📱 Vista mini: agregando ?mini a la dirección de cualquier cartera se abre una pantalla liviana para el celular con valor total (USD y $ al MEP), Hoy y el período en USD y %, avisos juntos (balances en 4 días, próximo cobro, Diario para revisar, guardados fallidos, tipos de cambio faltantes) y lo que más subió y bajó hoy. Arranca con lo último guardado, respeta el punto de guardado y el modo madrugada, tiene 👁 propio y un botón para abrir la cartera completa (miniRender).',
@@ -12146,7 +12147,10 @@ if(MINI){
 // y precios históricos de cada activo en USD (_phSerie: data912 + precios propios, al CCL/MEP del día). Si un activo
 // no tiene historial de precios (FCI, algunos bonos) se valúa al precio de su última operación. La escala de cada
 // serie (por 100 VN, ratio) se ajusta sola comparándola con los precios de tus propias operaciones.
-var HP={d:null,cargando:null,peli:{t:0,tm:null,vel:1,ultEv:-1},tl:{on:{op:true,ar:true,mu:true},sel:null}};
+var HP={d:null,cargando:null,peli:{t:0,tm:null,vel:1,ultEv:-1},tl:{on:{op:true,ar:true,mu:true},sel:null,rango:(function(){try{return localStorage.getItem('hp_rango')||'tot';}catch(e){return 'tot';}})()}};
+function hpTlRango(r){HP.tl.rango=r;try{localStorage.setItem('hp_rango',r);}catch(e){}document.querySelectorAll('#hp-rng .hp-ch').forEach(function(c){c.classList.toggle('on',c.dataset.r===r);});HP.tl.sel=null;hpTlDibujar();
+  var d=document.getElementById('hp-det');if(d)d.innerHTML='<span class="hp-l">Tocá una banderita (hechos del mercado) o un punto (tus operaciones grandes) para ver qué pasó y cómo siguió.</span>';}
+function _hpDesde(){var r=HP.tl.rango,d=new Date();if(r==='1m')d.setMonth(d.getMonth()-1);else if(r==='3m')d.setMonth(d.getMonth()-3);else if(r==='1a')d.setFullYear(d.getFullYear()-1);else if(r==='2a')d.setFullYear(d.getFullYear()-2);else return '0000';return _hpIso(d);}
 var HP_EVM=[
  {k:'ar',f:'2023-08-13',i:'🗳️',t:'PASO 2023',x:'Primarias presidenciales en Argentina; al día siguiente el dólar oficial saltó a $350.'},
  {k:'ar',f:'2023-10-22',i:'🗳️',t:'Elecciones generales 2023',x:'Primera vuelta de las elecciones presidenciales en Argentina.'},
@@ -12168,7 +12172,7 @@ function _hpMovs(){
 async function hpDatos(onProg,forzar){
   if(HP.d&&!forzar)return HP.d;if(HP.cargando)return HP.cargando;
   var M=_hpMovs(),firma=M.length+'|'+(M.length?M[M.length-1].m.id:'')+'|'+_bkHoy();
-  if(!forzar){try{var c=JSON.parse(localStorage.getItem(PFX+'hp_v1')||'null');if(c&&c.firma===firma){HP.d=c;return c;}}catch(e){}}
+  if(!forzar){try{var c=JSON.parse(localStorage.getItem(PFX+'hp_v2')||'null');if(c&&c.firma===firma){HP.d=c;return c;}}catch(e){}}
   HP.cargando=(async function(){
     if(!M.length)return {sem:[],meses:[],ops:[],firma:firma};
     var tks=[];M.forEach(function(x){if(tks.indexOf(x.t)<0)tks.push(x.t);});
@@ -12186,9 +12190,10 @@ async function hpDatos(onProg,forzar){
       while(i<M.length&&M[i].f<=f){var x=M[i];q[x.t]=(q[x.t]||0)+(x.tp==='compra'?x.q:-x.q);if(q[x.t]<1e-6)q[x.t]=0;if(x.u>0)ult[x.t]=x.u/x.q;i++;}
       var tot=0,per={};
       Object.keys(q).forEach(function(t){if(!(q[t]>0))return;var p=_hpPx(ser[t],f),v=(p>0&&k[t])?q[t]*p*k[t]:(ult[t]?q[t]*ult[t]:0);if(v>0){per[t]=Math.round(v);tot+=v;}});
-      sem.push({f:f,v:Math.round(tot)});
-      var mk=f.slice(0,7);if(mesAct&&mk!==mesAct&&ultPer)meses.push(ultPer);mesAct=mk;ultPer={f:f,per:per,tot:Math.round(tot)};
-      d.setDate(d.getDate()+7);
+      var dia=(hoy-d)<=400*864e5,wd=d.getDay();
+      if(!dia||(wd!==0&&wd!==6)){sem.push({f:f,v:Math.round(tot)});
+        var mk=f.slice(0,7);if(mesAct&&mk!==mesAct&&ultPer)meses.push(ultPer);mesAct=mk;ultPer={f:f,per:per,tot:Math.round(tot)};}
+      d.setDate(d.getDate()+(dia?1:7));
     }
     if(ultPer)meses.push(ultPer);
     // operaciones grandes por día (para las marcas)
@@ -12198,7 +12203,7 @@ async function hpDatos(onProg,forzar){
       var nom=function(T){return Object.keys(T).sort(function(a,b){return T[b]-T[a];});};
       if(g.c>=lim)o.push({f:f,tp:'c',u:Math.round(g.c),tk:nom(g.tc)});if(g.v>=lim)o.push({f:f,tp:'v',u:Math.round(g.v),tk:nom(g.tv)});return o;}).reduce(function(a,b){return a.concat(b);},[]);
     var res={sem:sem,meses:meses,ops:ops,firma:firma};
-    try{localStorage.setItem(PFX+'hp_v1',JSON.stringify(res));}catch(e){}
+    try{localStorage.setItem(PFX+'hp_v2',JSON.stringify(res));}catch(e){}
     return res;
   })();
   try{HP.d=await HP.cargando;return HP.d;}finally{HP.cargando=null;}
@@ -12276,11 +12281,13 @@ function hpPeliVel(){var L=[1,2,0.5];HP.peli.vel=L[(L.indexOf(HP.peli.vel)+1)%L.
 // ── 📈 Línea de tiempo ──
 function hpTlArmar(){var b=document.getElementById('hp-tl-b');if(!b||!HP.d)return;
   if(HP.d.sem.length<3){b.innerHTML='<div class="hp-l">Todavía no hay historia suficiente.</div>';return;}
-  b.innerHTML='<svg class="hp-svg" id="hp-svg" viewBox="0 0 860 370"></svg><div class="hp-det" id="hp-det"><span class="hp-l">Tocá una banderita (hechos del mercado) o un punto (tus operaciones grandes) para ver qué pasó y cómo siguió.</span></div>';
+  var R=[['1m','Último mes'],['3m','3M'],['1a','1 año'],['2a','2 años'],['tot','Total']];
+  b.innerHTML='<div class="hp-fil" id="hp-rng" style="margin-bottom:6px">'+R.map(function(r){return '<span class="hp-ch'+(HP.tl.rango===r[0]?' on':'')+'" data-r="'+r[0]+'" onclick="hpTlRango(\''+r[0]+'\')">'+r[1]+'</span>';}).join('')+'</div><svg class="hp-svg" id="hp-svg" viewBox="0 0 860 370"></svg><div class="hp-det" id="hp-det"><span class="hp-l">Tocá una banderita (hechos del mercado) o un punto (tus operaciones grandes) para ver qué pasó y cómo siguió.</span></div>';
   hpTlDibujar();}
 function _hpEventos(){return HP_EVM.concat((HP_EVU||[]).map(function(e){return Object.assign({k:'mu',i:'📌',propio:true},e);}));}
 function hpTlDibujar(){
-  var g=document.getElementById('hp-svg'),D=HP.d;if(!g||!D)return;var S=D.sem,on=HP.tl.on,sel=HP.tl.sel;
+  var g=document.getElementById('hp-svg'),D=HP.d;if(!g||!D)return;var desde=_hpDesde(),S=D.sem.filter(function(p){return p.f>=desde;}),on=HP.tl.on,sel=HP.tl.sel;
+  if(S.length<2){g.innerHTML='<text x="430" y="180" text-anchor="middle" class="hp-ax" style="font-size:13px">No hay datos en ese período</text>';return;}
   var W=860,H=370,L=56,R=14,T=86,B=34,t0=new Date(S[0].f).getTime(),t1=new Date(S[S.length-1].f).getTime(),vmin=Infinity,vmax=0;
   S.forEach(function(p){vmin=Math.min(vmin,p.v);vmax=Math.max(vmax,p.v);});var paso=Math.pow(10,Math.floor(Math.log10(Math.max(1,vmax-vmin))));if((vmax-vmin)/paso<3)paso/=2;
   vmin=Math.floor(vmin/paso)*paso;vmax=Math.ceil(vmax/paso)*paso;if(vmax===vmin)vmax=vmin+paso;
@@ -12289,13 +12296,17 @@ function hpTlDibujar(){
   var fk=function(v){return v>=1e6?(v/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+'M':v>=1000?Math.round(v/1000)+'k':Math.round(v);};
   var s='<defs><linearGradient id="hp-gr" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#00e676" stop-opacity=".32"/><stop offset="1" stop-color="#00e676" stop-opacity="0"/></linearGradient></defs>';
   for(var y=vmin;y<=vmax+1e-9;y+=paso)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="var(--border)" stroke-dasharray="2 4"/><text class="hp-ax" x="'+(L-8)+'" y="'+(Y(y)+3)+'" text-anchor="end">'+fk(y)+'</text>';
-  for(var a=+S[0].f.slice(0,4)+1;a<=+S[S.length-1].f.slice(0,4);a++){var dx=X(a+'-01-01');s+='<line x1="'+dx+'" x2="'+dx+'" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--border)"/><text class="hp-ax" x="'+(dx+4)+'" y="'+(H-B+16)+'">'+a+'</text>';}
+  var dias=(t1-t0)/864e5,mk=function(f,txt){var dx=X(f);s+='<line x1="'+dx+'" x2="'+dx+'" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--border)"/><text class="hp-ax" x="'+(dx+4)+'" y="'+(H-B+16)+'">'+txt+'</text>';};
+  if(dias>800){for(var a=+S[0].f.slice(0,4)+1;a<=+S[S.length-1].f.slice(0,4);a++)mk(a+'-01-01',a);}
+  else if(dias>45){var cm=new Date(S[0].f+'T12:00:00');cm.setDate(1);cm.setMonth(cm.getMonth()+1);var cada=dias>400?3:dias>200?2:1;
+    while(_hpIso(cm)<=S[S.length-1].f){if(cm.getMonth()%cada===0)mk(_hpIso(cm),_hpMes[cm.getMonth()]+(cm.getMonth()===0?' '+cm.getFullYear():''));cm.setMonth(cm.getMonth()+1);}}
+  else{var cw=new Date(S[0].f+'T12:00:00');cw.setDate(cw.getDate()+((8-cw.getDay())%7||7));while(_hpIso(cw)<=S[S.length-1].f){mk(_hpIso(cw),String(cw.getDate()).padStart(2,'0')+'/'+String(cw.getMonth()+1).padStart(2,'0'));cw.setDate(cw.getDate()+7);}}
   var path=S.map(function(p,i){return (i?'L':'M')+X(p.f).toFixed(1)+' '+Y(p.v).toFixed(1);}).join(' ');
   s+='<path d="'+path+' L'+X(S[S.length-1].f)+' '+(H-B)+' L'+L+' '+(H-B)+' Z" fill="url(#hp-gr)" opacity=".55"/><path d="'+path+'" fill="none" stroke="#00e676" stroke-width="2"/>';
   var ultX=-99,niv=0;
   _hpEventos().forEach(function(e,i){if(!on[e.k]||e.f<S[0].f||e.f>S[S.length-1].f)return;var x=X(e.f),v=valEn(e.f),c=e.k==='ar'?'#448aff':'#ffb74d';niv=(x-ultX<30)?(niv+1)%2:0;ultX=x;var dy=-niv*30;
     s+='<g class="hp-pin'+(sel==='m'+i?' sel':'')+'" onclick="hpTlVer(\'m'+i+'\')"><line x1="'+x+'" x2="'+x+'" y1="'+(T-18+dy)+'" y2="'+Y(v)+'" stroke="'+c+'" stroke-dasharray="3 3" opacity=".7"/><circle cx="'+x+'" cy="'+(T-28+dy)+'" r="13" fill="var(--surface2)" stroke="'+c+'" stroke-width="1.5"/><text x="'+x+'" y="'+(T-24+dy)+'" text-anchor="middle" font-size="12">'+e.i+'</text></g>';});
-  if(on.op)D.ops.forEach(function(o,i){var x=X(o.f),r=4+Math.min(9,Math.sqrt(o.u)/12),c=o.tp==='c'?'#00e676':'#ff5252';
+  if(on.op)D.ops.forEach(function(o,i){if(o.f<S[0].f||o.f>S[S.length-1].f)return;var x=X(o.f),r=4+Math.min(9,Math.sqrt(o.u)/12),c=o.tp==='c'?'#00e676':'#ff5252';
     s+='<g class="hp-pin'+(sel==='o'+i?' sel':'')+'" onclick="hpTlVer(\'o'+i+'\')"><circle cx="'+x+'" cy="'+Y(valEn(o.f))+'" r="'+r.toFixed(1)+'" fill="'+c+'" fill-opacity=".85" stroke="var(--bg)" stroke-width="2"/></g>';});
   g.innerHTML=s;
 }
