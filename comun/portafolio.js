@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=277, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=278, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v278 | 2026-10-29 | Fix: al recargar ya no aparece un instante la versión vieja (v266) en el recuadro de versión: el HTML ya no trae el número escrito, lo pone el código al cargar.',
   'v277 | 2026-10-29 | 📈 Tu cartera y lo que pasaba: selector de período (Último mes, 3M, 1 año, 2 años, Total), que se recuerda. El último año ahora va día a día (antes semana a semana) y las fechas del eje se adaptan al período (años, meses o semanas).',
   'v276 | 2026-10-29 | DashBoard: 🎬 La película de tu cartera (los 10 activos más grandes mes a mes desde el primer movimiento, con entradas y salidas, play/pausa, velocidad y barra para ir a cualquier mes) y 📈 Tu cartera y lo que pasaba (valor semana a semana con tus compras y ventas grandes y los hechos del mercado; al tocarlos muestra qué pasó, qué hiciste esa quincena y cómo siguió a 3 meses y hasta hoy; se pueden agregar hechos propios). El valor se reconstruye con tus movimientos y los precios históricos de cada activo (hpDatos).',
   'v275 | 2026-10-29 | La app de inicio del celular abre directo la vista mini de GDC (en la compu y en el navegador común sigue abriendo Carteras administradas). Desde la vista mini de GDC, botón 👨‍👩‍👧 Carteras administradas para ir al índice.',
@@ -116,7 +117,7 @@ var APP_CHANGELOG=[
   'v187 | 2026-10-11 | GDC pasa a la vista nueva del portafolio (PortafolioGDC.html con vistaNueva); la página de prueba ya no hace falta. Ana, Hilda, Juli y Omar siguen con la vista anterior.'
 ];
 (function(){
-  function setBadge(){var b=document.getElementById('claude-version-badge');if(!b)return;b.textContent='v'+APP_VERSION+' · '+APP_VERSION_FECHA;b.title=APP_CHANGELOG[0].split(' | ').slice(2).join(' | ');}
+  function setBadge(){var b=document.getElementById('claude-version-badge');if(!b)return;b.textContent='v'+APP_VERSION+' · '+APP_VERSION_FECHA;b.style.display='';b.title=APP_CHANGELOG[0].split(' | ').slice(2).join(' | ');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setBadge);else setBadge();
 })();
 
