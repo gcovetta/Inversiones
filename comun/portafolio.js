@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=275, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=276, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v276 | 2026-10-29 | DashBoard: 🎬 La película de tu cartera (los 10 activos más grandes mes a mes desde el primer movimiento, con entradas y salidas, play/pausa, velocidad y barra para ir a cualquier mes) y 📈 Tu cartera y lo que pasaba (valor semana a semana con tus compras y ventas grandes y los hechos del mercado; al tocarlos muestra qué pasó, qué hiciste esa quincena y cómo siguió a 3 meses y hasta hoy; se pueden agregar hechos propios). El valor se reconstruye con tus movimientos y los precios históricos de cada activo (hpDatos).',
   'v275 | 2026-10-29 | La app de inicio del celular abre directo la vista mini de GDC (en la compu y en el navegador común sigue abriendo Carteras administradas). Desde la vista mini de GDC, botón 👨‍👩‍👧 Carteras administradas para ir al índice.',
   'v274 | 2026-10-29 | 📱 Vista mini: agregando ?mini a la dirección de cualquier cartera se abre una pantalla liviana para el celular con valor total (USD y $ al MEP), Hoy y el período en USD y %, avisos juntos (balances en 4 días, próximo cobro, Diario para revisar, guardados fallidos, tipos de cambio faltantes) y lo que más subió y bajó hoy. Arranca con lo último guardado, respeta el punto de guardado y el modo madrugada, tiene 👁 propio y un botón para abrir la cartera completa (miniRender).',
   'v273 | 2026-10-28 | 📓 Diario de inversión: al comprar o vender desde el Portafolio hay un campo opcional "¿Por qué?". Nueva página Diario (menú, debajo de Movimientos): a los 6 meses la operación pasa a "Para revisar" y muestra lo que pensabas y cómo salió (en una compra, cuánto subió o bajó desde entonces; en una venta, si te apuraste), con un campo para anotar qué aprendiste. También muestra las que esperan y deja anotar el porqué de las operaciones de los últimos 60 días. El menú marca cuántas hay para revisar.',
@@ -1044,6 +1045,7 @@ function showPage(id,btn){
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
+  if(id==='dashboard') setTimeout(hpInit, 120);
   if(id==='rubros') renderRubros();
   if(id==='vigilancia') vigRender();
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
@@ -12138,3 +12140,186 @@ if(MINI){
 // Al abrir la cartera completa desde la vista mini con #pagina, ir directo a esa página.
 (function(){if(MINI)return;var h=(location.hash||'').slice(1);if(!/^(diario|tipocambio|movimientos|balances)$/.test(h))return;
   var ir=function(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){var b=document.querySelector('.nav-item[onclick*="\''+h+'\'"]');try{showPage(h,b);}catch(e){}}else if(n<40)ir(n+1);},800);};ir(0);})();
+
+// ─── 🎬 La película de tu cartera y 📈 Línea de tiempo con historia (solapa DashBoard) ───────────────
+// Reconstruye el valor de la cartera semana a semana desde el primer movimiento: cantidades según los movimientos
+// y precios históricos de cada activo en USD (_phSerie: data912 + precios propios, al CCL/MEP del día). Si un activo
+// no tiene historial de precios (FCI, algunos bonos) se valúa al precio de su última operación. La escala de cada
+// serie (por 100 VN, ratio) se ajusta sola comparándola con los precios de tus propias operaciones.
+var HP={d:null,cargando:null,peli:{t:0,tm:null,vel:1,ultEv:-1},tl:{on:{op:true,ar:true,mu:true},sel:null}};
+var HP_EVM=[
+ {k:'ar',f:'2023-08-13',i:'🗳️',t:'PASO 2023',x:'Primarias presidenciales en Argentina; al día siguiente el dólar oficial saltó a $350.'},
+ {k:'ar',f:'2023-10-22',i:'🗳️',t:'Elecciones generales 2023',x:'Primera vuelta de las elecciones presidenciales en Argentina.'},
+ {k:'ar',f:'2023-11-19',i:'🗳️',t:'Balotaje presidencial',x:'Segunda vuelta de las elecciones presidenciales en Argentina.'},
+ {k:'ar',f:'2023-12-13',i:'💱',t:'Devaluación del peso oficial',x:'El dólar oficial pasó de unos $366 a $800 en un día.'},
+ {k:'mu',f:'2025-04-02',i:'🌎',t:'Aranceles de EE.UU. y caída global',x:'Anuncio de aranceles amplios; las bolsas del mundo cayeron fuerte los días siguientes.'},
+ {k:'ar',f:'2025-04-14',i:'🔓',t:'Salida del cepo para personas',x:'Se eliminó el límite para comprar dólares para personas humanas; banda de flotación para el oficial.'},
+ {k:'ar',f:'2025-10-26',i:'🗳️',t:'Elecciones legislativas 2025',x:'Elecciones de medio término en Argentina.'}
+];
+var HP_EVU=null; // hechos agregados por vos (config eventos_tl)
+var _hpMes=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function _hpIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _hpPx(ser,f){if(!ser||!ser.length||f<ser[0][0])return null;var lo=0,hi=ser.length-1;while(lo<hi){var m=(lo+hi+1)>>1;if(ser[m][0]<=f)lo=m;else hi=m-1;}
+  var dd=(new Date(f)-new Date(ser[lo][0]))/864e5;return dd<=20?ser[lo][1]:null;}
+function _hpMovs(){
+  return (movimientos||[]).filter(function(m){return m&&(m.tipo==='compra'||m.tipo==='venta')&&m.ticker&&+m.qty>0&&m.owner!=='cristian'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);})
+    .map(function(m){return {m:m,f:_phIso(m.fecha),t:m.ticker,q:+m.qty,tp:m.tipo,u:_rotUSD(m)};}).filter(function(x){return x.f;}).sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:(+a.m.id||0)-(+b.m.id||0);});
+}
+async function hpDatos(onProg,forzar){
+  if(HP.d&&!forzar)return HP.d;if(HP.cargando)return HP.cargando;
+  var M=_hpMovs(),firma=M.length+'|'+(M.length?M[M.length-1].m.id:'')+'|'+_bkHoy();
+  if(!forzar){try{var c=JSON.parse(localStorage.getItem(PFX+'hp_v1')||'null');if(c&&c.firma===firma){HP.d=c;return c;}}catch(e){}}
+  HP.cargando=(async function(){
+    if(!M.length)return {sem:[],meses:[],ops:[],firma:firma};
+    var tks=[];M.forEach(function(x){if(tks.indexOf(x.t)<0)tks.push(x.t);});
+    var ser={},hechos=0,cola=tks.slice();
+    var trabajador=async function(){while(cola.length){var t=cola.shift();try{var s=getSector(t);ser[t]=(s==='fci')?null:(await _phSerie(t,s)).ser;}catch(e){ser[t]=null;}hechos++;if(onProg)onProg(hechos,tks.length);}};
+    await Promise.all([trabajador(),trabajador(),trabajador(),trabajador()]);
+    // escala de cada serie contra tus operaciones (por 100 VN, ratio, etc.)
+    var k={};tks.forEach(function(t){var S=ser[t];if(!S||!S.length){k[t]=null;return;}var R=[];
+      M.forEach(function(x){if(x.t!==t||!(x.u>0))return;var p=_hpPx(S,x.f);if(p>0)R.push(x.u/x.q/p);});
+      if(!R.length){k[t]=1;return;}R.sort(function(a,b){return a-b;});var med=R[Math.floor(R.length/2)];k[t]=Math.pow(10,Math.round(Math.log10(med)));});
+    // semanas desde el primer movimiento
+    var d=new Date(M[0].f+'T12:00:00'),hoy=new Date(),q={},ult={},i=0,sem=[],meses=[],mesAct=null,ultPer=null;
+    while(d<=hoy){
+      var f=_hpIso(d);
+      while(i<M.length&&M[i].f<=f){var x=M[i];q[x.t]=(q[x.t]||0)+(x.tp==='compra'?x.q:-x.q);if(q[x.t]<1e-6)q[x.t]=0;if(x.u>0)ult[x.t]=x.u/x.q;i++;}
+      var tot=0,per={};
+      Object.keys(q).forEach(function(t){if(!(q[t]>0))return;var p=_hpPx(ser[t],f),v=(p>0&&k[t])?q[t]*p*k[t]:(ult[t]?q[t]*ult[t]:0);if(v>0){per[t]=Math.round(v);tot+=v;}});
+      sem.push({f:f,v:Math.round(tot)});
+      var mk=f.slice(0,7);if(mesAct&&mk!==mesAct&&ultPer)meses.push(ultPer);mesAct=mk;ultPer={f:f,per:per,tot:Math.round(tot)};
+      d.setDate(d.getDate()+7);
+    }
+    if(ultPer)meses.push(ultPer);
+    // operaciones grandes por día (para las marcas)
+    var porDia={};M.forEach(function(x){if(!(x.u>0))return;var g=porDia[x.f]||(porDia[x.f]={f:x.f,c:0,v:0,tc:{},tv:{}});if(x.tp==='compra'){g.c+=x.u;g.tc[x.t]=(g.tc[x.t]||0)+x.u;}else{g.v+=x.u;g.tv[x.t]=(g.tv[x.t]||0)+x.u;}});
+    var valEn=function(f){var b=sem[0];for(var j=0;j<sem.length&&sem[j].f<=f;j++)b=sem[j];return b?b.v:0;};
+    var ops=Object.keys(porDia).map(function(f){var g=porDia[f],vt=valEn(f)||1,lim=Math.max(500,vt*0.04),o=[];
+      var nom=function(T){return Object.keys(T).sort(function(a,b){return T[b]-T[a];});};
+      if(g.c>=lim)o.push({f:f,tp:'c',u:Math.round(g.c),tk:nom(g.tc)});if(g.v>=lim)o.push({f:f,tp:'v',u:Math.round(g.v),tk:nom(g.tv)});return o;}).reduce(function(a,b){return a.concat(b);},[]);
+    var res={sem:sem,meses:meses,ops:ops,firma:firma};
+    try{localStorage.setItem(PFX+'hp_v1',JSON.stringify(res));}catch(e){}
+    return res;
+  })();
+  try{HP.d=await HP.cargando;return HP.d;}finally{HP.cargando=null;}
+}
+function _hpN(x){return Math.round(x||0).toLocaleString('es-AR');}
+function _hpCss(){if(document.getElementById('hp-css'))return;var st=document.createElement('style');st.id='hp-css';st.textContent=
+  '.hp-body{padding:14px 16px}.hp-hd{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}'+
+  '.hp-mes{font-family:var(--mono);font-size:2rem;font-weight:700;line-height:1;letter-spacing:-.02em}.hp-tot{margin-left:auto;text-align:right}'+
+  '.hp-tot .v{font-family:var(--mono);font-size:1.3rem;font-weight:700}.hp-tot .s,.hp-l{font-family:var(--mono);font-size:.66rem;color:var(--text3)}'+
+  '.hp-chart{position:relative;margin-top:14px;height:390px;overflow:hidden}.hp-bar{position:absolute;left:0;right:0;height:34px;display:flex;align-items:center;transition:transform .45s cubic-bezier(.4,.1,.2,1),opacity .3s}'+
+  '.hp-bar .lb{width:64px;flex:none;font-family:var(--mono);font-weight:700;font-size:.78rem;text-align:right;padding-right:10px}.hp-bar .tr{flex:1;position:relative;height:25px}'+
+  '.hp-bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;transition:width .45s cubic-bezier(.4,.1,.2,1)}'+
+  '.hp-bar .val{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:.7rem;color:var(--text2);white-space:nowrap;transition:left .45s cubic-bezier(.4,.1,.2,1)}.hp-bar .val b{color:var(--text);font-weight:600}'+
+  '.hp-ev{height:40px;margin-top:4px;display:flex;align-items:center;justify-content:center}.hp-chip{font-size:.78rem;padding:6px 13px;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
+  '.hp-chip.on{opacity:1;transform:none}.hp-ctl{display:flex;align-items:center;gap:10px;margin-top:6px}.hp-ctl input[type=range]{flex:1;accent-color:var(--accent)}'+
+  '.hp-fil{display:flex;gap:6px;flex-wrap:wrap}.hp-ch{font-size:.7rem;padding:4px 10px;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;user-select:none}.hp-ch.on{color:var(--text);border-color:var(--accent);background:rgba(0,230,118,.1)}'+
+  '.hp-svg{width:100%;height:auto;display:block;overflow:visible}.hp-ax{font-family:var(--mono);font-size:10px;fill:var(--text3)}.hp-pin{cursor:pointer}.hp-pin:hover circle,.hp-pin.sel circle{stroke-width:3}'+
+  '.hp-det{margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:96px;font-size:.82rem;line-height:1.5}'+
+  '.hp-det h4{font-size:.95rem;margin:2px 0 4px}.hp-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px}'+
+  '.hp-k{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:7px 10px}.hp-k .l{font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:600}.hp-k .v{font-family:var(--mono);font-weight:700;font-size:.92rem;margin-top:2px}'+
+  '@media (max-width:560px){.hp-mes{font-size:1.5rem}.hp-chart{height:330px}.hp-bar{height:29px}.hp-bar .tr{height:21px}.hp-bar .lb{width:54px;font-size:.7rem}}';document.head.appendChild(st);}
+function hpInit(){
+  var db=document.getElementById('db-scroll');if(!db)return;_hpCss();
+  if(!document.getElementById('hp-peli')){
+    var c1=document.createElement('div');c1.className='card';c1.id='hp-peli';c1.style.marginBottom='1rem';
+    c1.innerHTML='<div class="card-header"><span class="card-title">🎬 La película de tu cartera</span><span class="hp-l">los 10 activos más grandes de cada mes</span></div><div class="hp-body" id="hp-peli-b"><div class="hp-l">Preparando…</div></div>';
+    var c2=document.createElement('div');c2.className='card';c2.id='hp-tl';c2.style.marginBottom='1rem';
+    c2.innerHTML='<div class="card-header"><span class="card-title">📈 Tu cartera y lo que pasaba</span><div class="hp-fil"><span class="hp-ch on" data-k="op">🟢🔴 Mis operaciones</span><span class="hp-ch on" data-k="ar">🇦🇷 Argentina</span><span class="hp-ch on" data-k="mu">🌎 Mundo</span><span class="hp-ch" onclick="hpEvAgregar()">＋ Hecho</span></div></div><div class="hp-body" id="hp-tl-b"><div class="hp-l">Preparando…</div></div>';
+    var ref=document.getElementById('nv-pies');ref=ref?ref.nextSibling:db.firstChild;db.insertBefore(c1,ref);db.insertBefore(c2,c1.nextSibling);
+    c2.querySelectorAll('.hp-ch[data-k]').forEach(function(ch){ch.onclick=function(){var k=ch.dataset.k;HP.tl.on[k]=!HP.tl.on[k];ch.classList.toggle('on',HP.tl.on[k]);hpTlDibujar();};});
+  }
+  if(HP.d){hpPeliArmar();hpTlArmar();return;}
+  var prog=function(a,b){['hp-peli-b','hp-tl-b'].forEach(function(id){var e=document.getElementById(id);if(e&&!HP.d)e.innerHTML='<div class="hp-l">Cargando precios históricos… '+a+' / '+b+'</div>';});};
+  Promise.all([hpDatos(prog),_hpEvuCargar()]).then(function(){hpPeliArmar();hpTlArmar();}).catch(function(e){console.warn('hp',e);});
+}
+async function _hpEvuCargar(){if(HP_EVU)return HP_EVU;try{var v=await sbGetConfig('eventos_tl');HP_EVU=Array.isArray(v)?v:[];}catch(e){HP_EVU=[];}return HP_EVU;}
+// ── 🎬 Película ──
+var _hpCol={bonos:'#00e676',on:'#69f0ae',fci:'#b2ff59',argentina:'#00b0ff',brasil:'#4dd0e1',etf:'#ffb74d',cripto:'#ff9100'};
+function _hpColor(t){var s=getSector(t);if(_hpCol[s])return _hpCol[s];try{if(typeof _nvBT==='function'&&_nvBT({t:t,s:s}))return '#a78bfa';}catch(e){}return '#448aff';}
+function hpPeliArmar(){
+  var b=document.getElementById('hp-peli-b'),D=HP.d;if(!b||!D)return;
+  if(!D.meses.length){b.innerHTML='<div class="hp-l">Todavía no hay movimientos para armar la película.</div>';return;}
+  b.innerHTML='<div class="hp-hd"><div><div class="hp-l">'+(CFG.nombre||'')+' · tu cartera</div><div class="hp-mes" id="hp-mes"></div></div><div class="hp-tot"><div class="hp-l">Valor total</div><div class="v port-sensitive" id="hp-tot"></div><div class="s" id="hp-pos"></div></div></div>'+
+    '<div class="hp-chart" id="hp-chart"></div><div class="hp-ev"><div class="hp-chip" id="hp-chip"></div></div>'+
+    '<div class="hp-ctl"><button class="btn btn-sm" onclick="hpPeliIr(0)" title="Desde el principio">⏮</button><button class="btn btn-a btn-sm" id="hp-play" onclick="hpPeliPlay()">▶ Ver</button><input type="range" id="hp-sl" min="0" max="'+(D.meses.length-1)+'" value="0" oninput="hpPeliIr(+this.value)"><button class="btn btn-sm" id="hp-vel" onclick="hpPeliVel()">1×</button></div>';
+  // entradas y salidas por mes
+  HP.peli.ev={};var prev={};D.meses.forEach(function(m,i){var e=[];Object.keys(m.per).forEach(function(t){if(!prev[t])e.push('🟢 '+t);});Object.keys(prev).forEach(function(t){if(!m.per[t])e.push('🔴 '+t);});
+    if(i===0)e=['🎬 Arranca tu cartera'];if(e.length)HP.peli.ev[i]=e.length>4?e.slice(0,4).concat(['y '+(e.length-4)+' más']):e;prev=m.per;});
+  HP.peli.t=D.meses.length-1;HP.peli.ultEv=-1;hpPeliPintar(HP.peli.t);
+}
+function hpPeliPintar(t){
+  var D=HP.d,m=D.meses[t],ch=document.getElementById('hp-chart');if(!ch||!m)return;
+  var BH=window.innerWidth<=560?33:39,vals=Object.keys(m.per).map(function(k){return {t:k,v:m.per[k]};}).sort(function(a,b){return b.v-a.v;}),mx=vals.length?vals[0].v:1,rk={};
+  vals.forEach(function(x,j){rk[x.t]=j;});
+  var vistos={};Array.prototype.slice.call(ch.children).forEach(function(el){vistos[el.dataset.t]=el;});
+  vals.slice(0,10).forEach(function(x){if(!vistos[x.t]){var el=document.createElement('div');el.className='hp-bar';el.dataset.t=x.t;el.style.transform='translateY('+(10*BH+20)+'px)';el.style.opacity='0';
+    el.innerHTML='<span class="lb">'+x.t+'</span><span class="tr"><span class="fill" style="background:'+_hpColor(x.t)+';width:0"></span><span class="val port-sensitive"></span></span>';ch.appendChild(el);vistos[x.t]=el;void el.offsetWidth;}});
+  Object.keys(vistos).forEach(function(k){var el=vistos[k],j=rk[k];
+    if(j==null||j>=10){el.style.opacity='0';el.style.transform='translateY('+(10*BH+20)+'px)';return;}
+    el.style.opacity='1';el.style.transform='translateY('+(j*BH)+'px)';var w=Math.max(1.5,m.per[k]/mx*76);el.querySelector('.fill').style.width=w+'%';
+    var vl=el.querySelector('.val');vl.style.left='calc('+w+'% + 8px)';vl.innerHTML='<b>USD '+_hpN(m.per[k])+'</b> · '+(m.tot>0?(m.per[k]/m.tot*100).toFixed(1).replace('.',','):'0')+'%';});
+  var p=m.f.split('-');document.getElementById('hp-mes').textContent=_hpMes[+p[1]-1]+' '+p[0];
+  document.getElementById('hp-tot').textContent='USD '+_hpN(m.tot);document.getElementById('hp-pos').textContent=vals.length+' activos';
+  var sl=document.getElementById('hp-sl');if(sl)sl.value=t;
+  var c=document.getElementById('hp-chip'),ev=HP.peli.ev[t];
+  if(ev&&HP.peli.ultEv!==t){HP.peli.ultEv=t;c.classList.remove('on');setTimeout(function(){c.textContent=ev.join('  ·  ');c.classList.add('on');},60);}
+  else if(!ev&&HP.peli.ultEv!==-1&&t-HP.peli.ultEv>1)c.classList.remove('on');
+}
+function hpPeliIr(t){hpPeliParar();HP.peli.t=t;if(t===0)HP.peli.ultEv=-1;hpPeliPintar(t);}
+function hpPeliPlay(){if(HP.peli.tm){hpPeliParar();return;}var N=HP.d.meses.length;if(HP.peli.t>=N-1){HP.peli.t=0;HP.peli.ultEv=-1;hpPeliPintar(0);}
+  HP.peli.tm=setInterval(function(){if(HP.peli.t>=N-1||!document.getElementById('hp-chart')){hpPeliParar();return;}HP.peli.t++;hpPeliPintar(HP.peli.t);},650/HP.peli.vel);
+  document.getElementById('hp-play').textContent='⏸ Pausa';}
+function hpPeliParar(){clearInterval(HP.peli.tm);HP.peli.tm=null;var b=document.getElementById('hp-play');if(b)b.textContent=(HP.d&&HP.peli.t>=HP.d.meses.length-1)?'↻ Otra vez':'▶ Ver';}
+function hpPeliVel(){var L=[1,2,0.5];HP.peli.vel=L[(L.indexOf(HP.peli.vel)+1)%L.length];document.getElementById('hp-vel').textContent=(HP.peli.vel===0.5?'½':HP.peli.vel)+'×';if(HP.peli.tm){hpPeliParar();hpPeliPlay();}}
+// ── 📈 Línea de tiempo ──
+function hpTlArmar(){var b=document.getElementById('hp-tl-b');if(!b||!HP.d)return;
+  if(HP.d.sem.length<3){b.innerHTML='<div class="hp-l">Todavía no hay historia suficiente.</div>';return;}
+  b.innerHTML='<svg class="hp-svg" id="hp-svg" viewBox="0 0 860 370"></svg><div class="hp-det" id="hp-det"><span class="hp-l">Tocá una banderita (hechos del mercado) o un punto (tus operaciones grandes) para ver qué pasó y cómo siguió.</span></div>';
+  hpTlDibujar();}
+function _hpEventos(){return HP_EVM.concat((HP_EVU||[]).map(function(e){return Object.assign({k:'mu',i:'📌',propio:true},e);}));}
+function hpTlDibujar(){
+  var g=document.getElementById('hp-svg'),D=HP.d;if(!g||!D)return;var S=D.sem,on=HP.tl.on,sel=HP.tl.sel;
+  var W=860,H=370,L=56,R=14,T=86,B=34,t0=new Date(S[0].f).getTime(),t1=new Date(S[S.length-1].f).getTime(),vmin=Infinity,vmax=0;
+  S.forEach(function(p){vmin=Math.min(vmin,p.v);vmax=Math.max(vmax,p.v);});var paso=Math.pow(10,Math.floor(Math.log10(Math.max(1,vmax-vmin))));if((vmax-vmin)/paso<3)paso/=2;
+  vmin=Math.floor(vmin/paso)*paso;vmax=Math.ceil(vmax/paso)*paso;if(vmax===vmin)vmax=vmin+paso;
+  var X=function(f){return L+(new Date(f).getTime()-t0)/Math.max(1,t1-t0)*(W-L-R);},Y=function(v){return T+(1-(v-vmin)/(vmax-vmin))*(H-T-B);};
+  var valEn=function(f){var b=S[0];for(var j=0;j<S.length&&S[j].f<=f;j++)b=S[j];return b.v;};
+  var fk=function(v){return v>=1e6?(v/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+'M':v>=1000?Math.round(v/1000)+'k':Math.round(v);};
+  var s='<defs><linearGradient id="hp-gr" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#00e676" stop-opacity=".32"/><stop offset="1" stop-color="#00e676" stop-opacity="0"/></linearGradient></defs>';
+  for(var y=vmin;y<=vmax+1e-9;y+=paso)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="var(--border)" stroke-dasharray="2 4"/><text class="hp-ax" x="'+(L-8)+'" y="'+(Y(y)+3)+'" text-anchor="end">'+fk(y)+'</text>';
+  for(var a=+S[0].f.slice(0,4)+1;a<=+S[S.length-1].f.slice(0,4);a++){var dx=X(a+'-01-01');s+='<line x1="'+dx+'" x2="'+dx+'" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--border)"/><text class="hp-ax" x="'+(dx+4)+'" y="'+(H-B+16)+'">'+a+'</text>';}
+  var path=S.map(function(p,i){return (i?'L':'M')+X(p.f).toFixed(1)+' '+Y(p.v).toFixed(1);}).join(' ');
+  s+='<path d="'+path+' L'+X(S[S.length-1].f)+' '+(H-B)+' L'+L+' '+(H-B)+' Z" fill="url(#hp-gr)" opacity=".55"/><path d="'+path+'" fill="none" stroke="#00e676" stroke-width="2"/>';
+  var ultX=-99,niv=0;
+  _hpEventos().forEach(function(e,i){if(!on[e.k]||e.f<S[0].f||e.f>S[S.length-1].f)return;var x=X(e.f),v=valEn(e.f),c=e.k==='ar'?'#448aff':'#ffb74d';niv=(x-ultX<30)?(niv+1)%2:0;ultX=x;var dy=-niv*30;
+    s+='<g class="hp-pin'+(sel==='m'+i?' sel':'')+'" onclick="hpTlVer(\'m'+i+'\')"><line x1="'+x+'" x2="'+x+'" y1="'+(T-18+dy)+'" y2="'+Y(v)+'" stroke="'+c+'" stroke-dasharray="3 3" opacity=".7"/><circle cx="'+x+'" cy="'+(T-28+dy)+'" r="13" fill="var(--surface2)" stroke="'+c+'" stroke-width="1.5"/><text x="'+x+'" y="'+(T-24+dy)+'" text-anchor="middle" font-size="12">'+e.i+'</text></g>';});
+  if(on.op)D.ops.forEach(function(o,i){var x=X(o.f),r=4+Math.min(9,Math.sqrt(o.u)/12),c=o.tp==='c'?'#00e676':'#ff5252';
+    s+='<g class="hp-pin'+(sel==='o'+i?' sel':'')+'" onclick="hpTlVer(\'o'+i+'\')"><circle cx="'+x+'" cy="'+Y(valEn(o.f))+'" r="'+r.toFixed(1)+'" fill="'+c+'" fill-opacity=".85" stroke="var(--bg)" stroke-width="2"/></g>';});
+  g.innerHTML=s;
+}
+function _hpOpTxt(o){var n=o.tk.slice(0,3).join(', ')+(o.tk.length>3?' y '+(o.tk.length-3)+' más':'');return (o.tp==='c'?'Compraste ':'Vendiste ')+n;}
+function hpTlVer(id){
+  HP.tl.sel=id;hpTlDibujar();var D=HP.d,S=D.sem,E=_hpEventos(),e=id[0]==='m'?E[+id.slice(1)]:D.ops[+id.slice(1)];if(!e)return;
+  var valEn=function(f){var b=S[0];for(var j=0;j<S.length&&S[j].f<=f;j++)b=S[j];return b.v;};
+  var v0=valEn(e.f),d3=new Date(e.f+'T12:00:00');d3.setMonth(d3.getMonth()+3);var f3=_hpIso(d3),hay3=f3<=S[S.length-1].f,v3=valEn(f3),vf=S[S.length-1].v;
+  var pc=function(a,b){if(!(a>0))return '—';var x=(b/a-1)*100;return '<span style="color:'+(x>=0?'var(--accent)':'var(--red)')+'">'+(x>=0?'+':'−')+Math.abs(x).toFixed(1).replace('.',',')+'%</span>';};
+  var cerca=D.ops.filter(function(o){return Math.abs(new Date(o.f)-new Date(e.f))<15*864e5&&o!==e;});
+  var fd=e.f.split('-').reverse().join('/');
+  var h='<div class="hp-l">'+fd+'</div><h4>'+(id[0]==='m'?e.i+' '+e.t:(e.tp==='c'?'🟢 ':'🔴 ')+_hpOpTxt(e))+'</h4>';
+  if(id[0]==='m'){h+='<div>'+(e.x||'')+'</div><div style="margin-top:4px;color:var(--text3)">'+(cerca.length?'Esa quincena: '+cerca.map(function(o){return (o.tp==='c'?'🟢 ':'🔴 ')+_hpOpTxt(o).replace(/^C/,'c').replace(/^V/,'v')+' (<span class="port-sensitive">USD '+_hpN(o.u)+'</span>)';}).join(', '):'Esa quincena no hiciste operaciones grandes: te quedaste quieto.')+'</div>'+
+    (e.propio?'<div style="margin-top:6px"><span class="hp-ch" onclick="hpEvBorrar(\''+e.f+'\',\''+String(e.t).replace(/'/g,"\\'")+'\')">🗑 Borrar este hecho</span></div>':'');}
+  h+='<div class="hp-g"><div class="hp-k"><div class="l">Tu cartera ese día</div><div class="v port-sensitive">USD '+_hpN(v0)+'</div></div><div class="hp-k"><div class="l">3 meses después</div><div class="v">'+(hay3?pc(v0,v3):'<span style="color:var(--text3)">todavía no</span>')+'</div></div><div class="hp-k"><div class="l">Hasta hoy</div><div class="v">'+pc(v0,vf)+'</div></div>'+
+    (e.u?'<div class="hp-k"><div class="l">Monto operado</div><div class="v port-sensitive">USD '+_hpN(e.u)+'</div></div>':'')+'</div>'+
+    '<div class="hp-l" style="margin-top:6px">El valor de la cartera incluye aportes y retiros: "hasta hoy" no es rendimiento puro.</div>';
+  document.getElementById('hp-det').innerHTML=h;
+}
+async function hpEvAgregar(){
+  var f=prompt('Fecha del hecho (dd/mm/aaaa):','');if(!f)return;var p=f.trim().split('/');if(p.length!==3){alert('Usá dd/mm/aaaa');return;}
+  var iso=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)){alert('Fecha inválida');return;}
+  var t=prompt('¿Qué pasó? (título corto)','');if(!t)return;var x=prompt('Detalle (opcional)','')||'';
+  await _hpEvuCargar();HP_EVU.push({f:iso,t:t.trim(),x:x.trim()});HP_EVU.sort(function(a,b){return a.f<b.f?-1:1;});await sbSetConfig('eventos_tl',HP_EVU);hpTlDibujar();
+}
+async function hpEvBorrar(f,t){if(!confirm('¿Borrar "'+t+'"?'))return;await _hpEvuCargar();HP_EVU=HP_EVU.filter(function(e){return !(e.f===f&&e.t===t);});await sbSetConfig('eventos_tl',HP_EVU);HP.tl.sel=null;hpTlDibujar();
+  var d=document.getElementById('hp-det');if(d)d.innerHTML='<span class="hp-l">Hecho borrado.</span>';}
