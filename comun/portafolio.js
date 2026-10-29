@@ -21,8 +21,11 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=278, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=281, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v281 | 2026-10-29 | DashBoard: 🗣️ "Oye Siri, mi cartera". La app arma un resumen hablado (valor, hoy, año, lo que más subió y bajó, próximo cobro, balances) y lo publica cada 5 min en la tabla siri_resumen de Supabase bajo un código secreto; un atajo del iPhone lo pide y lo lee. La tarjeta trae el SQL a pegar una vez, la URL, la clave y el código para copiar, los pasos del atajo y un botón para escuchar cómo suena (siriTexto, siriPublicar).',
+  'v280 | 2026-10-29 | DashBoard: 🧪 Tu plan en piloto automático. Una cartera fantasma recibe la misma plata que vos en las mismas fechas y compra lo que más le falta según tu cartera ideal por grupo (o tu composición actual si no tenés ideal), sin vender nunca; muestra cuánto te sumaron o restaron tus decisiones y las dos curvas (apDatos, apArmar).',
+  'v279 | 2026-10-29 | 💯 Salud de la cartera: puntaje de 0 a 100 arriba de todo en DashBoard, en seis partes (concentración 25, diversificación 20, liquidez 15, posiciones en pérdida 15, calidad de los datos 15, renta 10), con la variación contra hace una semana y la lista de qué mejorar con los puntos que suma cada cosa. En el Portafolio, botón 💯 con el puntaje que lleva al detalle (saludPuntaje, saludInit).',
   'v278 | 2026-10-29 | Fix: al recargar ya no aparece un instante la versión vieja (v266) en el recuadro de versión: el HTML ya no trae el número escrito, lo pone el código al cargar.',
   'v277 | 2026-10-29 | 📈 Tu cartera y lo que pasaba: selector de período (Último mes, 3M, 1 año, 2 años, Total), que se recuerda. El último año ahora va día a día (antes semana a semana) y las fechas del eje se adaptan al período (años, meses o semanas).',
   'v276 | 2026-10-29 | DashBoard: 🎬 La película de tu cartera (los 10 activos más grandes mes a mes desde el primer movimiento, con entradas y salidas, play/pausa, velocidad y barra para ir a cualquier mes) y 📈 Tu cartera y lo que pasaba (valor semana a semana con tus compras y ventas grandes y los hechos del mercado; al tocarlos muestra qué pasó, qué hiciste esa quincena y cómo siguió a 3 meses y hasta hoy; se pueden agregar hechos propios). El valor se reconstruye con tus movimientos y los precios históricos de cada activo (hpDatos).',
@@ -1047,7 +1050,7 @@ function showPage(id,btn){
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
   if(id==='portafolio'){ setTimeout(renderPortfolio, 50); setTimeout(vsellPopulateSelect, 50); setTimeout(vsellResetFecha, 50); setTimeout(vbuyResetFecha, 50); }
   if(id==='dashboard') setTimeout(renderDashboard, 50);
-  if(id==='dashboard') setTimeout(hpInit, 120);
+  if(id==='dashboard') setTimeout(function(){try{saludInit();}catch(e){console.warn('salud',e);}hpInit();try{siriInit();}catch(e){console.warn('siri',e);}}, 120);
   if(id==='rubros') renderRubros();
   if(id==='vigilancia') vigRender();
   if(id==='recomendaciones'){ renderPerfilComparacion(); }
@@ -12236,9 +12239,10 @@ function hpInit(){
     var ref=document.getElementById('nv-pies');ref=ref?ref.nextSibling:db.firstChild;db.insertBefore(c1,ref);db.insertBefore(c2,c1.nextSibling);
     c2.querySelectorAll('.hp-ch[data-k]').forEach(function(ch){ch.onclick=function(){var k=ch.dataset.k;HP.tl.on[k]=!HP.tl.on[k];ch.classList.toggle('on',HP.tl.on[k]);hpTlDibujar();};});
   }
-  if(HP.d){hpPeliArmar();hpTlArmar();return;}
+  if(!document.getElementById('ap-card')){var c3=document.createElement('div');c3.className='card';c3.id='ap-card';c3.style.marginBottom='1rem';c3.innerHTML='<div class="card-header"><span class="card-title">🧪 Tu plan en piloto automático</span><span class="hp-l">tu cartera real contra seguir el plan sin tocar nada</span></div><div class="hp-body" id="ap-b"><div class="hp-l">Preparando…</div></div>';var t2=document.getElementById('hp-tl');db.insertBefore(c3,t2?t2.nextSibling:null);}
+  if(HP.d){hpPeliArmar();hpTlArmar();apArmar();return;}
   var prog=function(a,b){['hp-peli-b','hp-tl-b'].forEach(function(id){var e=document.getElementById(id);if(e&&!HP.d)e.innerHTML='<div class="hp-l">Cargando precios históricos… '+a+' / '+b+'</div>';});};
-  Promise.all([hpDatos(prog),_hpEvuCargar()]).then(function(){hpPeliArmar();hpTlArmar();}).catch(function(e){console.warn('hp',e);});
+  Promise.all([hpDatos(prog),_hpEvuCargar()]).then(function(){hpPeliArmar();hpTlArmar();apArmar();}).catch(function(e){console.warn('hp',e);});
 }
 async function _hpEvuCargar(){if(HP_EVU)return HP_EVU;try{var v=await sbGetConfig('eventos_tl');HP_EVU=Array.isArray(v)?v:[];}catch(e){HP_EVU=[];}return HP_EVU;}
 // ── 🎬 Película ──
@@ -12335,3 +12339,204 @@ async function hpEvAgregar(){
 }
 async function hpEvBorrar(f,t){if(!confirm('¿Borrar "'+t+'"?'))return;await _hpEvuCargar();HP_EVU=HP_EVU.filter(function(e){return !(e.f===f&&e.t===t);});await sbSetConfig('eventos_tl',HP_EVU);HP.tl.sel=null;hpTlDibujar();
   var d=document.getElementById('hp-det');if(d)d.innerHTML='<span class="hp-l">Hecho borrado.</span>';}
+
+// ─── 💯 Puntaje de salud de la cartera (DashBoard) ───────────────────────────────────────────────────
+// 0 a 100 en seis partes: concentración (25), diversificación (20), liquidez (15), posiciones en pérdida (15),
+// calidad de los datos (15) y renta (10). Cada parte explica qué la baja y cuántos puntos sumarías arreglándolo.
+var SALUD_LS='salud_hist';
+function saludPuntaje(){
+  var R=(NV_ROWS||[]).filter(function(o){return o&&o.usd>0;}),tot=R.reduce(function(a,o){return a+o.usd;},0);if(!(tot>0))return null;
+  var P=[],sug=[],f1=function(x){return x.toFixed(1).replace('.',',');},n0=function(x){return Math.round(x).toLocaleString('es-AR');};
+  var cl=function(x,a,b){return Math.max(a,Math.min(b,x));};
+  // 1) Concentración: renta variable contra sus umbrales (3% general, Big Tech hasta BIG_TECH_MAX) y bonos de más de 25% de la renta fija
+  var exc=[];R.forEach(function(o){if(o.rv){var lim=_nvBT(o)?BIG_TECH_MAX:3;if(o.pt>lim)exc.push({o:o,lim:lim,x:o.pt-lim,pen:(o.pt-lim)*3,tp:'la renta variable'});}
+    else if(o.pt>25)exc.push({o:o,lim:25,x:o.pt-25,pen:(o.pt-25)*0.4,tp:'la renta fija'});});
+  var pen1=Math.min(25,exc.reduce(function(a,e){return a+e.pen;},0)),p1=25-pen1;
+  exc.sort(function(a,b){return b.pen-a.pen;}).slice(0,3).forEach(function(e){sug.push({g:Math.min(e.pen,pen1),t:'Bajá '+e.o.t+' de '+f1(e.o.pt)+'% a '+e.lim+'% de '+e.tp});});
+  P.push({k:'Concentración',p:p1,m:25,d:exc.length?exc.length+' activo'+(exc.length>1?'s':'')+' arriba de su umbral':'Ningún activo pasa su umbral'});
+  // 2) Diversificación por país / tipo (número efectivo de grupos)
+  var G={};R.forEach(function(o){var k=o.rv?(o.s||'otro'):('rf_'+(function(){try{return _nvTipo(o);}catch(e){return 'otro';}})());G[k]=(G[k]||0)+o.usd;});var hhi=0,mayor=null;Object.keys(G).forEach(function(k){var w=G[k]/tot;hhi+=w*w;if(!mayor||G[k]>G[mayor])mayor=k;});
+  var nEf=hhi>0?1/hhi:1,p2=cl((nEf-1.5)/(5-1.5),0,1)*20,nomS={nyse:'EE.UU.',argentina:'acciones argentinas',brasil:'Brasil',europa:'Europa',china:'China',cripto:'cripto',bonos:'bonos',on:'ONs',fci:'FCI',rf_cer:'bonos CER',rf_hd:'bonos en dólares',rf_otro:'otra renta fija',rf_rv:'renta fija'};
+  if(p2<17)sug.push({g:Math.min(20-p2,6),t:'Repartí mejor: '+f1(G[mayor]/tot*100)+'% está en '+(nomS[mayor]||mayor)});
+  P.push({k:'Diversificación',p:p2,m:20,d:'Equivale a '+f1(nEf)+' grupos parejos · el mayor: '+(nomS[mayor]||mayor)+' '+Math.round(G[mayor]/tot*100)+'%'});
+  // 3) Liquidez: ideal entre 3% y 15%
+  var liq=(typeof INF_LAST!=='undefined'&&INF_LAST&&INF_LAST.liqTotalUSD)||0,lp=liq/(tot+liq)*100,p3;
+  if(lp<3)p3=Math.max(3,15*lp/3);else if(lp<=15)p3=15;else if(lp<=30)p3=15-(lp-15)/15*7;else p3=8;
+  if(lp<3)sug.push({g:15-p3,t:'Llevá la liquidez a 3% (te faltan ≈ USD '+n0((tot+liq)*0.03-liq)+')'});
+  else if(lp>15)sug.push({g:15-p3,t:'Tenés '+f1(lp)+'% en liquidez: invertí ≈ USD '+n0(liq-(tot+liq)*0.15)+' para quedar en 15%'});
+  P.push({k:'Liquidez',p:p3,m:15,d:f1(lp)+'% de la cartera (ideal entre 3% y 15%)'});
+  // 4) Posiciones en pérdida de más de 15%
+  var malas=R.filter(function(o){return o.d!=null&&o.d<-15;}).sort(function(a,b){return a.d-b.d;}),pp=malas.reduce(function(a,o){return a+o.usd;},0)/tot*100,p4=cl(1-pp/25,0,1)*15;
+  if(malas.length)sug.push({g:15-p4,t:'Revisá lo que pierde más de 15%: '+malas.slice(0,4).map(function(o){return o.t+' ('+Math.round(o.d)+'%)';}).join(', ')+(malas.length>4?' y '+(malas.length-4)+' más':'')});
+  P.push({k:'Posiciones en pérdida',p:p4,m:15,d:malas.length?f1(pp)+'% de la cartera pierde más de 15%':'Nada pierde más de 15%'});
+  // 5) Calidad de los datos
+  var sl={faltaN:0,neg:[],pend:0,sinPrecio:[]};try{sl=saludCalc(INF_LAST||{});}catch(e){}
+  var fallo=(typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length)?1:0,sp=(sl.sinPrecio||[]).length;
+  var q=[[Math.min(6,(sl.faltaN||0)*2),'Cargá los tipos de cambio que faltan ('+(sl.faltaN||0)+' día'+((sl.faltaN||0)>1?'s':'')+')'],[Math.min(6,(sl.neg||[]).length*3),'Corregí las cantidades negativas: '+(sl.neg||[]).join(', ')],
+    [Math.min(3,sl.pend||0),'Confirmá los cobros pendientes ('+(sl.pend||0)+')'],[Math.min(4,sp*2),'Activos sin precio: '+(sl.sinPrecio||[]).slice(0,4).join(', ')],[fallo*5,'Hay un guardado fallido: tocá el punto rojo para reintentar']];
+  var pen5=Math.min(15,q.reduce(function(a,x){return a+x[0];},0)),p5=15-pen5;q.forEach(function(x){if(x[0]>0)sug.push({g:x[0],t:x[1]});});
+  P.push({k:'Calidad de los datos',p:p5,m:15,d:pen5?'Hay cosas para corregir en la carga':'Todo cargado y al día'});
+  // 6) Renta: qué parte de la cartera paga (bonos con flujos o acciones con historial de dividendos)
+  var pr=R.filter(function(o){return o.fl||o.dh;}).reduce(function(a,o){return a+o.usd;},0)/tot*100,p6=Math.min(1,pr/40)*10;
+  if(p6<9)sug.push({g:Math.min(10-p6,5),t:'Solo '+f1(pr)+'% de la cartera paga renta (con 40% o más sumás el máximo)'});
+  P.push({k:'Renta',p:p6,m:10,d:f1(pr)+'% de la cartera paga cupones o dividendos'});
+  var total=Math.round(P.reduce(function(a,x){return a+x.p;},0));
+  sug=sug.filter(function(x){return x.g>=0.5;}).sort(function(a,b){return b.g-a.g;});
+  return {total:total,partes:P,sug:sug};
+}
+function _saludColor(n){return n>=80?'var(--accent)':n>=60?'var(--amber)':'var(--red)';}
+function _saludHist(n){var H={};try{H=JSON.parse(localStorage.getItem(PFX+SALUD_LS)||'{}');}catch(e){}var hoy=_bkHoy();if(n!=null){H[hoy]=n;var K=Object.keys(H).sort();while(K.length>120)delete H[K.shift()];try{localStorage.setItem(PFX+SALUD_LS,JSON.stringify(H));}catch(e){}}
+  var lim=new Date();lim.setDate(lim.getDate()-7);var li=_hpIso(lim),ref=null;Object.keys(H).sort().forEach(function(k){if(k<=li)ref=H[k];});return ref;}
+function saludInit(){
+  var db=document.getElementById('db-scroll');if(!db)return;var c=document.getElementById('salud-card');
+  if(!c){c=document.createElement('div');c.className='card';c.id='salud-card';c.style.marginBottom='1rem';var ref=document.getElementById('nv-pies');ref=ref?ref.nextSibling:db.firstChild;db.insertBefore(c,ref);}
+  var S=saludPuntaje();if(!S){c.innerHTML='<div class="card-header"><span class="card-title">💯 Salud de la cartera</span></div><div style="padding:14px 16px;color:var(--text3);font-size:.78rem">Esperando los precios para calcular…</div>';return;}
+  var ant=_saludHist(S.total),col=_saludColor(S.total),dif=ant!=null?S.total-ant:null,R=46,C=2*Math.PI*R;
+  var ring='<svg viewBox="0 0 120 120" width="120" height="120" style="flex:none"><circle cx="60" cy="60" r="'+R+'" fill="none" stroke="var(--surface2)" stroke-width="11"/><circle cx="60" cy="60" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="11" stroke-linecap="round" stroke-dasharray="'+(C*S.total/100).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 60 60)"/>'+
+    '<text x="60" y="64" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="30" font-weight="700" fill="var(--text)">'+S.total+'</text><text x="60" y="82" text-anchor="middle" font-size="9" fill="var(--text3)">de 100</text></svg>';
+  var est=S.total>=80?'Muy sana':S.total>=60?'Bien, con cosas para mejorar':'Necesita atención';
+  var barras=S.partes.map(function(x){var w=x.p/x.m*100;return '<div style="margin:7px 0"><div style="display:flex;justify-content:space-between;font-size:.74rem"><span>'+x.k+'</span><span style="font-family:var(--mono);color:var(--text2)">'+Math.round(x.p)+' / '+x.m+'</span></div>'+
+    '<div style="height:6px;background:var(--surface2);border-radius:4px;margin-top:3px;overflow:hidden"><div style="height:100%;width:'+w.toFixed(0)+'%;background:'+_saludColor(w)+';border-radius:4px"></div></div><div style="font-size:.66rem;color:var(--text3);margin-top:2px">'+x.d+'</div></div>';}).join('');
+  var mej=S.sug.length?S.sug.slice(0,6).map(function(x){return '<div style="display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);font-size:.78rem"><b style="font-family:var(--mono);color:var(--accent);min-width:44px">+'+Math.max(1,Math.round(x.g))+'</b><span>'+x.t+'</span></div>';}).join(''):'<div style="font-size:.78rem;color:var(--text3);padding:6px 0">Nada para mejorar. 👏</div>';
+  c.innerHTML='<div class="card-header"><span class="card-title">💯 Salud de la cartera</span><span style="font-family:var(--mono);font-size:.66rem;color:var(--text3)">concentración · diversificación · liquidez · pérdidas · datos · renta</span></div>'+
+    '<div style="padding:14px 16px;display:flex;gap:22px;flex-wrap:wrap"><div style="display:flex;gap:14px;align-items:center;min-width:250px"><div>'+ring+'</div><div><div style="font-weight:700;font-size:1rem;color:'+col+'">'+est+'</div>'+
+    (dif!=null?'<div style="font-family:var(--mono);font-size:.72rem;color:'+(dif>=0?'var(--accent)':'var(--red)')+';margin-top:3px">'+(dif>0?'▲ +':dif<0?'▼ ':'= ')+dif+' contra hace una semana</div>':'<div style="font-size:.7rem;color:var(--text3);margin-top:3px">La semana que viene vas a ver cómo cambió.</div>')+'</div></div>'+
+    '<div style="flex:1;min-width:240px">'+barras+'</div><div style="flex:1;min-width:260px"><div style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-weight:600;margin-bottom:2px">Qué mejorar (puntos que sumás)</div>'+mej+'</div></div>';
+  _saludChip(S.total);
+}
+function _saludChip(n){var tw=document.getElementById('nv-tools');if(!tw)return;var b=document.getElementById('salud-chip');
+  if(!b){b=document.createElement('button');b.id='salud-chip';b.className='btn';b.title='Salud de la cartera (tocá para ver el detalle en DashBoard)';b.onclick=function(){var nb=document.querySelector('.nav-item[onclick*="\'dashboard\'"]');showPage('dashboard',nb);};tw.insertBefore(b,tw.firstChild);}
+  b.style.cssText='padding:0 9px;font-family:var(--mono);font-size:.78rem;font-weight:700;color:'+_saludColor(n)+';border-color:'+_saludColor(n);b.textContent='💯 '+n;}
+setInterval(function(){try{if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone&&!MINI){var S=saludPuntaje();if(S)_saludChip(S.total);}}catch(e){}},15000);
+
+// ─── 🧪 Tu plan en piloto automático (DashBoard) ─────────────────────────────────────────────────────
+// Cartera fantasma que recibe exactamente la misma plata que vos (compras menos ventas de cada día) y la reparte según
+// tu plan: los % de tu cartera ideal por grupo (USA, Brasil, Argentina, Europa, China, cripto, renta fija). Cada vez que
+// entra plata compra lo que más le falta para llegar al plan; nunca vende salvo que vos hayas sacado plata (en ese caso
+// vende parejo). Cada grupo se sigue con un activo representativo (SPY, EWZ, GGAL, …).
+var AP={d:null,cargando:null};
+var AP_PROXY={nyse:[['SPY','nyse']],brasil:[['EWZ','brasil']],argentina:[['GGAL','argentina'],['YPFD','argentina']],europa:[['VGK','europa'],['EWG','europa'],['IEUR','europa']],
+  china:[['FXI','china'],['BABA','china']],cripto:[['IBIT','cripto'],['ETHA','cripto']],rf:[['AL30','bonos'],['GD30','bonos']]};
+async function apDatos(){
+  if(AP.d)return AP.d;if(AP.cargando)return AP.cargando;
+  AP.cargando=(async function(){
+    var D=await hpDatos();if(!D||!D.sem.length)return null;
+    // el plan: tu cartera ideal (GDC) o, si no hay, tu composición actual por grupo
+    var plan=null,origen='tu cartera ideal';
+    try{if(typeof _idealLoad==='function'&&(CFG.simRetiro||CFG.carteraIdeal)){_idealLoad();for(var w=0;w<20&&!IDEAL;w++)await new Promise(function(r){setTimeout(r,250);});if(IDEAL&&IDEAL.p&&!IDEAL.ejemplo)plan=Object.assign({},IDEAL.p);}}catch(e){}
+    if(!plan){plan={};var tt=0;(NV_ROWS||[]).forEach(function(o){var k=_idealG(o.s);if(!AP_PROXY[k])return;plan[k]=(plan[k]||0)+(o.usd||0);tt+=o.usd||0;});if(tt>0)Object.keys(plan).forEach(function(k){plan[k]=plan[k]/tt*100;});origen='tu composición actual por grupo (no tenés cartera ideal cargada)';}
+    var G=Object.keys(plan).filter(function(k){return plan[k]>0&&AP_PROXY[k];}),sumP=G.reduce(function(a,k){return a+plan[k];},0);if(!G.length||!(sumP>0))return null;
+    G.forEach(function(k){plan[k]=plan[k]/sumP;});
+    // series de los representativos
+    var px={},prox={};for(var i=0;i<G.length;i++){var k=G[i];for(var j=0;j<AP_PROXY[k].length;j++){var c=AP_PROXY[k][j];try{var r=await _phSerie(c[0],c[1]);if(r&&r.ser&&r.ser.length>30){px[k]=r.ser;prox[k]=c[0];break;}}catch(e){}}}
+    // flujos: compras (+) y ventas (−) de cada día, en USD
+    var F={};_hpMovs().forEach(function(x){if(!(x.u>0))return;F[x.f]=(F[x.f]||0)+(x.tp==='compra'?x.u:-x.u);});var fK=Object.keys(F).sort(),fi=0;
+    var U={},ultPx={},caja={};G.forEach(function(k){U[k]=0;caja[k]=0;});
+    var precio=function(k,f){var p=px[k]?_hpPx(px[k],f):null;if(p>0)ultPx[k]=p;return ultPx[k]||null;};
+    var valGrupo=function(k,f){var p=precio(k,f);return (p?U[k]*p:0)+caja[k];};
+    var out=[];
+    D.sem.forEach(function(pt){var f=pt.f;
+      while(fi<fK.length&&fK[fi]<=f){var ff=fK[fi],m=F[ff];fi++;
+        var V={},tot=0;G.forEach(function(k){V[k]=valGrupo(k,ff);tot+=V[k];});
+        var poner={};
+        if(m>0){var falta={},sf=0;G.forEach(function(k){falta[k]=Math.max(0,(tot+m)*plan[k]-V[k]);sf+=falta[k];});
+          G.forEach(function(k){poner[k]=sf>m?m*falta[k]/sf:falta[k]+(m-sf)*plan[k];});}
+        else if(tot>0){G.forEach(function(k){poner[k]=m*V[k]/tot;});}
+        G.forEach(function(k){var u=poner[k]||0;if(!u)return;var p=precio(k,ff);if(p){U[k]+=u/p;if(U[k]<0)U[k]=0;}else{caja[k]+=u;if(caja[k]<0)caja[k]=0;}});
+      }
+      var vt=0;G.forEach(function(k){vt+=valGrupo(k,f);});out.push({f:f,real:pt.v,plan:Math.round(vt)});
+    });
+    return {pts:out,plan:plan,prox:prox,origen:origen,G:G};
+  })();
+  try{AP.d=await AP.cargando;return AP.d;}finally{AP.cargando=null;}
+}
+var _apNom={nyse:'USA',brasil:'Brasil',argentina:'Argentina',europa:'Europa',china:'China',cripto:'Cripto',rf:'Renta fija'};
+function apArmar(){
+  var b=document.getElementById('ap-b');if(!b)return;
+  apDatos().then(function(A){
+    if(!A||A.pts.length<3){b.innerHTML='<div class="hp-l">No hay datos suficientes para comparar.</div>';return;}
+    var P=A.pts,ul=P[P.length-1],dif=ul.real-ul.plan,difP=ul.plan>0?(ul.real/ul.plan-1)*100:0,n0=function(x){return Math.round(Math.abs(x)).toLocaleString('es-AR');};
+    var W=860,H=260,L=56,R=14,T=14,B=30,t0=new Date(P[0].f).getTime(),t1=new Date(ul.f).getTime(),mx=0;P.forEach(function(p){mx=Math.max(mx,p.real,p.plan);});
+    var paso=Math.pow(10,Math.floor(Math.log10(Math.max(1,mx))));if(mx/paso<3)paso/=2;var vmax=Math.ceil(mx/paso)*paso||1;
+    var X=function(f){return L+(new Date(f).getTime()-t0)/Math.max(1,t1-t0)*(W-L-R);},Y=function(v){return T+(1-v/vmax)*(H-T-B);};
+    var fk=function(v){return v>=1e6?(v/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+'M':v>=1000?Math.round(v/1000)+'k':Math.round(v);};
+    var sv='';for(var y=0;y<=vmax+1e-9;y+=paso)sv+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="var(--border)" stroke-dasharray="2 4"/><text class="hp-ax" x="'+(L-8)+'" y="'+(Y(y)+3)+'" text-anchor="end">'+fk(y)+'</text>';
+    for(var a=+P[0].f.slice(0,4)+1;a<=+ul.f.slice(0,4);a++){var dx=X(a+'-01-01');sv+='<line x1="'+dx+'" x2="'+dx+'" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--border)"/><text class="hp-ax" x="'+(dx+4)+'" y="'+(H-B+16)+'">'+a+'</text>';}
+    var line=function(key){return P.map(function(p,i){return (i?'L':'M')+X(p.f).toFixed(1)+' '+Y(p[key]).toFixed(1);}).join(' ');};
+    sv+='<path d="'+line('plan')+'" fill="none" stroke="#448aff" stroke-width="2" stroke-dasharray="5 4"/><path d="'+line('real')+'" fill="none" stroke="#00e676" stroke-width="2"/>';
+    var gana=dif>=0,col=gana?'var(--accent)':'var(--red)';
+    var planTxt=A.G.map(function(k){return _apNom[k]+' '+Math.round(A.plan[k]*100)+'%'+(A.prox[k]?' ('+A.prox[k]+')':' (sin precio: queda quieto)');}).join(' · ');
+    b.innerHTML='<div class="hp-g" style="margin-top:0"><div class="hp-k"><div class="l">Tu cartera real</div><div class="v port-sensitive">USD '+n0(ul.real)+'</div></div><div class="hp-k"><div class="l">Siguiendo el plan</div><div class="v port-sensitive">USD '+n0(ul.plan)+'</div></div>'+
+      '<div class="hp-k"><div class="l">Tus decisiones</div><div class="v" style="color:'+col+'"><span class="port-sensitive">'+(gana?'+':'−')+'USD '+n0(dif)+'</span> · '+(gana?'+':'−')+Math.abs(difP).toFixed(1).replace('.',',')+'%</div></div></div>'+
+      '<div style="margin:10px 0 2px;font-size:.84rem">'+(Math.abs(difP)<2?'Te fue prácticamente igual que si seguías el plan sin tocar nada.':gana?'Tus decisiones te <b style="color:var(--accent)">sumaron</b> frente a seguir el plan sin tocar nada.':'Seguir el plan sin tocar nada te habría dado <b style="color:var(--red)">más</b> que tus decisiones.')+'</div>'+
+      '<svg class="hp-svg" viewBox="0 0 860 260">'+sv+'</svg>'+
+      '<div style="display:flex;gap:14px;font-size:.7rem;color:var(--text2);margin-top:4px"><span><b style="color:#00e676">━</b> tu cartera real</span><span><b style="color:#448aff">┅</b> el plan en piloto automático</span></div>'+
+      '<div class="hp-l" style="margin-top:8px;line-height:1.5">El plan recibe la misma plata que vos, en las mismas fechas, y compra lo que más le falta según '+A.origen+'. Nunca vende salvo cuando vos sacaste plata. Plan: '+planTxt+'. Sin liquidez ni cobros en ninguno de los dos.</div>';
+  }).catch(function(e){console.warn('ap',e);b.innerHTML='<div class="hp-l">No se pudo calcular.</div>';});
+}
+
+// ─── 🗣️ "Oye Siri, mi cartera" ──────────────────────────────────────────────────────────────────────
+// La app arma un resumen hablado y lo deja en la tabla siri_resumen de Supabase, bajo un código secreto. Un atajo del
+// iPhone lo pide con la función siri(código) — que funciona sin iniciar sesión pero solo con el código — y lo lee en voz alta.
+var SIRI={token:null,cargado:false,ult:'',estado:null};
+var SIRI_SQL="create table if not exists public.siri_resumen (token text primary key, data jsonb not null, ts timestamptz not null default now());\n"+
+  "alter table public.siri_resumen enable row level security;\n"+
+  "drop policy if exists siri_escribe on public.siri_resumen;\n"+
+  "create policy siri_escribe on public.siri_resumen for all to authenticated using (true) with check (true);\n"+
+  "create or replace function public.siri(p_token text) returns jsonb language sql security definer set search_path = public as $$\n"+
+  "  select coalesce((select data from siri_resumen where token = p_token), jsonb_build_object('texto', 'No encontré tu cartera. Revisá el código del atajo.')) $$;\n"+
+  "revoke all on function public.siri(text) from public;\n"+
+  "grant execute on function public.siri(text) to anon, authenticated;";
+function _siriNum(x){x=Math.round(x||0);if(Math.abs(x)>=1e6)return (x/1e6).toLocaleString('es-AR',{maximumFractionDigits:2})+' millones';if(Math.abs(x)>=10000)return Math.round(x/1000).toLocaleString('es-AR')+' mil';return x.toLocaleString('es-AR');}
+function _siriPct(x){return Math.abs(x).toFixed(1).replace('.',',').replace(/,0$/,'')+' por ciento';}
+function siriTexto(){
+  var k=NV_K||{},R=NV_ROWS||[];if(k.val==null)return null;var t=[];
+  t.push('Tu cartera vale '+_siriNum(k.val)+' dólares.');
+  var abierto=(typeof window.enRueda==='function')?window.enRueda():true;
+  if(k.hoyP!=null)t.push((abierto?'Hoy ':'En la última rueda ')+(Math.abs(k.hoyP)<0.05?'quedó igual.':(k.hoyP>0?'sube ':'baja ')+_siriPct(k.hoyP)+', unos '+_siriNum(Math.abs(k.hoy||0))+' dólares.'));
+  if(k.rend!=null)t.push(((CFG.periodoInicio&&CFG.periodoInicio!=='01-01')?'En el período ':'En el año ')+(k.rend>=0?'ganás ':'perdés ')+_siriPct(k.rend)+'.');
+  var mv=R.filter(function(o){return o.ch!=null&&isFinite(o.ch)&&o.q>0;}),up=mv.slice().sort(function(a,b){return b.ch-a.ch;})[0],dn=mv.slice().sort(function(a,b){return a.ch-b.ch;})[0];
+  if(up&&up.ch>0.5)t.push('Lo que más subió: '+up.t+', '+_siriPct(up.ch)+'.');if(dn&&dn.ch<-0.5)t.push('Lo que más bajó: '+dn.t+', '+_siriPct(dn.ch)+'.');
+  try{var cc=calcularCalendarioCobros(),g=_flujosProximoGrupo(cc.items);if(g){var usd=0,tk=[];g.items.forEach(function(it){usd+=it.moneda==='ARS'?(MEP_HOY>0?it.total/MEP_HOY:0):it.total;if(tk.indexOf(it.ticker)<0)tk.push(it.ticker);});
+    var p=g.fecha.split('-'),fd=new Date(+p[0],+p[1]-1,+p[2]);t.push('Próximo cobro: '+tk.slice(0,2).join(' y ')+' el '+fd.getDate()+' de '+['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][fd.getMonth()]+', unos '+_siriNum(usd)+' dólares.');}}catch(e){}
+  try{if(typeof balProximo==='function'){var bl=[];R.forEach(function(o){var b=balProximo(o.t);if(b&&bl.indexOf(o.t)<0&&_balDias(b.f)<=1)bl.push((_balDias(b.f)===0?'hoy ':'mañana ')+o.t);});if(bl.length)t.push('Presentan balance '+bl.join(', ')+'.');}}catch(e){}
+  try{if(typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length)t.push('Ojo: hay cambios que no se guardaron en la nube.');}catch(e){}
+  return t.join(' ');
+}
+async function _siriCargar(){if(SIRI.cargado)return SIRI.token;try{var v=await sbGetConfig('siri_token');SIRI.token=(typeof v==='string'&&v.length>=16)?v:null;}catch(e){}SIRI.cargado=true;return SIRI.token;}
+async function siriPublicar(forzar){
+  if(typeof _gdcInitDone==='undefined'||!_gdcInitDone||MINI)return;await _siriCargar();if(!SIRI.token)return;
+  var tx=siriTexto();if(!tx||(!forzar&&tx===SIRI.ult))return;
+  try{var r=await fetch(SUPABASE_URL+'/rest/v1/siri_resumen?on_conflict=token',{method:'POST',headers:Object.assign({},sbHeaders(),{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body:JSON.stringify({token:SIRI.token,data:{texto:tx,ts:Date.now(),cartera:CFG.nombre},ts:new Date().toISOString()})});
+    SIRI.estado=r.ok?'ok':(r.status===404?'sin_tabla':'error '+r.status);if(r.ok)SIRI.ult=tx;}catch(e){SIRI.estado='sin conexión';}
+  var st=document.getElementById('siri-st');if(st)st.innerHTML=_siriEstadoTxt();
+}
+function _siriEstadoTxt(){return SIRI.estado==='ok'?'<span style="color:var(--accent)">✓ Resumen publicado</span>':SIRI.estado==='sin_tabla'?'<span style="color:var(--amber)">Falta crear la tabla en Supabase (paso 1)</span>':SIRI.estado?'<span style="color:var(--red)">'+SIRI.estado+'</span>':'';}
+setInterval(function(){siriPublicar(false);},5*60000);
+setTimeout(function _sb(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone)siriPublicar(false);else setTimeout(_sb,5000);},20000);
+async function siriActivar(){var a=new Uint8Array(16);crypto.getRandomValues(a);var tk=Array.prototype.map.call(a,function(x){return ('0'+x.toString(16)).slice(-2);}).join('');
+  if(!(await sbSetConfig('siri_token',tk))){alert('No se pudo guardar. Probá de nuevo.');return;}SIRI.token=tk;SIRI.cargado=true;await siriPublicar(true);siriInit();}
+function siriCopiar(id,btn){var e=document.getElementById(id);if(!e)return;var v=e.value!=null?e.value:e.textContent;try{navigator.clipboard.writeText(v).then(function(){if(btn){var t=btn.textContent;btn.textContent='✓ Copiado';setTimeout(function(){btn.textContent=t;},1500);}});}catch(x){e.select&&e.select();}}
+function siriEscuchar(){var tx=siriTexto();if(!tx)return;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(tx);u.lang='es-AR';var v=speechSynthesis.getVoices().filter(function(x){return /^es/.test(x.lang);});if(v.length)u.voice=v.filter(function(x){return x.lang==='es-AR';})[0]||v[0];speechSynthesis.speak(u);}catch(e){alert(tx);}}
+async function siriInit(){
+  var db=document.getElementById('db-scroll');if(!db)return;var c=document.getElementById('siri-card');
+  if(!c){c=document.createElement('div');c.className='card';c.id='siri-card';c.style.marginBottom='1rem';db.appendChild(c);}
+  await _siriCargar();var tx=siriTexto()||'(todavía no hay datos)';
+  var box='width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.7rem;padding:8px';
+  var paso=function(n,t,h){return '<div style="margin-top:12px"><div style="font-weight:600;font-size:.8rem">'+n+'. '+t+'</div><div style="font-size:.74rem;color:var(--text2);margin-top:4px;line-height:1.5">'+h+'</div></div>';};
+  var h='<div class="card-header"><span class="card-title">🗣️ "Oye Siri, mi cartera"</span><span id="siri-st" style="font-size:.7rem">'+_siriEstadoTxt()+'</span></div><div style="padding:12px 16px 16px">'+
+    '<div style="font-size:.78rem;color:var(--text2)">Lo que te va a decir Siri:</div><div style="margin-top:6px;padding:10px 12px;background:var(--surface2);border-radius:10px;font-size:.82rem;line-height:1.5">“'+tx.replace(/</g,'&lt;')+'”</div>'+
+    '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="siriEscuchar()">▶ Escuchar cómo suena</button>'+(SIRI.token?'<button class="btn btn-sm" onclick="siriPublicar(true)">⟳ Publicar ahora</button>':'')+'</div>';
+  if(!SIRI.token){h+='<div style="margin-top:12px;font-size:.78rem;color:var(--text2)">Se configura una sola vez y después se actualiza solo cada 5 minutos mientras la app esté abierta.</div><button class="btn btn-a" style="margin-top:8px" onclick="siriActivar()">Activar</button></div>';c.innerHTML=h;return;}
+  var url=SUPABASE_URL+'/rest/v1/rpc/siri';
+  h+=paso(1,'Crear la tabla en Supabase (una sola vez)','Entrá a tu proyecto de Supabase de '+(CFG.nombre||'esta cartera')+' → SQL Editor → New query, pegá esto y tocá Run.<textarea id="siri-sql" readonly rows="6" style="'+box+';margin-top:6px">'+SIRI_SQL+'</textarea><button class="btn btn-sm" style="margin-top:4px" onclick="siriCopiar(\'siri-sql\',this)">Copiar SQL</button>')+
+    paso(2,'Armar el atajo en el iPhone','Abrí la app <b>Atajos</b> → ＋ → agregá estas acciones en orden:<br>'+
+      '<b>a)</b> "Obtener contenido de URL". URL: <input id="siri-url" readonly value="'+url+'" style="'+box+';margin:4px 0"> <button class="btn btn-sm" onclick="siriCopiar(\'siri-url\',this)">Copiar URL</button><br>'+
+      'Tocá "Mostrar más": Método <b>POST</b>. Encabezados: <b>apikey</b> = <input id="siri-key" readonly value="'+SUPABASE_KEY+'" style="'+box+';margin:4px 0"> <button class="btn btn-sm" onclick="siriCopiar(\'siri-key\',this)">Copiar clave</button> y <b>Content-Type</b> = application/json. '+
+      'Cuerpo de la solicitud: <b>JSON</b>, campo <b>p_token</b> (texto) = <input id="siri-tk" readonly value="'+SIRI.token+'" style="'+box+';margin:4px 0"> <button class="btn btn-sm" onclick="siriCopiar(\'siri-tk\',this)">Copiar código</button><br>'+
+      '<b>b)</b> "Obtener valor del diccionario", clave <b>texto</b>.<br><b>c)</b> "Leer texto" (o "Hablar texto").')+
+    paso(3,'Ponerle nombre','Llamá al atajo <b>Mi cartera</b>. Listo: decí <b>"Oye Siri, mi cartera"</b>. También podés agregarlo a la pantalla de inicio o al widget de Atajos.')+
+    '<div style="margin-top:12px;font-size:.68rem;color:var(--text3)">El código es secreto: quien lo tenga puede escuchar este resumen (no ve operaciones ni puede cambiar nada). Para cambiarlo, tocá <span style="text-decoration:underline;cursor:pointer" onclick="if(confirm(\'¿Generar un código nuevo? El atajo viejo deja de funcionar hasta que pongas el nuevo.\'))siriActivar()">generar código nuevo</span>.</div></div>';
+  c.innerHTML=h;
+}
