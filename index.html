@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Carteras administradas — Inversiones</title>
+<script>
+// App de inicio en el celular: al abrirla, va directo a la vista mini de GDC. Las carteras se ven desde el botón
+// "Carteras" de la vista mini (vuelve acá con ?todas). En la compu o en el navegador común no cambia nada.
+(function(){try{
+  var app=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+  var cel=Math.min(screen.width,screen.height)<=820;
+  if(!app||!cel||/[?&]todas\b/.test(location.search))return;
+  try{if(sessionStorage.getItem('mini_ya'))return;sessionStorage.setItem('mini_ya','1');}catch(e){}
+  location.replace('GDC/PortafolioGDC.html?mini');
+}catch(e){}})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1120">
 <link rel="icon" type="image/png" sizes="192x192" href="app/icon-192.png">

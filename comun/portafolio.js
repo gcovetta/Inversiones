@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=274, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=275, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v275 | 2026-10-29 | La app de inicio del celular abre directo la vista mini de GDC (en la compu y en el navegador común sigue abriendo Carteras administradas). Desde la vista mini de GDC, botón 👨‍👩‍👧 Carteras administradas para ir al índice.',
   'v274 | 2026-10-29 | 📱 Vista mini: agregando ?mini a la dirección de cualquier cartera se abre una pantalla liviana para el celular con valor total (USD y $ al MEP), Hoy y el período en USD y %, avisos juntos (balances en 4 días, próximo cobro, Diario para revisar, guardados fallidos, tipos de cambio faltantes) y lo que más subió y bajó hoy. Arranca con lo último guardado, respeta el punto de guardado y el modo madrugada, tiene 👁 propio y un botón para abrir la cartera completa (miniRender).',
   'v273 | 2026-10-28 | 📓 Diario de inversión: al comprar o vender desde el Portafolio hay un campo opcional "¿Por qué?". Nueva página Diario (menú, debajo de Movimientos): a los 6 meses la operación pasa a "Para revisar" y muestra lo que pensabas y cómo salió (en una compra, cuánto subió o bajó desde entonces; en una venta, si te apuraste), con un campo para anotar qué aprendiste. También muestra las que esperan y deja anotar el porqué de las operaciones de los últimos 60 días. El menú marca cuántas hay para revisar.',
   'v272 | 2026-10-28 | 🌙 Modo madrugada: fuera del horario de mercado (lun a vie 10:30 a 18:20, hora Argentina) las cotizaciones no se actualizan solas cada 10 min; al lado de la hora dice "cierre · HH:MM · 🌙 mercado cerrado, abre mañana 10:30" y se programa una actualización para la apertura. El botón de actualizar sigue andando siempre (enRueda, _startCycle).',
@@ -12123,7 +12124,8 @@ function miniRender(){
     '<div class="k"><div class="l">'+lblPer+'</div><div class="v '+cls(k.gan)+' m">'+(k.gan!=null?sg(k.gan)+'USD '+n0(k.gan):'—')+'</div><div class="s '+cls(k.rend)+'">'+P(k.rend)+'</div></div></div>'+
     '<div class="sec">Avisos</div><div class="avs">'+(av.length?av.map(function(a){return '<div class="a '+(a.c||'')+'"'+(a.on?' style="cursor:pointer" onclick="'+a.on+'"':'')+'><span class="i">'+a.i+'</span><span class="t">'+a.t+(a.s?'<small>'+a.s+'</small>':'')+'</span><span class="g">'+(a.g||'')+'</span></div>';}).join(''):'<div class="mu">Nada para avisar. ✓</div>')+'</div>'+
     '<div class="sec">Lo que más se movió hoy</div>'+(mov.length?'<div class="mv"><div class="col">'+(subas.length?subas.map(fila).join(''):'<div class="mu">Nada subió</div>')+'</div><div class="col">'+(bajas.length?bajas.map(fila).join(''):'<div class="mu">Nada bajó</div>')+'</div></div>':'<div class="mu">Sin precios del día todavía.</div>')+
-    '<div class="bt"><button class="b" onclick="miniActualizar(this)">⟳ Actualizar</button><button class="b p" onclick="miniAbrir()">Abrir cartera completa</button></div>';
+    '<div class="bt"><button class="b" onclick="miniActualizar(this)">⟳ Actualizar</button><button class="b p" onclick="miniAbrir()">Abrir cartera completa</button></div>'+
+    (CFG.id==='gdc'?'<div class="bt" style="margin-top:8px"><button class="b" onclick="location.href=\'../index.html?todas\'">👨‍👩‍👧 Carteras administradas</button></div>':'');
   if(h!==_miniUlt){_miniUlt=h;root.innerHTML=h;}
 }
 function miniOjo(){_miniOjo=!_miniOjo;try{localStorage.setItem(PFX+'mini_ojo',_miniOjo?'1':'0');}catch(e){}_miniUlt='';miniRender();}
