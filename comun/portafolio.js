@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=281, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=282, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v282 | 2026-10-29 | Fix: el campo "¿Por qué?" de Comprar y Vender tenía fondo blanco; ahora usa los colores de la app.',
   'v281 | 2026-10-29 | DashBoard: 🗣️ "Oye Siri, mi cartera". La app arma un resumen hablado (valor, hoy, año, lo que más subió y bajó, próximo cobro, balances) y lo publica cada 5 min en la tabla siri_resumen de Supabase bajo un código secreto; un atajo del iPhone lo pide y lo lee. La tarjeta trae el SQL a pegar una vez, la URL, la clave y el código para copiar, los pasos del atajo y un botón para escuchar cómo suena (siriTexto, siriPublicar).',
   'v280 | 2026-10-29 | DashBoard: 🧪 Tu plan en piloto automático. Una cartera fantasma recibe la misma plata que vos en las mismas fechas y compra lo que más le falta según tu cartera ideal por grupo (o tu composición actual si no tenés ideal), sin vender nunca; muestra cuánto te sumaron o restaron tus decisiones y las dos curvas (apDatos, apArmar).',
   'v279 | 2026-10-29 | 💯 Salud de la cartera: puntaje de 0 a 100 arriba de todo en DashBoard, en seis partes (concentración 25, diversificación 20, liquidez 15, posiciones en pérdida 15, calidad de los datos 15, renta 10), con la variación contra hace una semana y la lista de qué mejorar con los puntos que suma cada cosa. En el Portafolio, botón 💯 con el puntaje que lleva al detalle (saludPuntaje, saludInit).',
@@ -11994,7 +11995,7 @@ function _diaInputs(){
     if(document.getElementById(x[0]+'-porque'))return;
     var b=document.querySelector('button[onclick="'+x[1]+'"]');if(!b||!b.parentNode||!b.parentNode.parentNode)return;
     var row=document.createElement('div');row.style.cssText='margin-top:8px;display:flex;align-items:center;gap:8px';
-    row.innerHTML='<span style="font-size:.7rem;color:var(--text3);white-space:nowrap">📓 ¿Por qué?</span><input type="text" id="'+x[0]+'-porque" maxlength="300" placeholder="'+x[2]+' (opcional)" style="flex:1;min-width:0">';
+    row.innerHTML='<span style="font-size:.7rem;color:var(--text3);white-space:nowrap">📓 ¿Por qué?</span><input type="text" id="'+x[0]+'-porque" maxlength="300" placeholder="'+x[2]+' (opcional)" style="flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rsm,6px);color:var(--text);padding:6px 8px;font-size:.78rem;font-family:var(--sans)">';
     b.parentNode.parentNode.insertBefore(row,b.parentNode);
   });
 }
