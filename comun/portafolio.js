@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=273, APP_VERSION_FECHA='28/10/2026';
+var APP_VERSION=274, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v274 | 2026-10-29 | 📱 Vista mini: agregando ?mini a la dirección de cualquier cartera se abre una pantalla liviana para el celular con valor total (USD y $ al MEP), Hoy y el período en USD y %, avisos juntos (balances en 4 días, próximo cobro, Diario para revisar, guardados fallidos, tipos de cambio faltantes) y lo que más subió y bajó hoy. Arranca con lo último guardado, respeta el punto de guardado y el modo madrugada, tiene 👁 propio y un botón para abrir la cartera completa (miniRender).',
   'v273 | 2026-10-28 | 📓 Diario de inversión: al comprar o vender desde el Portafolio hay un campo opcional "¿Por qué?". Nueva página Diario (menú, debajo de Movimientos): a los 6 meses la operación pasa a "Para revisar" y muestra lo que pensabas y cómo salió (en una compra, cuánto subió o bajó desde entonces; en una venta, si te apuraste), con un campo para anotar qué aprendiste. También muestra las que esperan y deja anotar el porqué de las operaciones de los últimos 60 días. El menú marca cuántas hay para revisar.',
   'v272 | 2026-10-28 | 🌙 Modo madrugada: fuera del horario de mercado (lun a vie 10:30 a 18:20, hora Argentina) las cotizaciones no se actualizan solas cada 10 min; al lado de la hora dice "cierre · HH:MM · 🌙 mercado cerrado, abre mañana 10:30" y se programa una actualización para la apertura. El botón de actualizar sigue andando siempre (enRueda, _startCycle).',
   'v271 | 2026-10-28 | Indicador de guardado: punto al lado de la hora. Verde = todo guardado en la nube (con la hora del último guardado al pasar el mouse); amarillo = guardando, cambios que todavía no llegaron a la nube u otra pestaña del mismo portafolio abierta; rojo = falló un guardado o no hay conexión (tocarlo reintenta). Al tocarlo muestra el detalle (syRender, syEstado).',
@@ -12037,3 +12038,101 @@ function diaInit(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',diaInit);else setTimeout(diaInit,0);
 setInterval(function(){try{_diaInputs();if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone)_diaNav();}catch(e){}},5000);
+
+// ─── 📱 Vista mini (?mini en la dirección) ───────────────────────────────────────────────────────────
+// Pantalla liviana para el celular: total, hoy, período, avisos y lo que más se movió. Arranca con lo último guardado
+// en el navegador (precarga) y se actualiza sola cuando termina la carga y con cada refresco de precios.
+var MINI=(function(){try{return new URLSearchParams(location.search).has('mini');}catch(e){return false;}})();
+var _miniUlt='',_miniOjo=false;
+try{_miniOjo=localStorage.getItem(PFX+'mini_ojo')==='1';}catch(e){}
+if(MINI){
+  document.documentElement.classList.add('mini-on');
+  (function(){var st=document.createElement('style');st.id='mini-css';st.textContent=
+    'html.mini-on .app,html.mini-on #claude-version-badge,html.mini-on #save-fail-bar{display:none!important}'+
+    'html.mini-on,html.mini-on body{overflow:auto!important;height:auto!important;min-height:100%}'+
+    '#mini-root{max-width:460px;margin:0 auto;padding:14px 16px 28px;font-family:var(--sans);color:var(--text)}'+
+    '#mini-root .top{display:flex;align-items:center;gap:10px}'+
+    '#mini-root .av{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.72rem;color:var(--text2)}'+
+    '#mini-root .nom{font-weight:700;font-size:.98rem}'+
+    '#mini-root .est{font-family:var(--mono);font-size:.62rem;color:var(--text3);display:flex;align-items:center;gap:6px;margin-top:1px}'+
+    '#mini-root .dot{width:8px;height:8px;border-radius:50%;flex:none}'+
+    '#mini-root .ojo{margin-left:auto;background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:10px;width:38px;height:38px;font-size:1rem;cursor:pointer}'+
+    '#mini-root .tot{margin-top:22px;text-align:center}'+
+    '#mini-root .tot .l,#mini-root .k .l,#mini-root .sec{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-weight:600}'+
+    '#mini-root .tot .v{font-family:var(--mono);font-size:2.3rem;font-weight:700;letter-spacing:-.02em;margin-top:2px}'+
+    '#mini-root .tot .ars{font-family:var(--mono);font-size:.72rem;color:var(--text3);margin-top:2px}'+
+    '#mini-root .kp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}'+
+    '#mini-root .k,#mini-root .a,#mini-root .col{background:var(--surface);border:1px solid var(--border);border-radius:14px}'+
+    '#mini-root .k{padding:11px 12px}#mini-root .k .v{font-family:var(--mono);font-size:1.1rem;font-weight:700;margin-top:3px}#mini-root .k .s{font-family:var(--mono);font-size:.7rem;margin-top:1px}'+
+    '#mini-root .up{color:var(--accent)}#mini-root .dn{color:var(--red)}'+
+    '#mini-root .sec{margin:18px 0 7px}'+
+    '#mini-root .avs{display:flex;flex-direction:column;gap:7px}'+
+    '#mini-root .a{display:flex;align-items:center;gap:10px;padding:9px 11px;font-size:.8rem;cursor:default}'+
+    '#mini-root .a .i{font-size:1.05rem;width:22px;text-align:center}#mini-root .a .t{flex:1;line-height:1.35}'+
+    '#mini-root .a .t small{display:block;color:var(--text3);font-size:.66rem;font-family:var(--mono)}#mini-root .a .g{font-size:.7rem;color:var(--text3);white-space:nowrap}'+
+    '#mini-root .a.am{border-color:rgba(255,214,0,.35);background:linear-gradient(90deg,rgba(255,214,0,.07),var(--surface) 60%)}'+
+    '#mini-root .a.rj{border-color:rgba(255,82,82,.45);background:linear-gradient(90deg,rgba(255,82,82,.08),var(--surface) 60%)}'+
+    '#mini-root .mv{display:grid;grid-template-columns:1fr 1fr;gap:10px}#mini-root .col{padding:8px 10px}'+
+    '#mini-root .r{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;padding:4px 0}#mini-root .r+.r{border-top:1px solid var(--border)}'+
+    '#mini-root .bt{display:flex;gap:8px;margin-top:18px}'+
+    '#mini-root .b{flex:1;text-align:center;border-radius:12px;padding:12px;font-weight:600;font-size:.82rem;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-family:var(--sans)}'+
+    '#mini-root .b.p{background:var(--accent);color:#04210f;border-color:var(--accent)}'+
+    '#mini-root.oc .m{filter:blur(7px);user-select:none}'+
+    '#mini-root .mu{color:var(--text3);font-size:.76rem;padding:.3rem 0}';
+    (document.head||document.documentElement).appendChild(st);})();
+}
+function _miniHoraAR(){try{return new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Argentina/Buenos_Aires'});}catch(e){return '';}}
+function miniRender(){
+  if(!MINI)return;
+  var root=document.getElementById('mini-root');
+  if(!root){if(!document.body)return;root=document.createElement('div');root.id='mini-root';document.body.appendChild(root);}
+  root.classList.toggle('oc',_miniOjo);
+  var k=NV_K||{},rows=NV_ROWS||[];
+  var n0=function(x){return Math.round(Math.abs(x||0)).toLocaleString('es-AR');},sg=function(x){return x>=0?'+':'−';};
+  var P=function(x){return x==null||!isFinite(x)?'—':(x>=0?'+':'−')+Math.abs(x).toFixed(2).replace('.',',')+'%';};
+  var cls=function(x){return (x||0)>=0?'up':'dn';};
+  // encabezado
+  var img=document.querySelector('header img'),foto=img&&img.getAttribute('src');
+  var nom=CFG.persona||CFG.nombre||'';
+  var e=(typeof syEstado==='function')?syEstado():{c:'g',txt:''},col={g:'var(--accent)',a:'var(--amber)',r:'var(--red)'}[e.c];
+  var lu=document.getElementById('lupd'),last=lu&&lu.dataset.lastupd||'';
+  var abierto=(typeof window.enRueda==='function')?window.enRueda():true;
+  var est=abierto?('en rueda'+(last?' · '+last:'')):('cierre'+(last?' · '+last:'')+' · 🌙 mercado cerrado');
+  // valores
+  var val=k.val,ars=(val!=null&&MEP_HOY>0)?val*MEP_HOY:null;
+  var lblPer=(CFG.periodoInicio&&CFG.periodoInicio!=='01-01')?'En el período':'En el año';
+  // avisos
+  var av=[];
+  try{if(typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length)av.push({c:'rj',i:'⚠️',t:'No se guardó en la nube',s:'tocá para reintentar',g:'',on:'saveFailRetry()'});}catch(x){}
+  try{if(typeof balProximo==='function'){var vistos={};rows.forEach(function(o){var b=balProximo(o.t);if(!b||vistos[o.t])return;vistos[o.t]=1;var dd=_balDias(b.f);
+    av.push({c:'am',i:'📊',t:o.t+' presenta balance '+(dd===0?'hoy':dd===1?'mañana':'el '+_balFecha(b.f)),s:(_balHora[b.h]||'')+(b.ee!=null?' · EPS est. '+String(b.ee).replace('.',','):''),g:dd===0?'hoy':'en '+dd+' d',ord:dd});});}}catch(x){}
+  try{var cc=calcularCalendarioCobros(),g0=_flujosProximoGrupo(cc.items);if(g0){var usd=0;g0.items.forEach(function(it){usd+=it.moneda==='ARS'?(MEP_HOY>0?it.total/MEP_HOY:0):it.total;});
+    var tk=g0.items.map(function(it){return it.ticker;}).filter(function(v,i,a){return a.indexOf(v)===i;});var fp=g0.fecha.split('-'),dd2=Math.round((new Date(+fp[0],+fp[1]-1,+fp[2])-new Date(new Date().toDateString()))/864e5);
+    av.push({c:'',i:'💰',t:'Próximo cobro: '+tk.slice(0,3).join(', ')+(tk.length>3?' y '+(tk.length-3)+' más':''),s:fp[2]+'/'+fp[1]+' · <span class="m">≈ USD '+n0(usd)+'</span>',g:dd2<=0?'hoy':'en '+dd2+' d'});}}catch(x){}
+  try{if(typeof diaPendientes==='function'){var nd=diaPendientes();if(nd)av.push({c:'',i:'📓',t:nd+' operaci'+(nd>1?'ones':'ón')+' para revisar en el Diario',s:'lo que pensabas y cómo salió',g:'›',on:"miniAbrir('diario')"});}}catch(x){}
+  try{if(typeof saludCalc==='function'&&typeof _gdcInitDone!=='undefined'&&_gdcInitDone){var sl=saludCalc({});if(sl.faltaN)av.push({c:'',i:'💱',t:'Faltan tipos de cambio ('+sl.faltaN+' día'+(sl.faltaN>1?'s':'')+')',s:sl.faltaTC.slice(0,2).join(' · '),g:'›',on:"miniAbrir('tipocambio')"});if(sl.neg&&sl.neg.length)av.push({c:'rj',i:'❗',t:'Cantidades negativas: '+sl.neg.slice(0,4).join(', '),s:'revisá los movimientos',g:'›',on:"miniAbrir('movimientos')"});}}catch(x){}
+  // lo que más se movió hoy
+  var mov=rows.filter(function(o){return o.ch!=null&&isFinite(o.ch)&&o.q>0;});
+  var subas=mov.slice().sort(function(a,b){return b.ch-a.ch;}).filter(function(o){return o.ch>0;}).slice(0,3),bajas=mov.slice().sort(function(a,b){return a.ch-b.ch;}).filter(function(o){return o.ch<0;}).slice(0,3);
+  var fila=function(o){return '<div class="r"><b>'+o.t+'</b><span class="'+cls(o.ch)+'">'+P(o.ch).replace(/,(\d)\d%$/,',$1%')+'</span></div>';};
+  var h='<div class="top">'+(foto?'<img class="av" src="'+foto+'" alt="">':'<div class="av">'+String(CFG.nombre||'').slice(0,3)+'</div>')+
+    '<div><div class="nom">'+nom+'</div><div class="est"><span class="dot" style="background:'+col+'" title="'+String(e.txt||'').replace(/"/g,'&quot;')+'"></span>'+est+'</div></div>'+
+    '<button class="ojo" onclick="miniOjo()" title="Ocultar montos">'+(_miniOjo?'🙈':'👁')+'</button></div>'+
+    '<div class="tot"><div class="l">Valor total</div><div class="v m">'+(val!=null?'USD '+n0(val):'…')+'</div><div class="ars m">'+(ars?'≈ $ '+(ars>=1e6?(ars/1e6).toLocaleString('es-AR',{maximumFractionDigits:1})+' M':n0(ars))+' al MEP '+n0(MEP_HOY):'')+'</div></div>'+
+    '<div class="kp"><div class="k"><div class="l">Hoy</div><div class="v '+cls(k.hoy)+' m">'+(k.hoy!=null?sg(k.hoy)+'USD '+n0(k.hoy):'—')+'</div><div class="s '+cls(k.hoyP)+'">'+P(k.hoyP)+'</div></div>'+
+    '<div class="k"><div class="l">'+lblPer+'</div><div class="v '+cls(k.gan)+' m">'+(k.gan!=null?sg(k.gan)+'USD '+n0(k.gan):'—')+'</div><div class="s '+cls(k.rend)+'">'+P(k.rend)+'</div></div></div>'+
+    '<div class="sec">Avisos</div><div class="avs">'+(av.length?av.map(function(a){return '<div class="a '+(a.c||'')+'"'+(a.on?' style="cursor:pointer" onclick="'+a.on+'"':'')+'><span class="i">'+a.i+'</span><span class="t">'+a.t+(a.s?'<small>'+a.s+'</small>':'')+'</span><span class="g">'+(a.g||'')+'</span></div>';}).join(''):'<div class="mu">Nada para avisar. ✓</div>')+'</div>'+
+    '<div class="sec">Lo que más se movió hoy</div>'+(mov.length?'<div class="mv"><div class="col">'+(subas.length?subas.map(fila).join(''):'<div class="mu">Nada subió</div>')+'</div><div class="col">'+(bajas.length?bajas.map(fila).join(''):'<div class="mu">Nada bajó</div>')+'</div></div>':'<div class="mu">Sin precios del día todavía.</div>')+
+    '<div class="bt"><button class="b" onclick="miniActualizar(this)">⟳ Actualizar</button><button class="b p" onclick="miniAbrir()">Abrir cartera completa</button></div>';
+  if(h!==_miniUlt){_miniUlt=h;root.innerHTML=h;}
+}
+function miniOjo(){_miniOjo=!_miniOjo;try{localStorage.setItem(PFX+'mini_ojo',_miniOjo?'1':'0');}catch(e){}_miniUlt='';miniRender();}
+function miniActualizar(b){if(b)b.textContent='Actualizando…';try{Promise.resolve(fetchAllQuotes()).then(function(){_miniUlt='';miniRender();});}catch(e){}}
+function miniAbrir(pagina){var u=new URL(location.href);u.searchParams.delete('mini');if(pagina)u.hash='#'+pagina;location.href=u.toString();}
+if(MINI){
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',miniRender);else setTimeout(miniRender,0);
+  setInterval(miniRender,3000);
+}
+// Al abrir la cartera completa desde la vista mini con #pagina, ir directo a esa página.
+(function(){if(MINI)return;var h=(location.hash||'').slice(1);if(!/^(diario|tipocambio|movimientos|balances)$/.test(h))return;
+  var ir=function(n){setTimeout(function(){if(typeof _gdcInitDone!=='undefined'&&_gdcInitDone){var b=document.querySelector('.nav-item[onclick*="\''+h+'\'"]');try{showPage(h,b);}catch(e){}}else if(n<40)ir(n+1);},800);};ir(0);})();
