@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=285, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=286, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v286 | 2026-10-29 | 📜 Cinta de cotizaciones arriba del Portafolio: arranca con el resultado del día de la cartera y sigue con cada activo (precio y % del día, resaltados los que se movieron más de 2%), más CCL, MEP y riesgo país. Se frena con el mouse, al tocar un activo lo abre, y tiene opciones (⚙): velocidad, orden (peso, más movidos, A-Z) y solo lo que se movió más de 1%. Botón 📜 para prenderla y apagarla (cintaRender).',
   'v285 | 2026-10-29 | GDC: 🖥️ tu cartera en la barra de la Mac. En la tarjeta de Siri (DashBoard) se descarga un complemento para SwiftBar ya configurado que muestra "💼 184k ▲0,7%" junto al reloj y, al tocarlo, valor, hoy, año, la frase completa y accesos a la vista mini y la cartera. El resumen de Siri ahora también publica los números sueltos (macPlugin, _siriDatos).',
   'v284 | 2026-10-29 | 💯 Salud de la cartera sin "calidad de los datos": quedan cinco partes reescaladas a 100 (concentración 30, diversificación 24, liquidez 17, posiciones en pérdida 17, renta 12).',
   'v283 | 2026-10-29 | Fix película y línea de tiempo: algunos bonos (ej. TX31) aparecían con valores absurdos (millones de USD) porque la escala del historial de precios (por 100 VN) no se podía calibrar y quedaba en ×1. Ahora la escala se ancla al valor real de hoy en el Portafolio (o a tus operaciones si ya no lo tenés), se corrigen los saltos de unidad en las series de bonos y, si igual un valor queda a más de ×15 de lo que pagaste, se usa el precio de tu última operación (hpDatos).',
@@ -6489,7 +6490,7 @@ async function _fetchTopbarRates(){
           if(rh.ok){var dh=await rh.json();if(dh&&dh.length>=2)prevCCL=parseFloat(dh[dh.length-2].venta);}
         }
         if(prevCCL&&prevCCL>0){
-          var chgCCL=(vc-prevCCL)/prevCCL*100;
+          var chgCCL=(vc-prevCCL)/prevCCL*100;window._cclChg=chgCCL;
           var ec=document.getElementById('tb-ccl-chg');
           if(ec){ec.textContent=(chgCCL>=0?'+':'')+chgCCL.toFixed(2)+'%';ec.style.color=chgCCL>=0?'var(--accent)':'var(--red)';}
         }
@@ -10722,7 +10723,7 @@ function nvRender(){
    var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');document.documentElement.classList.remove('nv-pre');}catch(e){}
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
- _nvMover();try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();nvLinea();}catch(e){console.warn('nv extras',e);}try{bcSwapCard();}catch(e){}
+ _nvMover();try{cintaRender();}catch(e){}try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();nvLinea();}catch(e){console.warn('nv extras',e);}try{bcSwapCard();}catch(e){}
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
@@ -12609,3 +12610,70 @@ function macSeccion(box){
       '<input id="mac-cmd" readonly value="mkdir -p ~/SwiftBar && mv ~/Downloads/cartera.5m.sh ~/SwiftBar/ && chmod +x ~/SwiftBar/cartera.5m.sh" style="'+box+';margin:4px 0"> <button class="btn btn-sm" onclick="siriCopiar(\'mac-cmd\',this)">Copiar comando</button><br>'+
       'SwiftBar lo toma solo y se actualiza cada 5 minutos. Los datos se refrescan mientras tengas GDC abierto en alguna pestaña; si pasan más de 36 h sin abrirlo, el número se pone gris.</div></div>';
 }
+
+// ─── 📜 Cinta de cotizaciones (arriba del Portafolio) ───────────────────────────────────────────────
+// Pasa en loop con el resultado de la cartera y cada activo (precio y % del día); se frena con el mouse y al tocar un
+// activo lo abre. Opciones (⚙): velocidad, orden, solo lo que se movió más de 1% y sumar dólar y riesgo país.
+var CINTA=(function(){var d={on:true,dur:60,ord:'peso',solo:false,extra:true};try{var c=JSON.parse(localStorage.getItem('cinta_cfg')||'null');if(c)Object.assign(d,c);}catch(e){}return d;})();
+var _cintaFirma='',_cintaRP=null;
+function _cintaGuardar(){try{localStorage.setItem('cinta_cfg',JSON.stringify(CINTA));}catch(e){}}
+function _cintaCss(){if(document.getElementById('cinta-css'))return;var st=document.createElement('style');st.id='cinta-css';st.textContent=
+  '#cinta{position:relative;height:36px;background:linear-gradient(180deg,#0e1628,var(--bg));border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;align-items:center;margin-bottom:10px}'+
+  '#cinta::before,#cinta::after{content:"";position:absolute;top:0;bottom:0;width:36px;z-index:2;pointer-events:none}#cinta::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}#cinta::after{right:30px;background:linear-gradient(270deg,var(--bg),transparent)}'+
+  '#cinta .pista{display:flex;align-items:center;white-space:nowrap;will-change:transform;animation:cintaCorrer var(--dur,60s) linear infinite}#cinta:hover .pista{animation-play-state:paused}'+
+  '@keyframes cintaCorrer{from{transform:translateX(0)}to{transform:translateX(-50%)}}'+
+  '#cinta .it{display:inline-flex;align-items:center;gap:7px;padding:0 15px;font-family:var(--mono);font-size:.76rem;cursor:pointer;border-right:1px solid rgba(30,48,80,.6);height:36px}#cinta .it:hover{background:rgba(255,255,255,.05)}'+
+  '#cinta .t{font-weight:700;color:var(--text)}#cinta .p{color:var(--text2)}#cinta .c{font-weight:700}#cinta .up{color:var(--accent)}#cinta .dn{color:var(--red)}#cinta .eq{color:var(--text3)}'+
+  '#cinta .it.tot{background:rgba(0,230,118,.07)}#cinta .it.tot.dnb{background:rgba(255,82,82,.07)}#cinta .it.big .c{padding:1px 6px;border-radius:4px}#cinta .it.big.up .c{background:rgba(0,230,118,.14)}#cinta .it.big.dn .c{background:rgba(255,82,82,.14)}'+
+  '#cinta .cfg{position:absolute;right:0;top:0;bottom:0;width:30px;z-index:3;display:flex;align-items:center;justify-content:center;background:var(--bg);border-left:1px solid var(--border);cursor:pointer;color:var(--text3);font-size:.85rem}#cinta .cfg:hover{color:var(--text)}'+
+  '#cinta-pop{position:absolute;z-index:9000;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5);font-size:.76rem;color:var(--text2);display:flex;flex-direction:column;gap:9px;min-width:260px}'+
+  '#cinta-pop .seg{display:inline-flex;border:1px solid var(--border2);border-radius:8px;overflow:hidden;margin-left:6px}#cinta-pop .seg span{padding:4px 9px;cursor:pointer}#cinta-pop .seg span.on{background:var(--surface2);color:var(--text)}';
+  document.head.appendChild(st);}
+function _cintaRiesgo(){if(_cintaRP)return _cintaRP;_cintaRP=fetchWithTimeout('https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais',{},10000).then(function(r){return r.ok?r.json():[];})
+  .then(function(a){if(!Array.isArray(a)||a.length<2)return null;var u=a[a.length-1],p=a[a.length-2];var v=+u.valor,pv=+p.valor;return v>0?{v:v,ch:pv>0?(v-pv)/pv*100:null}:null;}).catch(function(){return null;});return _cintaRP;}
+function _cintaPrev(T){var d=new Date();for(var i=1;i<=8;i++){d.setDate(d.getDate()-1);var k=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();if(T[k]>0)return T[k];}return null;}
+function cintaRender(){
+  if(!CFG.vistaNueva||MINI)return;var root=document.getElementById('nv-root');if(!root)return;_cintaCss();_cintaBoton();
+  var c=document.getElementById('cinta');
+  if(!CINTA.on){if(c)c.remove();_cintaFirma='';return;}
+  var R=(NV_ROWS||[]).filter(function(o){return o&&o.q>0;});if(!R.length)return;
+  if(!c){c=document.createElement('div');c.id='cinta';c.innerHTML='<div class="pista"></div><div class="cfg" title="Opciones de la cinta" onclick="cintaOpciones(event)">⚙</div>';root.insertBefore(c,root.firstChild);}
+  var cl=function(x){return x==null?'eq':x>0.05?'up':x<-0.05?'dn':'eq';},pc=function(x){return x==null?'—':(x>0.05?'▲ ':x<-0.05?'▼ ':'= ')+Math.abs(x).toFixed(2).replace('.',',')+'%';};
+  var f2=function(x){return x>=1000?Math.round(x).toLocaleString('es-AR'):(+x).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var fl=function(o){if(!o.rv)return '📜';try{return _nvFlag[o.s]||'•';}catch(e){return '•';}};
+  var L=R.filter(function(o){return !CINTA.solo||(o.ch!=null&&Math.abs(o.ch)>=1);});
+  if(CINTA.ord==='mov')L.sort(function(a,b){return Math.abs(b.ch||0)-Math.abs(a.ch||0);});else if(CINTA.ord==='az')L.sort(function(a,b){return a.t.localeCompare(b.t);});else L.sort(function(a,b){return (b.usd||0)-(a.usd||0);});
+  var it=function(t,f,precio,ch,on){var big=ch!=null&&Math.abs(ch)>=2;return '<span class="it '+cl(ch)+(big?' big':'')+'"'+(on?' onclick="'+on+'"':'')+'><span>'+f+'</span><span class="t">'+t+'</span>'+(precio?'<span class="p">'+precio+'</span>':'')+'<span class="c '+cl(ch)+'">'+pc(ch)+'</span></span>';};
+  var k=NV_K||{},h='<span class="it tot'+((k.hoyP||0)<0?' dnb':'')+'" onclick="cintaIr(null)"><span>💼</span><span class="t" style="color:'+((k.hoyP||0)<0?'var(--red)':'var(--accent)')+'">Tu cartera</span><span class="c '+cl(k.hoyP)+'">'+pc(k.hoyP)+'</span>'+(k.hoy!=null?'<span class="p port-sensitive">'+(k.hoy>=0?'+':'−')+'USD '+Math.round(Math.abs(k.hoy)).toLocaleString('es-AR')+'</span>':'')+'</span>';
+  h+=L.map(function(o){return it(o.t,fl(o),o.px>0?((o.usdD?'US$ ':'$ ')+f2(o.px)):'',o.ch,"cintaIr('"+o.t+"')");}).join('');
+  if(CINTA.extra){var pC=_cintaPrev(CCL_TABLE),pM=_cintaPrev(MEP_TABLE),chC=window._cclChg!=null?window._cclChg:(pC&&CCL_HOY?(CCL_HOY/pC-1)*100:null),chM=(pM&&MEP_HOY)?(MEP_HOY/pM-1)*100:null;
+    if(CCL_HOY>0)h+=it('CCL','💵','$ '+f2(CCL_HOY),chC,'');if(MEP_HOY>0)h+=it('MEP','💵','$ '+f2(MEP_HOY),chM,'');
+    if(_cintaRiesgo._v)h+=it('Riesgo país','🇦🇷',Math.round(_cintaRiesgo._v.v)+' pb',_cintaRiesgo._v.ch,'');
+    else _cintaRiesgo().then(function(x){if(x){_cintaRiesgo._v=x;cintaRender();}});}
+  if(h===_cintaFirma)return;_cintaFirma=h;
+  var p=c.querySelector('.pista');p.innerHTML=h+h;p.style.setProperty('--dur',Math.max(20,CINTA.dur*(L.length+4)/22)+'s');
+}
+function cintaIr(t){
+  if(!t){try{document.getElementById('nv-root').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}return;}
+  if(typeof _focoOn==='function'&&_focoOn()&&typeof nvFoco==='function'){nvFoco(t);return;}
+  try{if(NV.q){NV.q='';var qi=document.getElementById('nv-q');if(qi)qi.value='';}if(!NV.op||!NV.op[t])nvAbrir(t);else nvRender();}catch(e){}
+  setTimeout(function(){var r=document.querySelector('tr[onclick="nvAbrir(\''+t+'\')"]');if(r){r.scrollIntoView({behavior:'smooth',block:'center'});r.style.outline='2px solid var(--accent)';setTimeout(function(){r.style.outline='';},1600);}},120);
+}
+function cintaOpciones(ev){
+  if(ev)ev.stopPropagation();var pop=document.getElementById('cinta-pop');if(pop){pop.remove();return;}
+  pop=document.createElement('div');pop.id='cinta-pop';
+  var seg=function(key,ops){return '<span class="seg">'+ops.map(function(o){return '<span class="'+(String(CINTA[key])===String(o[0])?'on':'')+'" onclick="cintaSet(\''+key+'\',\''+o[0]+'\')">'+o[1]+'</span>';}).join('')+'</span>';};
+  pop.innerHTML='<div><b style="color:var(--text)">📜 Cinta de cotizaciones</b></div>'+
+    '<div>Velocidad'+seg('dur',[[90,'Lenta'],[60,'Normal'],[35,'Rápida']])+'</div>'+
+    '<div>Orden'+seg('ord',[['peso','Por peso'],['mov','Más movidos'],['az','A-Z']])+'</div>'+
+    '<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" '+(CINTA.solo?'checked':'')+' onchange="cintaSet(\'solo\',this.checked)"> Solo lo que se movió más de 1%</label>'+
+    '<label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" '+(CINTA.extra?'checked':'')+' onchange="cintaSet(\'extra\',this.checked)"> Sumar dólar y riesgo país</label>'+
+    '<div style="font-size:.66rem;color:var(--text3)">Se apaga y prende con el botón 📜 de la barra de herramientas.</div>';
+  document.body.appendChild(pop);var r=document.getElementById('cinta').getBoundingClientRect();pop.style.top=(r.bottom+window.scrollY+6)+'px';pop.style.left=Math.max(10,r.right+window.scrollX-pop.offsetWidth)+'px';
+  setTimeout(function(){document.addEventListener('click',function _c(e){var pp=document.getElementById('cinta-pop');if(pp&&!pp.contains(e.target)){pp.remove();document.removeEventListener('click',_c);}});},0);
+}
+function cintaSet(k,v){if(k==='dur')v=+v;CINTA[k]=v;_cintaGuardar();_cintaFirma='';cintaRender();var pp=document.getElementById('cinta-pop');if(pp&&(k==='dur'||k==='ord')){pp.remove();cintaOpciones();}}
+function cintaToggle(){CINTA.on=!CINTA.on;_cintaGuardar();_cintaFirma='';cintaRender();_cintaBoton();}
+function _cintaBoton(){var tw=document.getElementById('nv-tools');if(!tw)return;var b=document.getElementById('cinta-btn');
+  if(!b){b=document.createElement('button');b.id='cinta-btn';b.className='btn';b.onclick=cintaToggle;tw.insertBefore(b,tw.firstChild);}
+  b.textContent='📜';b.title=CINTA.on?'Ocultar la cinta de cotizaciones':'Mostrar la cinta de cotizaciones';b.style.cssText='padding:0 9px;font-size:.9rem;opacity:'+(CINTA.on?'1':'.45');}
