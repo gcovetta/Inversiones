@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=284, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=285, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v285 | 2026-10-29 | GDC: 🖥️ tu cartera en la barra de la Mac. En la tarjeta de Siri (DashBoard) se descarga un complemento para SwiftBar ya configurado que muestra "💼 184k ▲0,7%" junto al reloj y, al tocarlo, valor, hoy, año, la frase completa y accesos a la vista mini y la cartera. El resumen de Siri ahora también publica los números sueltos (macPlugin, _siriDatos).',
   'v284 | 2026-10-29 | 💯 Salud de la cartera sin "calidad de los datos": quedan cinco partes reescaladas a 100 (concentración 30, diversificación 24, liquidez 17, posiciones en pérdida 17, renta 12).',
   'v283 | 2026-10-29 | Fix película y línea de tiempo: algunos bonos (ej. TX31) aparecían con valores absurdos (millones de USD) porque la escala del historial de precios (por 100 VN) no se podía calibrar y quedaba en ×1. Ahora la escala se ancla al valor real de hoy en el Portafolio (o a tus operaciones si ya no lo tenés), se corrigen los saltos de unidad en las series de bonos y, si igual un valor queda a más de ×15 de lo que pagaste, se usa el precio de tu última operación (hpDatos).',
   'v282 | 2026-10-29 | Fix: el campo "¿Por qué?" de Comprar y Vender tenía fondo blanco; ahora usa los colores de la app.',
@@ -12519,12 +12520,18 @@ function siriTexto(){
   try{if(typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length)t.push('Ojo: hay cambios que no se guardaron en la nube.');}catch(e){}
   return t.join(' ');
 }
+function _siriDatos(tx){var k=NV_K||{},d={texto:tx,ts:Date.now(),cartera:CFG.nombre};
+  // datos sueltos para la barra de la Mac (GDC)
+  if(k.val!=null){d.v=Math.round(k.val);d.h=k.hoy!=null?Math.round(k.hoy):null;d.hp=k.hoyP!=null?Math.round(k.hoyP*100)/100:null;d.r=k.rend!=null?Math.round(k.rend*100)/100:null;}
+  try{d.ab=(typeof window.enRueda==='function')?window.enRueda():null;}catch(e){}
+  try{var u=new URL(location.href);u.search='';u.hash='';d.url=u.toString();}catch(e){}
+  return d;}
 async function _siriCargar(){if(SIRI.cargado)return SIRI.token;try{var v=await sbGetConfig('siri_token');SIRI.token=(typeof v==='string'&&v.length>=16)?v:null;}catch(e){}SIRI.cargado=true;return SIRI.token;}
 async function siriPublicar(forzar){
   if(typeof _gdcInitDone==='undefined'||!_gdcInitDone||MINI)return;await _siriCargar();if(!SIRI.token)return;
   var tx=siriTexto();if(!tx||(!forzar&&tx===SIRI.ult))return;
   try{var r=await fetch(SUPABASE_URL+'/rest/v1/siri_resumen?on_conflict=token',{method:'POST',headers:Object.assign({},sbHeaders(),{'Prefer':'resolution=merge-duplicates,return=minimal'}),
-      body:JSON.stringify({token:SIRI.token,data:{texto:tx,ts:Date.now(),cartera:CFG.nombre},ts:new Date().toISOString()})});
+      body:JSON.stringify({token:SIRI.token,data:_siriDatos(tx),ts:new Date().toISOString()})});
     SIRI.estado=r.ok?'ok':(r.status===404?'sin_tabla':'error '+r.status);if(r.ok)SIRI.ult=tx;}catch(e){SIRI.estado='sin conexión';}
   var st=document.getElementById('siri-st');if(st)st.innerHTML=_siriEstadoTxt();
 }
@@ -12553,6 +12560,52 @@ async function siriInit(){
       'Cuerpo de la solicitud: <b>JSON</b>, campo <b>p_token</b> (texto) = <input id="siri-tk" readonly value="'+SIRI.token+'" style="'+box+';margin:4px 0"> <button class="btn btn-sm" onclick="siriCopiar(\'siri-tk\',this)">Copiar código</button><br>'+
       '<b>b)</b> "Obtener valor del diccionario", clave <b>texto</b>.<br><b>c)</b> "Leer texto" (o "Hablar texto").')+
     paso(3,'Ponerle nombre','Llamá al atajo <b>Mi cartera</b>. Listo: decí <b>"Oye Siri, mi cartera"</b>. También podés agregarlo a la pantalla de inicio o al widget de Atajos.')+
+    (CFG.id==='gdc'?macSeccion(box):'')+
     '<div style="margin-top:12px;font-size:.68rem;color:var(--text3)">El código es secreto: quien lo tenga puede escuchar este resumen (no ve operaciones ni puede cambiar nada). Para cambiarlo, tocá <span style="text-decoration:underline;cursor:pointer" onclick="if(confirm(\'¿Generar un código nuevo? El atajo viejo deja de funcionar hasta que pongas el nuevo.\'))siriActivar()">generar código nuevo</span>.</div></div>';
   c.innerHTML=h;
+}
+
+// ─── 🖥️ Tu cartera en la barra de la Mac (solo GDC) ─────────────────────────────────────────────────
+// Complemento para SwiftBar (o xbar): cada 5 minutos pide el mismo resumen que usa Siri (función siri(código) de
+// Supabase) y muestra arriba "💼 184k ▲0,7%"; al tocarlo despliega valor, hoy, año, la frase completa y accesos.
+function macPlugin(montos){
+  var url=SUPABASE_URL+'/rest/v1/rpc/siri';
+  return '#!/bin/bash\n'+
+'# <xbar.title>Mi cartera</xbar.title>\n# <xbar.desc>Valor y resultado del día de tu cartera (GDC)</xbar.desc>\n# <swiftbar.hideRunInTerminal>true</swiftbar.hideRunInTerminal>\n# <swiftbar.hideLastUpdated>false</swiftbar.hideLastUpdated>\n'+
+'# Se actualiza cada 5 minutos (por el ".5m." del nombre del archivo).\n'+
+'# MOSTRAR_MONTOS=0 muestra solo porcentajes en la barra.\n'+
+'MOSTRAR_MONTOS='+(montos?1:0)+'\n'+
+"URL='"+url+"'\nKEY='"+SUPABASE_KEY+"'\nTOKEN='"+SIRI.token+"'\n"+
+'J=$(curl -s -m 12 -X POST "$URL" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d "{\\"p_token\\":\\"$TOKEN\\"}")\n'+
+'/usr/bin/osascript -l JavaScript - "$J" "$MOSTRAR_MONTOS" <<\'JS\'\n'+
+'function n0(x){x=Math.round(Math.abs(x||0));return String(x).replace(/\\B(?=(\\d{3})+(?!\\d))/g,".");}\n'+
+'function k(x){x=Math.abs(x||0);return x>=1e6?(x/1e6).toFixed(2).replace(".",",")+"M":x>=1e4?Math.round(x/1000)+"k":n0(x);}\n'+
+'function pc(x){return (x>=0?"+":"−")+Math.abs(x).toFixed(2).replace(".",",")+"%";}\n'+
+'function run(argv){var d;try{d=JSON.parse(argv[0]);}catch(e){return "💼 — | color=gray\\n---\\nNo se pudo leer el resumen (¿sin conexión?)\\nActualizar | refresh=true";}\n'+
+' var M=argv[1]==="1",o=[],ok=d&&d.v!=null;\n'+
+' if(!ok){o.push("💼 ? | color=gray");o.push("---");o.push((d&&d.texto)||"Sin datos todavía");o.push("Actualizar | refresh=true");return o.join("\\n");}\n'+
+' var viejo=!d.ts||(Date.now()-d.ts)>36*3600000,up=(d.hp||0)>=0,col=viejo?"gray":(up?"#00c853":"#ff5252");\n'+
+' var bar="💼 "+(M?k(d.v)+" ":"")+(d.hp!=null?(up?"▲":"▼")+Math.abs(d.hp).toFixed(1).replace(".",",")+"%":"");\n'+
+' o.push(bar+" | color="+col);o.push("---");\n'+
+' o.push("Valor: USD "+n0(d.v)+" | font=Menlo");\n'+
+' if(d.h!=null)o.push((d.ab===false?"Última rueda: ":"Hoy: ")+(d.h>=0?"+":"−")+"USD "+n0(d.h)+" ("+pc(d.hp)+") | font=Menlo color="+(up?"#00c853":"#ff5252"));\n'+
+' if(d.r!=null)o.push("En el año: "+pc(d.r)+" | font=Menlo");\n'+
+' var t=new Date(d.ts);o.push("Actualizado: "+("0"+t.getDate()).slice(-2)+"/"+("0"+(t.getMonth()+1)).slice(-2)+" "+("0"+t.getHours()).slice(-2)+":"+("0"+t.getMinutes()).slice(-2)+(viejo?" (viejo: abrí la app para que se actualice)":"")+" | size=11 color=gray");\n'+
+' o.push("---");if(d.texto)o.push(String(d.texto).replace(/\\|/g,"/").slice(0,300)+" | size=11");o.push("---");\n'+
+' if(d.url){o.push("📱 Abrir vista mini | href="+d.url+"?mini");o.push("📈 Abrir cartera completa | href="+d.url);}\n'+
+' o.push("Actualizar | refresh=true");return o.join("\\n");}\n'+
+'JS\n';
+}
+function macDescargar(){var m=document.getElementById('mac-montos'),txt=macPlugin(!m||m.checked);
+  try{var b=new Blob([txt],{type:'text/x-shellscript'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cartera.5m.sh';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);}catch(e){alert('No se pudo descargar: '+e.message);}}
+function macSeccion(box){
+  return '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)"><div style="font-weight:700;font-size:.9rem">🖥️ En la barra de la Mac</div>'+
+    '<div style="font-size:.74rem;color:var(--text2);margin-top:4px;line-height:1.5">Arriba, junto al reloj: <b>💼 184k ▲0,7%</b> (verde o rojo). Al tocarlo: valor, hoy, año, la frase de Siri y accesos a la vista mini y la cartera. Usa el mismo resumen que Siri, así que primero tiene que estar el paso 1 (la tabla en Supabase).</div>'+
+    '<div style="margin-top:10px;font-weight:600;font-size:.8rem">1. Instalá SwiftBar (gratis)</div><div style="font-size:.74rem;color:var(--text2);margin-top:3px;line-height:1.5">Desde <b>swiftbar.app</b>, o en la Terminal: <code>brew install --cask swiftbar</code>. Al abrirlo te pide una carpeta para los complementos: creá una, por ejemplo <code>~/SwiftBar</code>.</div>'+
+    '<div style="margin-top:10px;font-weight:600;font-size:.8rem">2. Descargá el complemento</div><div style="font-size:.74rem;color:var(--text2);margin-top:3px;line-height:1.5">'+
+      '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:4px 0"><input type="checkbox" id="mac-montos" checked> Mostrar el monto en la barra (si no, solo el %)</label>'+
+      '<button class="btn btn-a btn-sm" onclick="macDescargar()">⬇ Descargar cartera.5m.sh</button> Ya trae tu código: no hay que configurar nada.</div>'+
+    '<div style="margin-top:10px;font-weight:600;font-size:.8rem">3. Ponelo en la carpeta y dale permiso</div><div style="font-size:.74rem;color:var(--text2);margin-top:3px;line-height:1.5">En la Terminal (cambiá la carpeta si elegiste otra):'+
+      '<input id="mac-cmd" readonly value="mkdir -p ~/SwiftBar && mv ~/Downloads/cartera.5m.sh ~/SwiftBar/ && chmod +x ~/SwiftBar/cartera.5m.sh" style="'+box+';margin:4px 0"> <button class="btn btn-sm" onclick="siriCopiar(\'mac-cmd\',this)">Copiar comando</button><br>'+
+      'SwiftBar lo toma solo y se actualiza cada 5 minutos. Los datos se refrescan mientras tengas GDC abierto en alguna pestaña; si pasan más de 36 h sin abrirlo, el número se pone gris.</div></div>';
 }
