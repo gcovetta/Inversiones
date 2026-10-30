@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=283, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=284, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v284 | 2026-10-29 | 💯 Salud de la cartera sin "calidad de los datos": quedan cinco partes reescaladas a 100 (concentración 30, diversificación 24, liquidez 17, posiciones en pérdida 17, renta 12).',
   'v283 | 2026-10-29 | Fix película y línea de tiempo: algunos bonos (ej. TX31) aparecían con valores absurdos (millones de USD) porque la escala del historial de precios (por 100 VN) no se podía calibrar y quedaba en ×1. Ahora la escala se ancla al valor real de hoy en el Portafolio (o a tus operaciones si ya no lo tenés), se corrigen los saltos de unidad en las series de bonos y, si igual un valor queda a más de ×15 de lo que pagaste, se usa el precio de tu última operación (hpDatos).',
   'v282 | 2026-10-29 | Fix: el campo "¿Por qué?" de Comprar y Vender tenía fondo blanco; ahora usa los colores de la app.',
   'v281 | 2026-10-29 | DashBoard: 🗣️ "Oye Siri, mi cartera". La app arma un resumen hablado (valor, hoy, año, lo que más subió y bajó, próximo cobro, balances) y lo publica cada 5 min en la tabla siri_resumen de Supabase bajo un código secreto; un atajo del iPhone lo pide y lo lee. La tarjeta trae el SQL a pegar una vez, la URL, la clave y el código para copiar, los pasos del atajo y un botón para escuchar cómo suena (siriTexto, siriPublicar).',
@@ -12359,9 +12360,9 @@ async function hpEvBorrar(f,t){if(!confirm('¿Borrar "'+t+'"?'))return;await _hp
   var d=document.getElementById('hp-det');if(d)d.innerHTML='<span class="hp-l">Hecho borrado.</span>';}
 
 // ─── 💯 Puntaje de salud de la cartera (DashBoard) ───────────────────────────────────────────────────
-// 0 a 100 en seis partes: concentración (25), diversificación (20), liquidez (15), posiciones en pérdida (15),
-// calidad de los datos (15) y renta (10). Cada parte explica qué la baja y cuántos puntos sumarías arreglándolo.
-var SALUD_LS='salud_hist';
+// 0 a 100 en cinco partes: concentración (30), diversificación (24), liquidez (17), posiciones en pérdida (17) y renta (12).
+// Cada parte explica qué la baja y cuántos puntos sumarías arreglándolo.
+var SALUD_LS='salud_hist2'; // (nueva escala sin calidad de datos: arranca de cero la comparación semanal)
 function saludPuntaje(){
   var R=(NV_ROWS||[]).filter(function(o){return o&&o.usd>0;}),tot=R.reduce(function(a,o){return a+o.usd;},0);if(!(tot>0))return null;
   var P=[],sug=[],f1=function(x){return x.toFixed(1).replace('.',',');},n0=function(x){return Math.round(x).toLocaleString('es-AR');};
@@ -12370,34 +12371,31 @@ function saludPuntaje(){
   var exc=[];R.forEach(function(o){if(o.rv){var lim=_nvBT(o)?BIG_TECH_MAX:3;if(o.pt>lim)exc.push({o:o,lim:lim,x:o.pt-lim,pen:(o.pt-lim)*3,tp:'la renta variable'});}
     else if(o.pt>25)exc.push({o:o,lim:25,x:o.pt-25,pen:(o.pt-25)*0.4,tp:'la renta fija'});});
   var pen1=Math.min(25,exc.reduce(function(a,e){return a+e.pen;},0)),p1=25-pen1;
-  exc.sort(function(a,b){return b.pen-a.pen;}).slice(0,3).forEach(function(e){sug.push({g:Math.min(e.pen,pen1),t:'Bajá '+e.o.t+' de '+f1(e.o.pt)+'% a '+e.lim+'% de '+e.tp});});
+  exc.sort(function(a,b){return b.pen-a.pen;}).slice(0,3).forEach(function(e){sug.push({c:'Concentración',g:Math.min(e.pen,pen1),t:'Bajá '+e.o.t+' de '+f1(e.o.pt)+'% a '+e.lim+'% de '+e.tp});});
   P.push({k:'Concentración',p:p1,m:25,d:exc.length?exc.length+' activo'+(exc.length>1?'s':'')+' arriba de su umbral':'Ningún activo pasa su umbral'});
   // 2) Diversificación por país / tipo (número efectivo de grupos)
   var G={};R.forEach(function(o){var k=o.rv?(o.s||'otro'):('rf_'+(function(){try{return _nvTipo(o);}catch(e){return 'otro';}})());G[k]=(G[k]||0)+o.usd;});var hhi=0,mayor=null;Object.keys(G).forEach(function(k){var w=G[k]/tot;hhi+=w*w;if(!mayor||G[k]>G[mayor])mayor=k;});
   var nEf=hhi>0?1/hhi:1,p2=cl((nEf-1.5)/(5-1.5),0,1)*20,nomS={nyse:'EE.UU.',argentina:'acciones argentinas',brasil:'Brasil',europa:'Europa',china:'China',cripto:'cripto',bonos:'bonos',on:'ONs',fci:'FCI',rf_cer:'bonos CER',rf_hd:'bonos en dólares',rf_otro:'otra renta fija',rf_rv:'renta fija'};
-  if(p2<17)sug.push({g:Math.min(20-p2,6),t:'Repartí mejor: '+f1(G[mayor]/tot*100)+'% está en '+(nomS[mayor]||mayor)});
+  if(p2<17)sug.push({c:'Diversificación',g:Math.min(20-p2,6),t:'Repartí mejor: '+f1(G[mayor]/tot*100)+'% está en '+(nomS[mayor]||mayor)});
   P.push({k:'Diversificación',p:p2,m:20,d:'Equivale a '+f1(nEf)+' grupos parejos · el mayor: '+(nomS[mayor]||mayor)+' '+Math.round(G[mayor]/tot*100)+'%'});
   // 3) Liquidez: ideal entre 3% y 15%
   var liq=(typeof INF_LAST!=='undefined'&&INF_LAST&&INF_LAST.liqTotalUSD)||0,lp=liq/(tot+liq)*100,p3;
   if(lp<3)p3=Math.max(3,15*lp/3);else if(lp<=15)p3=15;else if(lp<=30)p3=15-(lp-15)/15*7;else p3=8;
-  if(lp<3)sug.push({g:15-p3,t:'Llevá la liquidez a 3% (te faltan ≈ USD '+n0((tot+liq)*0.03-liq)+')'});
-  else if(lp>15)sug.push({g:15-p3,t:'Tenés '+f1(lp)+'% en liquidez: invertí ≈ USD '+n0(liq-(tot+liq)*0.15)+' para quedar en 15%'});
+  if(lp<3)sug.push({c:'Liquidez',g:15-p3,t:'Llevá la liquidez a 3% (te faltan ≈ USD '+n0((tot+liq)*0.03-liq)+')'});
+  else if(lp>15)sug.push({c:'Liquidez',g:15-p3,t:'Tenés '+f1(lp)+'% en liquidez: invertí ≈ USD '+n0(liq-(tot+liq)*0.15)+' para quedar en 15%'});
   P.push({k:'Liquidez',p:p3,m:15,d:f1(lp)+'% de la cartera (ideal entre 3% y 15%)'});
   // 4) Posiciones en pérdida de más de 15%
   var malas=R.filter(function(o){return o.d!=null&&o.d<-15;}).sort(function(a,b){return a.d-b.d;}),pp=malas.reduce(function(a,o){return a+o.usd;},0)/tot*100,p4=cl(1-pp/25,0,1)*15;
-  if(malas.length)sug.push({g:15-p4,t:'Revisá lo que pierde más de 15%: '+malas.slice(0,4).map(function(o){return o.t+' ('+Math.round(o.d)+'%)';}).join(', ')+(malas.length>4?' y '+(malas.length-4)+' más':'')});
+  if(malas.length)sug.push({c:'Posiciones en pérdida',g:15-p4,t:'Revisá lo que pierde más de 15%: '+malas.slice(0,4).map(function(o){return o.t+' ('+Math.round(o.d)+'%)';}).join(', ')+(malas.length>4?' y '+(malas.length-4)+' más':'')});
   P.push({k:'Posiciones en pérdida',p:p4,m:15,d:malas.length?f1(pp)+'% de la cartera pierde más de 15%':'Nada pierde más de 15%'});
-  // 5) Calidad de los datos
-  var sl={faltaN:0,neg:[],pend:0,sinPrecio:[]};try{sl=saludCalc(INF_LAST||{});}catch(e){}
-  var fallo=(typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length)?1:0,sp=(sl.sinPrecio||[]).length;
-  var q=[[Math.min(6,(sl.faltaN||0)*2),'Cargá los tipos de cambio que faltan ('+(sl.faltaN||0)+' día'+((sl.faltaN||0)>1?'s':'')+')'],[Math.min(6,(sl.neg||[]).length*3),'Corregí las cantidades negativas: '+(sl.neg||[]).join(', ')],
-    [Math.min(3,sl.pend||0),'Confirmá los cobros pendientes ('+(sl.pend||0)+')'],[Math.min(4,sp*2),'Activos sin precio: '+(sl.sinPrecio||[]).slice(0,4).join(', ')],[fallo*5,'Hay un guardado fallido: tocá el punto rojo para reintentar']];
-  var pen5=Math.min(15,q.reduce(function(a,x){return a+x[0];},0)),p5=15-pen5;q.forEach(function(x){if(x[0]>0)sug.push({g:x[0],t:x[1]});});
-  P.push({k:'Calidad de los datos',p:p5,m:15,d:pen5?'Hay cosas para corregir en la carga':'Todo cargado y al día'});
   // 6) Renta: qué parte de la cartera paga (bonos con flujos o acciones con historial de dividendos)
   var pr=R.filter(function(o){return o.fl||o.dh;}).reduce(function(a,o){return a+o.usd;},0)/tot*100,p6=Math.min(1,pr/40)*10;
-  if(p6<9)sug.push({g:Math.min(10-p6,5),t:'Solo '+f1(pr)+'% de la cartera paga renta (con 40% o más sumás el máximo)'});
+  if(p6<9)sug.push({c:'Renta',g:Math.min(10-p6,5),t:'Solo '+f1(pr)+'% de la cartera paga renta (con 40% o más sumás el máximo)'});
   P.push({k:'Renta',p:p6,m:10,d:f1(pr)+'% de la cartera paga cupones o dividendos'});
+  // Sin "calidad de los datos": las cinco partes se reescalan para que el total siga siendo sobre 100
+  var NM={'Concentración':30,'Diversificación':24,'Liquidez':17,'Posiciones en pérdida':17,'Renta':12},fx={};
+  P.forEach(function(x){var nm=NM[x.k]||x.m;fx[x.k]=nm/x.m;x.p=x.p*fx[x.k];x.m=nm;});
+  sug.forEach(function(x){x.g=x.g*(fx[x.c]||1);});
   var total=Math.round(P.reduce(function(a,x){return a+x.p;},0));
   sug=sug.filter(function(x){return x.g>=0.5;}).sort(function(a,b){return b.g-a.g;});
   return {total:total,partes:P,sug:sug};
@@ -12416,7 +12414,7 @@ function saludInit(){
   var barras=S.partes.map(function(x){var w=x.p/x.m*100;return '<div style="margin:7px 0"><div style="display:flex;justify-content:space-between;font-size:.74rem"><span>'+x.k+'</span><span style="font-family:var(--mono);color:var(--text2)">'+Math.round(x.p)+' / '+x.m+'</span></div>'+
     '<div style="height:6px;background:var(--surface2);border-radius:4px;margin-top:3px;overflow:hidden"><div style="height:100%;width:'+w.toFixed(0)+'%;background:'+_saludColor(w)+';border-radius:4px"></div></div><div style="font-size:.66rem;color:var(--text3);margin-top:2px">'+x.d+'</div></div>';}).join('');
   var mej=S.sug.length?S.sug.slice(0,6).map(function(x){return '<div style="display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--border);font-size:.78rem"><b style="font-family:var(--mono);color:var(--accent);min-width:44px">+'+Math.max(1,Math.round(x.g))+'</b><span>'+x.t+'</span></div>';}).join(''):'<div style="font-size:.78rem;color:var(--text3);padding:6px 0">Nada para mejorar. 👏</div>';
-  c.innerHTML='<div class="card-header"><span class="card-title">💯 Salud de la cartera</span><span style="font-family:var(--mono);font-size:.66rem;color:var(--text3)">concentración · diversificación · liquidez · pérdidas · datos · renta</span></div>'+
+  c.innerHTML='<div class="card-header"><span class="card-title">💯 Salud de la cartera</span><span style="font-family:var(--mono);font-size:.66rem;color:var(--text3)">concentración · diversificación · liquidez · pérdidas · renta</span></div>'+
     '<div style="padding:14px 16px;display:flex;gap:22px;flex-wrap:wrap"><div style="display:flex;gap:14px;align-items:center;min-width:250px"><div>'+ring+'</div><div><div style="font-weight:700;font-size:1rem;color:'+col+'">'+est+'</div>'+
     (dif!=null?'<div style="font-family:var(--mono);font-size:.72rem;color:'+(dif>=0?'var(--accent)':'var(--red)')+';margin-top:3px">'+(dif>0?'▲ +':dif<0?'▼ ':'= ')+dif+' contra hace una semana</div>':'<div style="font-size:.7rem;color:var(--text3);margin-top:3px">La semana que viene vas a ver cómo cambió.</div>')+'</div></div>'+
     '<div style="flex:1;min-width:240px">'+barras+'</div><div style="flex:1;min-width:260px"><div style="font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-weight:600;margin-bottom:2px">Qué mejorar (puntos que sumás)</div>'+mej+'</div></div>';
