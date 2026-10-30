@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=286, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=287, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v287 | 2026-10-29 | 🎉 Nuevo máximo histórico: cuando el Valor total supera su máximo (confirmado en dos lecturas, sin saltos raros) aparece un festejo una vez por día, y si cruza un número redondo (USD 200.000, etc.) también lo dice. Lo muestran la vista mini, la frase de Siri y la barra de la Mac (🎉 en lugar de 💼; hay que volver a descargar el complemento). Guardado en config max_hist (athChequear).',
   'v286 | 2026-10-29 | 📜 Cinta de cotizaciones arriba del Portafolio: arranca con el resultado del día de la cartera y sigue con cada activo (precio y % del día, resaltados los que se movieron más de 2%), más CCL, MEP y riesgo país. Se frena con el mouse, al tocar un activo lo abre, y tiene opciones (⚙): velocidad, orden (peso, más movidos, A-Z) y solo lo que se movió más de 1%. Botón 📜 para prenderla y apagarla (cintaRender).',
   'v285 | 2026-10-29 | GDC: 🖥️ tu cartera en la barra de la Mac. En la tarjeta de Siri (DashBoard) se descarga un complemento para SwiftBar ya configurado que muestra "💼 184k ▲0,7%" junto al reloj y, al tocarlo, valor, hoy, año, la frase completa y accesos a la vista mini y la cartera. El resumen de Siri ahora también publica los números sueltos (macPlugin, _siriDatos).',
   'v284 | 2026-10-29 | 💯 Salud de la cartera sin "calidad de los datos": quedan cinco partes reescaladas a 100 (concentración 30, diversificación 24, liquidez 17, posiciones en pérdida 17, renta 12).',
@@ -12122,6 +12123,7 @@ function miniRender(){
   try{var cc=calcularCalendarioCobros(),g0=_flujosProximoGrupo(cc.items);if(g0){var usd=0;g0.items.forEach(function(it){usd+=it.moneda==='ARS'?(MEP_HOY>0?it.total/MEP_HOY:0):it.total;});
     var tk=g0.items.map(function(it){return it.ticker;}).filter(function(v,i,a){return a.indexOf(v)===i;});var fp=g0.fecha.split('-'),dd2=Math.round((new Date(+fp[0],+fp[1]-1,+fp[2])-new Date(new Date().toDateString()))/864e5);
     av.push({c:'',i:'💰',t:'Próximo cobro: '+tk.slice(0,3).join(', ')+(tk.length>3?' y '+(tk.length-3)+' más':''),s:fp[2]+'/'+fp[1]+' · <span class="m">≈ USD '+n0(usd)+'</span>',g:dd2<=0?'hoy':'en '+dd2+' d'});}}catch(x){}
+  try{if(typeof athHoy==='function'&&athHoy())av.unshift({c:'',i:'🎉',t:'Nuevo máximo histórico',s:'<span class="m">USD '+n0(ATH.d.v)+'</span>',g:'hoy'});}catch(x){}
   try{if(typeof diaPendientes==='function'){var nd=diaPendientes();if(nd)av.push({c:'',i:'📓',t:nd+' operaci'+(nd>1?'ones':'ón')+' para revisar en el Diario',s:'lo que pensabas y cómo salió',g:'›',on:"miniAbrir('diario')"});}}catch(x){}
   try{if(typeof saludCalc==='function'&&typeof _gdcInitDone!=='undefined'&&_gdcInitDone){var sl=saludCalc({});if(sl.faltaN)av.push({c:'',i:'💱',t:'Faltan tipos de cambio ('+sl.faltaN+' día'+(sl.faltaN>1?'s':'')+')',s:sl.faltaTC.slice(0,2).join(' · '),g:'›',on:"miniAbrir('tipocambio')"});if(sl.neg&&sl.neg.length)av.push({c:'rj',i:'❗',t:'Cantidades negativas: '+sl.neg.slice(0,4).join(', '),s:'revisá los movimientos',g:'›',on:"miniAbrir('movimientos')"});}}catch(x){}
   // lo que más se movió hoy
@@ -12518,6 +12520,7 @@ function siriTexto(){
   try{var cc=calcularCalendarioCobros(),g=_flujosProximoGrupo(cc.items);if(g){var usd=0,tk=[];g.items.forEach(function(it){usd+=it.moneda==='ARS'?(MEP_HOY>0?it.total/MEP_HOY:0):it.total;if(tk.indexOf(it.ticker)<0)tk.push(it.ticker);});
     var p=g.fecha.split('-'),fd=new Date(+p[0],+p[1]-1,+p[2]);t.push('Próximo cobro: '+tk.slice(0,2).join(' y ')+' el '+fd.getDate()+' de '+['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][fd.getMonth()]+', unos '+_siriNum(usd)+' dólares.');}}catch(e){}
   try{if(typeof balProximo==='function'){var bl=[];R.forEach(function(o){var b=balProximo(o.t);if(b&&bl.indexOf(o.t)<0&&_balDias(b.f)<=1)bl.push((_balDias(b.f)===0?'hoy ':'mañana ')+o.t);});if(bl.length)t.push('Presentan balance '+bl.join(', ')+'.');}}catch(e){}
+  try{if(athHoy())t.splice(1,0,'Hoy marcó un nuevo máximo histórico.');}catch(e){}
   try{if(typeof _SAVE_FAIL!=='undefined'&&Object.keys(_SAVE_FAIL).length)t.push('Ojo: hay cambios que no se guardaron en la nube.');}catch(e){}
   return t.join(' ');
 }
@@ -12525,6 +12528,7 @@ function _siriDatos(tx){var k=NV_K||{},d={texto:tx,ts:Date.now(),cartera:CFG.nom
   // datos sueltos para la barra de la Mac (GDC)
   if(k.val!=null){d.v=Math.round(k.val);d.h=k.hoy!=null?Math.round(k.hoy):null;d.hp=k.hoyP!=null?Math.round(k.hoyP*100)/100:null;d.r=k.rend!=null?Math.round(k.rend*100)/100:null;}
   try{d.ab=(typeof window.enRueda==='function')?window.enRueda():null;}catch(e){}
+  try{if(athHoy()){d.ath=true;d.ico='🎉';}}catch(e){}
   try{var u=new URL(location.href);u.search='';u.hash='';d.url=u.toString();}catch(e){}
   return d;}
 async function _siriCargar(){if(SIRI.cargado)return SIRI.token;try{var v=await sbGetConfig('siri_token');SIRI.token=(typeof v==='string'&&v.length>=16)?v:null;}catch(e){}SIRI.cargado=true;return SIRI.token;}
@@ -12586,8 +12590,8 @@ function macPlugin(montos){
 ' var M=argv[1]==="1",o=[],ok=d&&d.v!=null;\n'+
 ' if(!ok){o.push("💼 ? | color=gray");o.push("---");o.push((d&&d.texto)||"Sin datos todavía");o.push("Actualizar | refresh=true");return o.join("\\n");}\n'+
 ' var viejo=!d.ts||(Date.now()-d.ts)>36*3600000,up=(d.hp||0)>=0,col=viejo?"gray":(up?"#00c853":"#ff5252");\n'+
-' var bar="💼 "+(M?k(d.v)+" ":"")+(d.hp!=null?(up?"▲":"▼")+Math.abs(d.hp).toFixed(1).replace(".",",")+"%":"");\n'+
-' o.push(bar+" | color="+col);o.push("---");\n'+
+' var bar=(d.ico||"💼")+" "+(M?k(d.v)+" ":"")+(d.hp!=null?(up?"▲":"▼")+Math.abs(d.hp).toFixed(1).replace(".",",")+"%":"");\n'+
+' o.push(bar+" | color="+col);o.push("---");if(d.ath)o.push("🎉 Nuevo máximo histórico hoy | color=#00c853");\n'+
 ' o.push("Valor: USD "+n0(d.v)+" | font=Menlo");\n'+
 ' if(d.h!=null)o.push((d.ab===false?"Última rueda: ":"Hoy: ")+(d.h>=0?"+":"−")+"USD "+n0(d.h)+" ("+pc(d.hp)+") | font=Menlo color="+(up?"#00c853":"#ff5252"));\n'+
 ' if(d.r!=null)o.push("En el año: "+pc(d.r)+" | font=Menlo");\n'+
@@ -12677,3 +12681,44 @@ function cintaToggle(){CINTA.on=!CINTA.on;_cintaGuardar();_cintaFirma='';cintaRe
 function _cintaBoton(){var tw=document.getElementById('nv-tools');if(!tw)return;var b=document.getElementById('cinta-btn');
   if(!b){b=document.createElement('button');b.id='cinta-btn';b.className='btn';b.onclick=cintaToggle;tw.insertBefore(b,tw.firstChild);}
   b.textContent='📜';b.title=CINTA.on?'Ocultar la cinta de cotizaciones':'Mostrar la cinta de cotizaciones';b.style.cssText='padding:0 9px;font-size:.9rem;opacity:'+(CINTA.on?'1':'.45');}
+
+// ─── 🎉 Nuevo máximo histórico y números redondos ───────────────────────────────────────────────────
+// Guarda en config "max_hist" el valor más alto de la cartera (con liquidez, como el Valor total). Cuando se supera
+// —confirmado en dos lecturas separadas por al menos un minuto y sin saltos sospechosos de más de 25%— muestra un
+// festejo (una vez por día) y, si además cruzó un número redondo (USD 200.000, etc.), lo dice. También lo ven la
+// vista mini, Siri y la barra de la Mac. Ojo: un aporte grande también puede llevar la cartera a un máximo.
+var ATH={d:null,cargado:false,cand:null};
+async function _athCargar(){
+  if(ATH.cargado)return;ATH.cargado=true;var v=null;try{v=await sbGetConfig('max_hist');}catch(e){}
+  if((!v||!(v.v>0))&&typeof CARTERA_ACTIVA==='undefined'){try{if(typeof histLoad==='function')await histLoad();var mx=null;histSerie().forEach(function(x){if(!x.previo&&x.v>0&&(!mx||x.v>mx.v))mx={v:Math.round(x.v),f:x.d};});if(mx)v={v:mx.v,f:mx.f,hitos:[]};}catch(e){}}
+  ATH.d=(v&&v.v>0)?v:null;
+}
+function athHoy(){return !!(ATH.d&&ATH.d.f===_bkHoy()&&ATH.d.fAviso===_bkHoy());}
+function _athPaso(v){return v<50000?5000:v<200000?10000:v<500000?25000:50000;}
+async function athChequear(){
+  if(typeof _gdcInitDone==='undefined'||!_gdcInitDone||MINI)return;if(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA!=='principal')return;
+  var val=NV_K&&NV_K.val;if(!(val>0))return;await _athCargar();
+  if(!ATH.d){ATH.d={v:Math.round(val),f:_bkHoy(),hitos:[]};sbSetConfig('max_hist',ATH.d);return;}
+  if(val<=ATH.d.v*1.0005){ATH.cand=null;return;}
+  if(val>ATH.d.v*1.25){ATH.cand=null;return;}
+  if(!ATH.cand){ATH.cand={ts:Date.now()};return;}if(Date.now()-ATH.cand.ts<60000)return;ATH.cand=null;
+  var ant={v:ATH.d.v,f:ATH.d.f},paso=_athPaso(val),hito=Math.floor(val/paso)*paso,hitoAnt=Math.floor(ant.v/paso)*paso,hitos=ATH.d.hitos||[];
+  var nuevoHito=(hito>hitoAnt&&hitos.indexOf(hito)<0)?hito:null,hoy=_bkHoy(),avisar=ATH.d.fAviso!==hoy||!!nuevoHito;
+  ATH.d={v:Math.round(val),f:hoy,fAviso:avisar?hoy:ATH.d.fAviso,hitos:nuevoHito?hitos.concat([nuevoHito]):hitos};
+  sbSetConfig('max_hist',ATH.d);if(avisar)athFestejo(ant,val,nuevoHito);try{if(typeof siriPublicar==='function')siriPublicar(true);}catch(e){}
+}
+function athFestejo(ant,val,hito){
+  var n0=function(x){return Math.round(x).toLocaleString('es-AR');},fa=String(ant.f||'').split('-').reverse().join('/');
+  if(!document.getElementById('ath-css')){var st=document.createElement('style');st.id='ath-css';st.textContent=
+    '#ath-box{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:100006;background:linear-gradient(135deg,#0f2a1c,#111927);border:1px solid var(--accent);border-radius:16px;padding:16px 20px 14px;box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 4px rgba(0,230,118,.12);max-width:min(460px,92vw);opacity:0;transition:opacity .4s,transform .4s;font-family:var(--sans);color:var(--text)}'+
+    '#ath-box.on{opacity:1;transform:translateX(-50%) translateY(0)}#ath-box h3{font-size:1.05rem;margin:0 0 4px}#ath-box p{font-size:.84rem;color:var(--text2);margin:0;line-height:1.45}#ath-box b.v{color:var(--accent);font-family:var(--mono)}'+
+    '#ath-box .x{position:absolute;top:6px;right:10px;cursor:pointer;color:var(--text3);font-size:1rem}'+
+    '.ath-cf{position:fixed;top:-20px;z-index:100005;font-size:18px;pointer-events:none;animation:athCae linear forwards}@keyframes athCae{to{transform:translateY(105vh) rotate(540deg);opacity:.2}}';document.head.appendChild(st);}
+  var b=document.getElementById('ath-box');if(b)b.remove();b=document.createElement('div');b.id='ath-box';
+  b.innerHTML='<span class="x" onclick="this.parentNode.remove()">✕</span><h3>🎉 ¡Nuevo máximo histórico!</h3><p>Tu cartera vale <b class="v port-sensitive">USD '+n0(val)+'</b>'+(ant.v?' · el máximo anterior era <span class="port-sensitive">USD '+n0(ant.v)+'</span>'+(fa?' (del '+fa+')':'')+'.':'.')+'</p>'+
+    (hito?'<p style="margin-top:6px;color:var(--text)">🏁 Pasaste los <b class="v port-sensitive">USD '+n0(hito)+'</b>.</p>':'')+'<p style="margin-top:6px;font-size:.7rem;color:var(--text3)">Incluye la liquidez y lo que aportaste.</p>';
+  document.body.appendChild(b);requestAnimationFrame(function(){b.classList.add('on');});
+  var em=['🎉','✨','🎊','💚','📈'];for(var i=0;i<36;i++){(function(i){setTimeout(function(){var c=document.createElement('span');c.className='ath-cf';c.textContent=em[i%em.length];c.style.left=(Math.random()*100)+'vw';c.style.animationDuration=(2.6+Math.random()*2.2)+'s';document.body.appendChild(c);setTimeout(function(){c.remove();},5200);},i*60);})(i);}
+  setTimeout(function(){var x=document.getElementById('ath-box');if(x){x.classList.remove('on');setTimeout(function(){if(x.parentNode)x.remove();},500);}},14000);
+}
+setInterval(function(){try{athChequear();}catch(e){}},30000);
