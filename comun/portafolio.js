@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=291, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=292, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v292 | 2026-10-29 | 🧬 Tu evolución arranca en tu primera venta registrada (antes de eso solo hay compras cargadas y la composición no era real).',
   'v291 | 2026-10-29 | 🧬 Nueva solapa Tu evolución (debajo de Tus decisiones): tu historia como inversor en un párrafo, perfil de riesgo de 0 a 100 mes a mes contra el perfil que declaraste, reparto por tipo, país y concentración, indicadores inicio / hace un año / hoy (renta variable, fuera de Argentina, cantidad de activos, Big Tech, perfil, rotación anual) y los momentos en que tu forma de invertir cambió fuerte, cruzados con tus operaciones y los hechos del mercado (evoRender).',
   'v290 | 2026-10-29 | Se saca por ahora la solapa 📉 Devaluación (queda guardada en ideas pendientes; el código está en la v288).',
   'v289 | 2026-10-29 | Se quita el modo alto contraste (botón ◐) a pedido de Garo: quedan los colores de siempre.',
@@ -12753,8 +12754,10 @@ async function evoRender(){
   var pg=document.getElementById('page-evolucion');if(!pg)return;try{_hpCss();}catch(e){}
   pg.innerHTML='<div class="card"><div style="padding:14px 16px;color:var(--text3);font-size:.8rem" id="evo-prog">Preparando tu historia…</div></div>';
   var D=await hpDatos(function(a,b){var e=document.getElementById('evo-prog');if(e)e.textContent='Cargando precios históricos… '+a+' / '+b;});
-  var S=(D&&D.meses||[]).map(_evoMes).filter(Boolean);
-  if(S.length<3){pg.innerHTML='<div class="card"><div style="padding:14px 16px;font-size:.82rem">Todavía no hay historia suficiente (hacen falta al menos 3 meses de movimientos).</div></div>';return;}
+  // Arranca desde que registrás ventas en la app: antes de eso solo hay compras cargadas y la composición no es real
+  var _vs=_hpMovs().filter(function(x){return x.tp==='venta';}),desdeV=_vs.length?_vs[0].f:null,desdeMes=desdeV?desdeV.slice(0,7):null;
+  var S=(D&&D.meses||[]).filter(function(m){return !desdeMes||m.f.slice(0,7)>=desdeMes;}).map(_evoMes).filter(Boolean);
+  if(S.length<3){pg.innerHTML='<div class="card"><div style="padding:14px 16px;font-size:.82rem">Todavía no hay historia suficiente: hacen falta al menos 3 meses desde tu primera venta registrada'+(desdeV?' ('+desdeV.split('-').reverse().join('/')+')':'')+'.</div></div>';return;}
   var ini=S[0],hoy=S[S.length-1],hace=S[Math.max(0,S.length-13)],decl=(typeof DIST_PERFIL!=='undefined'&&DIST_PERFIL)?DIST_PERFIL:(CFG.perfilDefault||'moderado'),rg=_EVO_RANGO[decl]||_EVO_RANGO.moderado;
   var pc=function(x){return Math.round(x*100)+'%';},n0=function(x){return Math.round(x).toLocaleString('es-AR');};
   var mlbl=function(f){var p=f.split('-');return _hpMes[+p[1]-1]+' '+p[0];};
@@ -12780,7 +12783,7 @@ async function evoRender(){
   var hi=new Date();hi.setFullYear(hi.getFullYear()-1);var hiS=_hpIso(hi),prom=S.slice(-12).reduce(function(a,x){return a+x.tot;},0)/Math.min(12,S.length);
   var rotHoy=_evoRot(hiS,_bkHoy(),prom),h2=new Date(hi);h2.setFullYear(h2.getFullYear()-1);var S2=S.filter(function(x){return x.f>_hpIso(h2)&&x.f<=hiS;}),rotAnt=S2.length?_evoRot(_hpIso(h2),hiS,S2.reduce(function(a,x){return a+x.tot;},0)/S2.length):null;
   var ind=function(l,a,b,c,x,col){return '<div class="hp-k" style="padding:10px 12px"><div class="l">'+l+'</div><div style="display:flex;align-items:baseline;gap:8px;margin-top:4px;font-family:var(--mono)"><span style="color:var(--text3);font-size:.78rem">'+a+'</span><span style="color:var(--text3)">→ '+b+' →</span><span style="font-size:1.12rem;font-weight:700;color:'+(col||'var(--text)')+'">'+c+'</span></div><div style="font-size:.66rem;color:var(--text2);margin-top:3px">'+x+'</div></div>';};
-  var h='<div class="card" style="margin-bottom:1rem"><div class="card-header"><span class="card-title">🧬 Tu evolución como inversor</span><span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">desde '+mlbl(ini.f)+' · perfil declarado: '+decl+'</span></div><div style="padding:14px 16px">';
+  var h='<div class="card" style="margin-bottom:1rem"><div class="card-header"><span class="card-title">🧬 Tu evolución como inversor</span><span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)" title="Antes de tu primera venta registrada solo hay compras cargadas, así que la composición no sería real">desde '+mlbl(ini.f)+(desdeV?' (tu primera venta registrada)':'')+' · perfil declarado: '+decl+'</span></div><div style="padding:14px 16px">';
   h+='<div style="padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(167,139,250,.14),var(--surface) 70%);border:1px solid rgba(167,139,250,.35);font-size:.88rem;line-height:1.55">'+frase+'</div>';
   h+='<div class="hp-l" style="margin:16px 0 6px;letter-spacing:.1em;text-transform:uppercase">Perfil de riesgo en el tiempo</div><svg class="hp-svg" id="evo-g1" viewBox="0 0 900 230"></svg>'+
      '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.7rem;color:var(--text2);margin-top:4px"><span><b style="color:#a78bfa">━</b> tu perfil (0 = muy conservador · 100 = muy agresivo)</span><span><b style="color:#ffd600">▬</b> rango del perfil '+decl+'</span></div>';
@@ -12795,7 +12798,7 @@ async function evoRender(){
      ind('Rotación anual','—',rotAnt!=null?pc(rotAnt):'—',rotHoy!=null?pc(rotHoy):'—','qué parte de la cartera cambiás por año')+'</div>';
   h+='<div class="hp-l" style="margin:16px 0 6px;letter-spacing:.1em;text-transform:uppercase">Momentos que cambiaron tu forma de invertir</div>'+
      (mom.length?mom.map(function(c){return '<div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:.8rem;line-height:1.45;margin-bottom:6px"><span style="font-family:var(--mono);font-size:.7rem;color:var(--text3);min-width:66px;padding-top:1px">'+mlbl(c.b.f)+'</span><span>'+momTxt(c)+'</span></div>';}).join(''):'<div class="hp-l">No hubo cambios bruscos: tu forma de invertir fue pareja.</div>');
-  h+='<div class="hp-l" style="margin-top:12px;line-height:1.5">Se calcula con tus movimientos y el historial de precios de cada activo, sin la liquidez. El perfil combina cuánto tenés en renta variable, cripto y acciones argentinas, y qué tan concentrada está la cartera.</div></div></div>';
+  h+='<div class="hp-l" style="margin-top:12px;line-height:1.5">Arranca en tu primera venta registrada'+(desdeV?' ('+desdeV.split('-').reverse().join('/')+')':'')+': desde ahí la app tiene compras y ventas, así que la composición de cada mes es la real. Se calcula con tus movimientos y el historial de precios de cada activo, sin la liquidez. El perfil combina cuánto tenés en renta variable, cripto y acciones argentinas, y qué tan concentrada está la cartera.</div></div></div>';
   pg.innerHTML=h;EVO.S=S;EVO.rg=rg;evoG1();evoTab(EVO.k);
 }
 function _evoX(i,N){return 44+i/Math.max(1,N-1)*(900-44-12);}
