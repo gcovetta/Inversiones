@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=287, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=288, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v288 | 2026-10-29 | 🎨 Modo alto contraste (botón ◐): azul y naranja en lugar de verde y rojo, fondo negro, textos más claros y letra 15% más grande; se guarda por dispositivo. 📉 Nueva solapa Devaluación: dólar oficial (BCRA), suba que espera el mercado según el dólar futuro (los cargás o pegás desde el broker), lo que rinden tus pesos (arranca con el plazo fijo del Nación, editable), tu dólar de empate mes a mes, tu reparto pesos/dólares y escenarios de suba mayor.',
   'v287 | 2026-10-29 | 🎉 Nuevo máximo histórico: cuando el Valor total supera su máximo (confirmado en dos lecturas, sin saltos raros) aparece un festejo una vez por día, y si cruza un número redondo (USD 200.000, etc.) también lo dice. Lo muestran la vista mini, la frase de Siri y la barra de la Mac (🎉 en lugar de 💼; hay que volver a descargar el complemento). Guardado en config max_hist (athChequear).',
   'v286 | 2026-10-29 | 📜 Cinta de cotizaciones arriba del Portafolio: arranca con el resultado del día de la cartera y sigue con cada activo (precio y % del día, resaltados los que se movieron más de 2%), más CCL, MEP y riesgo país. Se frena con el mouse, al tocar un activo lo abre, y tiene opciones (⚙): velocidad, orden (peso, más movidos, A-Z) y solo lo que se movió más de 1%. Botón 📜 para prenderla y apagarla (cintaRender).',
   'v285 | 2026-10-29 | GDC: 🖥️ tu cartera en la barra de la Mac. En la tarjeta de Siri (DashBoard) se descarga un complemento para SwiftBar ya configurado que muestra "💼 184k ▲0,7%" junto al reloj y, al tocarlo, valor, hoy, año, la frase completa y accesos a la vista mini y la cartera. El resumen de Siri ahora también publica los números sueltos (macPlugin, _siriDatos).',
@@ -1051,6 +1052,7 @@ function showPage(id,btn){
   if(id==='arbitraje') arbRender();
   if(id==='rotaciones') rotRender();
   if(id==='balances') balRender();
+  if(id==='devaluacion') devRender();
   if(id==='diario') diaRender();
   if(id==='noticias') nwsLoad(false);
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
@@ -12722,3 +12724,111 @@ function athFestejo(ant,val,hito){
   setTimeout(function(){var x=document.getElementById('ath-box');if(x){x.classList.remove('on');setTimeout(function(){if(x.parentNode)x.remove();},500);}},14000);
 }
 setInterval(function(){try{athChequear();}catch(e){}},30000);
+
+// ─── 🎨 Modo alto contraste ─────────────────────────────────────────────────────────────────────────
+// Azul y naranja en lugar de verde y rojo (se distinguen con cualquier tipo de daltonismo), fondo negro, textos y
+// bordes más claros y letra 15% más grande. Botón ◐ en la barra de herramientas; se guarda por dispositivo.
+var HC_ON=(function(){try{return localStorage.getItem('alto_contraste')==='1';}catch(e){return false;}})();
+(function(){var st=document.createElement('style');st.id='hc-css';var U='#4da3ff',D='#ff9f1a';
+  var sel=function(cols,prop){return cols.map(function(c){return 'html.hc [style*="'+prop+':'+c+'"],html.hc [style*="'+prop+': '+c+'"]';}).join(',');};
+  st.textContent='html.hc{--bg:#000;--surface:#0a0a0a;--surface2:#161616;--border:#5c5c5c;--border2:#7a7a7a;--text:#fff;--text2:#e2e2e2;--text3:#bdbdbd;--accent:'+U+';--accent2:#3b8eea;--green:'+U+';--green-soft:'+U+';--red:'+D+';--orange:'+D+';--blue:#9ecbff;--amber:#ffe14d;font-size:17.8px}'+
+    sel(['#00e676','#22c55e','#4caf50','#00c853','#69f0ae'],'color')+'{color:'+U+'!important}'+
+    sel(['#ff5252','#ef4444','#f44336'],'color')+'{color:'+D+'!important}'+
+    sel(['#00e676','#22c55e','#4caf50','#00c853'],'background')+'{background:'+U+'!important}'+
+    sel(['#ff5252','#ef4444'],'background')+'{background:'+D+'!important}'+
+    'html.hc [stroke="#00e676"],html.hc [stroke="#22c55e"]{stroke:'+U+'}html.hc [stroke="#ff5252"],html.hc [stroke="#ef4444"]{stroke:'+D+'}'+
+    'html.hc [fill="#00e676"],html.hc [fill="#22c55e"]{fill:'+U+'}html.hc [fill="#ff5252"],html.hc [fill="#ef4444"]{fill:'+D+'}'+
+    'html.hc input,html.hc select,html.hc textarea{border-color:#7a7a7a!important}';
+  (document.head||document.documentElement).appendChild(st);if(HC_ON)document.documentElement.classList.add('hc');})();
+function hcToggle(){HC_ON=!HC_ON;try{localStorage.setItem('alto_contraste',HC_ON?'1':'0');}catch(e){}document.documentElement.classList.toggle('hc',HC_ON);_hcBoton();}
+function _hcBoton(){var tw=document.getElementById('nv-tools');if(!tw)return;var b=document.getElementById('hc-btn');
+  if(!b){b=document.createElement('button');b.id='hc-btn';b.className='btn';b.onclick=hcToggle;tw.insertBefore(b,tw.firstChild);}
+  b.textContent='◐';b.title=HC_ON?'Volver a los colores normales':'Modo alto contraste (azul y naranja, letra más grande)';b.style.cssText='padding:0 9px;font-size:.95rem;'+(HC_ON?'border-color:var(--accent);color:var(--accent)':'');}
+setInterval(function(){try{if(!document.getElementById('hc-btn'))_hcBoton();}catch(e){}},3000);
+
+// ─── 📉 Devaluación que espera el mercado (solapa nueva) ─────────────────────────────────────────────
+// Compara la suba del dólar que descuenta el dólar futuro (los cargás o pegás desde tu broker: no hay fuente gratuita
+// pública) con lo que rinden tus pesos (tasa mensual que elegís; arranca con el plazo fijo del Banco Nación) y calcula
+// tu "dólar de empate". Muestra tu reparto pesos / dólares y escenarios de suba mayor a la esperada.
+var DEV={cfg:null,ofi:null,pf:null};
+var _devMes=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function _devMeses(){var out=[],d=new Date();d.setDate(1);for(var i=0;i<7;i++){var x=new Date(d.getFullYear(),d.getMonth()+i+1,0);out.push({k:x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'),lbl:_devMes[x.getMonth()]+' '+String(x.getFullYear()).slice(2),fin:x});}return out;}
+async function _devCargar(){
+  if(!DEV.cfg){try{var v=await sbGetConfig('deval');DEV.cfg=(v&&typeof v==='object')?v:{};}catch(e){DEV.cfg={};}DEV.cfg.fut=DEV.cfg.fut||{};}
+  if(DEV.ofi==null){DEV.ofi=0;try{var r=await fetchWithTimeout('https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/5?limit=10',{},8000);var j=r.ok?await r.json():null;var d=j&&j.results&&j.results[0]&&j.results[0].detalle;
+      if(d&&d.length){d.sort(function(a,b){return a.fecha<b.fecha?1:-1;});DEV.ofi={v:+d[0].valor,f:d[0].fecha,src:'BCRA (A3500)'};}}catch(e){}
+    if(!DEV.ofi){try{var r2=await fetchWithTimeout('https://dolarapi.com/v1/dolares/mayorista',{},8000);var j2=r2.ok?await r2.json():null;if(j2&&+j2.venta>0)DEV.ofi={v:+j2.venta,f:(j2.fechaActualizacion||'').slice(0,10),src:'dolarapi (mayorista)'};}catch(e){}}}
+  if(DEV.pf==null){DEV.pf=0;try{var r3=await fetchWithTimeout('https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo',{},8000);var j3=r3.ok?await r3.json():[];var bn=(j3||[]).filter(function(x){return /NACION/i.test(x.entidad||'');})[0];if(bn&&+bn.tnaClientes>0)DEV.pf=+bn.tnaClientes;}catch(e){}}
+}
+function _devTem(){var c=DEV.cfg||{};if(c.tem>0)return {v:c.tem,src:'la tasa que cargaste'};if(DEV.pf>0){var tna=DEV.pf>1?DEV.pf/100:DEV.pf;return {v:Math.round(tna/12*1000)/10,src:'plazo fijo Banco Nación (TNA '+(tna*100).toFixed(1).replace('.',',')+'%)'};}return {v:2,src:'valor por defecto'};}
+function _devReparto(){
+  var R=(NV_ROWS||[]).filter(function(o){return o&&o.usd>0;}),pes=0,dol=0,dp=[],dd=[];
+  R.forEach(function(o){var ars=false;if(!o.rv){try{var fl=flujoDe(o.t);if(fl&&fl.moneda==='ARS')ars=true;}catch(e){}try{if(_nvTipo(o)==='cer')ars=true;}catch(e){}if(/^S\d{2}[A-Z]\d$/.test(o.t))ars=true;}
+    if(ars){pes+=o.usd;dp.push(o.t);}else{dol+=o.usd;dd.push(o.t);}});
+  var L=(typeof INF_LAST!=='undefined'&&INF_LAST)||{},la=0,lu=+L.liqUSD||0;try{la=(+L.liqARS||0)/(MEP_HOY||CCL_HOY||1);}catch(e){}
+  return {pes:pes+la,dol:dol+lu,liqA:la,liqU:lu,dp:dp,dd:dd};
+}
+async function devRender(){
+  var pg=document.getElementById('page-devaluacion');if(!pg)return;try{_hpCss();}catch(e){}pg.innerHTML='<div class="card"><div style="padding:14px 16px;color:var(--text3);font-size:.8rem">Cargando…</div></div>';
+  await _devCargar();var M=_devMeses(),c=DEV.cfg,ofi=DEV.ofi&&DEV.ofi.v,T=_devTem(),tem=T.v/100;
+  var n0=function(x){return Math.round(x).toLocaleString('es-AR');},p1=function(x){return x.toFixed(1).replace('.',',');},p2=function(x){return x.toFixed(2).replace('.',',');};
+  if(!(ofi>0)){pg.innerHTML='<div class="card"><div style="padding:14px 16px;font-size:.82rem">No se pudo leer el dólar oficial (BCRA). Probá más tarde.</div></div>';return;}
+  var hoy=new Date();M.forEach(function(m){m.n=Math.max(0.1,(m.fin-hoy)/(864e5*30.4375));m.fut=+c.fut[m.k]||null;m.emp=ofi*Math.pow(1+tem,m.n);});
+  var conF=M.filter(function(m){return m.fut>0;}),ult=conF.length?conF[conF.length-1]:null,espM=ult?(Math.pow(ult.fut/ofi,1/ult.n)-1)*100:null;
+  var ref=ult||M[4],gan=ult?(T.v-espM):null;
+  var viejo=c.ts&&(Date.now()-c.ts)>3*864e5;
+  var kb=function(l,v,x,col){return '<div class="hp-k" style="padding:10px 12px"><div class="l">'+l+'</div><div class="v" style="font-size:1.2rem;color:'+(col||'var(--text)')+'">'+v+'</div><div style="font-size:.68rem;color:var(--text2);margin-top:2px;line-height:1.35">'+x+'</div></div>';};
+  var h='<div class="card" style="margin-bottom:1rem"><div class="card-header"><span class="card-title">📉 Devaluación que espera el mercado</span><span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">oficial: '+DEV.ofi.src+' '+String(DEV.ofi.f||'').split('-').reverse().join('/')+'</span></div><div style="padding:14px 16px">';
+  h+='<div class="hp-g" style="margin-top:0">'+kb('Dólar oficial hoy','$ '+n0(ofi),'mayorista, la referencia del futuro')+
+     kb('El mercado espera',espM!=null?p1(espM)+'% / mes':'—',ult?'suba promedio hasta '+ult.lbl+' · $ '+n0(ult.fut)+(viejo?' <b style="color:var(--amber)">(precios de hace más de 3 días)</b>':''):'cargá los precios del dólar futuro abajo','var(--blue)')+
+     kb('Tus pesos rinden',p1(T.v)+'% / mes','según '+T.src+' · <span style="text-decoration:underline;cursor:pointer" onclick="devTasa()">cambiar</span>','var(--accent)')+'</div>';
+  h+='<div style="margin-top:12px;padding:11px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(68,138,255,.12),var(--surface) 70%);border:1px solid rgba(68,138,255,.35);font-size:.86rem;line-height:1.5">'+
+     (ult?(gan>=0?'Si el dólar sube <b>como espera el mercado</b>, tus pesos le ganan por <b style="color:var(--accent)">'+p1(gan)+'% por mes</b>.':'Si el dólar sube <b>como espera el mercado</b>, tus pesos <b style="color:var(--red)">pierden '+p1(-gan)+'% por mes</b> contra el dólar.')+' ':'')+
+     'Para que convenga haber estado en dólares, el dólar tendría que llegar a <b>$ '+n0(ref.emp)+' en '+ref.lbl+'</b> ('+p1((ref.emp/ofi-1)*100)+'% de suba): ese es tu <b>dólar de empate</b>.</div>';
+  // gráfico
+  var W=860,H=270,L=64,R=16,Tp=14,B=30,vals=[ofi].concat(M.map(function(m){return m.emp;}),conF.map(function(m){return m.fut;})),vmin=Math.min.apply(null,vals)*0.98,vmax=Math.max.apply(null,vals)*1.02;
+  var X=function(i){return L+i/M.length*(W-L-R);},Y=function(v){return Tp+(1-(v-vmin)/(vmax-vmin))*(H-Tp-B);};
+  var g='';for(var k=0;k<=4;k++){var vy=vmin+(vmax-vmin)*k/4;g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(vy)+'" y2="'+Y(vy)+'" stroke="var(--border)" stroke-dasharray="2 4"/><text class="hp-ax" x="'+(L-8)+'" y="'+(Y(vy)+3)+'" text-anchor="end">$ '+n0(vy)+'</text>';}
+  g+='<text class="hp-ax" x="'+X(0)+'" y="'+(H-B+16)+'" text-anchor="middle">hoy</text>';M.forEach(function(m,i){g+='<text class="hp-ax" x="'+X(i+1)+'" y="'+(H-B+16)+'" text-anchor="middle">'+m.lbl+'</text>';});
+  g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(ofi)+'" y2="'+Y(ofi)+'" stroke="#ffd600" stroke-dasharray="5 4" opacity=".7"/>';
+  g+='<path d="M'+X(0)+' '+Y(ofi)+M.map(function(m,i){return ' L'+X(i+1)+' '+Y(m.emp);}).join('')+'" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="6 4"/>';
+  if(conF.length){g+='<path d="M'+X(0)+' '+Y(ofi)+M.map(function(m,i){return m.fut>0?' L'+X(i+1)+' '+Y(m.fut):'';}).join('')+'" fill="none" stroke="#448aff" stroke-width="2.5"/>';M.forEach(function(m,i){if(m.fut>0)g+='<circle cx="'+X(i+1)+'" cy="'+Y(m.fut)+'" r="3.5" fill="#448aff"/>';});}
+  h+='<svg class="hp-svg" viewBox="0 0 860 270" style="margin-top:12px">'+g+'</svg><div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.7rem;color:var(--text2);margin-top:4px"><span><b style="color:#448aff">━</b> dólar futuro (lo que espera el mercado)</span><span><b style="color:#00e676">┅</b> dólar de empate de tus pesos</span><span><b style="color:#ffd600">┅</b> dólar oficial hoy</span></div>';
+  // tabla + carga de futuros
+  var th='style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--border)"',td='style="font-family:var(--mono);text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-size:.78rem"';
+  h+='<table style="width:100%;border-collapse:collapse;margin-top:12px"><thead><tr><th '+th.replace('right','left')+'>Vence</th><th '+th+'>Dólar futuro</th><th '+th+'>Suba esperada</th><th '+th+'>Por mes</th><th '+th+'>Empate de tus pesos</th><th '+th+'>Conviene</th></tr></thead><tbody>'+
+    M.map(function(m){var cv=m.fut>0?(m.emp>m.fut?'<b style="color:var(--accent)">Pesos</b>':'<b style="color:var(--blue)">Dólares</b>'):'<span style="color:var(--text3)">—</span>';
+      return '<tr><td '+td.replace('right','left')+'>'+m.lbl+'</td><td '+td+'><input type="text" inputmode="decimal" data-k="'+m.k+'" class="dev-in" value="'+(m.fut?n0(m.fut):'')+'" placeholder="$" style="width:90px;text-align:right;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:3px 6px;font-family:var(--mono)"></td>'+
+        '<td '+td+'>'+(m.fut>0?'+'+p1((m.fut/ofi-1)*100)+'%':'—')+'</td><td '+td+'>'+(m.fut>0?p2((Math.pow(m.fut/ofi,1/m.n)-1)*100)+'%':'—')+'</td><td '+td+'>$ '+n0(m.emp)+'</td><td '+td+'>'+cv+'</td></tr>';}).join('')+'</tbody></table>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px"><button class="btn btn-a btn-sm" onclick="devGuardar()">Guardar precios</button><button class="btn btn-sm" onclick="devPegar()">📋 Pegar desde el broker</button>'+
+    '<span style="font-size:.68rem;color:var(--text3)">Copiá los precios del dólar futuro (DLR) de tu broker o de A3 Mercados. '+(c.ts?'Última carga: '+new Date(c.ts).toLocaleDateString('es-AR'):'Todavía no cargaste ninguno.')+'</span></div>';
+  // reparto y escenarios
+  var rp=_devReparto(),tot=rp.pes+rp.dol,pp=tot>0?rp.pes/tot*100:0;
+  h+='<div class="hp-k" style="margin-top:14px;padding:12px 14px"><div style="font-weight:700;font-size:.86rem">Tu cartera hoy</div>'+
+    '<div style="height:12px;border-radius:6px;overflow:hidden;display:flex;margin-top:8px"><i style="display:block;width:'+pp.toFixed(1)+'%;background:#00e676"></i><i style="display:block;width:'+(100-pp).toFixed(1)+'%;background:#448aff"></i></div>'+
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--text2);margin-top:6px"><span><b style="color:#00e676">■</b> '+Math.round(pp)+'% en pesos · <span class="port-sensitive">USD '+n0(rp.pes)+'</span> (bonos CER y en pesos'+(rp.liqA>0?', liquidez en $':'')+')</span><span><b style="color:#448aff">■</b> '+Math.round(100-pp)+'% en dólares · <span class="port-sensitive">USD '+n0(rp.dol)+'</span></span></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:.74rem;color:var(--text2)">¿Y si el dólar sube más de lo esperado? '+[0,10,20,40].map(function(d){return '<span class="hp-ch'+(d===0?' on':'')+'" data-d="'+d+'" onclick="devEsc('+d+',this)">'+(d?d+'% más':'Como espera el mercado')+'</span>';}).join('')+'</div>'+
+    '<div id="dev-esc" style="margin-top:8px;font-size:.82rem;line-height:1.5"></div></div>';
+  h+='<div style="margin-top:10px;font-size:.66rem;color:var(--text3);line-height:1.5">El dólar de empate supone que tus pesos rinden la tasa mensual elegida todos los meses. El futuro es lo que el mercado descuenta hoy, no una predicción segura. Se cuenta como "pesos" lo que paga en pesos (bonos CER, LECAP, bonos en pesos) y la liquidez en $; todo lo demás como dólares.</div></div></div>';
+  pg.innerHTML=h;DEV._ref=ref;DEV._rp=rp;DEV._ofi=ofi;DEV._tem=tem;devEsc(0);
+}
+function devEsc(d,el){if(el)document.querySelectorAll('#page-devaluacion .hp-ch[data-d]').forEach(function(x){x.classList.toggle('on',x===el);});
+  var r=DEV._ref,rp=DEV._rp,ofi=DEV._ofi,tem=DEV._tem,e=document.getElementById('dev-esc');if(!r||!e)return;
+  var base=r.fut>0?r.fut:r.emp,fin=base*(1+d/100),vp=rp.pes*Math.pow(1+tem,r.n)*ofi/fin,dif=vp-rp.pes,n0=function(x){return Math.round(Math.abs(x)).toLocaleString('es-AR');};
+  e.innerHTML='Con el dólar en <b>$ '+n0(fin)+'</b> en '+r.lbl+(d===0&&!(r.fut>0)?' (tu empate)':'')+', tu parte en pesos valdría <b class="port-sensitive" style="color:'+(dif>=0?'var(--accent)':'var(--red)')+'">'+(dif>=0?'+':'−')+'USD '+n0(dif)+'</b> '+(dif>=0?'más':'menos')+' que si hubiera estado dolarizada. Tu parte en dólares no cambia.';}
+function devGuardar(){var c=DEV.cfg;document.querySelectorAll('#page-devaluacion .dev-in').forEach(function(i){var v=parseFloat(String(i.value).replace(/\./g,'').replace(',','.'));if(v>0)c.fut[i.dataset.k]=v;else delete c.fut[i.dataset.k];});c.ts=Date.now();sbSetConfig('deval',c);devRender();}
+function devTasa(){var T=_devTem(),v=prompt('¿Cuánto rinden tus pesos por mes? (%, por ejemplo 2,4)\nDejalo vacío para usar el plazo fijo del Banco Nación.',DEV.cfg.tem>0?String(DEV.cfg.tem).replace('.',','):'');if(v===null)return;var n=parseFloat(String(v).replace(',','.'));if(n>0&&n<30)DEV.cfg.tem=n;else delete DEV.cfg.tem;sbSetConfig('deval',DEV.cfg);devRender();}
+function devPegar(){
+  var t=prompt('Pegá acá el texto copiado del broker con los dólar futuro (una línea por vencimiento, ej. "DLR/NOV26 1.480,50"):','');if(!t)return;
+  var mm={ENE:1,FEB:2,MAR:3,ABR:4,APR:4,MAY:5,JUN:6,JUL:7,AGO:8,AUG:8,SEP:9,SET:9,OCT:10,NOV:11,DIC:12,DEC:12,JAN:1},n=0;
+  t.split(/\r?\n/).forEach(function(l){var m=l.toUpperCase().match(/\b(ENE|JAN|FEB|MAR|ABR|APR|MAY|JUN|JUL|AGO|AUG|SEP|SET|OCT|NOV|DIC|DEC)[A-Z]*\s*\/?\s*(\d{2,4})?/);if(!m)return;
+    var nums=(l.replace(m[0],' ').match(/\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?/g)||[]).map(function(x){return /,\d+$/.test(x)||/\.\d{3}/.test(x)?parseFloat(x.replace(/\./g,'').replace(',','.')):parseFloat(x.replace(',','.'));}).filter(function(x){return x>300&&x<100000;});
+    if(!nums.length)return;var y=m[2]?(m[2].length===2?2000+(+m[2]):+m[2]):null,mes=mm[m[1]];if(!y){var h=new Date();y=h.getFullYear()+(mes<h.getMonth()+1?1:0);}
+    DEV.cfg.fut[y+'-'+String(mes).padStart(2,'0')]=nums[0];n++;});
+  if(!n){alert('No encontré precios. Probá con una línea por vencimiento, tipo "NOV26 1480".');return;}DEV.cfg.ts=Date.now();sbSetConfig('deval',DEV.cfg);devRender();
+}
+function devInit(){if(document.getElementById('page-devaluacion'))return;var pp=document.getElementById('page-portafolio');if(!pp)return;
+  var ref=document.getElementById('nav-diario')||document.querySelector('.nav-item[onclick*="\'balances\'"]')||document.querySelector('.nav-item[onclick*="\'movimientos\'"]');if(!ref)return;
+  var pg=document.createElement('div');pg.className='page';pg.id='page-devaluacion';pp.parentNode.appendChild(pg);
+  var b=document.createElement('button');b.className='nav-item';b.setAttribute('onclick',"showPage('devaluacion',this)");b.innerHTML='<span>📉</span>Devaluación';ref.parentNode.insertBefore(b,ref.nextSibling);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(devInit,50);});else setTimeout(devInit,50);
