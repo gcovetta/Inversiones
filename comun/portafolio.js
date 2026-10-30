@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=282, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=283, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v283 | 2026-10-29 | Fix película y línea de tiempo: algunos bonos (ej. TX31) aparecían con valores absurdos (millones de USD) porque la escala del historial de precios (por 100 VN) no se podía calibrar y quedaba en ×1. Ahora la escala se ancla al valor real de hoy en el Portafolio (o a tus operaciones si ya no lo tenés), se corrigen los saltos de unidad en las series de bonos y, si igual un valor queda a más de ×15 de lo que pagaste, se usa el precio de tu última operación (hpDatos).',
   'v282 | 2026-10-29 | Fix: el campo "¿Por qué?" de Comprar y Vender tenía fondo blanco; ahora usa los colores de la app.',
   'v281 | 2026-10-29 | DashBoard: 🗣️ "Oye Siri, mi cartera". La app arma un resumen hablado (valor, hoy, año, lo que más subió y bajó, próximo cobro, balances) y lo publica cada 5 min en la tabla siri_resumen de Supabase bajo un código secreto; un atajo del iPhone lo pide y lo lee. La tarjeta trae el SQL a pegar una vez, la URL, la clave y el código para copiar, los pasos del atajo y un botón para escuchar cómo suena (siriTexto, siriPublicar).',
   'v280 | 2026-10-29 | DashBoard: 🧪 Tu plan en piloto automático. Una cartera fantasma recibe la misma plata que vos en las mismas fechas y compra lo que más le falta según tu cartera ideal por grupo (o tu composición actual si no tenés ideal), sin vender nunca; muestra cuánto te sumaron o restaron tus decisiones y las dos curvas (apDatos, apArmar).',
@@ -12177,24 +12178,40 @@ function _hpMovs(){
 async function hpDatos(onProg,forzar){
   if(HP.d&&!forzar)return HP.d;if(HP.cargando)return HP.cargando;
   var M=_hpMovs(),firma=M.length+'|'+(M.length?M[M.length-1].m.id:'')+'|'+_bkHoy();
-  if(!forzar){try{var c=JSON.parse(localStorage.getItem(PFX+'hp_v2')||'null');if(c&&c.firma===firma){HP.d=c;return c;}}catch(e){}}
+  if(!forzar){try{var c=JSON.parse(localStorage.getItem(PFX+'hp_v3')||'null');if(c&&c.firma===firma){HP.d=c;return c;}}catch(e){}}
   HP.cargando=(async function(){
     if(!M.length)return {sem:[],meses:[],ops:[],firma:firma};
     var tks=[];M.forEach(function(x){if(tks.indexOf(x.t)<0)tks.push(x.t);});
     var ser={},hechos=0,cola=tks.slice();
     var trabajador=async function(){while(cola.length){var t=cola.shift();try{var s=getSector(t);ser[t]=(s==='fci')?null:(await _phSerie(t,s)).ser;}catch(e){ser[t]=null;}hechos++;if(onProg)onProg(hechos,tks.length);}};
     await Promise.all([trabajador(),trabajador(),trabajador(),trabajador()]);
-    // escala de cada serie contra tus operaciones (por 100 VN, ratio, etc.)
-    var k={};tks.forEach(function(t){var S=ser[t];if(!S||!S.length){k[t]=null;return;}var R=[];
-      M.forEach(function(x){if(x.t!==t||!(x.u>0))return;var p=_hpPx(S,x.f);if(p>0)R.push(x.u/x.q/p);});
-      if(!R.length){k[t]=1;return;}R.sort(function(a,b){return a-b;});var med=R[Math.floor(R.length/2)];k[t]=Math.pow(10,Math.round(Math.log10(med)));});
+    // Limpieza de series de bonos/ONs: un salto de más de ×3 de un día a otro es un cambio de unidad (fuentes mezcladas,
+    // por 100 VN vs por 1 VN), no un movimiento real: se reescala lo anterior.
+    tks.forEach(function(t){var S=ser[t],sc=getSector(t);if(!S||S.length<2||(sc!=='bonos'&&sc!=='on'))return;S=S.map(function(x){return [x[0],x[1]];});
+      for(var j=S.length-1;j>0;j--){var r=S[j][1]/S[j-1][1];if(r>3||r<1/3){for(var z=0;z<j;z++)S[z][1]*=r;}}ser[t]=S;});
+    // Escala de cada serie (por 100 VN, ratio, etc.). 1) Si lo tenés hoy: se ancla al valor real de hoy en el Portafolio.
+    // 2) Si no: contra los precios de tus operaciones (el punto de la serie más cercano a cada una). 3) Sin nada confiable:
+    // se valúa al precio de tu última operación.
+    var _pxCerca=function(S,f){var lo=0,hi=S.length-1;while(lo<hi){var m=(lo+hi)>>1;if(S[m][0]<f)lo=m+1;else hi=m;}var a=S[lo],b=S[Math.max(0,lo-1)];
+      return Math.abs(new Date(a[0])-new Date(f))<=Math.abs(new Date(b[0])-new Date(f))?a[1]:b[1];};
+    var _redo=function(x){var l=Math.log10(x),r=Math.round(l);return Math.abs(l-r)<0.2?Math.pow(10,r):x;};
+    var hoyRow={};(NV_ROWS||[]).forEach(function(o){if(o&&o.q>0&&o.usd>0)hoyRow[o.t]=o.usd/o.q;});
+    var k={};tks.forEach(function(t){var S=ser[t];if(!S||!S.length){k[t]=null;return;}
+      var last=S[S.length-1][1];if(hoyRow[t]&&last>0){k[t]=hoyRow[t]/last;return;}
+      var R=[];M.forEach(function(x){if(x.t!==t||!(x.u>0))return;var p=_pxCerca(S,x.f);if(p>0)R.push(x.u/x.q/p);});
+      if(!R.length){k[t]=null;return;}R.sort(function(a,b){return a-b;});k[t]=_redo(R[Math.floor(R.length/2)]);});
     // semanas desde el primer movimiento
-    var d=new Date(M[0].f+'T12:00:00'),hoy=new Date(),q={},ult={},i=0,sem=[],meses=[],mesAct=null,ultPer=null;
+    var d=new Date(M[0].f+'T12:00:00'),hoy=new Date(),q={},ult={},cost={},i=0,sem=[],meses=[],mesAct=null,ultPer=null;
     while(d<=hoy){
       var f=_hpIso(d);
-      while(i<M.length&&M[i].f<=f){var x=M[i];q[x.t]=(q[x.t]||0)+(x.tp==='compra'?x.q:-x.q);if(q[x.t]<1e-6)q[x.t]=0;if(x.u>0)ult[x.t]=x.u/x.q;i++;}
+      while(i<M.length&&M[i].f<=f){var x=M[i],qa=q[x.t]||0;
+        if(x.tp==='compra'){cost[x.t]=(cost[x.t]||0)+(x.u>0?x.u:0);}else if(qa>0){cost[x.t]=(cost[x.t]||0)*Math.max(0,1-x.q/qa);}
+        q[x.t]=qa+(x.tp==='compra'?x.q:-x.q);if(q[x.t]<1e-6){q[x.t]=0;cost[x.t]=0;}if(x.u>0)ult[x.t]=x.u/x.q;i++;}
       var tot=0,per={};
-      Object.keys(q).forEach(function(t){if(!(q[t]>0))return;var p=_hpPx(ser[t],f),v=(p>0&&k[t])?q[t]*p*k[t]:(ult[t]?q[t]*ult[t]:0);if(v>0){per[t]=Math.round(v);tot+=v;}});
+      Object.keys(q).forEach(function(t){if(!(q[t]>0))return;var p=_hpPx(ser[t],f),v=(p>0&&k[t])?q[t]*p*k[t]:(ult[t]?q[t]*ult[t]:0);
+        // control de cordura: si el valor queda a más de ×15 (o menos de 1/15) de lo que pagaste, la serie no es confiable
+        var c=cost[t]||0;if(c>0&&(v>c*15||v<c/15))v=ult[t]?q[t]*ult[t]:c;
+        if(v>0){per[t]=Math.round(v);tot+=v;}});
       var dia=(hoy-d)<=400*864e5,wd=d.getDay();
       if(!dia||(wd!==0&&wd!==6)){sem.push({f:f,v:Math.round(tot)});
         var mk=f.slice(0,7);if(mesAct&&mk!==mesAct&&ultPer)meses.push(ultPer);mesAct=mk;ultPer={f:f,per:per,tot:Math.round(tot)};}
@@ -12208,7 +12225,7 @@ async function hpDatos(onProg,forzar){
       var nom=function(T){return Object.keys(T).sort(function(a,b){return T[b]-T[a];});};
       if(g.c>=lim)o.push({f:f,tp:'c',u:Math.round(g.c),tk:nom(g.tc)});if(g.v>=lim)o.push({f:f,tp:'v',u:Math.round(g.v),tk:nom(g.tv)});return o;}).reduce(function(a,b){return a.concat(b);},[]);
     var res={sem:sem,meses:meses,ops:ops,firma:firma};
-    try{localStorage.setItem(PFX+'hp_v2',JSON.stringify(res));}catch(e){}
+    try{localStorage.setItem(PFX+'hp_v3',JSON.stringify(res));}catch(e){}
     return res;
   })();
   try{HP.d=await HP.cargando;return HP.d;}finally{HP.cargando=null;}
