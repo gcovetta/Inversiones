@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=290, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=291, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v291 | 2026-10-29 | 🧬 Nueva solapa Tu evolución (debajo de Tus decisiones): tu historia como inversor en un párrafo, perfil de riesgo de 0 a 100 mes a mes contra el perfil que declaraste, reparto por tipo, país y concentración, indicadores inicio / hace un año / hoy (renta variable, fuera de Argentina, cantidad de activos, Big Tech, perfil, rotación anual) y los momentos en que tu forma de invertir cambió fuerte, cruzados con tus operaciones y los hechos del mercado (evoRender).',
   'v290 | 2026-10-29 | Se saca por ahora la solapa 📉 Devaluación (queda guardada en ideas pendientes; el código está en la v288).',
   'v289 | 2026-10-29 | Se quita el modo alto contraste (botón ◐) a pedido de Garo: quedan los colores de siempre.',
   'v288 | 2026-10-29 | 🎨 Modo alto contraste (botón ◐): azul y naranja en lugar de verde y rojo, fondo negro, textos más claros y letra 15% más grande; se guarda por dispositivo. 📉 Nueva solapa Devaluación: dólar oficial (BCRA), suba que espera el mercado según el dólar futuro (los cargás o pegás desde el broker), lo que rinden tus pesos (arranca con el plazo fijo del Nación, editable), tu dólar de empate mes a mes, tu reparto pesos/dólares y escenarios de suba mayor.',
@@ -1054,6 +1055,7 @@ function showPage(id,btn){
   if(id==='arbitraje') arbRender();
   if(id==='rotaciones') rotRender();
   if(id==='balances') balRender();
+  if(id==='evolucion') evoRender();
   if(id==='diario') diaRender();
   if(id==='noticias') nwsLoad(false);
   if(id==='flujos') setTimeout(renderFlujosPage, 50);
@@ -12728,3 +12730,97 @@ setInterval(function(){try{athChequear();}catch(e){}},30000);
 
 try{localStorage.removeItem('alto_contraste');}catch(e){}
 
+// ─── 🧬 Tu evolución como inversor (solapa nueva) ───────────────────────────────────────────────────
+// Con la cartera reconstruida mes a mes (hpDatos: tus movimientos × historial de precios, sin liquidez) calcula un
+// perfil de riesgo de 0 a 100 y cómo cambió el reparto por tipo, país y concentración. Compara inicio / hace un año /
+// hoy, detecta los meses en que tu forma de invertir cambió fuerte y lo cuenta en un párrafo.
+var EVO={k:'tipo'};
+function _evoClase(t){var s=getSector(t),rf=(s==='bonos'||s==='on'||s==='fci'),ars=false;
+  if(rf){try{var fl=flujoDe(t);if(fl&&fl.moneda==='ARS')ars=true;}catch(e){}if(/^S\d{2}[A-Z]\d$/.test(t)||(typeof _bcEs==='function'&&_bcEs(t)))ars=true;}
+  var pais=rf?'argentina':(s==='nyse'?'nyse':s==='argentina'?'argentina':s==='brasil'?'brasil':s==='cripto'?'cripto':(s==='europa'||s==='china')?'otros':'nyse');
+  return {tipo:rf?(ars?'rfp':'rfd'):'rv',pais:pais,cripto:s==='cripto',arg:s==='argentina',bt:BIG_TECH.has(t)};}
+function _evoMes(m){
+  var tot=0,T={rfp:0,rfd:0,rv:0},P={argentina:0,nyse:0,brasil:0,otros:0,cripto:0},cr=0,ar=0,bt=0,vs=[];
+  Object.keys(m.per).forEach(function(t){var v=m.per[t];if(!(v>0))return;var c=_evoClase(t);tot+=v;T[c.tipo]+=v;P[c.pais]+=v;if(c.cripto)cr+=v;if(c.arg)ar+=v;if(c.bt)bt+=v;vs.push(v);});
+  if(!(tot>0))return null;vs.sort(function(a,b){return b-a;});var top1=vs[0]/tot,top5=vs.slice(0,5).reduce(function(a,b){return a+b;},0)/tot,top15=vs.slice(0,15).reduce(function(a,b){return a+b;},0)/tot;
+  var rv=T.rv/tot,crp=cr/tot,arg=ar/tot,sc=Math.max(0,Math.min(100,100*(0.9*rv+0.6*crp+0.2*arg+0.3*Math.max(0,top5-0.35))));
+  return {f:m.f,tot:tot,n:vs.length,tipo:{rfp:T.rfp/tot,rfd:T.rfd/tot,rv:rv},pais:{argentina:P.argentina/tot,nyse:P.nyse/tot,brasil:P.brasil/tot,otros:P.otros/tot,cripto:P.cripto/tot},
+    conc:{a:top1,b:top5-top1,c:top15-top5,d:1-top15},score:sc,bt:bt/tot,fuera:1-P.argentina/tot};}
+function _evoZona(v){return v<35?'conservador':v<60?'moderado':v<80?'agresivo':'muy agresivo';}
+var _EVO_RANGO={conservador:[15,35],moderado:[35,60],agresivo:[60,80]};
+function _evoRot(desde,hasta,prom){var u=0;_hpMovs().forEach(function(x){if(x.f>desde&&x.f<=hasta&&x.u>0)u+=x.u;});return prom>0?u/2/prom:null;}
+async function evoRender(){
+  var pg=document.getElementById('page-evolucion');if(!pg)return;try{_hpCss();}catch(e){}
+  pg.innerHTML='<div class="card"><div style="padding:14px 16px;color:var(--text3);font-size:.8rem" id="evo-prog">Preparando tu historia…</div></div>';
+  var D=await hpDatos(function(a,b){var e=document.getElementById('evo-prog');if(e)e.textContent='Cargando precios históricos… '+a+' / '+b;});
+  var S=(D&&D.meses||[]).map(_evoMes).filter(Boolean);
+  if(S.length<3){pg.innerHTML='<div class="card"><div style="padding:14px 16px;font-size:.82rem">Todavía no hay historia suficiente (hacen falta al menos 3 meses de movimientos).</div></div>';return;}
+  var ini=S[0],hoy=S[S.length-1],hace=S[Math.max(0,S.length-13)],decl=(typeof DIST_PERFIL!=='undefined'&&DIST_PERFIL)?DIST_PERFIL:(CFG.perfilDefault||'moderado'),rg=_EVO_RANGO[decl]||_EVO_RANGO.moderado;
+  var pc=function(x){return Math.round(x*100)+'%';},n0=function(x){return Math.round(x).toLocaleString('es-AR');};
+  var mlbl=function(f){var p=f.split('-');return _hpMes[+p[1]-1]+' '+p[0];};
+  // momentos: cambios fuertes de perfil o de renta variable contra 3 meses antes
+  var cand=[];for(var i=3;i<S.length;i++){var a=S[i-3],b=S[i],ds=b.score-a.score,dr=(b.tipo.rv-a.tipo.rv)*100,da=(b.pais.argentina-a.pais.argentina)*100,mag=Math.max(Math.abs(ds),Math.abs(dr)*0.8,Math.abs(da)*0.6);if(mag>=7)cand.push({i:i,a:a,b:b,ds:ds,dr:dr,da:da,mag:mag});}
+  cand.sort(function(x,y){return y.mag-x.mag;});var mom=[];cand.forEach(function(c){if(mom.length<5&&mom.every(function(m){return Math.abs(m.i-c.i)>=4;}))mom.push(c);});mom.sort(function(x,y){return x.i-y.i;});
+  var evs=(typeof _hpEventos==='function')?_hpEventos():[];
+  var momTxt=function(c){var f0=c.a.f,f1=c.b.f,ops=(D.ops||[]).filter(function(o){return o.f>f0&&o.f<=f1;}).sort(function(x,y){return y.u-x.u;}).slice(0,2),ev=evs.filter(function(e){return e.f>f0&&e.f<=f1;})[0];
+    var partes=[];
+    if(Math.abs(c.dr)>=8)partes.push((c.dr>0?'subiste':'bajaste')+' la renta variable de '+pc(c.a.tipo.rv)+' a '+pc(c.b.tipo.rv));
+    if(Math.abs(c.da)>=8)partes.push((c.da>0?'subiste':'bajaste')+' Argentina de '+pc(c.a.pais.argentina)+' a '+pc(c.b.pais.argentina));
+    if(!partes.length)partes.push('tu perfil pasó de '+Math.round(c.a.score)+' a '+Math.round(c.b.score));
+    var z0=_evoZona(c.a.score),z1=_evoZona(c.b.score),cruce=z0!==z1?' y tu perfil pasó de <b>'+z0+'</b> a <b style="color:var(--violet,#a78bfa)">'+z1+'</b>':'';
+    var txt=(ev?'Con '+ev.t.charAt(0).toLowerCase()+ev.t.slice(1)+', ':'')+partes.join(' y ')+cruce+'.';
+    if(ops.length)txt+=' <span style="color:var(--text3)">'+ops.map(function(o){return _hpOpTxt(o);}).join(' · ')+'.</span>';
+    return txt.charAt(0).toUpperCase()+txt.slice(1);};
+  // párrafo
+  var zI=_evoZona(ini.score),zH=_evoZona(hoy.score),coincide=hoy.score>=rg[0]&&hoy.score<=rg[1];
+  var frase='Desde '+mlbl(ini.f)+' '+(zI===zH?'te mantuviste en un perfil <b>'+zH+'</b>':'pasaste de un perfil <b>'+zI+'</b> a uno <b style="color:#a78bfa">'+zH+'</b>')+': la renta variable fue de <b>'+pc(ini.tipo.rv)+' a '+pc(hoy.tipo.rv)+'</b> y lo que tenés fuera de Argentina de <b>'+pc(ini.fuera)+' a '+pc(hoy.fuera)+'</b>. '+
+    'Hoy tenés <b>'+hoy.n+' activos</b> (al principio '+ini.n+') y el más grande pesa <b>'+pc(hoy.conc.a)+'</b> (antes '+pc(ini.conc.a)+')'+(hoy.bt-ini.bt>0.05?', con más peso en Big Tech (de '+pc(ini.bt)+' a '+pc(hoy.bt)+')':'')+'. '+
+    (coincide?'Tu cartera actual coincide con el perfil <b>'+decl+'</b> que elegiste.':'Tu cartera actual está '+(hoy.score>rg[1]?'<b style="color:var(--amber)">por encima</b>':'<b style="color:var(--amber)">por debajo</b>')+' del perfil <b>'+decl+'</b> que elegiste.');
+  // indicadores
+  var hi=new Date();hi.setFullYear(hi.getFullYear()-1);var hiS=_hpIso(hi),prom=S.slice(-12).reduce(function(a,x){return a+x.tot;},0)/Math.min(12,S.length);
+  var rotHoy=_evoRot(hiS,_bkHoy(),prom),h2=new Date(hi);h2.setFullYear(h2.getFullYear()-1);var S2=S.filter(function(x){return x.f>_hpIso(h2)&&x.f<=hiS;}),rotAnt=S2.length?_evoRot(_hpIso(h2),hiS,S2.reduce(function(a,x){return a+x.tot;},0)/S2.length):null;
+  var ind=function(l,a,b,c,x,col){return '<div class="hp-k" style="padding:10px 12px"><div class="l">'+l+'</div><div style="display:flex;align-items:baseline;gap:8px;margin-top:4px;font-family:var(--mono)"><span style="color:var(--text3);font-size:.78rem">'+a+'</span><span style="color:var(--text3)">→ '+b+' →</span><span style="font-size:1.12rem;font-weight:700;color:'+(col||'var(--text)')+'">'+c+'</span></div><div style="font-size:.66rem;color:var(--text2);margin-top:3px">'+x+'</div></div>';};
+  var h='<div class="card" style="margin-bottom:1rem"><div class="card-header"><span class="card-title">🧬 Tu evolución como inversor</span><span style="font-family:var(--mono);font-size:.64rem;color:var(--text3)">desde '+mlbl(ini.f)+' · perfil declarado: '+decl+'</span></div><div style="padding:14px 16px">';
+  h+='<div style="padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(167,139,250,.14),var(--surface) 70%);border:1px solid rgba(167,139,250,.35);font-size:.88rem;line-height:1.55">'+frase+'</div>';
+  h+='<div class="hp-l" style="margin:16px 0 6px;letter-spacing:.1em;text-transform:uppercase">Perfil de riesgo en el tiempo</div><svg class="hp-svg" id="evo-g1" viewBox="0 0 900 230"></svg>'+
+     '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.7rem;color:var(--text2);margin-top:4px"><span><b style="color:#a78bfa">━</b> tu perfil (0 = muy conservador · 100 = muy agresivo)</span><span><b style="color:#ffd600">▬</b> rango del perfil '+decl+'</span></div>';
+  h+='<div class="hp-l" style="margin:16px 0 6px;letter-spacing:.1em;text-transform:uppercase">Cómo se repartió la cartera</div><div class="hp-fil" id="evo-tabs">'+[['tipo','Por tipo'],['pais','Por país'],['conc','Concentración']].map(function(t){return '<span class="hp-ch'+(EVO.k===t[0]?' on':'')+'" onclick="evoTab(\''+t[0]+'\')">'+t[1]+'</span>';}).join('')+'</div>'+
+     '<svg class="hp-svg" id="evo-g2" viewBox="0 0 900 220" style="margin-top:8px"></svg><div id="evo-lg2" style="display:flex;gap:14px;flex-wrap:wrap;font-size:.7rem;color:var(--text2);margin-top:4px"></div>';
+  h+='<div class="hp-l" style="margin:16px 0 6px;letter-spacing:.1em;text-transform:uppercase">Inicio → hace un año → hoy</div><div class="hp-g" style="margin-top:0">'+
+     ind('Renta variable',pc(ini.tipo.rv),pc(hace.tipo.rv),pc(hoy.tipo.rv),'acciones, Cedears y cripto','#a78bfa')+
+     ind('Fuera de Argentina',pc(ini.fuera),pc(hace.fuera),pc(hoy.fuera),'EE.UU., Brasil, Europa, cripto')+
+     ind('Cantidad de activos',ini.n,hace.n,hoy.n,'el más grande: '+pc(ini.conc.a)+' → '+pc(hoy.conc.a))+
+     ind('Big Tech',pc(ini.bt),pc(hace.bt),pc(hoy.bt),'tu umbral por activo es '+BIG_TECH_MAX+'%',hoy.bt>0.25?'var(--amber)':null)+
+     ind('Perfil (0-100)',Math.round(ini.score),Math.round(hace.score),Math.round(hoy.score),zI+' → '+zH)+
+     ind('Rotación anual','—',rotAnt!=null?pc(rotAnt):'—',rotHoy!=null?pc(rotHoy):'—','qué parte de la cartera cambiás por año')+'</div>';
+  h+='<div class="hp-l" style="margin:16px 0 6px;letter-spacing:.1em;text-transform:uppercase">Momentos que cambiaron tu forma de invertir</div>'+
+     (mom.length?mom.map(function(c){return '<div style="display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 11px;font-size:.8rem;line-height:1.45;margin-bottom:6px"><span style="font-family:var(--mono);font-size:.7rem;color:var(--text3);min-width:66px;padding-top:1px">'+mlbl(c.b.f)+'</span><span>'+momTxt(c)+'</span></div>';}).join(''):'<div class="hp-l">No hubo cambios bruscos: tu forma de invertir fue pareja.</div>');
+  h+='<div class="hp-l" style="margin-top:12px;line-height:1.5">Se calcula con tus movimientos y el historial de precios de cada activo, sin la liquidez. El perfil combina cuánto tenés en renta variable, cripto y acciones argentinas, y qué tan concentrada está la cartera.</div></div></div>';
+  pg.innerHTML=h;EVO.S=S;EVO.rg=rg;evoG1();evoTab(EVO.k);
+}
+function _evoX(i,N){return 44+i/Math.max(1,N-1)*(900-44-12);}
+function evoG1(){var S=EVO.S,N=S.length,H=230,T=12,B=26,Y=function(v){return T+(1-v/100)*(H-T-B);},rg=EVO.rg,s='';
+  s+='<rect x="44" y="'+Y(rg[1])+'" width="'+(900-56)+'" height="'+(Y(rg[0])-Y(rg[1]))+'" fill="rgba(255,214,0,.10)"/>';
+  [['Muy agresivo',90],['Agresivo',70],['Moderado',47],['Conservador',22]].forEach(function(z){s+='<text class="hp-ax" x="50" y="'+(Y(z[1])+3)+'">'+z[0]+'</text>';});
+  [20,40,60,80].forEach(function(v){s+='<line x1="44" x2="888" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--border)" stroke-dasharray="2 4"/><text class="hp-ax" x="38" y="'+(Y(v)+3)+'" text-anchor="end">'+v+'</text>';});
+  S.forEach(function(x,i){if(x.f.slice(5,7)==='01'||i===0){s+='<text class="hp-ax" x="'+(_evoX(i,N)+3)+'" y="'+(H-B+15)+'">'+x.f.slice(0,4)+'</text>';}});
+  var p=S.map(function(x,i){return (i?'L':'M')+_evoX(i,N).toFixed(1)+' '+Y(x.score).toFixed(1);}).join(' ');
+  s+='<path d="'+p+' L'+_evoX(N-1,N)+' '+(H-B)+' L44 '+(H-B)+' Z" fill="rgba(167,139,250,.14)"/><path d="'+p+'" fill="none" stroke="#a78bfa" stroke-width="2.5"/>';
+  s+='<circle cx="'+_evoX(N-1,N)+'" cy="'+Y(S[N-1].score)+'" r="5" fill="#a78bfa"/><text x="'+(_evoX(N-1,N)-8)+'" y="'+(Y(S[N-1].score)-10)+'" text-anchor="end" font-size="11" fill="#a78bfa" font-weight="700">hoy '+Math.round(S[N-1].score)+'</text>';
+  var g=document.getElementById('evo-g1');if(g)g.innerHTML=s;}
+function evoTab(k){EVO.k=k;document.querySelectorAll('#evo-tabs .hp-ch').forEach(function(x,i){x.classList.toggle('on',['tipo','pais','conc'][i]===k);});
+  var C={tipo:[['rfp','Renta fija en pesos','#00e676'],['rfd','Bonos y ONs en dólares','#00b0ff'],['rv','Acciones, Cedears y cripto','#a78bfa']],
+    pais:[['argentina','Argentina','#00b0ff'],['nyse','EE.UU.','#448aff'],['brasil','Brasil','#4dd0e1'],['otros','Europa y China','#ffb74d'],['cripto','Cripto','#ff9100']],
+    conc:[['a','El activo más grande','#ff5252'],['b','Los 4 siguientes','#ffb74d'],['c','Del 6 al 15','#ffd600'],['d','El resto','#00e676']]}[k];
+  var S=EVO.S,N=S.length,H=220,T=8,B=26,Y=function(v){return T+(1-v)*(H-T-B);},acc=S.map(function(){return 0;}),s='';
+  C.forEach(function(c){var top=S.map(function(x,i){return acc[i]+(x[k][c[0]]||0);});
+    var d='M'+_evoX(0,N)+' '+Y(top[0])+top.map(function(v,i){return ' L'+_evoX(i,N).toFixed(1)+' '+Y(v).toFixed(1);}).join('')+acc.slice().reverse().map(function(v,i){return ' L'+_evoX(N-1-i,N).toFixed(1)+' '+Y(v).toFixed(1);}).join('')+' Z';
+    s+='<path d="'+d+'" fill="'+c[2]+'" opacity=".82"/>';acc=top;});
+  [25,50,75].forEach(function(v){s+='<line x1="44" x2="888" y1="'+Y(v/100)+'" y2="'+Y(v/100)+'" stroke="var(--bg)" stroke-opacity=".5" stroke-dasharray="2 4"/><text class="hp-ax" x="38" y="'+(Y(v/100)+3)+'" text-anchor="end">'+v+'%</text>';});
+  S.forEach(function(x,i){if(x.f.slice(5,7)==='01'||i===0)s+='<text class="hp-ax" x="'+(_evoX(i,N)+3)+'" y="'+(H-B+15)+'">'+x.f.slice(0,4)+'</text>';});
+  var g=document.getElementById('evo-g2');if(g)g.innerHTML=s;var lg=document.getElementById('evo-lg2');if(lg)lg.innerHTML=C.map(function(c){return '<span><b style="color:'+c[2]+'">■</b> '+c[1]+'</span>';}).join('');}
+function evoInit(){if(document.getElementById('page-evolucion'))return;var pp=document.getElementById('page-portafolio');if(!pp)return;
+  var ref=document.querySelector('.nav-item[onclick*="\'rotaciones\'"]')||document.querySelector('.nav-item[onclick*="\'movimientos\'"]');if(!ref)return;
+  var pg=document.createElement('div');pg.className='page';pg.id='page-evolucion';pp.parentNode.appendChild(pg);
+  var b=document.createElement('button');b.className='nav-item';b.setAttribute('onclick',"showPage('evolucion',this)");b.innerHTML='<span>🧬</span>Tu evolución';ref.parentNode.insertBefore(b,ref.nextSibling);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(evoInit,80);});else setTimeout(evoInit,80);
