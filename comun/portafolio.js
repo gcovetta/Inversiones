@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=288, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=289, APP_VERSION_FECHA='29/10/2026';
 var APP_CHANGELOG=[
+  'v289 | 2026-10-29 | Se quita el modo alto contraste (botón ◐) a pedido de Garo: quedan los colores de siempre.',
   'v288 | 2026-10-29 | 🎨 Modo alto contraste (botón ◐): azul y naranja en lugar de verde y rojo, fondo negro, textos más claros y letra 15% más grande; se guarda por dispositivo. 📉 Nueva solapa Devaluación: dólar oficial (BCRA), suba que espera el mercado según el dólar futuro (los cargás o pegás desde el broker), lo que rinden tus pesos (arranca con el plazo fijo del Nación, editable), tu dólar de empate mes a mes, tu reparto pesos/dólares y escenarios de suba mayor.',
   'v287 | 2026-10-29 | 🎉 Nuevo máximo histórico: cuando el Valor total supera su máximo (confirmado en dos lecturas, sin saltos raros) aparece un festejo una vez por día, y si cruza un número redondo (USD 200.000, etc.) también lo dice. Lo muestran la vista mini, la frase de Siri y la barra de la Mac (🎉 en lugar de 💼; hay que volver a descargar el complemento). Guardado en config max_hist (athChequear).',
   'v286 | 2026-10-29 | 📜 Cinta de cotizaciones arriba del Portafolio: arranca con el resultado del día de la cartera y sigue con cada activo (precio y % del día, resaltados los que se movieron más de 2%), más CCL, MEP y riesgo país. Se frena con el mouse, al tocar un activo lo abre, y tiene opciones (⚙): velocidad, orden (peso, más movidos, A-Z) y solo lo que se movió más de 1%. Botón 📜 para prenderla y apagarla (cintaRender).',
@@ -12725,26 +12726,7 @@ function athFestejo(ant,val,hito){
 }
 setInterval(function(){try{athChequear();}catch(e){}},30000);
 
-// ─── 🎨 Modo alto contraste ─────────────────────────────────────────────────────────────────────────
-// Azul y naranja en lugar de verde y rojo (se distinguen con cualquier tipo de daltonismo), fondo negro, textos y
-// bordes más claros y letra 15% más grande. Botón ◐ en la barra de herramientas; se guarda por dispositivo.
-var HC_ON=(function(){try{return localStorage.getItem('alto_contraste')==='1';}catch(e){return false;}})();
-(function(){var st=document.createElement('style');st.id='hc-css';var U='#4da3ff',D='#ff9f1a';
-  var sel=function(cols,prop){return cols.map(function(c){return 'html.hc [style*="'+prop+':'+c+'"],html.hc [style*="'+prop+': '+c+'"]';}).join(',');};
-  st.textContent='html.hc{--bg:#000;--surface:#0a0a0a;--surface2:#161616;--border:#5c5c5c;--border2:#7a7a7a;--text:#fff;--text2:#e2e2e2;--text3:#bdbdbd;--accent:'+U+';--accent2:#3b8eea;--green:'+U+';--green-soft:'+U+';--red:'+D+';--orange:'+D+';--blue:#9ecbff;--amber:#ffe14d;font-size:17.8px}'+
-    sel(['#00e676','#22c55e','#4caf50','#00c853','#69f0ae'],'color')+'{color:'+U+'!important}'+
-    sel(['#ff5252','#ef4444','#f44336'],'color')+'{color:'+D+'!important}'+
-    sel(['#00e676','#22c55e','#4caf50','#00c853'],'background')+'{background:'+U+'!important}'+
-    sel(['#ff5252','#ef4444'],'background')+'{background:'+D+'!important}'+
-    'html.hc [stroke="#00e676"],html.hc [stroke="#22c55e"]{stroke:'+U+'}html.hc [stroke="#ff5252"],html.hc [stroke="#ef4444"]{stroke:'+D+'}'+
-    'html.hc [fill="#00e676"],html.hc [fill="#22c55e"]{fill:'+U+'}html.hc [fill="#ff5252"],html.hc [fill="#ef4444"]{fill:'+D+'}'+
-    'html.hc input,html.hc select,html.hc textarea{border-color:#7a7a7a!important}';
-  (document.head||document.documentElement).appendChild(st);if(HC_ON)document.documentElement.classList.add('hc');})();
-function hcToggle(){HC_ON=!HC_ON;try{localStorage.setItem('alto_contraste',HC_ON?'1':'0');}catch(e){}document.documentElement.classList.toggle('hc',HC_ON);_hcBoton();}
-function _hcBoton(){var tw=document.getElementById('nv-tools');if(!tw)return;var b=document.getElementById('hc-btn');
-  if(!b){b=document.createElement('button');b.id='hc-btn';b.className='btn';b.onclick=hcToggle;tw.insertBefore(b,tw.firstChild);}
-  b.textContent='◐';b.title=HC_ON?'Volver a los colores normales':'Modo alto contraste (azul y naranja, letra más grande)';b.style.cssText='padding:0 9px;font-size:.95rem;'+(HC_ON?'border-color:var(--accent);color:var(--accent)':'');}
-setInterval(function(){try{if(!document.getElementById('hc-btn'))_hcBoton();}catch(e){}},3000);
+try{localStorage.removeItem('alto_contraste');}catch(e){}
 
 // ─── 📉 Devaluación que espera el mercado (solapa nueva) ─────────────────────────────────────────────
 // Compara la suba del dólar que descuenta el dólar futuro (los cargás o pegás desde tu broker: no hay fuente gratuita
