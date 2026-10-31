@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=292, APP_VERSION_FECHA='29/10/2026';
+var APP_VERSION=293, APP_VERSION_FECHA='31/10/2026';
 var APP_CHANGELOG=[
+  'v293 | 2026-10-31 | Dividendos: nueva tabla 🧾 Dividendo neto de verdad. Con tus cobros registrados calcula cuánto te llega por acción en un año, neto de retención y gastos, y lo compara con el precio de hoy (% neto real), con lo que publica la empresa (% publicado), con lo que pagaste (% sobre tu costo) y cuánto se pierde en el camino. Ranking de las que más te pagan, ordenable por columna.',
   'v292 | 2026-10-29 | 🧬 Tu evolución arranca en tu primera venta registrada (antes de eso solo hay compras cargadas y la composición no era real).',
   'v291 | 2026-10-29 | 🧬 Nueva solapa Tu evolución (debajo de Tus decisiones): tu historia como inversor en un párrafo, perfil de riesgo de 0 a 100 mes a mes contra el perfil que declaraste, reparto por tipo, país y concentración, indicadores inicio / hace un año / hoy (renta variable, fuera de Argentina, cantidad de activos, Big Tech, perfil, rotación anual) y los momentos en que tu forma de invertir cambió fuerte, cruzados con tus operaciones y los hechos del mercado (evoRender).',
   'v290 | 2026-10-29 | Se saca por ahora la solapa 📉 Devaluación (queda guardada en ideas pendientes; el código está en la v288).',
@@ -1050,7 +1051,7 @@ function showPage(id,btn){
   if(CFG.vistaNueva)document.body.classList.toggle('nv-port',id==='portafolio');
   if(id==='tipocambio') tcRender();
   if(btn)btn.classList.add('active');
-  if(id==='tracker') initTracker();
+  if(id==='tracker'){ initTracker(); try{dnRender();}catch(e){} }
   if(id==='dividendos') divPopulateSelect();
   if(id==='movimientos') resetMFechaHoy();
   if(id==='arbitraje') arbRender();
@@ -12827,3 +12828,75 @@ function evoInit(){if(document.getElementById('page-evolucion'))return;var pp=do
   var pg=document.createElement('div');pg.className='page';pg.id='page-evolucion';pp.parentNode.appendChild(pg);
   var b=document.createElement('button');b.className='nav-item';b.setAttribute('onclick',"showPage('evolucion',this)");b.innerHTML='<span>🧬</span>Tu evolución';ref.parentNode.insertBefore(b,ref.nextSibling);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(evoInit,80);});else setTimeout(evoInit,80);
+
+// ─── 🧾 Dividendo neto de verdad: lo que te llega al bolsillo por acción vs. lo que publica la empresa ───
+// Usa los cobros tipo DIV de la solapa Dividendos (ya vienen netos de retención y gastos del custodio).
+var DN={o:'neto'};
+function _dnUSD(d){
+  if(d.moneda==='USD')return +(d.montoUSD||d.monto||0);
+  var c=null;try{var f=_infISO(d.fecha),dt=new Date(f+'T12:00:00');
+    for(var i=0;i<=7&&!c;i++)for(var sg=-1;sg<=1&&!c;sg+=2){var x=new Date(dt);x.setDate(x.getDate()+sg*i);var k=String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();if(MEP_TABLE[k])c=MEP_TABLE[k];if(i===0)break;}}catch(e){}
+  c=c||d.cclUsado;return c?(+d.monto||0)/c:(+d.montoUSD||0);
+}
+function _dnMovs(){return (movimientos||[]).filter(function(m){return m&&m.ticker&&(m.tipo==='compra'||m.tipo==='venta')&&m.owner!=='cristian'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);})
+  .map(function(m){return {m:m,d:_paParseFecha(m.fecha)};}).filter(function(x){return x.d;}).sort(function(a,b){return a.d-b.d;});}
+function _dnQty(M,t,d){var q=0;M.forEach(function(x){if(x.m.ticker!==t||x.d>d)return;q+=(x.m.tipo==='compra'?1:-1)*(+x.m.qty||0);});return Math.max(0,q);}
+function _dnUnitUSD(m){var esB=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI');var tc=esB?(getMEP(m.fecha)||getCCL(m.fecha)||m.ccl):(getCCL(m.fecha)||m.ccl);
+  return tc>0&&(m.precioARS||0)>0?m.precioARS/tc:null;}
+function dnDatos(){
+  var M=_dnMovs(),hoy=new Date(),G={};
+  (TRK.divs||[]).forEach(function(d){if(!d||d.estado==='pendiente'||!d.ticker||divTipo(d)!=='DIV')return;var f=_infISO(d.fecha);if(!f)return;
+    var usd=_dnUSD(d);if(!(usd>0))return;var dt=new Date(f+'T12:00:00');
+    var q=+d.acciones||0;if(!(q>0)){var d0=new Date(dt);d0.setDate(d0.getDate()-14);q=_dnQty(M,d.ticker,d0)||_dnQty(M,d.ticker,dt);}
+    (G[d.ticker]=G[d.ticker]||[]).push({f:f,dt:dt,usd:usd,q:q,ps:q>0?usd/q:null});});
+  var R={};NV_ROWS.forEach(function(o){if(!R[o.t])R[o.t]={usd:0,q:0,ppc:o.ppcU||0,s:o.s};R[o.t].usd+=o.usd||0;R[o.t].q+=o.q||0;});
+  var out=Object.keys(G).map(function(t){var L=G[t].sort(function(a,b){return a.dt-b.dt;}),P=L.filter(function(x){return x.ps>0;});
+    var tot=L.reduce(function(a,x){return a+x.usd;},0),ult=L[L.length-1],dias=(hoy-ult.dt)/864e5,s=getSector(t);
+    var gaps=[];for(var i=1;i<P.length;i++)gaps.push((P[i].dt-P[i-1].dt)/864e5);gaps.sort(function(a,b){return a-b;});
+    var gm=gaps.length?gaps[Math.floor(gaps.length/2)]:null,fr=gm==null?(['nyse','europa','china'].indexOf(s)>=0?4:1):gm<=45?12:gm<=120?4:gm<=240?2:1,est=gm==null;
+    var rec=P.filter(function(x){return (hoy-x.dt)/864e5<=550;}).slice(-fr),anual=rec.length?rec.reduce(function(a,x){return a+x.ps;},0)/rec.length*fr:null;
+    var h=R[t],px=null,pxF='hoy';if(h&&h.q>0)px=h.usd/h.q;
+    else{for(var j=M.length-1;j>=0;j--)if(M[j].m.ticker===t){px=_dnUnitUSD(M[j].m);pxF=M[j].m.tipo==='venta'?'venta':'compra';break;}}
+    var neto=anual!=null&&px>0?anual/px*100:null,v=(typeof VAL!=='undefined'&&VAL[t])?VAL[t]:null,br=v&&v.dy>0?v.dy:null;
+    return {t:t,s:s,n:L.length,ult:ult.f,dias:dias,tot:tot,anual:anual,px:px,pxF:pxF,neto:neto,bruto:br,costo:h&&h.ppc>0&&anual!=null?anual/h.ppc*100:null,
+      tiene:!!(h&&h.q>0),fr:fr,est:est,corto:dias>Math.max(400,(365/fr)*2.2),q:h?h.q:0};});
+  return out;
+}
+function dnOrden(o){DN.o=o;dnRender();}
+function dnRender(){
+  var anc=document.getElementById('trk-table-wrap');if(!anc)return;var host=anc.closest('.card');if(!host||!host.parentNode)return;
+  var c=document.getElementById('dn-card');if(!c){c=document.createElement('div');c.className='card';c.id='dn-card';host.parentNode.insertBefore(c,host.nextSibling);}
+  var D=[];try{D=dnDatos();}catch(e){console.warn('dnDatos',e);}
+  if(!D.length){c.style.display='none';return;}c.style.display='';
+  var k=DN.o;D.sort(function(a,b){var va=k==='bruto'?a.bruto:k==='costo'?a.costo:k==='tot'?a.tot:a.neto,vb=k==='bruto'?b.bruto:k==='costo'?b.costo:k==='tot'?b.tot:b.neto;
+    if(a.corto!==b.corto)return a.corto?1:-1;return (vb==null?-1e9:vb)-(va==null?-1e9:va);});
+  var pc=function(x,d){return x==null?'<span style="color:var(--text3)">—</span>':x.toFixed(d==null?2:d).replace('.',',')+'%';},
+      u=function(x,d){return x==null?'—':'USD '+x.toLocaleString('es-AR',{minimumFractionDigits:d==null?2:d,maximumFractionDigits:d==null?2:d});};
+  var conB=D.filter(function(x){return x.neto!=null&&x.bruto!=null&&!x.corto&&['nyse','europa','china'].indexOf(x.s)>=0;}),
+      llega=conB.length?conB.reduce(function(a,x){return a+Math.min(1.2,x.neto/x.bruto);},0)/conB.length*100:null;
+  var vig=D.filter(function(x){return x.tiene&&x.neto!=null&&!x.corto;}),top=vig.slice().sort(function(a,b){return b.neto-a.neto;})[0];
+  var cartV=0,cartA=0;vig.forEach(function(x){cartV+=x.px*x.q;cartA+=x.anual*x.q;});
+  var th=function(lbl,key,tip){return '<th style="text-align:right;cursor:pointer;'+(DN.o===key?'color:var(--accent)':'')+'" title="'+tip+'" onclick="dnOrden(\''+key+'\')">'+lbl+(DN.o===key?' ▾':'')+'</th>';};
+  var h='<div class="card-header"><span class="card-title">🧾 Dividendo neto de verdad</span><span class="smsg">lo que te llega al bolsillo, según tus cobros</span><button class="card-toggle" onclick="cardToggle(this)">▾</button></div><div class="card-body">';
+  h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">';
+  if(llega!=null)h+='<div style="flex:1;min-width:190px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700">De cada USD 100 que publica la empresa</div><div class="mono" style="font-size:1.25rem;font-weight:700;margin-top:3px">te llegan USD '+Math.round(llega)+'</div><div style="font-size:.68rem;color:var(--text2);margin-top:2px">Cedears y acciones de afuera. El resto queda en la retención de EE.UU. (30%) y gastos del custodio.</div></div>';
+  if(cartV>0)h+='<div style="flex:1;min-width:190px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700">Lo que te pagan por año, neto</div><div class="mono trk-sensitive" style="font-size:1.25rem;font-weight:700;margin-top:3px">'+u(cartA,0)+'</div><div style="font-size:.68rem;color:var(--text2);margin-top:2px">'+pc(cartA/cartV*100)+' sobre lo que valen hoy las que pagan dividendo.</div></div>';
+  if(top)h+='<div style="flex:1;min-width:190px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700">La que más te paga</div><div class="mono" style="font-size:1.25rem;font-weight:700;margin-top:3px">'+top.t+' · '+pc(top.neto)+'</div><div style="font-size:.68rem;color:var(--text2);margin-top:2px">neto por año sobre el precio de hoy.</div></div>';
+  h+='</div><div class="tw"><table><thead><tr><th>#</th><th>Ticker</th><th style="text-align:right">Cobros</th><th style="text-align:right">Último</th><th style="text-align:right" title="Lo que te llega por acción en un año, neto (según tus últimos cobros)">Neto/año por acción</th>'+
+    th('% neto real','neto','Neto por año ÷ precio de hoy (o el de tu última venta si ya no la tenés)')+th('% publicado','bruto','Dividend yield bruto que publica la empresa (Finnhub, últimos 12 meses). Se llena al abrir el DashBoard.')+
+    '<th style="text-align:right" title="Diferencia entre lo publicado y lo que te llega">Se pierde</th>'+th('% s/ tu costo','costo','Neto por año ÷ lo que pagaste por acción (PPC en USD)')+th('Cobrado total','tot','Todo lo cobrado de este ticker, en USD')+'</tr></thead><tbody>';
+  var n=0;D.forEach(function(x){var ap=x.corto?' style="opacity:.5"':'';if(!x.corto)n++;
+    var pr=x.neto!=null&&x.bruto!=null?x.bruto-x.neto:null,fF=x.ult.split('-').reverse().join('/');
+    var nota=!x.tiene?' <span title="Ya no la tenés: el % se calcula con el precio de tu última '+x.pxF+'" style="font-size:.55rem;border:1px solid var(--text3);color:var(--text3);border-radius:4px;padding:0 4px">vendida</span>':'';
+    if(x.corto)nota+=' <span title="Hace mucho que no cobrás de este ticker" style="font-size:.55rem;border:1px solid var(--amber,#ffd600);color:var(--amber,#ffd600);border-radius:4px;padding:0 4px">sin cobros recientes</span>';
+    if(x.est)nota+=' <span title="Hay un solo cobro: se supone '+(x.fr===4?'pago trimestral':'pago anual')+'" style="font-size:.55rem;border:1px dashed var(--text3);color:var(--text3);border-radius:4px;padding:0 4px">estimado</span>';
+    h+='<tr'+ap+'><td class="mono" style="color:var(--text3)">'+(x.corto?'':n)+'</td><td style="font-weight:700">'+x.t+nota+'</td><td class="mono" style="text-align:right">'+x.n+'</td><td class="mono" style="text-align:right">'+fF+'</td>'+
+      '<td class="mono" style="text-align:right">'+(x.anual!=null?u(x.anual,x.anual<1?3:2):'—')+'</td>'+
+      '<td class="mono pos" style="text-align:right;font-weight:700">'+pc(x.neto)+'</td><td class="mono" style="text-align:right;color:var(--text2)">'+pc(x.bruto)+'</td>'+
+      '<td class="mono" style="text-align:right;color:'+(pr>0.05?'var(--red)':'var(--text3)')+'">'+(pr!=null?(pr>0?'−':'')+pc(Math.abs(pr)):'—')+'</td>'+
+      '<td class="mono" style="text-align:right">'+pc(x.costo)+'</td><td class="mono trk-sensitive" style="text-align:right">'+u(x.tot)+'</td></tr>';});
+  h+='</tbody></table></div><div style="font-size:.66rem;color:var(--text3);margin-top:8px;line-height:1.5">Solo cobros marcados como DIV. El neto por año sale de tus últimos cobros por acción (usa la columna Acciones o, si falta, lo que tenías según tus movimientos) multiplicado por la frecuencia de pago. Las acciones argentinas no tienen retención de EE.UU.; los Cedears sí. Tocá los títulos para ordenar.</div></div>';
+  c.innerHTML=h;
+  try{if(TRK.hidden)c.querySelectorAll('.trk-sensitive').forEach(function(el){el.classList.add('trk-blurred');});}catch(e){}
+}
+(function(){if(typeof trkRender!=='function')return;var _o=trkRender;trkRender=function(){var r=_o.apply(this,arguments);try{dnRender();}catch(e){console.warn('dnRender',e);}return r;};})();
