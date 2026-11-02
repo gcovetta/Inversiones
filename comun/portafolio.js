@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=293, APP_VERSION_FECHA='31/10/2026';
+var APP_VERSION=294, APP_VERSION_FECHA='02/11/2026';
 var APP_CHANGELOG=[
+  'v294 | 2026-11-02 | Bonos cargados con el mercado equivocado: si un bono conocido (p. ej. BB37D, que cotiza en pesos; su versión en dólares es BB7DD) se carga como NYSE/Argentina, la app lo pasa sola a Bonos al guardar. Al abrir, corrige las operaciones ya cargadas así (mercado Bonos, precio por 100 nominales y dólar MEP) y las guarda. La detección de mercado ahora prioriza la tabla de la app sobre la última operación.',
   'v293 | 2026-10-31 | Dividendos: nueva tabla 🧾 Dividendo neto de verdad. Con tus cobros registrados calcula cuánto te llega por acción en un año, neto de retención y gastos, y lo compara con el precio de hoy (% neto real), con lo que publica la empresa (% publicado), con lo que pagaste (% sobre tu costo) y cuánto se pierde en el camino. Ranking de las que más te pagan, ordenable por columna.',
   'v292 | 2026-10-29 | 🧬 Tu evolución arranca en tu primera venta registrada (antes de eso solo hay compras cargadas y la composición no era real).',
   'v291 | 2026-10-29 | 🧬 Nueva solapa Tu evolución (debajo de Tus decisiones): tu historia como inversor en un párrafo, perfil de riesgo de 0 a 100 mes a mes contra el perfil que declaraste, reparto por tipo, país y concentración, indicadores inicio / hace un año / hoy (renta variable, fuera de Argentina, cantidad de activos, Big Tech, perfil, rotación anual) y los momentos en que tu forma de invertir cambió fuerte, cruzados con tus operaciones y los hechos del mercado (evoRender).',
@@ -629,7 +630,7 @@ function getRatio(ticker){return RATIOS_TABLE[BYMA_TO_NYSE[ticker]||ticker]||1;}
 
 var SECTOR_MAP = {
   'A3':'argentina','AGRO':'argentina','BHIP':'argentina','BIOX':'argentina','BOLT':'argentina','CADO':'argentina','CAPX':'argentina','CARC':'argentina','CECO2':'argentina','CELU':'argentina','COME':'argentina','CTIO':'argentina','DGCE':'argentina','EDN':'argentina','FERR':'argentina','FIPL':'argentina','GLOB':'argentina','HARG':'argentina','LONG':'argentina','METR':'argentina','MIRG':'argentina','MOLI':'argentina','OEST':'argentina','PATA':'argentina','TXAR':'argentina','ALUA':'argentina','TGSU2':'argentina',
-  'BC37D':'bonos','CUAP':'bonos','DICP':'bonos','ERF25':'bonos','GD29':'bonos','GD38':'bonos','GD41':'bonos','PARP':'bonos','PBY26':'bonos','SA24D':'bonos','TVPA':'bonos','TX31':'bonos','TZXM7':'bonos','TZXS7':'bonos','TZXS8':'bonos','TZX28':'bonos',
+  'BC37D':'bonos','BB37D':'bonos','BB7DD':'bonos','BC7DD':'bonos','CUAP':'bonos','DICP':'bonos','ERF25':'bonos','GD29':'bonos','GD38':'bonos','GD41':'bonos','PARP':'bonos','PBY26':'bonos','SA24D':'bonos','TVPA':'bonos','TX31':'bonos','TZXM7':'bonos','TZXS7':'bonos','TZXS8':'bonos','TZX28':'bonos',
   'CLSIO':'on','DNC3O':'on','MR37O':'on','LECAO':'on','LECHO':'on','MR36O':'on','MRCAO':'on','MRCPO':'on','MRCZO':'on','SNEAO':'on','TZV26':'on','TZV27':'on',
   'ADBE':'nyse','AMZN':'nyse','AVGO':'nyse','CRM':'nyse','DOCU':'nyse','FSLR':'nyse','HOG':'nyse','LAC':'nyse','META':'nyse','MSFT':'nyse','NFLX':'nyse','NKE':'nyse','NVDA':'nyse','TEAM':'nyse','UBER':'nyse','UNH':'nyse','UPST':'nyse','CCL':'nyse','LVS':'nyse','MCD':'nyse','ARCO':'nyse',
   'DEO':'europa','SPOT':'europa','STLA':'europa',
@@ -1159,7 +1160,7 @@ function addMov(){
   var fecha=fechaInput.split('-').reverse().join('/');
   var qty=parseFloat(document.getElementById('m-qty').value);
   var precioARSInput=parseFloat(document.getElementById('m-precio-ars').value);
-  var mkt=document.getElementById('m-mkt').value;
+  var mkt=_mktBonoForzar(ticker,document.getElementById('m-mkt'));
   var precioARS=(mkt==='BONOS'||mkt==='ON')?(precioARSInput/100):precioARSInput;
   if(mkt==='FCI'&&!isNaN(qty))qty=qty/1000;
   var cclVal=parseFloat(document.getElementById('m-ccl').value)||getTC(fecha,mkt);
@@ -1974,8 +1975,8 @@ function vbuyConfirmar(){
   var statusEl=document.getElementById('vbuy-status');
   if(!mktEl) return;
 
-  var mkt=mktEl.value;
   var ticker=tickerEl.value.trim().toUpperCase();
+  var mkt=_mktBonoForzar(ticker,mktEl);
   var fecha=fechaEl.value?fechaEl.value.split('-').reverse().join('/'):'';
   var qty=parseFloat(qtyEl.value);
   var precioARSInput=parseFloat(arsEl.value);
@@ -7634,6 +7635,7 @@ function trkCalcCCL(){
         }
       }
     });
+    try{if(_movRepararBonos())_cclFixed=true;}catch(e){console.warn('_movRepararBonos',e);}
     if(_cclFixed){ _movGuardarTrasInit=true; try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){} }
 
     var sbDolz = await sbGetConfig('dolz_extra');
@@ -9632,6 +9634,7 @@ function _mktPais(t){var m=(typeof RATIOS_META!=='undefined'&&RATIOS_META[t])||{
   if(/alemania|francia|espa|reino|holanda|pa[ií]ses bajos|suiza|italia|b[eé]lgica|irlanda|suecia|dinamarca|noruega|finlandia|luxemburgo|europa/.test(p))return 'EUROPA';return null;}
 async function mktDetectar(t){
   t=String(t||'').trim().toUpperCase();if(!t)return null;
+  if((SECTOR_MAP[t]==='bonos'||SECTOR_MAP[t]==='on'))return {mkt:_SECT_A_MKT[SECTOR_MAP[t]],por:'la tabla de la app'};
   for(var i=movimientos.length-1;i>=0;i--){var m=movimientos[i];if(m&&m.ticker===t&&m.mercado&&m.mercado!=='—')return {mkt:m.mercado,por:'lo que usaste antes'};}
   if(SECTOR_MAP[t]&&_SECT_A_MKT[SECTOR_MAP[t]])return {mkt:_SECT_A_MKT[SECTOR_MAP[t]],por:'la tabla de la app'};
   var L=await _mktListas();
@@ -12900,3 +12903,21 @@ function dnRender(){
   try{if(TRK.hidden)c.querySelectorAll('.trk-sensitive').forEach(function(el){el.classList.add('trk-blurred');});}catch(e){}
 }
 (function(){if(typeof trkRender!=='function')return;var _o=trkRender;trkRender=function(){var r=_o.apply(this,arguments);try{dnRender();}catch(e){console.warn('dnRender',e);}return r;};})();
+
+// ─── Bonos/ON cargados con otro mercado (p. ej. BB37D como NYSE): se fuerza el mercado al guardar y se reparan al abrir ───
+function _mktBonoForzar(t,sel){var v=sel?sel.value:'',s=SECTOR_MAP[t],q=s==='bonos'?'BONOS':s==='on'?'ON':null;
+  if(q&&v!==q&&v!=='FCI'){if(sel){sel.value=q;try{sel.dispatchEvent(new Event('change'));}catch(e){}try{_mktHint(sel,'✓ '+t+' es '+(q==='ON'?'una ON':'un bono')+': se guarda como '+(q==='ON'?'ON':'Bonos')+' (precio por 100 nominales)',true);}catch(e){}}return q;}
+  return v;}
+function _movRepararBonos(){var cambio=false,M=movimientos||[];
+  M.forEach(function(m){if(!m||!m.ticker||(m.tipo!=='compra'&&m.tipo!=='venta'))return;var s=SECTOR_MAP[m.ticker],q=s==='bonos'?'BONOS':s==='on'?'ON':null;
+    if(!q||m.mercado===q||m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')return;
+    var otros=M.filter(function(x){return x&&x!==m&&x.ticker===m.ticker&&(x.mercado==='BONOS'||x.mercado==='ON')&&(x.precioARS||0)>0;}).map(function(x){return x.precioARS;}).sort(function(a,b){return a-b;});
+    var med=otros.length?otros[Math.floor(otros.length/2)]:null,px=+m.precioARS||0;
+    var por100=med?px>med*20:px>10000; // cargado como precio por 100 nominales sin dividir
+    var antes=m.mercado+' '+px;m.mercado=q;if(por100&&px>0)m.precioARS=Math.round(px/100*1e6)/1e6;
+    var tc=getTC(m.fecha,q);if(tc>0)m.ccl=tc;
+    m.ratio=1;m.precioUSD=isBonoUSDDirecto(m.ticker)?m.precioARS:(m.ccl>0?Math.round(m.precioARS/m.ccl*1e6)/1e6:m.precioUSD);
+    if(m.comisionPct>0)m.comision=m.qty*m.precioARS*m.comisionPct/100;
+    cambio=true;try{_errAnotar&&_errAnotar('Reparado '+m.ticker+' '+m.fecha+': '+antes+' → '+q+' '+m.precioARS,'movimientos');}catch(e){}
+    console.warn('[repararBonos] '+m.ticker+' '+m.fecha+' '+antes+' → '+q+' '+m.precioARS);});
+  if(cambio){_movProbCache=null;}return cambio;}
