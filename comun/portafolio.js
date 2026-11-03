@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=294, APP_VERSION_FECHA='02/11/2026';
+var APP_VERSION=295, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v295 | 2026-11-03 | DashBoard: nuevo 🎯 Semáforo pre-balance. Clima de la temporada (cómo reaccionaron al día siguiente las empresas grandes que superaron lo esperado en las últimas 3 semanas: pesimista, tibio o normal) y, para cada acción tuya que presenta en los próximos 21 días, un semáforo con señales (subida de 30 días, cerca del máximo, P/E vs su mediana, reacción en sus últimos 4 balances) y una sugerencia de toma parcial (20% o 30%) o mantener. No sugiere vender en pérdida ni cuando la ganancia no cubre el costo de salir y volver. Debajo, 📒 ¿Acertó el semáforo?: guarda la sugerencia de los 7 días previos y mide después qué hubiera pasado. El calendario de balances ahora guarda 3 semanas hacia atrás.',
   'v294 | 2026-11-02 | Bonos cargados con el mercado equivocado: si un bono conocido (p. ej. BB37D, que cotiza en pesos; su versión en dólares es BB7DD) se carga como NYSE/Argentina, la app lo pasa sola a Bonos al guardar. Al abrir, corrige las operaciones ya cargadas así (mercado Bonos, precio por 100 nominales y dólar MEP) y las guarda. La detección de mercado ahora prioriza la tabla de la app sobre la última operación.',
   'v293 | 2026-10-31 | Dividendos: nueva tabla 🧾 Dividendo neto de verdad. Con tus cobros registrados calcula cuánto te llega por acción en un año, neto de retención y gastos, y lo compara con el precio de hoy (% neto real), con lo que publica la empresa (% publicado), con lo que pagaste (% sobre tu costo) y cuánto se pierde en el camino. Ranking de las que más te pagan, ordenable por columna.',
   'v292 | 2026-10-29 | 🧬 Tu evolución arranca en tu primera venta registrada (antes de eso solo hay compras cargadas y la composición no era real).',
@@ -10734,7 +10735,7 @@ function nvRender(){
    var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');document.documentElement.classList.remove('nv-pre');}catch(e){}
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
- _nvMover();try{cintaRender();}catch(e){}try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();nvLinea();}catch(e){console.warn('nv extras',e);}try{bcSwapCard();}catch(e){}
+ _nvMover();try{cintaRender();}catch(e){}try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();nvLinea();}catch(e){console.warn('nv extras',e);}try{semRender();}catch(e){console.warn('semRender',e);}try{bcSwapCard();}catch(e){}
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
@@ -11863,10 +11864,10 @@ async function errBorrar(){if(!confirm('¿Borrar el registro de errores de esta 
   sbGetConfig('errores').then(function(L){_errPintar(Array.isArray(L)?L:[]);_errProgramar();}).catch(function(){});},1500);})(0);
 
 // ─── 📊 Calendario de presentación de balances (resultados trimestrales) ─────────────────────────────
-// Fuente: calendario de resultados de Finnhub (empresas de EE.UU. y ADRs). Se baja por semanas desde 7 días atrás
+// Fuente: calendario de resultados de Finnhub (empresas de EE.UU. y ADRs). Se baja por semanas desde 21 días atrás
 // hasta 60 adelante y se guarda 12 h en este navegador (compartido entre carteras). En la fila del Portafolio aparece
 // 📊 si el activo presenta balance hoy o en los próximos 4 días.
-var BAL={d:null,cargando:null},BAL_LS='bal_cal_v1',BAL_DIAS_AVISO=4;
+var BAL={d:null,cargando:null},BAL_LS='bal_cal_v2',BAL_DIAS_AVISO=4;
 var _balHora={bmo:'antes de la apertura',amc:'después del cierre',dmh:'durante la rueda'};
 function _balIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function _balDias(iso){var p=iso.split('-'),a=new Date(+p[0],+p[1]-1,+p[2]),h=new Date();h.setHours(0,0,0,0);return Math.round((a-h)/86400000);}
@@ -11883,7 +11884,7 @@ async function balCargar(forzar){
   if(!forzar&&!BAL.d){try{var c=JSON.parse(localStorage.getItem(BAL_LS)||'null');if(c&&c.ts&&Date.now()-c.ts<12*3600000&&Array.isArray(c.e))BAL.d=c;}catch(e){}}
   if(!forzar&&BAL.d)return BAL.d;
   BAL.cargando=(async function(){
-    var ini=new Date();ini.setDate(ini.getDate()-7);var fin=new Date();fin.setDate(fin.getDate()+60);var ev={},ok=0;
+    var ini=new Date();ini.setDate(ini.getDate()-21);var fin=new Date();fin.setDate(fin.getDate()+60);var ev={},ok=0;
     for(var d=new Date(ini);d<=fin;d.setDate(d.getDate()+7)){
       var h=new Date(d);h.setDate(h.getDate()+6);if(h>fin)h=new Date(fin);
       try{var r=await fetchWithTimeout(FBASE+'/calendar/earnings?from='+_balIso(d)+'&to='+_balIso(h)+'&token='+FKEY,{},12000);
@@ -12921,3 +12922,146 @@ function _movRepararBonos(){var cambio=false,M=movimientos||[];
     cambio=true;try{_errAnotar&&_errAnotar('Reparado '+m.ticker+' '+m.fecha+': '+antes+' → '+q+' '+m.precioARS,'movimientos');}catch(e){}
     console.warn('[repararBonos] '+m.ticker+' '+m.fecha+' '+antes+' → '+q+' '+m.precioARS);});
   if(cambio){_movProbCache=null;}return cambio;}
+
+// ─── 🎯 Semáforo pre-balance ─────────────────────────────────────────────────────────────────────────
+// 1) Clima: cómo reaccionaron al día siguiente las empresas grandes de EE.UU. (con Cedear) que superaron el EPS
+//    esperado en las últimas 3 semanas (calendario de Finnhub + precios históricos de data912 en dólares CCL).
+// 2) Para cada acción tuya que presenta en los próximos 21 días: cuánto subió en 30 días, distancia al máximo de
+//    52 semanas, P/E vs su mediana (de "¿Cara o barata?") y cómo reaccionó en sus últimos 4 balances.
+// 3) Registro: la sugerencia de los 7 días previos se guarda en la nube (config 'semaforo') y después del balance
+//    se mide qué pasó (día siguiente y 30 días) y cuánto hubiera ahorrado o costado seguirla.
+var SEM={reac:null,hist:null,reg:null,regCargando:false,run:false,abierto:{},clima:null},SEM_REAC='sem_reac_v1',SEM_HIST='sem_hist_v1',SEM_COSTO=1.5,SEM_NORMAL=1.0;
+function _semLS(k,d){try{return JSON.parse(localStorage.getItem(k)||'null')||d;}catch(e){return d;}}
+function _semSave(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function _semCedear(sym){if(RATIOS_TABLE[sym])return sym;for(var k in BYMA_TO_NYSE)if(BYMA_TO_NYSE[k]===sym&&RATIOS_TABLE[k])return k;for(var k2 in TICKER_MAP)if(TICKER_MAP[k2]===sym&&RATIOS_TABLE[k2])return k2;return null;}
+function _semSym(t){var s=getSector(t);var sym=s==='argentina'?BYMA_TO_NYSE[t]:getFinnhubTicker(t);return sym&&!/\./.test(sym)?String(sym).toUpperCase():null;}
+// reacción del día siguiente a partir de una serie [[iso, usd]] ordenada
+function _semReac(ser,f,h){if(!ser||ser.length<3)return null;var i,b=null,a=null;
+  if(h==='amc'){for(i=ser.length-1;i>=0;i--)if(ser[i][0]<=f){b=i;break;}if(b==null||b+1>=ser.length)return null;a=b+1;}
+  else if(h==='bmo'||h==='dmh'){for(i=0;i<ser.length;i++)if(ser[i][0]>=f){a=i;break;}if(a==null||a<1)return null;b=a-1;}
+  else{for(i=ser.length-1;i>=0;i--)if(ser[i][0]<f){b=i;break;}if(b==null)return null;for(i=b+1;i<ser.length;i++)if(ser[i][0]>f){a=i;break;}if(a==null)return null;}
+  if((Date.parse(ser[a][0])-Date.parse(ser[b][0]))/864e5>6)return null;return (ser[a][1]/ser[b][1]-1)*100;}
+function _semRet(ser,f,dias){if(!ser||!ser.length)return null;var b=null,i;for(i=ser.length-1;i>=0;i--)if(ser[i][0]<f){b=i;break;}if(b==null)return null;
+  var lim=new Date(Date.parse(f)+dias*864e5).toISOString().slice(0,10),a=null;for(i=b+1;i<ser.length;i++){if(ser[i][0]<=lim)a=i;else break;}
+  if(a==null||ser[ser.length-1][0]<lim)return null;return (ser[a][1]/ser[b][1]-1)*100;}
+async function _semPool(L,n,fn){var i=0;await Promise.all(Array.from({length:Math.min(n,L.length)},async function(){while(i<L.length){var x=L[i++];try{await fn(x);}catch(e){}}}));}
+function _semClima(){if(!BAL.d)return null;var R=SEM.reac||{},hoy=_balIso(new Date()),d0=new Date();d0.setDate(d0.getDate()-21);var desde=_balIso(d0);
+  var P=BAL.d.e.filter(function(x){return x.f>=desde&&x.f<hoy&&x.ea!=null&&x.ee!=null&&_semCedear(x.s);}).sort(function(a,b){return (b.re||0)-(a.re||0);}).slice(0,30);
+  var L=P.map(function(x){var k=x.s+'|'+x.f;return {s:x.s,f:x.f,h:x.h,beat:x.ea>=x.ee,r:R[k]!=null?R[k]:undefined};});
+  var falta=L.filter(function(x){return x.r===undefined;}),con=L.filter(function(x){return x.r!=null;}).sort(function(a,b){return a.f<b.f?-1:1;});
+  var B=con.filter(function(x){return x.beat;}),avg=B.length?B.reduce(function(a,x){return a+x.r;},0)/B.length:null;
+  var est=B.length<6?'pocas':avg<-0.5?'pes':avg<0.5?'tib':'nor';
+  return {L:con,falta:falta,nb:B.length,cay:B.filter(function(x){return x.r<0;}).length,avg:avg,est:est};}
+async function semCargar(){if(SEM.run)return;SEM.run=true;
+  try{if(!SEM.reac)SEM.reac=_semLS(SEM_REAC,{});if(!SEM.hist)SEM.hist=_semLS(SEM_HIST,{});
+    if(!BAL.d)await balCargar();if(!BAL.d)return;
+    // clima: reacciones que faltan (se guardan para siempre; si no hay dato se reintenta a los 3 días)
+    var c=_semClima();if(c&&c.falta.length){var hoyMs=Date.now();
+      await _semPool(c.falta.filter(function(x){var k=x.s+'|'+x.f,v=SEM.reac['_'+k];return !(v&&hoyMs-v<3*864e5);}),4,async function(x){var k=x.s+'|'+x.f,ced=_semCedear(x.s),sr=await _phSerie(ced,'nyse');
+        var r=sr&&sr.ser?_semReac(sr.ser,x.f,x.h):null;if(r!=null&&isFinite(r))SEM.reac[k]=Math.round(r*100)/100;else SEM.reac['_'+k]=Date.now();});
+      _semSave(SEM_REAC,SEM.reac);}
+    // historial de balances de tus acciones que presentan en los próximos 21 días
+    var P=_semProximos(),now=Date.now();
+    await _semPool(P.filter(function(p){var h=SEM.hist[p.sym];return !(h&&now-h.ts<20*864e5);}),2,async function(p){var d=new Date();d.setDate(d.getDate()-400);
+      var r=await fetchWithTimeout(FBASE+'/calendar/earnings?from='+_balIso(d)+'&to='+_balIso(new Date())+'&symbol='+encodeURIComponent(p.sym)+'&token='+FKEY,{},12000);
+      if(!r.ok)return;var j=await r.json();SEM.hist[p.sym]={ts:Date.now(),e:(j&&j.earningsCalendar||[]).filter(function(x){return x&&x.date&&x.date<_balIso(new Date());}).map(function(x){return {f:x.date,h:x.hour||'',b:x.epsActual!=null&&x.epsEstimate!=null?(x.epsActual>=x.epsEstimate):null};}).sort(function(a,b){return a.f<b.f?1:-1;}).slice(0,4)};
+      await new Promise(function(res){setTimeout(res,600);});});
+    _semSave(SEM_HIST,SEM.hist);
+    await Promise.all(P.map(function(p){return _phSerie(p.t,getSector(p.t)).catch(function(){});}));
+    await _semRegCargar();
+  }catch(e){console.warn('semCargar',e);}finally{SEM.run=false;SEM.cargado=Date.now();try{semRender(true);}catch(e){}}}
+function _semProximos(){if(!BAL.d)return [];var A={},tot=0;
+  NV_ROWS.forEach(function(o){tot+=o.usd||0;if(!o.rv||o.s==='cripto')return;var a=A[o.t]=A[o.t]||{t:o.t,usd:0,q:0,cost:0};a.usd+=o.usd||0;a.q+=o.q||0;a.cost+=(o.ppcU||0)*(o.q||0);});
+  var out=[];Object.keys(A).forEach(function(t){var sym=_semSym(t);if(!sym)return;var ev=null;
+    BAL.d.e.forEach(function(x){if(x.s!==sym)return;var dd=_balDias(x.f);if(dd<0||dd>21)return;if(!ev||x.f<ev.f)ev=x;});
+    if(ev){var a=A[t];out.push({t:t,sym:sym,f:ev.f,h:ev.h,dd:_balDias(ev.f),usd:a.usd,gan:a.cost>0?a.usd-a.cost:null,ganP:a.cost>0?(a.usd/a.cost-1)*100:null,peso:tot>0?a.usd/tot*100:0});}});
+  return out.sort(function(a,b){return a.f<b.f?-1:a.f>b.f?1:b.usd-a.usd;});}
+function _semEval(p,cl){var sr=_phSer[p.t],ser=sr&&sr.ser,ch=[],s=0,hoy=_balIso(new Date());
+  var r30=null,dmax=null;if(ser&&ser.length>25){var last=ser[ser.length-1][1],d30=new Date();d30.setDate(d30.getDate()-30);var i30=null,k=_balIso(d30);
+    for(var i=ser.length-1;i>=0;i--)if(ser[i][0]<=k){i30=i;break;}if(i30!=null)r30=(last/ser[i30][1]-1)*100;
+    var d1=new Date();d1.setFullYear(d1.getFullYear()-1);var k1=_balIso(d1),mx=0;ser.forEach(function(x){if(x[0]>=k1&&x[1]>mx)mx=x[1];});if(mx>0)dmax=(last/mx-1)*100;}
+  var fx=function(n){return (n>0?'+':'−')+Math.abs(Math.round(n))+'%';};
+  if(r30!=null){if(r30>=10){s++;ch.push(['r','subió '+fx(r30)+' en 30 días','Ya subió bastante antes del balance: parte de la buena noticia puede estar en el precio']);}
+    else if(r30>=5)ch.push(['a','subió '+fx(r30),'Subió algo en el último mes']);else ch.push(['v',r30<0?'bajó '+fx(r30):'quieta','No viene de una suba fuerte']);}
+  if(dmax!=null&&dmax>-5){s++;ch.push(['r','cerca del máximo','A '+Math.abs(dmax).toFixed(1).replace('.',',')+'% de su máximo de 52 semanas']);}
+  var v=null;try{v=_valDe(p.t);}catch(e){}
+  if(v&&v.dif!=null){if(v.dif>=15){s+=.5;ch.push(['a','cara '+fx(v.dif),'P/E por encima de su mediana de 5 años']);}else if(v.dif<=-10)ch.push(['v','barata '+fx(v.dif),'P/E por debajo de su mediana de 5 años']);}
+  var H=(SEM.hist&&SEM.hist[p.sym]&&SEM.hist[p.sym].e)||[],hr=H.map(function(e){return {f:e.f,b:e.b,r:_semReac(ser,e.f,e.h)};}).filter(function(x){return x.r!=null;}),neg=hr.filter(function(x){return x.r<0;}).length;
+  if(hr.length>=3){if(neg>=3){s++;ch.push(['r','cae en balances '+neg+'/'+hr.length,'En '+neg+' de sus últimos '+hr.length+' balances cayó al día siguiente']);}else if(neg<=1)ch.push(['v','suele subir','En sus últimos balances casi siempre subió al día siguiente']);}
+  if(cl&&cl.est==='pes')s+=1.5;else if(cl&&cl.est==='tib')s+=.5;
+  var col=s>=3.5?'r':s>=2?'a':'v',pct=col==='r'?30:col==='a'?20:0,motivo='';
+  if(p.gan==null||p.gan<=0){col='v';pct=0;motivo='perdida';}else if(p.ganP<SEM_COSTO*3&&pct){col='v';pct=0;motivo='poca';}
+  return {col:col,pct:pct,monto:p.usd*pct/100,ch:ch,hr:hr,neg:neg,r30:r30,s:s,motivo:motivo};}
+async function _semRegCargar(){if(SEM.reg||SEM.regCargando)return;SEM.regCargando=true;try{var v=await sbGetConfig('semaforo');SEM.reg=Array.isArray(v)?v:[];}catch(e){SEM.reg=[];}finally{SEM.regCargando=false;}}
+// guarda la sugerencia de los 7 días previos (la última antes del balance queda como la que vale)
+function _semAnotar(P,E){if(!Array.isArray(SEM.reg))return;var cambio=false,hoy=_balIso(new Date());
+  P.forEach(function(p,i){if(p.dd<1||p.dd>7)return;var e=E[i],k=p.t+'|'+p.f,x=SEM.reg.find(function(r){return r.k===k;});
+    var nuevo={k:k,t:p.t,sym:p.sym,f:p.f,h:p.h,col:e.col,pct:e.pct,monto:Math.round(e.monto),usd:Math.round(p.usd),d:hoy};
+    if(!x){SEM.reg.push(nuevo);cambio=true;}else if(x.d!==hoy&&(x.col!==e.col||x.pct!==e.pct||Math.abs(x.usd-nuevo.usd)>x.usd*.05)){Object.assign(x,nuevo);cambio=true;}});
+  if(cambio){SEM.reg=SEM.reg.slice(-80);try{sbSetConfig('semaforo',SEM.reg);}catch(e){}}}
+function semAbrir(t){SEM.abierto[t]=!SEM.abierto[t];semRender(true);}
+function _semCss(){if(document.getElementById('sem-css'))return;var st=document.createElement('style');st.id='sem-css';st.textContent=
+  '#nv-sem .sm-pill{font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.04em}#nv-sem .pr{background:rgba(255,82,82,.15);color:var(--red);border:1px solid rgba(255,82,82,.4)}#nv-sem .pa{background:rgba(255,214,0,.12);color:var(--amber,#ffd600);border:1px solid rgba(255,214,0,.4)}#nv-sem .pv{background:rgba(0,230,118,.12);color:var(--accent);border:1px solid rgba(0,230,118,.4)}#nv-sem .pg{color:var(--text2);border:1px solid var(--border2)}'+
+  '#nv-sem .sm-cl{display:grid;grid-template-columns:minmax(210px,1fr) 2fr;gap:12px}@media(max-width:720px){#nv-sem .sm-cl{grid-template-columns:1fr}}'+
+  '#nv-sem .sm-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px}#nv-sem .sm-l{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-weight:700}'+
+  '#nv-sem .sm-term{height:8px;border-radius:5px;margin-top:10px;background:linear-gradient(90deg,var(--red),var(--amber,#ffd600) 50%,var(--accent));position:relative}#nv-sem .sm-term i{position:absolute;top:-5px;width:4px;height:18px;border-radius:2px;background:#fff;box-shadow:0 0 0 2px var(--bg)}'+
+  '#nv-sem .sm-bl{display:flex;align-items:stretch;gap:3px;height:96px;position:relative;margin-top:8px}#nv-sem .sm-bl:before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--text3)}'+
+  '#nv-sem .sm-b{flex:1;position:relative}#nv-sem .sm-b span{position:absolute;left:12%;right:12%;border-radius:2px}#nv-sem .sm-b em{position:absolute;bottom:-15px;left:-4px;right:-4px;text-align:center;font-style:normal;font-size:.5rem;color:var(--text3);font-family:var(--mono);overflow:hidden}'+
+  '#nv-sem .sm-sem{display:inline-flex;gap:3px;background:var(--bg);border:1px solid var(--border2);border-radius:9px;padding:3px 4px}#nv-sem .sm-sem b{width:9px;height:9px;border-radius:50%;background:var(--surface2)}#nv-sem .sm-sem b.r{background:var(--red);box-shadow:0 0 7px var(--red)}#nv-sem .sm-sem b.a{background:var(--amber,#ffd600);box-shadow:0 0 7px var(--amber,#ffd600)}#nv-sem .sm-sem b.v{background:var(--accent);box-shadow:0 0 7px var(--accent)}'+
+  '#nv-sem .sm-ch{display:inline-block;font-size:.58rem;padding:1px 6px;border-radius:4px;margin:1px 2px;font-weight:600;white-space:nowrap}#nv-sem .cr{color:var(--red);border:1px solid rgba(255,82,82,.45)}#nv-sem .ca{color:var(--amber,#ffd600);border:1px solid rgba(255,214,0,.45)}#nv-sem .cv{color:var(--accent);border:1px solid rgba(0,230,118,.4)}'+
+  '#nv-sem table{width:100%;border-collapse:collapse;font-size:.76rem}#nv-sem th{font-size:.58rem;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);font-weight:700;text-align:right;padding:6px 7px;border-bottom:1px solid var(--border)}#nv-sem td{padding:8px 7px;border-bottom:1px solid var(--border);text-align:right;font-family:var(--mono);vertical-align:middle}#nv-sem .tl{text-align:left}'+
+  '#nv-sem tr.sm-f{cursor:pointer}#nv-sem tr.sm-f:hover td{background:rgba(255,255,255,.025)}#nv-sem .sm-det td{background:var(--surface2);text-align:left;font-family:inherit;padding:12px 14px}#nv-sem .sm-dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;font-size:.72rem;color:var(--text2);line-height:1.5}#nv-sem .sm-dg b{color:var(--text)}'+
+  '#nv-sem .sm-h{display:flex;gap:5px;margin-top:4px}#nv-sem .sm-h div{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px;text-align:center;font-family:var(--mono);font-size:.66rem}#nv-sem .sm-h small{display:block;color:var(--text3);font-size:.52rem;font-family:inherit}';
+  document.head.appendChild(st);}
+function semRender(desdeCarga){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;_semCss();
+  var card=document.getElementById('nv-sem');if(!card){card=document.createElement('div');card.className='card';card.id='nv-sem';card.style.cssText='margin-top:1rem;padding:14px 16px';var ref=document.getElementById('nv-val')||document.getElementById('nv-linea');if(ref)cw.insertBefore(card,ref);else cw.appendChild(card);}
+  if(!SEM.reac)SEM.reac=_semLS(SEM_REAC,{});if(!SEM.hist)SEM.hist=_semLS(SEM_HIST,{});
+  if(!desdeCarga&&!SEM.run&&!SEM.prog&&(!SEM.cargado||Date.now()-SEM.cargado>6*3600e3)){SEM.prog=1;setTimeout(function(){SEM.prog=0;semCargar();},3000);}
+  var cl=_semClima(),P=_semProximos(),E=P.map(function(p){return _semEval(p,cl);});
+  try{_semAnotar(P,E);}catch(e){}
+  var f1=function(n,d){return n==null?'—':(n>0?'+':n<0?'−':'')+Math.abs(n).toFixed(d==null?1:d).replace('.',',');},u=function(n){return (n<0?'−':'')+'USD '+Math.abs(Math.round(n)).toLocaleString('es-AR');};
+  var estN={pes:['PESIMISTA','pr'],tib:['TIBIO','pa'],nor:['NORMAL','pv'],pocas:['POCOS DATOS','pg']};
+  var h='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span class="card-title">🎯 Semáforo pre-balance</span>'+(cl?'<span class="sm-pill '+estN[cl.est][1]+'">'+estN[cl.est][0]+'</span>':'')+
+    '<span style="font-size:.66rem;color:var(--text3);margin-left:auto">'+(SEM.run?'actualizando…':'clima de las últimas 3 semanas · tus balances de los próximos 21 días')+'</span></div>';
+  if(!BAL.d){card.innerHTML=h+'<div style="font-size:.74rem;color:var(--text3)">Cargando el calendario de balances…</div>';return;}
+  // clima
+  if(cl&&cl.L.length){var pin=cl.avg==null?50:Math.max(3,Math.min(97,50+cl.avg*12));
+    h+='<div class="sm-cl"><div class="sm-box"><div class="sm-l">Las que superaron lo esperado</div><div style="font-family:var(--mono);font-size:1.45rem;font-weight:700;margin-top:3px;color:'+(cl.avg==null?'var(--text2)':cl.avg<0?'var(--red)':'var(--accent)')+'">'+(cl.avg==null?'—':f1(cl.avg)+'%')+'</div>'+
+      '<div style="font-size:.7rem;color:var(--text2);line-height:1.45;margin-top:2px">al día siguiente, en promedio (lo normal ronda <b>+'+String(SEM_NORMAL).replace('.',',')+'%</b>). '+(cl.nb?'<b>'+cl.cay+' de '+cl.nb+'</b> cayeron aunque presentaron buenos números.':'')+(cl.est==='pocas'?' Todavía hay pocas empresas para sacar conclusiones.':'')+'</div>'+
+      '<div class="sm-term"><i style="left:'+pin+'%"></i></div><div style="display:flex;justify-content:space-between;font-size:.56rem;color:var(--text3);margin-top:4px"><span>castiga todo</span><span>normal</span><span>premia</span></div></div>'+
+      '<div class="sm-box"><div class="sm-l">Reacción del día siguiente de las grandes que ya presentaron</div><div class="sm-bl">'+cl.L.map(function(x){var hh=Math.min(48,Math.abs(x.r)*4.2),c=!x.beat?'#5b6b85':x.r>=0?'var(--accent)':'var(--red)';
+        return '<div class="sm-b" title="'+x.s+' · '+x.f.split('-').reverse().slice(0,2).join('/')+' · '+(x.beat?'superó lo esperado':'no cumplió')+' · '+f1(x.r)+'%"><span style="background:'+c+';height:'+hh+'%;'+(x.r>=0?'bottom:50%':'top:50%')+'"></span><em>'+x.s.slice(0,4)+'</em></div>';}).join('')+'</div>'+
+      '<div style="display:flex;gap:10px;font-size:.58rem;color:var(--text2);margin-top:20px;flex-wrap:wrap"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent);margin-right:3px"></i>superó y subió</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--red);margin-right:3px"></i>superó y cayó</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#5b6b85;margin-right:3px"></i>no cumplió</span></div></div></div>';}
+  else h+='<div style="font-size:.72rem;color:var(--text3)">'+(SEM.run?'Midiendo cómo reaccionó el mercado a los últimos balances…':'Sin balances de empresas grandes en las últimas 3 semanas.')+'</div>';
+  // próximos
+  h+='<div style="font-size:.78rem;font-weight:700;margin:14px 0 6px">📅 Tus próximos balances</div>';
+  if(!P.length)h+='<div style="font-size:.72rem;color:var(--text3)">Ninguna de tus acciones presenta balance en los próximos 21 días.</div>';
+  else{h+='<div class="tw"><table><thead><tr><th class="tl">Semáforo</th><th class="tl">Ticker</th><th class="tl">Presenta</th><th class="tl">Señales</th><th>Ganancia en juego</th><th>Peso</th><th>Sugerencia</th></tr></thead><tbody>';
+    P.forEach(function(p,i){var e=E[i],ab=SEM.abierto[p.t];
+      var sem='<span class="sm-sem"><b'+(e.col==='r'?' class="r"':'')+'></b><b'+(e.col==='a'?' class="a"':'')+'></b><b'+(e.col==='v'?' class="v"':'')+'></b></span>';
+      var sug=e.pct?'<b style="font-family:inherit;color:'+(e.col==='r'?'var(--red)':'var(--amber,#ffd600)')+'">Tomar '+e.pct+'% · '+u(e.monto)+'</b>':e.motivo==='perdida'?'<span style="color:var(--text3)">Mantener (en pérdida)</span>':e.motivo==='poca'?'<span style="color:var(--text3)">Mantener (poca ganancia)</span>':'<span style="color:var(--accent)">Mantener</span>';
+      var cuando=p.dd===0?'<b style="color:var(--amber,#ffd600)">hoy</b>':p.dd===1?'<b style="color:var(--amber,#ffd600)">mañana</b>':'en '+p.dd+' días';
+      h+='<tr class="sm-f" onclick="semAbrir(\''+p.t+'\')"><td class="tl">'+sem+'</td><td class="tl" style="font-weight:700;font-family:inherit">'+p.t+'</td><td class="tl">'+_balFecha(p.f)+' <span style="font-size:.62rem;color:var(--text2)">'+cuando+(_balHora[p.h]?' · '+_balHora[p.h]:'')+'</span></td>'+
+        '<td class="tl" style="max-width:280px;white-space:normal">'+(e.ch.length?e.ch.map(function(c){return '<span class="sm-ch c'+c[0]+'" title="'+c[2]+'">'+c[1]+'</span>';}).join(''):'<span style="color:var(--text3);font-size:.62rem">'+(SEM.run?'cargando…':'sin datos')+'</span>')+'</td>'+
+        '<td style="color:'+(p.gan>=0?'var(--accent)':'var(--red)')+'">'+(p.gan==null?'—':u(p.gan)+' <span style="font-size:.6rem;color:var(--text2)">'+f1(p.ganP,0)+'%</span>')+'</td><td>'+p.peso.toFixed(1).replace('.',',')+'%</td><td>'+sug+'</td></tr>';
+      if(ab){var por=e.col==='r'?'Se juntan varias señales'+(cl&&cl.est==='pes'?': <b>el mercado viene castigando los buenos balances</b>':'')+(e.r30>=10?', <b>'+p.t+' ya subió '+f1(e.r30,0)+'% en el último mes</b>':'')+(e.neg>=3?' y en '+e.neg+' de sus últimos balances cayó al día siguiente':'')+'.':
+          e.col==='a'?'Hay alguna señal de riesgo, pero no todas. Una toma chica protege parte de la ganancia sin salir del todo.':
+          e.motivo==='perdida'?'Estás en pérdida: vender antes del balance solo realizaría la pérdida.':e.motivo==='poca'?'La ganancia es chica comparada con el costo de vender y volver a comprar (≈'+SEM_COSTO+'%).':'No llega con la vara alta y el clima no castiga: el costo de salir y volver no se justifica.';
+        h+='<tr class="sm-det"><td colspan="7"><div class="sm-dg"><div><div class="sm-l" style="margin-bottom:5px">Por qué</div>'+por+'</div>'+
+          '<div><div class="sm-l">Sus últimos balances (día siguiente)</div>'+(e.hr.length?'<div class="sm-h">'+e.hr.map(function(x){return '<div><small>'+x.f.split('-').reverse().slice(0,2).join('/')+(x.b===true?' ✓':x.b===false?' ✗':'')+'</small><span style="color:'+(x.r>=0?'var(--accent)':'var(--red)')+'">'+f1(x.r)+'%</span></div>';}).join('')+'</div><div style="font-size:.6rem;color:var(--text3);margin-top:3px">✓ superó lo esperado · ✗ no cumplió</div>':'<div style="color:var(--text3);margin-top:4px">Sin historial todavía.</div>')+'</div>'+
+          '<div><div class="sm-l" style="margin-bottom:5px">Qué harías</div>'+(e.pct?'Vender <b>'+e.pct+'%</b> ('+u(e.monto)+') hasta 2 días antes del balance. Si después cae, la recomprás más barata; si sube, seguís teniendo el '+(100-e.pct)+'%.<br><span style="color:var(--text3)">Costo estimado de salir y volver: ≈'+u(e.monto*SEM_COSTO/100)+'</span>':'Nada por ahora. El semáforo se recalcula cada día hasta el balance.')+'</div></div></td></tr>';}});
+    h+='</tbody></table></div><div style="font-size:.62rem;color:var(--text3);margin-top:6px;line-height:1.5">Tocá una fila para ver el detalle. Señales: subida de los últimos 30 días, distancia al máximo de 52 semanas, P/E contra su mediana (se completa con "¿Cara o barata?") y reacción en sus últimos 4 balances. No sugiere vender lo que está en pérdida ni cuando la ganancia no cubre el costo de salir y volver (≈'+SEM_COSTO+'%). Es una ayuda para decidir, no una recomendación.</div>';}
+  // registro
+  var R=(SEM.reg||[]).filter(function(r){return r.f<_balIso(new Date());}).sort(function(a,b){return a.f<b.f?1:-1;}).slice(0,12);
+  if(R.length){var neto=0,hay=0,filas=R.map(function(r){var sr=_phSer[r.t],ser=sr&&sr.ser,d1=ser?_semReac(ser,r.f,r.h):null,d30=ser?_semRet(ser,r.f,30):null,res=null;
+      if(r.pct&&d30!=null){res=-r.monto*d30/100-r.monto*SEM_COSTO/100;neto+=res;hay++;}
+      var cc={r:['cr','🔴 tomar '+r.pct+'%'],a:['ca','🟡 tomar '+r.pct+'%'],v:['cv','🟢 mantener']}[r.col]||['cv','🟢 mantener'];
+      return '<tr><td class="tl">'+r.f.split('-').reverse().join('/')+'</td><td class="tl" style="font-weight:700;font-family:inherit">'+r.t+'</td><td class="tl"><span class="sm-ch '+cc[0]+'">'+cc[1]+'</span></td>'+
+        '<td style="color:'+(d1==null?'var(--text3)':d1>=0?'var(--accent)':'var(--red)')+'">'+(d1==null?'—':f1(d1)+'%')+'</td><td style="color:'+(d30==null?'var(--text3)':d30>=0?'var(--accent)':'var(--red)')+'">'+(d30==null?'<span style="font-size:.6rem">falta</span>':f1(d30)+'%')+'</td>'+
+        '<td style="color:'+(res==null?'var(--text3)':res>=0?'var(--accent)':'var(--red)')+'">'+(res==null?'—':(res>=0?'+':'')+u(res))+'</td></tr>';}).join('');
+    h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 6px"><span style="font-size:.78rem;font-weight:700">📒 ¿Acertó el semáforo?</span>'+(hay?'<span class="sm-pill '+(neto>=0?'pv':'pr')+'" style="margin-left:auto">'+(neto>=0?'te hubiera ahorrado ':'te hubiera costado ')+u(Math.abs(neto))+' neto</span>':'')+'</div>'+
+      '<div class="tw"><table><thead><tr><th class="tl">Balance</th><th class="tl">Ticker</th><th class="tl">Semáforo</th><th>Día siguiente</th><th>A los 30 días</th><th>Si seguías la sugerencia</th></tr></thead><tbody>'+filas+'</tbody></table></div>'+
+      '<div style="font-size:.62rem;color:var(--text3);margin-top:6px">Compara vender la parte sugerida antes del balance y recomprarla 30 días después contra no hacer nada, descontando el costo de salir y volver.</div>';}
+  card.innerHTML=h;
+  SEM.ped=SEM.ped||{};if(R.length)R.forEach(function(r){if(!_phSer[r.t]&&!SEM.ped[r.t]){SEM.ped[r.t]=1;_phSerie(r.t,getSector(r.t)).then(function(){semRender(true);}).catch(function(){});}});
+}
