@@ -1,0 +1,30 @@
+/* ☀️ Modo día: se activa con html[data-tema="dia"] (botón ☀️/🌙 en la barra; se guarda por dispositivo en localStorage 'tema') */
+html[data-tema="dia"]{--bg:#f3f5f9;--surface:#ffffff;--surface2:#eef2f8;--border:#d9e1ec;--border2:#c2cee0;--text:#14213d;--text2:#4a5d7c;--text3:#7d8ca6;
+  --accent:#0a8f4a;--accent2:#08793e;--red:#d32f2f;--amber:#a86a00;--blue:#2457c5;--green:#0a8f4a;--orange:#d9480f;--green-soft:#2e7d32;color-scheme:light}
+html[data-tema="dia"] body{background:var(--bg);color:var(--text)}
+html[data-tema="dia"] ::-webkit-scrollbar-thumb{background:#c2cee0}
+html[data-tema="dia"] input,html[data-tema="dia"] select,html[data-tema="dia"] textarea{color-scheme:light}
+html[data-tema="dia"] input[type=range]{accent-color:#2457c5!important}
+/* colores fijos del código pensados para fondo oscuro */
+html[data-tema="dia"] .arb-pair-header{background:linear-gradient(135deg,#e3ecfb,#d6e3f8);border-color:#b9cdf0}
+html[data-tema="dia"] .arb-label{color:#4a5d7c}
+html[data-tema="dia"] .arb-ratio-green{background:#dff5e8;color:#0a8f4a}
+html[data-tema="dia"] .arb-ratio-amber{background:#fff4d6;color:#a86a00}
+html[data-tema="dia"] .arb-ratio-red{background:#fde3e3;color:#d32f2f}
+html[data-tema="dia"] .qhelp .qhelp-tip,html[data-tema="dia"] #nv-tipbox{background:#ffffff!important;color:var(--text)!important;box-shadow:0 6px 20px rgba(20,33,61,.18)}
+html[data-tema="dia"] .btn-a,html[data-tema="dia"] .btn-a:hover{color:#ffffff}
+html[data-tema="dia"] .btn-d:hover{background:#fde3e3}
+html[data-tema="dia"] .badge-compra{background:#dff5e8;border-color:#b5e3c8}
+html[data-tema="dia"] .badge-venta{background:#fde3e3;border-color:#f5bcbc}
+html[data-tema="dia"] .badge-dividendo,html[data-tema="dia"] .badge-usd{background:#e3ecfb;border-color:#bcd0f3}
+html[data-tema="dia"] .badge-aporte,html[data-tema="dia"] .badge-ars{background:#fff1d6;border-color:#f0d49a}
+html[data-tema="dia"] .jvm-tooltip{background:#ffffff!important;color:#14213d!important;border-color:#c2cee0!important}
+html[data-tema="dia"] .ra-table th,html[data-tema="dia"] .ra-th-cell{background:#fff1d6!important;color:#5c3800!important;border-color:#f0d49a!important}
+html[data-tema="dia"] .ra-date-th{background:#fff7e6!important;color:#5c3800!important}
+html[data-tema="dia"] .trk-flujo-yr.on{color:#ffffff}
+html[data-tema="dia"] #cinta{background:linear-gradient(180deg,#ffffff,var(--bg))!important}
+html[data-tema="dia"] [style*="background:#2a1650"]{background:#efe5ff!important;color:#6b3fb3!important}
+html[data-tema="dia"] [style*="background:#2b2410"]{background:#fff4d6!important;color:#8a6400!important}
+html[data-tema="dia"] [style*="#0f2a1c"]{background:linear-gradient(135deg,#e2f7ea,#ffffff)!important}
+html[data-tema="dia"] [style*="background:#0d1420"],html[data-tema="dia"] [style*="background:#0b1120"],html[data-tema="dia"] [style*="background:#111927"],html[data-tema="dia"] [style*="background:#172035"]{background:var(--surface2)!important;color:var(--text)}
+html[data-tema="dia"] .card,html[data-tema="dia"] .kp,html[data-tema="dia"] .k{box-shadow:0 1px 2px rgba(20,33,61,.05)}

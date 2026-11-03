@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=295, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=296, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v296 | 2026-11-03 | ☀️/🌙 Modo día y modo noche: botón en la barra de herramientas (al lado de la cinta). Se recuerda en cada dispositivo y vale para todas las carteras, la vista mini y el índice. Los colores del modo día están en comun/tema.css.',
   'v295 | 2026-11-03 | DashBoard: nuevo 🎯 Semáforo pre-balance. Clima de la temporada (cómo reaccionaron al día siguiente las empresas grandes que superaron lo esperado en las últimas 3 semanas: pesimista, tibio o normal) y, para cada acción tuya que presenta en los próximos 21 días, un semáforo con señales (subida de 30 días, cerca del máximo, P/E vs su mediana, reacción en sus últimos 4 balances) y una sugerencia de toma parcial (20% o 30%) o mantener. No sugiere vender en pérdida ni cuando la ganancia no cubre el costo de salir y volver. Debajo, 📒 ¿Acertó el semáforo?: guarda la sugerencia de los 7 días previos y mide después qué hubiera pasado. El calendario de balances ahora guarda 3 semanas hacia atrás.',
   'v294 | 2026-11-02 | Bonos cargados con el mercado equivocado: si un bono conocido (p. ej. BB37D, que cotiza en pesos; su versión en dólares es BB7DD) se carga como NYSE/Argentina, la app lo pasa sola a Bonos al guardar. Al abrir, corrige las operaciones ya cargadas así (mercado Bonos, precio por 100 nominales y dólar MEP) y las guarda. La detección de mercado ahora prioriza la tabla de la app sobre la última operación.',
   'v293 | 2026-10-31 | Dividendos: nueva tabla 🧾 Dividendo neto de verdad. Con tus cobros registrados calcula cuánto te llega por acción en un año, neto de retención y gastos, y lo compara con el precio de hoy (% neto real), con lo que publica la empresa (% publicado), con lo que pagaste (% sobre tu costo) y cuánto se pierde en el camino. Ranking de las que más te pagan, ordenable por columna.',
@@ -13065,3 +13066,19 @@ function semRender(desdeCarga){var cw=document.getElementById('nv-cards');if(!cw
   card.innerHTML=h;
   SEM.ped=SEM.ped||{};if(R.length)R.forEach(function(r){if(!_phSer[r.t]&&!SEM.ped[r.t]){SEM.ped[r.t]=1;_phSerie(r.t,getSector(r.t)).then(function(){semRender(true);}).catch(function(){});}});
 }
+
+// ─── ☀️/🌙 Modo día y modo noche ─────────────────────────────────────────────────────────────────────
+// Los colores del modo día están en comun/tema.css (html[data-tema="dia"]). La elección se guarda en este dispositivo
+// (localStorage 'tema', compartida entre carteras y el índice); cada HTML la aplica en el <head> para que no parpadee.
+function temaEsDia(){return document.documentElement.getAttribute('data-tema')==='dia';}
+function temaSet(dia){if(dia)document.documentElement.setAttribute('data-tema','dia');else document.documentElement.removeAttribute('data-tema');
+  try{localStorage.setItem('tema',dia?'dia':'noche');}catch(e){}
+  var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',dia?'#f3f5f9':'#0b1120');
+  _temaBoton();try{if(typeof Chart!=='undefined'){Chart.defaults.color=dia?'#4a5d7c':'#7a9cc5';Chart.defaults.borderColor=dia?'rgba(20,33,61,.1)':'rgba(255,255,255,.1)';}}catch(e){}
+  try{renderPortfolio();}catch(e){}try{var pg=document.querySelector('.page.active');if(pg){var id=pg.id.replace('page-','');var b=document.querySelector('.nav-item.active');if(id!=='portafolio')showPage(id,b);}}catch(e){}}
+function temaToggle(){temaSet(!temaEsDia());}
+function _temaBoton(){var tw=document.getElementById('nv-tools');var b=document.getElementById('tema-btn');
+  if(!b){if(!tw)return false;b=document.createElement('button');b.id='tema-btn';b.className='btn';b.onclick=temaToggle;tw.insertBefore(b,tw.firstChild);}
+  var dia=temaEsDia();b.textContent=dia?'🌙':'☀️';b.title=dia?'Pasar a modo noche':'Pasar a modo día';b.style.cssText='padding:0 9px;font-size:.9rem';return true;}
+(function _temaBoot(n){setTimeout(function(){try{if(temaEsDia()&&typeof Chart!=='undefined'){Chart.defaults.color='#4a5d7c';Chart.defaults.borderColor='rgba(20,33,61,.1)';}}catch(e){}
+  if(!_temaBoton()&&n<60)_temaBoot(n+1);},n?500:50);})(0);
