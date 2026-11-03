@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=297, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=298, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v298 | 2026-11-03 | Splits conocidos: ETHA hizo un split inverso 1 por 3 el 06/10/2026 (cada 3 acciones pasaron a 1 y el precio se triplicó). Al abrir, las compras y ventas anteriores a esa fecha se ajustan solas (cantidad ÷ 3, precio × 3; el total invertido no cambia) y se guardan con una nota. Antes la app mostraba +126% de ganancia porque comparaba el precio nuevo contra la cantidad vieja.',
   'v297 | 2026-11-03 | 🎯 Semáforo pre-balance: ahora aparece al lado de cada activo del Portafolio que presenta balance en los próximos 21 días (punto de color + 📊 si faltan 4 días o menos, o los días que faltan) y, al abrir la fila, el detalle: sugerencia, señales, por qué, sus últimos balances y qué harías. La tarjeta completa (clima, todos tus balances y ¿Acertó el semáforo?) pasa del DashBoard a la solapa Balances.',
   'v296 | 2026-11-03 | ☀️/🌙 Modo día y modo noche: botón en la barra de herramientas (al lado de la cinta). Se recuerda en cada dispositivo y vale para todas las carteras, la vista mini y el índice. Los colores del modo día están en comun/tema.css.',
   'v295 | 2026-11-03 | DashBoard: nuevo 🎯 Semáforo pre-balance. Clima de la temporada (cómo reaccionaron al día siguiente las empresas grandes que superaron lo esperado en las últimas 3 semanas: pesimista, tibio o normal) y, para cada acción tuya que presenta en los próximos 21 días, un semáforo con señales (subida de 30 días, cerca del máximo, P/E vs su mediana, reacción en sus últimos 4 balances) y una sugerencia de toma parcial (20% o 30%) o mantener. No sugiere vender en pérdida ni cuando la ganancia no cubre el costo de salir y volver. Debajo, 📒 ¿Acertó el semáforo?: guarda la sugerencia de los 7 días previos y mide después qué hubiera pasado. El calendario de balances ahora guarda 3 semanas hacia atrás.',
@@ -7639,6 +7640,7 @@ function trkCalcCCL(){
       }
     });
     try{if(_movRepararBonos())_cclFixed=true;}catch(e){console.warn('_movRepararBonos',e);}
+    try{if(_movAjustarSplits())_cclFixed=true;}catch(e){console.warn('_movAjustarSplits',e);}
     if(_cclFixed){ _movGuardarTrasInit=true; try{localStorage.setItem((PFX+'mov2'),JSON.stringify(movimientos));}catch(e){} }
 
     var sbDolz = await sbGetConfig('dolz_extra');
@@ -13102,3 +13104,17 @@ function semFilaDet(t){var m=SEM.mapa&&SEM.mapa[t];if(!m)return '';_semCss();var
     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:.74rem"><b>🎯 Semáforo pre-balance</b><span style="color:var(--text2)">presenta '+_balFecha(p.f)+(p.dd===0?' (hoy)':p.dd===1?' (mañana)':' (en '+p.dd+' días)')+(_balHora[p.h]?' · '+_balHora[p.h]:'')+'</span>'+
     '<b style="color:'+c+'">'+lbl+'</b><span style="margin-left:auto">'+e.ch.map(function(x){return '<span class="sm-ch c'+x[0]+'" title="'+x[2]+'">'+x[1]+'</span>';}).join('')+'</span>'+
     '<span class="nvchip" onclick="event.stopPropagation();var b=document.querySelector(\'.nav-item[onclick*=&quot;balances&quot;]\');showPage(\'balances\',b)">Ver clima en Balances →</span></div>'+_semDetHtml(p,e,m.cl)+'</div>';}
+
+// ─── Splits / cambios de ratio conocidos: se aplican solos a las operaciones anteriores a la fecha ───
+// n → d: cada n Cedears pasan a ser d (ETHA 1 por 3: 3 → 1). Cada movimiento ajustado queda marcado (m.splits)
+// para no aplicarlo dos veces. El total invertido no cambia.
+var SPLITS_CONOCIDOS=[{t:'ETHA',f:'2026-10-06',n:3,d:1,txt:'split inverso 1 por 3 del 06/10/2026'}];
+function _movAjustarSplits(){var cambio=false;
+  SPLITS_CONOCIDOS.forEach(function(sp){var k=sp.t+'@'+sp.f,fct=sp.d/sp.n;
+    (movimientos||[]).forEach(function(m){if(!m||m.ticker!==sp.t||(m.tipo!=='compra'&&m.tipo!=='venta'))return;var iso=_infISO(m.fecha);if(!iso||iso>=sp.f)return;
+      if((m.splits||[]).indexOf(k)>=0||/ajustado por split/i.test(m.notas||''))return;
+      m.qty=Math.round((+m.qty||0)*fct*1e6)/1e6;if(m.precioARS)m.precioARS=Math.round(m.precioARS/fct*1e4)/1e4;if(m.precioUSD)m.precioUSD=m.precioUSD/fct;
+      m.splits=(m.splits||[]).concat([k]);m.notas=(m.notas?m.notas+' · ':'')+'ajustado por '+sp.txt;cambio=true;
+      console.warn('[splits] '+sp.t+' '+m.fecha+' ajustado '+sp.n+'→'+sp.d);});});
+  if(cambio){try{_movProbCache=null;}catch(e){}try{_errAnotar&&_errAnotar('Operaciones ajustadas por split conocido','movimientos');}catch(e){}}
+  return cambio;}
