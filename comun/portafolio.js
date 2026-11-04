@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=301, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=302, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v302 | 2026-11-03 | Bonos: el promedio de compra no queda fijo si al abrir todavía no estaban el tipo de cambio o el CER de alguna fecha (antes podía mostrar un valor calculado con menos compras).',
   'v301 | 2026-11-03 | Bonos: debajo de la TIR de cada fila ahora se ve lo que te rinde a vos según tus compras. En los bonos en dólares, "compra TNA x%" (promedio de las compras que seguís teniendo); en los CER (TZ cupón cero y los que pagan cupón), "compra CER +x%". Las ventas descuentan primero las compras más viejas.',
   'v300 | 2026-11-03 | Bonos en dólares: "Tu TIR" y "Tu TNA" se calculan solo con las compras que seguís teniendo (las ventas descuentan primero las compras más viejas); antes promediaba también lo que ya vendiste.',
   'v299 | 2026-11-03 | Bonos en dólares: además de la TIR (tasa efectiva anual) se muestra la TNA, con la capitalización según cada cuánto paga el bono (AO29 mensual, la mayoría semestral), y la tasa mensual. Debajo de la TIR en la fila del bono y en la ventana 📈 TIR USD, donde también aparece tu TNA según tus compras.',
@@ -11379,8 +11380,9 @@ function _bonoTuya(t,tirFn,tag){var L=movimientos.filter(function(m){return m&&m
   var X=L.map(function(m){return {m:m,iso:_phIso(m.fecha)};}).filter(function(x){return x.iso;}).sort(function(a,b){return a.iso<b.iso?-1:a.iso>b.iso?1:(a.m.tipo==='compra'?-1:1);});
   var lotes=[],de=0;X.forEach(function(x){var q=+x.m.qty||0;if(x.m.tipo==='compra'){de++;var r=null;try{r=tirFn(t,(+x.m.precioARS||0)*100,x.iso);}catch(e){}lotes.push({q:q,tir:r&&isFinite(r.tir)?r.tir:null});}
     else{while(q>1e-9&&lotes.length){var a=lotes[0],u=Math.min(a.q,q);a.q-=u;q-=u;if(a.q<=1e-9)lotes.shift();}}});
-  var s=0,w=0,n=0;lotes.forEach(function(a){if(a.tir==null||a.q<=0)return;s+=a.tir*a.q;w+=a.q;n++;});
-  var res=w>0?{tir:s/w,n:n,de:de}:null;_tuyaCache[key]=res;return res;}
+  var s=0,w=0,n=0,falta=0;lotes.forEach(function(a){if(a.q<=0)return;if(a.tir==null){falta++;return;}s+=a.tir*a.q;w+=a.q;n++;});
+  var res=w>0?{tir:s/w,n:n,de:de}:null;if(!falta)_tuyaCache[key]=res; // si faltó algún dato (tipo de cambio o CER todavía cargando) no se guarda
+  return res;}
 function _bcTuya(t){return _bonoTuya(t,bcTIR,'bc');}
 function _bcPct(x){return (x>=0?'+ ':'− ')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';}
 function bcCelda(t){var px=_bcPx(t),r=px?bcTIR(t,px):null;if(!r)return null;
