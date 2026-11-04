@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=300, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=301, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v301 | 2026-11-03 | Bonos: debajo de la TIR de cada fila ahora se ve lo que te rinde a vos según tus compras. En los bonos en dólares, "compra TNA x%" (promedio de las compras que seguís teniendo); en los CER (TZ cupón cero y los que pagan cupón), "compra CER +x%". Las ventas descuentan primero las compras más viejas.',
   'v300 | 2026-11-03 | Bonos en dólares: "Tu TIR" y "Tu TNA" se calculan solo con las compras que seguís teniendo (las ventas descuentan primero las compras más viejas); antes promediaba también lo que ya vendiste.',
   'v299 | 2026-11-03 | Bonos en dólares: además de la TIR (tasa efectiva anual) se muestra la TNA, con la capitalización según cada cuánto paga el bono (AO29 mensual, la mayoría semestral), y la tasa mensual. Debajo de la TIR en la fila del bono y en la ventana 📈 TIR USD, donde también aparece tu TNA según tus compras.',
   'v298 | 2026-11-03 | Splits conocidos: ETHA hizo un split inverso 1 por 3 el 06/10/2026 (cada 3 acciones pasaron a 1 y el precio se triplicó). Al abrir, las compras y ventas anteriores a esa fecha se ajustan solas (cantidad ÷ 3, precio × 3; el total invertido no cambia) y se guardan con una nota. Antes la app mostraba +126% de ganancia porque comparaba el precio nuevo contra la cantidad vieja.',
@@ -11370,12 +11371,20 @@ function bcTIR(t,precio,fechaISO){if(!precio||precio<=0)return null;var d=fechaI
   for(var i=0;i<80;i++){var mid=(lo+hi)/2,fm=_xirrNPV(precio,f,u,mid);if(flo*fm<0)hi=mid;else{lo=mid;flo=fm;}}
   return {tir:(lo+hi)/2,cer:cr,vto:f[f.length-1].f,y:(new Date(f[f.length-1].f+'T12:00:00')-d)/864e5/365,fl:f,vt:null,zc:0,ap:!!(typeof BONCER_AP!=='undefined'&&BONCER_AP[b])};}
 function _bcPx(t){var q=quotes[t];if(!q||!q.price)return null;return q.price*(getRatio(t)||1);}
-function _bcTuya(t){var L=movimientos.filter(function(m){return m&&m.ticker===t&&m.tipo==='compra'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);}),s=0,w=0,n=0;
-  L.forEach(function(m){var p=(m.fecha||'').split('/');if(p.length!==3)return;var iso=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'),px=(+m.precioARS||0)*100,r=bcTIR(t,px,iso);if(!r)return;var q=+m.qty||0;s+=r.tir*q;w+=q;n++;});
-  return w>0?{tir:s/w,n:n,de:L.length}:null;}
+// TIR promedio de lo que tenés hoy (FIFO: las ventas descuentan las compras más viejas). tirFn(t,precio c/100,iso) → {tir}
+var _tuyaCache={};
+function _bonoTuya(t,tirFn,tag){var L=movimientos.filter(function(m){return m&&m.ticker===t&&(m.tipo==='compra'||m.tipo==='venta')&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);});
+  var key=tag+'|'+t+'|'+(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:'')+'|'+L.length+'|'+L.reduce(function(a,m){return a+(+m.qty||0)*(m.tipo==='compra'?1:-1)+(+m.precioARS||0);},0).toFixed(4);
+  if(_tuyaCache[key]!==undefined)return _tuyaCache[key];
+  var X=L.map(function(m){return {m:m,iso:_phIso(m.fecha)};}).filter(function(x){return x.iso;}).sort(function(a,b){return a.iso<b.iso?-1:a.iso>b.iso?1:(a.m.tipo==='compra'?-1:1);});
+  var lotes=[],de=0;X.forEach(function(x){var q=+x.m.qty||0;if(x.m.tipo==='compra'){de++;var r=null;try{r=tirFn(t,(+x.m.precioARS||0)*100,x.iso);}catch(e){}lotes.push({q:q,tir:r&&isFinite(r.tir)?r.tir:null});}
+    else{while(q>1e-9&&lotes.length){var a=lotes[0],u=Math.min(a.q,q);a.q-=u;q-=u;if(a.q<=1e-9)lotes.shift();}}});
+  var s=0,w=0,n=0;lotes.forEach(function(a){if(a.tir==null||a.q<=0)return;s+=a.tir*a.q;w+=a.q;n++;});
+  var res=w>0?{tir:s/w,n:n,de:de}:null;_tuyaCache[key]=res;return res;}
+function _bcTuya(t){return _bonoTuya(t,bcTIR,'bc');}
 function _bcPct(x){return (x>=0?'+ ':'− ')+Math.abs(x*100).toFixed(1).replace('.',',')+'%';}
 function bcCelda(t){var px=_bcPx(t),r=px?bcTIR(t,px):null;if(!r)return null;
-  return '<span style="color:#a78bfa;font-weight:600;cursor:pointer" title="TIR real: CER '+_bcPct(r.tir)+' anual (CER BCRA con 10 días hábiles de rezago'+(r.ap?' · CER de emisión aproximado':'')+'). Tocá para ver la comparación." onclick="event.stopPropagation();bcModal(\''+t+'\')">CER '+_bcPct(r.tir)+'</span>';}
+  return '<span style="color:#a78bfa;font-weight:600;cursor:pointer" title="TIR real: CER '+_bcPct(r.tir)+' anual (CER BCRA con 10 días hábiles de rezago'+(r.ap?' · CER de emisión aproximado':'')+'). Tocá para ver la comparación." onclick="event.stopPropagation();bcModal(\''+t+'\')">CER '+_bcPct(r.tir)+(function(){var tu=_bcTuya(t);return tu?'<span title="TIR real promedio de las compras que seguís teniendo" style="display:block;font-size:.62em;font-weight:400;color:var(--text3);line-height:1.15">compra CER '+_bcPct(tu.tir)+'</span>':'';})()+'</span>';}
 // v251 · comparación contra un bono en dólares (HD) de la cartera: cuánto tiene que subir el dólar para empatar
 var _bcHD=null,_bcDev=null;
 // Los 3 bonos que más pesan en la cartera (CER o en dólares), para comparar en las barras
@@ -11570,12 +11579,7 @@ function _hdCurvaSvg(L,t){if(L.length<4)return '';var W=760,H=250,l=40,r=12,tp=1
     g+='<g><title>'+x.t+' · TIR '+(x.tir*100).toFixed(2).replace('.',',')+'% · duration '+x.y.toFixed(1).replace('.',',')+' años · paga '+_hdTag(x)+'</title><circle cx="'+cx+'" cy="'+cy+'" r="'+(me?6.5:mine?5.5:4)+'" fill="'+col+'"'+(me?' stroke="#fbbf24" stroke-width="2"':'')+'/></g>'+
       '<text x="'+(cx-7)+'" y="'+(cy-8)+'" fill="'+(me||mine?'#e8f0ff':'#7a9cc5')+'" font-size="10" text-anchor="end" font-weight="'+(me||mine?700:400)+'">'+x.t+'</text>';});
   return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="font-family:JetBrains Mono,ui-monospace,monospace">'+g+'</svg><div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.62rem;color:var(--text2);margin-top:2px"><span>⚪ este bono</span><span style="color:#fbbf24">● los que tenés</span><span style="color:#38bdf8">● mercado (paga cable)</span><span style="color:#64748b">● mercado (paga MEP)</span><span style="color:#fbbf24">- - curva</span></div>';}
-function _hdTuya(t){ // TIR promedio de lo que tenés hoy: las ventas se descuentan de las compras más viejas (FIFO)
-  var L=movimientos.filter(function(m){return m&&m.ticker===t&&(m.tipo==='compra'||m.tipo==='venta')&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);})
-    .map(function(m){return {m:m,iso:_phIso(m.fecha)};}).filter(function(x){return x.iso;}).sort(function(a,b){return a.iso<b.iso?-1:a.iso>b.iso?1:(a.m.tipo==='compra'?-1:1);});
-  var lotes=[],de=0;L.forEach(function(x){var q=+x.m.qty||0;if(x.m.tipo==='compra'){de++;var r=hdTIR(t,(+x.m.precioARS||0)*100,x.iso);lotes.push({q:q,tir:r&&isFinite(r.tir)?r.tir:null});}
-    else{while(q>1e-9&&lotes.length){var a=lotes[0],u=Math.min(a.q,q);a.q-=u;q-=u;if(a.q<=1e-9)lotes.shift();}}});
-  var s=0,w=0,n=0;lotes.forEach(function(a){if(a.tir==null||a.q<=0)return;s+=a.tir*a.q;w+=a.q;n++;});return w>0?{tir:s/w,n:n,de:de}:null;}
+function _hdTuya(t){return _bonoTuya(t,hdTIR,'hd');}
 function hdCerrar(){var o=document.getElementById('hd-ov');if(o)o.style.display='none';}
 async function hdModal(t){var ov=document.getElementById('hd-ov');
   if(!ov){ov=document.createElement('div');ov.id='hd-ov';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 12px';ov.onclick=function(e){if(e.target===ov)hdCerrar();};document.body.appendChild(ov);}
@@ -11602,7 +11606,7 @@ async function hdModal(t){var ov=document.getElementById('hd-ov');
 function _hdFrec(t){var F=(FLUJOS_BONOS[t]&&FLUJOS_BONOS[t].flujos)||[],h=new Date().toISOString().slice(0,10),L=F.filter(function(x){return x.f>h;}).slice(0,13),g=[];
   for(var i=1;i<L.length;i++)g.push((Date.parse(L[i].f)-Date.parse(L[i-1].f))/864e5);if(!g.length)return 2;g.sort(function(a,b){return a-b;});var m=g[Math.floor(g.length/2)];return m<=45?12:m<=120?4:m<=240?2:1;}
 function _hdTNA(t,tir){var n=_hdFrec(t);return {n:n,tna:n*(Math.pow(1+tir,1/n)-1),tem:Math.pow(1+tir,1/12)-1,cap:{12:'mensual',4:'trimestral',2:'semestral',1:'anual'}[n]};}
-function hdCelda(t){var px=_hdPxARS(t),r=px?hdTIR(t,px):null;if(!r)return null;var z=_hdTNA(t,r.tir);return '<span style="color:#fbbf24;font-weight:600;cursor:pointer" title="TIR en dólares ('+_hdTag(r)+'). TNA '+(z.tna*100).toFixed(2).replace('.',',')+'% (capitalización '+z.cap+') · tasa mensual '+(z.tem*100).toFixed(2).replace('.',',')+'%. Tocá para ver la curva y comparar." onclick="event.stopPropagation();hdModal(\''+t+'\')">'+(r.tir*100).toFixed(2)+'%<span style="display:block;font-size:.62em;font-weight:400;color:var(--text3);line-height:1.1">TNA '+(z.tna*100).toFixed(1).replace('.',',')+'%</span></span>';}
+function hdCelda(t){var px=_hdPxARS(t),r=px?hdTIR(t,px):null;if(!r)return null;var z=_hdTNA(t,r.tir);return '<span style="color:#fbbf24;font-weight:600;cursor:pointer" title="TIR en dólares ('+_hdTag(r)+'). TNA '+(z.tna*100).toFixed(2).replace('.',',')+'% (capitalización '+z.cap+') · tasa mensual '+(z.tem*100).toFixed(2).replace('.',',')+'%. Tocá para ver la curva y comparar." onclick="event.stopPropagation();hdModal(\''+t+'\')">'+(r.tir*100).toFixed(2)+'%<span style="display:block;font-size:.62em;font-weight:400;color:var(--text3);line-height:1.15">TNA '+(z.tna*100).toFixed(1).replace('.',',')+'%</span>'+(function(){var tu=_hdTuya(t);if(!tu)return '';var y=_hdTNA(t,tu.tir);return '<span title="TNA promedio de las compras que seguís teniendo (TIR '+(tu.tir*100).toFixed(2).replace('.',',')+'%)" style="display:block;font-size:.62em;font-weight:400;color:var(--text3);line-height:1.15">compra TNA '+(y.tna*100).toFixed(1).replace('.',',')+'%</span>';})()+'</span>';}
 // ─── v263 🧠 Tus decisiones: sesgo como inversor y "si no vendías" (página de Rotaciones) ───
 var DEC={exc:null,per:6};
 async function _decExcCargar(){if(DEC.exc!==null)return;try{DEC.exc=await sbGetConfig('dec_excluir');}catch(e){}
