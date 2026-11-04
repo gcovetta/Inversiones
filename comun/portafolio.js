@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=302, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=303, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v303 | 2026-11-03 | Bonos: el promedio de compra se recalcula cuando terminan de cargar los dólares MEP/CCL históricos (antes podía quedar calculado con el dólar de hoy para algunas compras).',
   'v302 | 2026-11-03 | Bonos: el promedio de compra no queda fijo si al abrir todavía no estaban el tipo de cambio o el CER de alguna fecha (antes podía mostrar un valor calculado con menos compras).',
   'v301 | 2026-11-03 | Bonos: debajo de la TIR de cada fila ahora se ve lo que te rinde a vos según tus compras. En los bonos en dólares, "compra TNA x%" (promedio de las compras que seguís teniendo); en los CER (TZ cupón cero y los que pagan cupón), "compra CER +x%". Las ventas descuentan primero las compras más viejas.',
   'v300 | 2026-11-03 | Bonos en dólares: "Tu TIR" y "Tu TNA" se calculan solo con las compras que seguís teniendo (las ventas descuentan primero las compras más viejas); antes promediaba también lo que ya vendiste.',
@@ -11375,7 +11376,7 @@ function _bcPx(t){var q=quotes[t];if(!q||!q.price)return null;return q.price*(ge
 // TIR promedio de lo que tenés hoy (FIFO: las ventas descuentan las compras más viejas). tirFn(t,precio c/100,iso) → {tir}
 var _tuyaCache={};
 function _bonoTuya(t,tirFn,tag){var L=movimientos.filter(function(m){return m&&m.ticker===t&&(m.tipo==='compra'||m.tipo==='venta')&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);});
-  var key=tag+'|'+t+'|'+(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:'')+'|'+L.length+'|'+L.reduce(function(a,m){return a+(+m.qty||0)*(m.tipo==='compra'?1:-1)+(+m.precioARS||0);},0).toFixed(4);
+  var key=tag+'|'+t+'|'+(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:'')+'|'+L.length+'|'+L.reduce(function(a,m){return a+(+m.qty||0)*(m.tipo==='compra'?1:-1)+(+m.precioARS||0);},0).toFixed(4)+'|'+(typeof MEP_TABLE!=='undefined'?Object.keys(MEP_TABLE).length:0)+'|'+(typeof CCL_TABLE!=='undefined'?Object.keys(CCL_TABLE).length:0)+'|'+Math.floor(Date.now()/600000); // cambia si se completan las tablas de dólar (o cada 10 min)
   if(_tuyaCache[key]!==undefined)return _tuyaCache[key];
   var X=L.map(function(m){return {m:m,iso:_phIso(m.fecha)};}).filter(function(x){return x.iso;}).sort(function(a,b){return a.iso<b.iso?-1:a.iso>b.iso?1:(a.m.tipo==='compra'?-1:1);});
   var lotes=[],de=0;X.forEach(function(x){var q=+x.m.qty||0;if(x.m.tipo==='compra'){de++;var r=null;try{r=tirFn(t,(+x.m.precioARS||0)*100,x.iso);}catch(e){}lotes.push({q:q,tir:r&&isFinite(r.tir)?r.tir:null});}
