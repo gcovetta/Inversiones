@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=309, APP_VERSION_FECHA='04/11/2026';
+var APP_VERSION=310, APP_VERSION_FECHA='04/11/2026';
 var APP_CHANGELOG=[
+  'v310 | 2026-11-04 | Señales técnicas: para los Cedears, RSI, media de 200 y MACD se calculan con el precio de la acción en EE.UU. (10 años de historia, sin el ruido del CCL); el Koncorde sigue con precio y volumen del Cedear en BYMA. Ahora entran KLAC, TSM, UBER, SNDK y otras que antes quedaban sin datos, y el "¿acertó?" mira los últimos 2 años.',
   'v309 | 2026-11-04 | Señales técnicas: si data912 no tiene la historia diaria de un Cedear (KLAC, TSM, UBER, SNDK…), se usan los cierres que guarda la app; en esos casos el Koncorde queda sin calcular porque necesita volumen.',
   'v308 | 2026-11-04 | 📡 Señales técnicas: para tus acciones, las de Vigilancia y las 15 de los fondos, con precios diarios en dólares (CCL): RSI (< 30 barato, > 70 caro), media de 200 ruedas (si la toca desde arriba, posible rebote; desde abajo, posible techo), MACD (cruce de 0 en las últimas 5 ruedas) y Koncorde (manos fuertes volviendo a 0). Puntaje de −4 a +4: chip T al lado del ticker, detalle al abrir la fila y tabla completa en Recomendaciones con cuántas veces acertó cada señal en ese activo. Las variables se pueden cambiar y se guardan en la nube.',
   'v307 | 2026-11-04 | 13F: el valor se muestra en miles de millones ("mil M").',
@@ -13268,6 +13269,9 @@ async function _tecSerie(t,s){var cat=_phCat(s);if(!cat||cat==='bonds')return nu
   a.forEach(function(x){while(j<fk.length&&fk[j]<=x.date){last=fx[fk[j]];j++;}if(!(last>0))return;out.push({d:x.date,o:(+x.o||+x.c)/last,h:(+x.h||+x.c)/last,l:(+x.l||+x.c)/last,c:+x.c/last,v:+x.v||0});});
   for(var i=out.length-1;i>0;i--){var q=out[i].c/out[i-1].c;if(q>1.8||q<0.55){for(var k=0;k<i;k++){out[k].o*=q;out[k].h*=q;out[k].l*=q;out[k].c*=q;out[k].v/=q;}}}
   return out;}
+async function _tecUSA(t,s){if(['nyse','brasil','europa','china','cripto'].indexOf(s)<0)return null;var sym=String(getFinnhubTicker(t)||t).toUpperCase();if(/\./.test(sym))return null;
+  var r=await fetchWithTimeout('https://data912.com/historical/usa_stocks/'+encodeURIComponent(sym),{headers:{Accept:'application/json'}},15000);if(!r.ok)return null;var j=await r.json();
+  if(!j||!Array.isArray(j.dates)||!Array.isArray(j.prices)||j.dates.length<60)return null;var out=[];j.dates.forEach(function(d,i){var c=+j.prices[i];if(c>0)out.push({d:d,o:c,h:c,l:c,c:c,v:0});});return out.length>=60?out:null;}
 function _tecEMA(a,n){var k=2/(n+1),o=[],p=null;a.forEach(function(v,i){if(v==null){o.push(p);return;}p=p==null?v:v*k+p*(1-k);o.push(p);});return o;}
 function _tecInd(S,C){var c=S.map(function(x){return x.c;}),n=c.length,rsi=new Array(n).fill(null),ag=0,al=0;
   for(var i=1;i<n;i++){var d=c[i]-c[i-1],g=d>0?d:0,l=d<0?-d:0;if(i<=14){ag+=g/14;al+=l/14;if(i===14)rsi[i]=al?100-100/(1+ag/al):100;}else{ag=(ag*13+g)/14;al=(al*13+l)/14;rsi[i]=al?100-100/(1+ag/al):100;}}
@@ -13284,15 +13288,16 @@ function _tecSig(I,i,C){var out=[],c=I.c[i],r=I.rsi[i],sm=I.sma[i];
   var az=I.azul[i],az3=I.azul[i-3];if(az!=null&&az3!=null&&Math.abs(az)<=C.konc&&az>az3)out.push({k:'konc',v:1,txt:'Koncorde: manos fuertes cerca de 0 y subiendo'});
   return out;}
 function _tecBT(I,C){var B={},n=I.c.length,prev={};
-  for(var i=30;i<n-C.fw;i++){var S=_tecSig(I,i,C),now={};S.forEach(function(x){var k=x.k+(x.v>0?'+':'-');now[k]=1;if(prev[k])return;var r=I.c[i+C.fw]/I.c[i]-1,b=B[k]=B[k]||{n:0,ok:0,s:0};b.n++;b.s+=r;if(x.v>0?r>0:r<0)b.ok++;});prev=now;}
+  for(var i=Math.max(30,n-504);i<n-C.fw;i++){var S=_tecSig(I,i,C),now={};S.forEach(function(x){var k=x.k+(x.v>0?'+':'-');now[k]=1;if(prev[k])return;var r=I.c[i+C.fw]/I.c[i]-1,b=B[k]=B[k]||{n:0,ok:0,s:0};b.n++;b.s+=r;if(x.v>0?r>0:r<0)b.ok++;});prev=now;}
   return B;}
 async function tecCalc(forzar){if(TEC.run)return;TEC.run=true;try{tecRender();}catch(e){}
   try{await _tecCfgCargar();var C=_tecCfg(),U=_tecUniverso(),R={},i=0;
-    await Promise.all([0,1,2].map(async function(){while(i<U.length){var u=U[i++];try{var S=null,sv=false;try{S=await _tecSerie(u.t,u.s);}catch(e){}
-      if(!S){try{var ph=await _phSerie(u.t,u.s);if(ph&&ph.ser&&ph.ser.length>=60){S=ph.ser.map(function(x){return {d:x[0],o:x[1],h:x[1],l:x[1],c:x[1],v:0};});sv=true;}}catch(e){}}
-      if(!S){R[u.t]={t:u.t,o:u.o,sin:1};continue;}
-      var I=_tecInd(S,C);if(sv)I.azul=I.azul.map(function(){return null;});var k=S.length-1,sg=_tecSig(I,k,C),bt=_tecBT(I,C);
-      R[u.t]={t:u.t,s:u.s,o:u.o,sc:sg.reduce(function(a,x){return a+x.v;},0),sg:sg,rsi:I.rsi[k],dsma:I.sma[k]?(I.c[k]/I.sma[k]-1)*100:null,macd:I.macd[k],macdP:I.macd[k-1],azul:I.azul[k],bt:bt,n:S.length,f:S[k].d,sv:sv};}catch(e){R[u.t]={t:u.t,o:u.o,sin:1};}}}));
+    await Promise.all([0,1,2].map(async function(){while(i<U.length){var u=U[i++];try{var Sc=null,Su=null,sv=false;try{Sc=await _tecSerie(u.t,u.s);}catch(e){}try{Su=await _tecUSA(u.t,u.s);}catch(e){}
+      var S=Su||Sc;if(!S){R[u.t]={t:u.t,o:u.o,sin:1};continue;}
+      var I=_tecInd(S,C);if(Su){var Ic=Sc?_tecInd(Sc,C):null,mp={};if(Ic)Sc.forEach(function(x,j){mp[x.d]=Ic.azul[j];});I.azul=S.map(function(x){return mp[x.d]!=null?mp[x.d]:null;});sv=!Ic;}
+      var k=S.length-1;if(Su&&Sc&&I.azul[k]==null){var lk=Sc.length-1;I.azul[k]=Ic.azul[lk];}
+      var sg=_tecSig(I,k,C),bt=_tecBT(I,C);
+      R[u.t]={t:u.t,s:u.s,o:u.o,sc:sg.reduce(function(a,x){return a+x.v;},0),sg:sg,rsi:I.rsi[k],dsma:I.sma[k]?(I.c[k]/I.sma[k]-1)*100:null,macd:I.macd[k],macdP:I.macd[k-1],azul:I.azul[k],bt:bt,n:S.length,f:S[k].d,sv:sv,us:!!Su};}catch(e){R[u.t]={t:u.t,o:u.o,sin:1};}}}));
     TEC.r={ts:Date.now(),R:R};try{localStorage.setItem(_tecLS(),JSON.stringify(TEC.r));}catch(e){}
   }catch(e){console.warn('tecCalc',e);}finally{TEC.run=false;try{tecRender();}catch(e){}try{nvRender();}catch(e){}}}
 function _tecData(){if(!TEC.r){try{TEC.r=JSON.parse(localStorage.getItem(_tecLS())||'null');}catch(e){}}
@@ -13307,14 +13312,14 @@ function _tecVals(x,C){var f=function(v,d){return v==null?'—':v.toFixed(d).rep
   var rc=x.rsi==null?'var(--text3)':x.rsi<C.rsiB?'var(--accent)':x.rsi>C.rsiC?'var(--red)':'var(--text)';
   var dc=x.dsma==null?'var(--text3)':Math.abs(x.dsma)<=C.toca?'var(--amber,#ffd600)':x.dsma>0?'var(--accent)':'var(--red)';
   var mt=x.macd==null?'—':(x.macd>0?'positivo':'negativo')+(x.macdP!=null?(x.macd>x.macdP?' ↑':' ↓'):'');
-  return {rsi:'<b style="color:'+rc+'">'+f(x.rsi,0)+'</b>',sma:'<b style="color:'+dc+'">'+(x.dsma==null?'—':(x.dsma>0?'+':'')+f(x.dsma,1)+'%')+'</b>',macd:'<span style="color:'+(x.macd>0?'var(--accent)':'var(--red)')+'">'+mt+'</span>',konc:(x.sv?'<span style="color:var(--text3)" title="Sin volumen: data912 no tiene la historia diaria de este Cedear; se usaron los cierres guardados por la app">s/vol</span>':'<span>'+f(x.azul,0)+'</span>')};}
+  return {rsi:'<b style="color:'+rc+'">'+f(x.rsi,0)+'</b>',sma:'<b style="color:'+dc+'">'+(x.dsma==null?'—':(x.dsma>0?'+':'')+f(x.dsma,1)+'%')+'</b>',macd:'<span style="color:'+(x.macd>0?'var(--accent)':'var(--red)')+'">'+mt+'</span>',konc:(x.sv?'<span style="color:var(--text3)" title="Sin volumen: data912 no tiene la historia diaria de este Cedear en BYMA, así que el Koncorde no se puede calcular">s/vol</span>':'<span>'+f(x.azul,0)+'</span>')};}
 function _tecBTtxt(x,C){var nom={'rsi+':'RSI < '+C.rsiB,'rsi-':'RSI > '+C.rsiC,'sma+':'toca la media desde arriba','sma-':'llega a la media desde abajo','macd+':'MACD cruza 0 ↑','macd-':'MACD cruza 0 ↓','konc+':'Koncorde cerca de 0'};
   return Object.keys(x.bt||{}).filter(function(k){return x.bt[k].n;}).map(function(k){var b=x.bt[k];return '<span style="white-space:nowrap"><b>'+nom[k]+'</b>: '+(b.n===1?'1 vez':b.n+' veces')+', acertó '+b.ok+' ('+(b.s/b.n*100>=0?'+':'')+(b.s/b.n*100).toFixed(1).replace('.',',')+'% prom. a '+C.fw+' ruedas)</span>';}).join(' · ');}
 function tecFilaDet(t){var D=_tecData(),x=D&&D.R[t];if(!x||x.sin)return '';var C=_tecCfg(),V=_tecVals(x,C),c=_tecCol(x.sc);
   return '<div onclick="event.stopPropagation()" style="white-space:normal;margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;background:var(--bg);font-size:.74rem;line-height:1.55">'+
     '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:6px"><b>📡 Señales técnicas</b><b style="color:'+c+'">puntaje '+_tecSc(x.sc)+'</b><span>RSI '+V.rsi+'</span><span>vs media '+C.sma+': '+V.sma+'</span><span>MACD '+V.macd+'</span><span>Koncorde '+V.konc+'</span><span style="color:var(--text3);font-size:.66rem">al '+x.f.split('-').reverse().join('/')+'</span></div>'+
     (x.sg.length?x.sg.map(function(s){return '<div style="color:'+(s.v>0?'var(--accent)':'var(--red)')+'">'+(s.v>0?'▲ ':'▼ ')+s.txt+'</div>';}).join(''):'<div style="color:var(--text3)">Sin señales hoy.</div>')+
-    (_tecBTtxt(x,C)?'<div style="color:var(--text2);margin-top:6px;font-size:.68rem">En este activo, último año: '+_tecBTtxt(x,C)+'</div>':'')+'</div>';}
+    (_tecBTtxt(x,C)?'<div style="color:var(--text2);margin-top:6px;font-size:.68rem">En este activo, últimos 2 años: '+_tecBTtxt(x,C)+'</div>':'')+'</div>';}
 function tecFiltro(f){TEC.filtro=f;tecRender();}
 function tecAjustes(){TEC.ab=!TEC.ab;tecRender();}
 async function tecGuardarCfg(){var C={};Object.keys(TEC_DEF).forEach(function(k){var e=document.getElementById('tec-c-'+k);if(e){var v=parseFloat(String(e.value).replace(',','.'));if(isFinite(v))C[k]=v;}});
@@ -13340,5 +13345,5 @@ function tecRender(){var pg=document.getElementById('page-recomendaciones');if(!
       var V=_tecVals(x,C),bt=_tecBTtxt(x,C);
       return '<tr>'+td('<b>'+x.t+'</b> <span style="font-size:.62rem">'+org+'</span>','',1)+td('<b style="font-size:.9rem;color:'+_tecCol(x.sc)+'">'+_tecSc(x.sc)+'</b>')+td(V.rsi)+td(V.sma)+td(V.macd)+td(V.konc)+
         td((x.sg.length?x.sg.map(function(s){return '<div style="color:'+(s.v>0?'var(--accent)':'var(--red)')+'">'+(s.v>0?'▲ ':'▼ ')+s.txt+'</div>';}).join(''):'<span style="color:var(--text3)">—</span>')+(bt?'<div style="color:var(--text3);font-size:.62rem;margin-top:3px">'+bt+'</div>':''),'font-family:var(--sans);min-width:260px',1)+'</tr>';}).join('')+'</tbody></table></div>'+
-    '<div style="font-size:.62rem;color:var(--text3);margin-top:8px;line-height:1.5">💼 en tu cartera · 👁 en Vigilancia · 🏦 en los 15 de los fondos. Puntaje: +1 por cada señal de compra y −1 por cada señal de venta (de −4 a +4). Debajo de cada señal, cuántas veces apareció en ese activo en el último año y cuántas acertó a '+C.fw+' ruedas (subió si era de compra, bajó si era de venta). data912 tiene un año de historia diaria para los Cedears, así que la media de '+C.sma+' y el Koncorde recién tienen datos en los últimos meses. Es una ayuda para decidir, no una recomendación.</div></div>';
+    '<div style="font-size:.62rem;color:var(--text3);margin-top:8px;line-height:1.5">💼 en tu cartera · 👁 en Vigilancia · 🏦 en los 15 de los fondos. Puntaje: +1 por cada señal de compra y −1 por cada señal de venta (de −4 a +4). Debajo de cada señal, cuántas veces apareció en ese activo en los últimos 2 años y cuántas acertó a '+C.fw+' ruedas (subió si era de compra, bajó si era de venta). Cedears: RSI, media y MACD con el precio de la acción en EE.UU. (10 años de historia en data912); el Koncorde, con el precio y el volumen del Cedear en BYMA (un año). Acciones argentinas: precio en BYMA pasado a dólares al CCL. Es una ayuda para decidir, no una recomendación.</div></div>';
   c.innerHTML=h;}
