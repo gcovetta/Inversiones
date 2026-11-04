@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=304, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=305, APP_VERSION_FECHA='04/11/2026';
 var APP_CHANGELOG=[
+  'v305 | 2026-11-04 | DashBoard: nueva tarjeta 📐 Beta de tu renta variable. Compara todas tus acciones, Cedears y cripto (sin bonos ni ONs) contra el S&P 500 con precios semanales del último año en dólares: beta total, qué pasaría si el S&P cae 10%, volatilidad y correlación, beta por grupo (USA, Argentina, Brasil…) y las acciones que más y menos te mueven. Se recalcula una vez por día.',
   'v304 | 2026-11-03 | Bonos: la TNA y tu TNA/TIR de compra debajo de la TIR se ven más grandes y más claras ("Tu TNA (compra)", "Tu TIR (compra)").',
   'v303 | 2026-11-03 | Bonos: el promedio de compra se recalcula cuando terminan de cargar los dólares MEP/CCL históricos (antes podía quedar calculado con el dólar de hoy para algunas compras).',
   'v302 | 2026-11-03 | Bonos: el promedio de compra no queda fijo si al abrir todavía no estaban el tipo de cambio o el CER de alguna fecha (antes podía mostrar un valor calculado con menos compras).',
@@ -10745,7 +10746,7 @@ function nvRender(){
    var hd=document.querySelector('header');if(hd)hd.style.display='none';document.body.classList.add('nv-port');document.body.classList.add('nv-on');document.documentElement.classList.remove('nv-pre');}catch(e){}
   var main=document.getElementById('main');if(main){main.style.outline='2px solid '+col;main.style.outlineOffset='-2px';main.style.borderRadius='14px';}
   nvModo(NV.modo);}
- _nvMover();try{cintaRender();}catch(e){}try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();nvLinea();}catch(e){console.warn('nv extras',e);}try{semRender();}catch(e){console.warn('semRender',e);}try{bcSwapCard();}catch(e){}
+ _nvMover();try{cintaRender();}catch(e){}try{nvTermo();nvCalendario();nvMov();nvIdeal();nvPlanSalida();nvVal();nvLinea();}catch(e){console.warn('nv extras',e);}try{semRender();}catch(e){console.warn('semRender',e);}try{nvBeta();}catch(e){console.warn('nvBeta',e);}try{bcSwapCard();}catch(e){}
  var k=NV_K;document.getElementById('nv-kv').textContent=k.val!=null?'USD '+_nvN(k.val):'—';
  var kr=document.getElementById('nv-kr');kr.textContent=_nvP(k.rend);kr.style.color=k.rend>=0?'var(--accent)':'var(--red)';document.getElementById('nv-krs').textContent=k.gan!=null?((k.gan>=0?'+':'−')+'USD '+_nvN(Math.abs(k.gan))):'';
  var kh=document.getElementById('nv-kh');kh.textContent=_nvP(k.hoyP);kh.style.color=(k.hoyP||0)>=0?'var(--accent)':'var(--red)';document.getElementById('nv-khs').textContent=k.hoy!=null?((k.hoy>=0?'+':'−')+'USD '+_nvN(Math.abs(k.hoy))):'';
@@ -13137,3 +13138,62 @@ function _movAjustarSplits(){var cambio=false;
       console.warn('[splits] '+sp.t+' '+m.fecha+' ajustado '+sp.n+'→'+sp.d);});});
   if(cambio){try{_movProbCache=null;}catch(e){}try{_errAnotar&&_errAnotar('Operaciones ajustadas por split conocido','movimientos');}catch(e){}}
   return cambio;}
+
+// ─── 📐 Beta de la renta variable contra el S&P 500 ─────────────────────────────────────────────────
+// Solo acciones, Cedears y cripto (sin bonos, ONs ni FCI). Precios semanales del último año en USD (_phSerie: Cedears
+// y acciones argentinas pasados al CCL) contra SPY. Beta de la cartera = Σ peso × beta de cada activo (sobre lo que
+// tiene datos). Se guarda por cartera en el navegador y se recalcula una vez por día.
+var BETA={d:null,run:false},BETA_LS=function(){return PFX+'beta_v1';};
+function _betaSem(ser){var m={};(ser||[]).forEach(function(x){var d=new Date(x[0]+'T12:00:00');d.setDate(d.getDate()-((d.getDay()+6)%7));m[d.toISOString().slice(0,10)]=x[1];});return m;}
+async function betaCalc(forzar){if(BETA.run)return;BETA.run=true;nvBeta(true);
+  try{var A={},tot=0;NV_ROWS.forEach(function(o){if(!o.rv||!(o.usd>0))return;tot+=o.usd;var a=A[o.t]=A[o.t]||{t:o.t,s:o.s,usd:0};a.usd+=o.usd;});
+    var L=Object.keys(A).map(function(k){return A[k];});if(!L.length||!tot)return;
+    var q=L.map(function(x){return x.t;}).concat(['SPY']),i=0;
+    await Promise.all([0,1,2].map(async function(){while(i<q.length){var t=q[i++];try{await _phSerie(t,A[t]?A[t].s:'nyse');}catch(e){}}}));
+    var spy=_phSer.SPY&&_phSer.SPY.ser;if(!spy||spy.length<60)return;
+    var d0=new Date();d0.setDate(d0.getDate()-371);var k0=d0.toISOString().slice(0,10),S=_betaSem(spy),W=Object.keys(S).filter(function(k){return k>=k0;}).sort();
+    var ret=function(m){var r={};for(var j=1;j<W.length;j++){var a=m[W[j-1]],b=m[W[j]];if(a>0&&b>0)r[W[j]]=b/a-1;}return r;},RS=ret(S);
+    var est=function(r){var ks=Object.keys(r).filter(function(k){return RS[k]!=null;});if(ks.length<30)return null;var mx=0,my=0;ks.forEach(function(k){mx+=RS[k];my+=r[k];});mx/=ks.length;my/=ks.length;
+      var c=0,v=0,vy=0;ks.forEach(function(k){c+=(RS[k]-mx)*(r[k]-my);v+=(RS[k]-mx)*(RS[k]-mx);vy+=(r[k]-my)*(r[k]-my);});return v>0&&vy>0?{b:c/v,c:c/Math.sqrt(v*vy),vol:Math.sqrt(vy/(ks.length-1)*52),n:ks.length}:null;};
+    var cov=0,bw=0,port={},items=[];
+    L.forEach(function(x){var w=x.usd/tot,sr=_phSer[x.t],r=sr&&sr.ser?ret(_betaSem(sr.ser)):null,e=r?est(r):null;
+      items.push({t:x.t,s:x.s,w:w,b:e?e.b:null,c:e?e.c:null});if(e){cov+=w;bw+=w*e.b;Object.keys(r).forEach(function(k){port[k]=(port[k]||0)+w*r[k];});}});
+    if(!cov)return;Object.keys(port).forEach(function(k){port[k]/=cov;});
+    var ep=est(port),es=est(RS),G={};
+    items.forEach(function(x){var g=G[x.s]=G[x.s]||{w:0,bw:0,wc:0};g.w+=x.w;if(x.b!=null){g.bw+=x.w*x.b;g.wc+=x.w;}});
+    BETA.d={ts:Date.now(),b:bw/cov,cov:cov,corr:ep?ep.c:null,vol:ep?ep.vol:null,volS:es?es.vol:null,n:ep?ep.n:0,rv:tot,
+      g:Object.keys(G).map(function(k){var g=G[k];return {s:k,w:g.w,b:g.wc?g.bw/g.wc:null};}).sort(function(a,b){return b.w-a.w;}),
+      it:items.map(function(x){return {t:x.t,s:x.s,w:x.w,b:x.b,c:x.c};})};
+    try{localStorage.setItem(BETA_LS(),JSON.stringify(BETA.d));}catch(e){}
+  }catch(e){console.warn('betaCalc',e);}finally{BETA.run=false;nvBeta(true);}}
+function betaTog(){NV.bt=!NV.bt;nvSave();nvBeta(true);}
+function nvBeta(interno){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
+  var card=document.getElementById('nv-beta');if(!card){card=document.createElement('div');card.className='card';card.id='nv-beta';card.style.cssText='margin-top:1rem;padding:14px 16px';}
+  var ref=document.getElementById('nv-val')||document.getElementById('nv-linea');if(card.parentNode!==cw||card.nextSibling!==ref){if(ref)cw.insertBefore(card,ref);else cw.appendChild(card);}
+  if(!BETA.d){try{BETA.d=JSON.parse(localStorage.getItem(BETA_LS())||'null');}catch(e){}}
+  if(!interno&&!BETA.run&&(!BETA.d||Date.now()-BETA.d.ts>20*3600e3)&&!BETA.prog){BETA.prog=1;setTimeout(function(){BETA.prog=0;betaCalc();},5000);}
+  var D=BETA.d,f2=function(x){return x==null?'—':x.toFixed(2).replace('.',',');},pc=function(x){return x==null?'—':(x*100).toFixed(1).replace('.',',')+'%';};
+  var h='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span class="card-title">📐 Beta de tu renta variable</span><span style="font-size:.66rem;color:var(--text3)">acciones, Cedears y cripto contra el S&P 500 · sin bonos</span>'+
+    '<span style="margin-left:auto;font-size:.64rem;color:var(--text3)">'+(BETA.run?'calculando…':D?'actualizado '+new Date(D.ts).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span>'+
+    (BETA.run?'':'<button class="btn btn-sm" style="padding:2px 8px" onclick="betaCalc(true)" title="Recalcular">⟳</button>')+'</div>';
+  if(!D){card.innerHTML=h+'<div style="font-size:.74rem;color:var(--text3)">'+(BETA.run?'Bajando un año de precios de cada acción…':'Se calcula en unos segundos.')+'</div>';return;}
+  var b=D.b,col=b>1.15?'var(--red)':b<0.85?'var(--accent)':'var(--amber,#ffd600)',txt=b>1.15?'más agresiva que el mercado':b<0.85?'más tranquila que el mercado':'se mueve parecido al mercado';
+  var box=function(l,v,sub,c){return '<div style="flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700">'+l+'</div><div style="font-family:var(--mono);font-size:1.35rem;font-weight:700;margin-top:2px;color:'+(c||'var(--text)')+'">'+v+'</div><div style="font-size:.68rem;color:var(--text2);line-height:1.4;margin-top:2px">'+sub+'</div></div>';};
+  h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
+    box('Beta',f2(b),txt,col)+
+    box('Si el S&P cae 10%','−'+(b*10).toFixed(1).replace('.',',')+'%','lo que tiende a caer tu renta variable (≈ USD '+Math.round(D.rv*b*.1).toLocaleString('es-AR')+'); si sube 10%, sube parecido','var(--text)')+
+    box('Volatilidad anual',pc(D.vol),'S&P 500: '+pc(D.volS)+' · correlación '+f2(D.corr),'var(--text)')+'</div>';
+  // por grupo
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px"><div><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:6px">Por grupo</div>'+
+    D.g.map(function(g){var bb=g.b,w=Math.min(100,(bb||0)/2.5*100),c=bb==null?'var(--text3)':bb>1.15?'var(--red)':bb<0.85?'var(--accent)':'var(--amber,#ffd600)';
+      return '<div style="display:grid;grid-template-columns:110px 1fr 46px 50px;gap:8px;align-items:center;font-size:.74rem;padding:3px 0"><span>'+(_nvFlag[g.s]||'')+' '+(_nvPaisN[g.s]||g.s)+'</span><span style="height:8px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden"><i style="position:absolute;left:0;top:0;bottom:0;width:'+w+'%;background:'+c+';border-radius:4px"></i><i style="position:absolute;left:40%;top:-2px;bottom:-2px;width:1px;background:var(--text3)"></i></span><b style="font-family:var(--mono);text-align:right;color:'+c+'">'+f2(bb)+'</b><span style="font-family:var(--mono);font-size:.66rem;color:var(--text3);text-align:right">'+(g.w*100).toFixed(0)+'%</span></div>';}).join('')+
+    '<div style="font-size:.6rem;color:var(--text3);margin-top:3px">La rayita marca beta 1 (igual que el S&P). El % es el peso dentro de la renta variable.</div></div>';
+  // activos
+  var C=D.it.filter(function(x){return x.b!=null;});
+  var mas=C.slice().sort(function(a,b){return b.w*b.b-a.w*a.b;}).slice(0,6),men=C.filter(function(x){return x.w>=0.01;}).sort(function(a,b){return a.b-b.b;}).slice(0,5);
+  var fila=function(x){var c=x.b>1.15?'var(--red)':x.b<0.85?'var(--accent)':'var(--amber,#ffd600)';return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:.74rem;padding:3px 0;border-bottom:1px solid var(--border)"><b>'+x.t+'</b><span style="font-family:var(--mono)"><b style="color:'+c+'">'+f2(x.b)+'</b> <span style="color:var(--text3);font-size:.66rem">· '+(x.w*100).toFixed(1).replace('.',',')+'%</span></span></div>';};
+  h+='<div><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:6px">Las que más te mueven</div>'+mas.map(fila).join('')+'<div style="font-size:.6rem;color:var(--text3);margin-top:3px">beta × peso en la renta variable</div></div>'+
+    '<div><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:6px">Las más tranquilas</div>'+men.map(fila).join('')+'</div></div>';
+  var sin=D.it.filter(function(x){return x.b==null;});
+  h+='<div style="font-size:.62rem;color:var(--text3);margin-top:10px;line-height:1.5">Precios semanales del último año en dólares (Cedears y acciones argentinas pasados al CCL) contra SPY. Beta 1 = se mueve igual que el S&P; 1,5 = 50% más; 0,5 = la mitad. Calculado sobre el '+(D.cov*100).toFixed(0)+'% de tu renta variable'+(sin.length?' (sin historia suficiente: '+sin.slice(0,8).map(function(x){return x.t;}).join(', ')+(sin.length>8?'…':'')+')':'')+'. Las acciones argentinas se mueven más con el Merval que con el S&P, así que su beta acá suele salir bajo.</div>';
+  card.innerHTML=h;}
