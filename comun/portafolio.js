@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=307, APP_VERSION_FECHA='04/11/2026';
+var APP_VERSION=308, APP_VERSION_FECHA='04/11/2026';
 var APP_CHANGELOG=[
+  'v308 | 2026-11-04 | 📡 Señales técnicas: para tus acciones, las de Vigilancia y las 15 de los fondos, con precios diarios en dólares (CCL): RSI (< 30 barato, > 70 caro), media de 200 ruedas (si la toca desde arriba, posible rebote; desde abajo, posible techo), MACD (cruce de 0 en las últimas 5 ruedas) y Koncorde (manos fuertes volviendo a 0). Puntaje de −4 a +4: chip T al lado del ticker, detalle al abrir la fila y tabla completa en Recomendaciones con cuántas veces acertó cada señal en ese activo. Las variables se pueden cambiar y se guardan en la nube.',
   'v307 | 2026-11-04 | 13F: el valor se muestra en miles de millones ("mil M").',
   'v306 | 2026-11-04 | Recomendaciones: nueva sección 🏦 Lo que tienen los grandes fondos (13F de la SEC, Q2 2026): las 15 acciones más presentes, cuáles tenés y cuánto pesan en tu renta variable, las que te faltan y se pueden comprar como Cedear (con su beta, si está cara o barata y si presenta balance pronto) y tus posiciones grandes que no están en el top. Arriba de Recomendaciones también aparece el beta de tu renta variable. En el Portafolio, nuevo recuadro Beta RV al lado de Posiciones.',
   'v305 | 2026-11-04 | DashBoard: nueva tarjeta 📐 Beta de tu renta variable. Compara todas tus acciones, Cedears y cripto (sin bonos ni ONs) contra el S&P 500 con precios semanales del último año en dólares: beta total, qué pasaría si el S&P cae 10%, volatilidad y correlación, beta por grupo (USA, Argentina, Brasil…) y las acciones que más y menos te mueven. Se recalcula una vez por día.',
@@ -10771,7 +10772,7 @@ function nvRender(){
   var sh0='<tr class="sec"><td colspan="8">'+sg[1]+' <span style="color:var(--text3);font-weight:400">· '+X.length+' activos · <span class="port-sensitive">'+_nvM()+_nvN(X.reduce(function(s,o){return s+(_nvInv(o)||0);},0))+'</span></span></td></tr>';it.push({s:sh0,n:sg[1]});
   X.forEach(function(o){var pc=_nvPtCol(o),ab=!!op[o.t];
    var mk=MARKS[o.t],mki=mk?({sell:'🔴',buy:'🟢',watch:'⭐',note:'📝'})[mk.type]||'🏷':'🏷';
-   var r='<tr class="pick'+(ab?' abierta':'')+(mk&&mk.type!=='note'?' marked-'+mk.type:'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<button class="mark-btn'+(mk?' active':'')+'" data-ticker="'+o.t+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar: Comprar, Vender, Seguir o nota">'+mki+'</button><b class="nvtk" style="font-family:var(--sans);font-size:.84rem"'+(_focoOn()?' onclick="event.stopPropagation();nvFoco(\''+o.t+'\')" title="Ver todo de '+o.t+'"':'')+'>'+o.t+'</b>'+(mk&&mk.note?'<span class="nvnote" data-tip="'+mk.note.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'+mk.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>':'')+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.dh?'<span class="nvf nvd" data-tip="Por tu historial, estimamos un dividendo dentro de 30 días" onclick="event.stopPropagation();nvTip(this,true)">D</span>':'')+((typeof semBadge==='function'&&semBadge(o.t))||(typeof balBadge==='function'?balBadge(o.t):''))+(o.fin?'<span class="nvf nvfin" data-tip="A finish" onclick="event.stopPropagation();nvTip(this,true)">🏁</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
+   var r='<tr class="pick'+(ab?' abierta':'')+(mk&&mk.type!=='note'?' marked-'+mk.type:'')+'" onclick="nvAbrir(\''+o.t+'\')" title="Ver más"><td class="l"><span class="car">'+(ab?'▾':'▸')+'</span>'+(o.rv?'<span class="flg" title="'+(_nvPaisN[o.s]||'')+'">'+(_nvFlag[o.s]||'')+'</span>':'')+'<button class="mark-btn'+(mk?' active':'')+'" data-ticker="'+o.t+'" onclick="event.stopPropagation();openMarkPopover(this.dataset.ticker,this)" title="Marcar: Comprar, Vender, Seguir o nota">'+mki+'</button><b class="nvtk" style="font-family:var(--sans);font-size:.84rem"'+(_focoOn()?' onclick="event.stopPropagation();nvFoco(\''+o.t+'\')" title="Ver todo de '+o.t+'"':'')+'>'+o.t+'</b>'+(mk&&mk.note?'<span class="nvnote" data-tip="'+mk.note.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'+mk.note.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>':'')+(o.fl?'<span class="nvf" data-tip="'+o.fl.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" onclick="event.stopPropagation();nvTip(this,true)">F</span>':'')+(o.dh?'<span class="nvf nvd" data-tip="Por tu historial, estimamos un dividendo dentro de 30 días" onclick="event.stopPropagation();nvTip(this,true)">D</span>':'')+((typeof semBadge==='function'&&semBadge(o.t))||(typeof balBadge==='function'?balBadge(o.t):''))+(typeof tecBadge==='function'?tecBadge(o.t):'')+(o.fin?'<span class="nvf nvfin" data-tip="A finish" onclick="event.stopPropagation();nvTip(this,true)">🏁</span>':'')+(o.ph?'<button class="ph-btn" data-tk="'+o.t+'" data-ppc="'+o.ppcU+'" onclick="event.stopPropagation();phAbrir(this.dataset.tk,+this.dataset.ppc)" title="Ver historial de precio" style="background:none;border:none;cursor:pointer;padding:0 0 0 5px;font-size:.74rem;opacity:.8">📈</button>':'')+'</td>'+
     '<td><span class="dp" style="'+(o.d==null?'color:var(--text3)':'--dc:'+(o.d>=10?'var(--accent)':o.d>=0?'#eab308':'var(--red)'))+'">'+(o.d==null?'—':(Math.round(o.d)>0?'+':Math.round(o.d)<0?'−':'')+Math.abs(Math.round(o.d))+'%')+'</span></td>'+
     '<td class="up">'+upC(o.up)+'</td>'+
     '<td>'+_nvF(o.px,o)+(o.qh||'')+'</td>'+
@@ -10786,7 +10787,7 @@ function nvRender(){
     (function(){var x=_valOn()&&_valOk(o)?_valDe(o.t):null;if(!x)return '';var nf=function(v){return v.toLocaleString('es-AR',{maximumFractionDigits:v<100?2:0});};
      return (x.pe>0?'<div><div class="nvlbl">P/E vs mediana 5 años</div><b>'+x.pe.toFixed(1).replace('.',',')+'</b> '+_valPill(x)+'</div>':'')+(x.pos!=null?'<div><div class="nvlbl">52 semanas (USD)</div><b>'+nf(x.lo)+' – '+nf(x.hi)+'</b> <span style="font-size:.7rem;color:var(--text2)">'+(x.dmax<0?'−':'')+Math.abs(x.dmax).toFixed(1).replace('.',',')+'% del máx.</span></div>':'');})()+
     '<div style="margin-left:auto;align-self:center;display:flex;gap:6px">'+(typeof _bcEs==='function'&&_bcEs(o.t)?'<span class="nvchip" onclick="event.stopPropagation();bcModal(\''+o.t+'\')">📈 TIR CER</span>':(typeof _hdEs==='function'&&_hdEs(o.t)?'<span class="nvchip" onclick="event.stopPropagation();hdModal(\''+o.t+'\')">📈 TIR USD</span>':''))+'<span class="nvchip" onclick="event.stopPropagation();ppcHist(\''+o.t+'\')">🧾 Historia del PPC</span><span class="nvchip" onclick="event.stopPropagation();nvComprar(\''+o.t+'\')">🛒 Comprar</span><span class="nvchip" onclick="event.stopPropagation();nvVender(\''+o.t+'\')">💸 Vender</span></div>'+
-    '</div>'+(typeof semFilaDet==='function'?semFilaDet(o.t):'')+'</td></tr>';
+    '</div>'+(typeof semFilaDet==='function'?semFilaDet(o.t):'')+(typeof tecFilaDet==='function'?tecFilaDet(o.t):'')+'</td></tr>';
    it.push({r:r});});});
  var tb=function(arr){return '<div class="nvtw"><table>'+h+arr.join('')+'</tbody></table></div>';},nA=it.filter(function(x){return x.r;}).length;
  var dos=window.innerWidth>=1500&&nA>12,out;try{if(_portBlurred)root.classList.add('port-blurred');}catch(e){}
@@ -13244,4 +13245,97 @@ function recoExtras(){var pg=document.getElementById('page-recomendaciones');if(
     (fuera.length?'<div style="margin-top:12px;font-size:.74rem;line-height:1.6"><b>Lo que tenés mucho y no está en el top:</b> '+fuera.map(function(k){return '<b>'+M.A[k].t+'</b> <span style="color:var(--text3)">('+(M.A[k].usd/M.tot*100).toFixed(1).replace('.',',')+'%)</span>';}).join(' · ')+'. No quiere decir que esté mal: es para revisar si la idea por la que la compraste sigue en pie.</div>':'')+
     '<div style="font-size:.62rem;color:var(--text3);margin-top:10px;line-height:1.5">Fuente: formularios 13F que los fondos presentan a la SEC cada trimestre (llegan con hasta 45 días de atraso y solo muestran compras, no apuestas a la baja). Que una acción esté en muchos fondos no la hace barata: si todos están en la misma, la caída suele ser más fuerte cuando algo sale mal. Por eso al lado está el beta y si está cara o barata. Se actualiza a mano cada trimestre.</div></div>';
   c.innerHTML=h;}
-(function(){if(typeof showPage!=='function')return;var _o=showPage;showPage=function(id){var r=_o.apply(this,arguments);if(id==='recomendaciones'){try{recoExtras();}catch(e){console.warn('recoExtras',e);}}return r;};})();
+(function(){if(typeof showPage!=='function')return;var _o=showPage;showPage=function(id){var r=_o.apply(this,arguments);if(id==='recomendaciones'){try{recoExtras();}catch(e){console.warn('recoExtras',e);}try{tecRender();}catch(e){console.warn('tecRender',e);}}return r;};})();
+
+// ─── 📡 Señales técnicas: RSI, media de 200, MACD y Koncorde ──────────────────────────────────────────
+// Universo: renta variable de la cartera + Vigilancia + las 15 del 13F con Cedear. Precios diarios de data912
+// (OHLCV en pesos) pasados a dólares al CCL de cada día y ajustados por cambios de ratio/splits.
+// Puntaje = suma de señales (+1 compra / −1 venta). Variables editables (config 'tecnico').
+var TEC={r:null,run:false,cfg:null,ab:false,filtro:'todos'},TEC_DEF={rsiB:30,rsiC:70,sma:200,toca:2,f:12,l:26,sg:9,vent:5,konc:10,fw:20};
+function _tecLS(){return PFX+'tec_v1';}
+function _tecCfg(){return Object.assign({},TEC_DEF,TEC.cfg||{});}
+async function _tecCfgCargar(){if(TEC.cfg)return;try{var v=await sbGetConfig('tecnico');TEC.cfg=(v&&typeof v==='object')?v:{};}catch(e){TEC.cfg={};}}
+function _tecUniverso(){var U={};
+  NV_ROWS.forEach(function(o){if(o.rv&&o.s!=='cripto'||o.rv)U[o.t]=U[o.t]||{t:o.t,s:o.s,o:{}};if(o.rv)U[o.t].o.cartera=1;});
+  try{(vigItems||[]).forEach(function(v){var t=v.ticker,s=_vigSect(t);if(['bonos','on','fci'].indexOf(s)>=0)return;U[t]=U[t]||{t:t,s:s,o:{}};U[t].o.vigilancia=1;});}catch(e){}
+  try{HF13F.L.forEach(function(h){var c=_hfCedear(h[0]);if(!c)return;U[c]=U[c]||{t:c,s:getSector(c)||'nyse',o:{}};U[c].o.fondos=1;});}catch(e){}
+  return Object.keys(U).map(function(k){return U[k];});}
+async function _tecSerie(t,s){var cat=_phCat(s);if(!cat||cat==='bonds')return null;
+  var r=await fetchWithTimeout('https://data912.com/historical/'+cat+'/'+encodeURIComponent(t),{headers:{Accept:'application/json'}},15000);if(!r.ok)return null;var a=await r.json();if(!Array.isArray(a))return null;
+  a=a.filter(function(x){return x&&x.date&&+x.c>0;}).sort(function(x,y){return x.date<y.date?-1:1;});if(a.length<60)return null;
+  var fx=await _phFxLoad('contadoconliqui'),fk=Object.keys(fx).sort(),j=0,last=null,out=[];
+  a.forEach(function(x){while(j<fk.length&&fk[j]<=x.date){last=fx[fk[j]];j++;}if(!(last>0))return;out.push({d:x.date,o:(+x.o||+x.c)/last,h:(+x.h||+x.c)/last,l:(+x.l||+x.c)/last,c:+x.c/last,v:+x.v||0});});
+  for(var i=out.length-1;i>0;i--){var q=out[i].c/out[i-1].c;if(q>1.8||q<0.55){for(var k=0;k<i;k++){out[k].o*=q;out[k].h*=q;out[k].l*=q;out[k].c*=q;out[k].v/=q;}}}
+  return out;}
+function _tecEMA(a,n){var k=2/(n+1),o=[],p=null;a.forEach(function(v,i){if(v==null){o.push(p);return;}p=p==null?v:v*k+p*(1-k);o.push(p);});return o;}
+function _tecInd(S,C){var c=S.map(function(x){return x.c;}),n=c.length,rsi=new Array(n).fill(null),ag=0,al=0;
+  for(var i=1;i<n;i++){var d=c[i]-c[i-1],g=d>0?d:0,l=d<0?-d:0;if(i<=14){ag+=g/14;al+=l/14;if(i===14)rsi[i]=al?100-100/(1+ag/al):100;}else{ag=(ag*13+g)/14;al=(al*13+l)/14;rsi[i]=al?100-100/(1+ag/al):100;}}
+  var sma=new Array(n).fill(null),sum=0;for(i=0;i<n;i++){sum+=c[i];if(i>=C.sma)sum-=c[i-C.sma];if(i>=C.sma-1)sma[i]=sum/C.sma;}
+  var e1=_tecEMA(c,C.f),e2=_tecEMA(c,C.l),macd=c.map(function(_,i){return i>=C.l-1?e1[i]-e2[i]:null;}),sig=_tecEMA(macd,C.sg);
+  var nvi=[1000];for(i=1;i<n;i++)nvi.push(S[i].v<S[i-1].v&&S[i].v>0?nvi[i-1]*(1+(c[i]-c[i-1])/c[i-1]):nvi[i-1]);
+  var nm=_tecEMA(nvi,15),azul=new Array(n).fill(null);for(i=104;i<n;i++){var mx=-1e18,mn=1e18;for(var k=i-89;k<=i;k++){if(nm[k]>mx)mx=nm[k];if(nm[k]<mn)mn=nm[k];}azul[i]=mx>mn?(nvi[i]-nm[i])*100/(mx-mn):0;}
+  return {c:c,rsi:rsi,sma:sma,macd:macd,sig:sig,azul:azul};}
+// señales en la rueda i → [{k,v:+1/−1,txt}]
+function _tecSig(I,i,C){var out=[],c=I.c[i],r=I.rsi[i],sm=I.sma[i];
+  if(r!=null){if(r<C.rsiB)out.push({k:'rsi',v:1,txt:'RSI '+Math.round(r)+' (barato)'+(sm?(c>sm?' en tendencia alcista':' pero bajo la media de '+C.sma):'')});else if(r>C.rsiC)out.push({k:'rsi',v:-1,txt:'RSI '+Math.round(r)+' (caro)'});}
+  if(sm&&i>=10&&I.sma[i-10]){var d=(c/sm-1)*100;if(Math.abs(d)<=C.toca){if(I.c[i-10]>I.sma[i-10])out.push({k:'sma',v:1,txt:'toca la media de '+C.sma+' desde arriba (posible rebote)'});else out.push({k:'sma',v:-1,txt:'llega a la media de '+C.sma+' desde abajo (posible techo)'});}}
+  for(var j=i;j>i-C.vent&&j>0;j--){var a=I.macd[j-1],b=I.macd[j];if(a==null||b==null)break;if(a<=0&&b>0){out.push({k:'macd',v:1,txt:'MACD cruzó 0 hacia arriba '+(i-j===0?'hoy':'hace '+(i-j)+' ruedas')});break;}if(a>=0&&b<0){out.push({k:'macd',v:-1,txt:'MACD cruzó 0 hacia abajo '+(i-j===0?'hoy':'hace '+(i-j)+' ruedas')});break;}}
+  var az=I.azul[i],az3=I.azul[i-3];if(az!=null&&az3!=null&&Math.abs(az)<=C.konc&&az>az3)out.push({k:'konc',v:1,txt:'Koncorde: manos fuertes cerca de 0 y subiendo'});
+  return out;}
+function _tecBT(I,C){var B={},n=I.c.length,prev={};
+  for(var i=30;i<n-C.fw;i++){var S=_tecSig(I,i,C),now={};S.forEach(function(x){var k=x.k+(x.v>0?'+':'-');now[k]=1;if(prev[k])return;var r=I.c[i+C.fw]/I.c[i]-1,b=B[k]=B[k]||{n:0,ok:0,s:0};b.n++;b.s+=r;if(x.v>0?r>0:r<0)b.ok++;});prev=now;}
+  return B;}
+async function tecCalc(forzar){if(TEC.run)return;TEC.run=true;try{tecRender();}catch(e){}
+  try{await _tecCfgCargar();var C=_tecCfg(),U=_tecUniverso(),R={},i=0;
+    await Promise.all([0,1,2].map(async function(){while(i<U.length){var u=U[i++];try{var S=await _tecSerie(u.t,u.s);if(!S){R[u.t]={t:u.t,o:u.o,sin:1};continue;}
+      var I=_tecInd(S,C),k=S.length-1,sg=_tecSig(I,k,C),bt=_tecBT(I,C);
+      R[u.t]={t:u.t,s:u.s,o:u.o,sc:sg.reduce(function(a,x){return a+x.v;},0),sg:sg,rsi:I.rsi[k],dsma:I.sma[k]?(I.c[k]/I.sma[k]-1)*100:null,macd:I.macd[k],macdP:I.macd[k-1],azul:I.azul[k],bt:bt,n:S.length,f:S[k].d};}catch(e){R[u.t]={t:u.t,o:u.o,sin:1};}}}));
+    TEC.r={ts:Date.now(),R:R};try{localStorage.setItem(_tecLS(),JSON.stringify(TEC.r));}catch(e){}
+  }catch(e){console.warn('tecCalc',e);}finally{TEC.run=false;try{tecRender();}catch(e){}try{nvRender();}catch(e){}}}
+function _tecData(){if(!TEC.r){try{TEC.r=JSON.parse(localStorage.getItem(_tecLS())||'null');}catch(e){}}
+  if(!TEC.run&&!TEC.prog&&(!TEC.r||Date.now()-TEC.r.ts>20*3600e3)){TEC.prog=1;setTimeout(function(){TEC.prog=0;tecCalc();},8000);}
+  return TEC.r;}
+function _tecCol(sc){return sc>=2?'var(--accent)':sc===1?'#4ade80':sc===0?'var(--text3)':sc===-1?'#f59e0b':'var(--red)';}
+function _tecSc(sc){return (sc>0?'+':sc<0?'−':'')+Math.abs(sc);}
+function tecBadge(t){var D=_tecData(),x=D&&D.R[t];if(!x||x.sin||!x.sg.length)return '';var c=_tecCol(x.sc);
+  var tip='Señales técnicas ('+_tecSc(x.sc)+'): '+x.sg.map(function(s){return (s.v>0?'▲ ':'▼ ')+s.txt;}).join(' · ')+'. Abrí la fila para ver el detalle.';
+  return '<span class="nvf" data-tip="'+tip.replace(/"/g,'&quot;')+'" onclick="event.stopPropagation();nvTip(this,true)" style="border-color:'+c+';color:'+c+';font-weight:700">T'+_tecSc(x.sc)+'</span>';}
+function _tecVals(x,C){var f=function(v,d){return v==null?'—':v.toFixed(d).replace('.',',');};
+  var rc=x.rsi==null?'var(--text3)':x.rsi<C.rsiB?'var(--accent)':x.rsi>C.rsiC?'var(--red)':'var(--text)';
+  var dc=x.dsma==null?'var(--text3)':Math.abs(x.dsma)<=C.toca?'var(--amber,#ffd600)':x.dsma>0?'var(--accent)':'var(--red)';
+  var mt=x.macd==null?'—':(x.macd>0?'positivo':'negativo')+(x.macdP!=null?(x.macd>x.macdP?' ↑':' ↓'):'');
+  return {rsi:'<b style="color:'+rc+'">'+f(x.rsi,0)+'</b>',sma:'<b style="color:'+dc+'">'+(x.dsma==null?'—':(x.dsma>0?'+':'')+f(x.dsma,1)+'%')+'</b>',macd:'<span style="color:'+(x.macd>0?'var(--accent)':'var(--red)')+'">'+mt+'</span>',konc:'<span>'+f(x.azul,0)+'</span>'};}
+function _tecBTtxt(x,C){var nom={'rsi+':'RSI < '+C.rsiB,'rsi-':'RSI > '+C.rsiC,'sma+':'toca la media desde arriba','sma-':'llega a la media desde abajo','macd+':'MACD cruza 0 ↑','macd-':'MACD cruza 0 ↓','konc+':'Koncorde cerca de 0'};
+  return Object.keys(x.bt||{}).filter(function(k){return x.bt[k].n;}).map(function(k){var b=x.bt[k];return '<span style="white-space:nowrap"><b>'+nom[k]+'</b>: '+(b.n===1?'1 vez':b.n+' veces')+', acertó '+b.ok+' ('+(b.s/b.n*100>=0?'+':'')+(b.s/b.n*100).toFixed(1).replace('.',',')+'% prom. a '+C.fw+' ruedas)</span>';}).join(' · ');}
+function tecFilaDet(t){var D=_tecData(),x=D&&D.R[t];if(!x||x.sin)return '';var C=_tecCfg(),V=_tecVals(x,C),c=_tecCol(x.sc);
+  return '<div onclick="event.stopPropagation()" style="white-space:normal;margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;background:var(--bg);font-size:.74rem;line-height:1.55">'+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:6px"><b>📡 Señales técnicas</b><b style="color:'+c+'">puntaje '+_tecSc(x.sc)+'</b><span>RSI '+V.rsi+'</span><span>vs media '+C.sma+': '+V.sma+'</span><span>MACD '+V.macd+'</span><span>Koncorde '+V.konc+'</span><span style="color:var(--text3);font-size:.66rem">al '+x.f.split('-').reverse().join('/')+'</span></div>'+
+    (x.sg.length?x.sg.map(function(s){return '<div style="color:'+(s.v>0?'var(--accent)':'var(--red)')+'">'+(s.v>0?'▲ ':'▼ ')+s.txt+'</div>';}).join(''):'<div style="color:var(--text3)">Sin señales hoy.</div>')+
+    (_tecBTtxt(x,C)?'<div style="color:var(--text2);margin-top:6px;font-size:.68rem">En este activo, último año: '+_tecBTtxt(x,C)+'</div>':'')+'</div>';}
+function tecFiltro(f){TEC.filtro=f;tecRender();}
+function tecAjustes(){TEC.ab=!TEC.ab;tecRender();}
+async function tecGuardarCfg(){var C={};Object.keys(TEC_DEF).forEach(function(k){var e=document.getElementById('tec-c-'+k);if(e){var v=parseFloat(String(e.value).replace(',','.'));if(isFinite(v))C[k]=v;}});
+  TEC.cfg=C;try{await sbSetConfig('tecnico',C);}catch(e){}TEC.r=null;try{localStorage.removeItem(_tecLS());}catch(e){}tecCalc(true);}
+function tecRender(){var pg=document.getElementById('page-recomendaciones');if(!pg)return;
+  var c=document.getElementById('reco-tec');if(!c){c=document.createElement('div');c.id='reco-tec';var ref=document.getElementById('reco-extra');if(ref&&ref.nextSibling)pg.insertBefore(c,ref.nextSibling);else pg.insertBefore(c,pg.firstChild);}
+  var D=_tecData(),C=_tecCfg();
+  var h='<div class="card" style="padding:14px 16px;margin-bottom:1rem"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span class="card-title">📡 Señales técnicas</span><span style="font-size:.66rem;color:var(--text3)">RSI · media de '+C.sma+' · MACD · Koncorde — precios diarios en dólares</span>'+
+    '<span style="margin-left:auto;font-size:.64rem;color:var(--text3)">'+(TEC.run?'calculando…':D?'actualizado '+new Date(D.ts).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span>'+
+    (TEC.run?'':'<button class="btn btn-sm" style="padding:2px 8px" onclick="tecCalc(true)" title="Recalcular">⟳</button>')+'<button class="btn btn-sm" style="padding:2px 8px" onclick="tecAjustes()">⚙️ Variables</button></div>';
+  if(TEC.ab){var inp=function(k,l){return '<label style="display:flex;flex-direction:column;gap:2px;font-size:.62rem;color:var(--text3)">'+l+'<input id="tec-c-'+k+'" value="'+C[k]+'" style="width:72px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:3px 6px;font-family:var(--mono)"></label>';};
+    h+='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:10px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px">'+inp('rsiB','RSI barato <')+inp('rsiC','RSI caro >')+inp('sma','Media (ruedas)')+inp('toca','"Toca" ±%')+inp('f','MACD rápida')+inp('l','MACD lenta')+inp('sg','MACD señal')+inp('vent','Cruce en últimas')+inp('konc','Koncorde ±')+inp('fw','Acierto a (ruedas)')+
+      '<button class="btn btn-a btn-sm" onclick="tecGuardarCfg()">Guardar y recalcular</button></div>';}
+  if(!D){c.innerHTML=h+'<div style="font-size:.74rem;color:var(--text3)">'+(TEC.run?'Bajando un año de precios diarios de cada activo…':'Se calcula en unos segundos.')+'</div></div>';return;}
+  var L=Object.keys(D.R).map(function(k){return D.R[k];}).filter(function(x){return TEC.filtro==='todos'||x.o[TEC.filtro];});
+  L.sort(function(a,b){if(!!a.sin!==!!b.sin)return a.sin?1:-1;return (b.sc||0)-(a.sc||0)||((a.rsi||50)-(b.rsi||50));});
+  var cnt=function(f){return Object.keys(D.R).filter(function(k){return f==='todos'||D.R[k].o[f];}).length;};
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+[['todos','Todos'],['cartera','Mi cartera'],['vigilancia','Vigilancia'],['fondos','Los 15 de los fondos']].map(function(x){return '<span class="nvchip" onclick="tecFiltro(\''+x[0]+'\')" style="'+(TEC.filtro===x[0]?'border-color:var(--accent);color:var(--accent)':'')+'">'+x[1]+' · '+cnt(x[0])+'</span>';}).join('')+'</div>';
+  var td=function(x,st,l){return '<td style="padding:7px;border-bottom:1px solid var(--border);text-align:'+(l?'left':'right')+';vertical-align:top;'+(st||'')+'">'+x+'</td>';},th='style="font-size:.58rem;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);font-weight:700;padding:6px 7px;border-bottom:1px solid var(--border);text-align:right"';
+  h+='<div class="tw"><table style="width:100%;border-collapse:collapse;font-size:.76rem;font-family:var(--mono)"><thead><tr><th '+th.replace('right','left')+'>Activo</th><th '+th+'>Puntaje</th><th '+th+'>RSI</th><th '+th+'>vs media '+C.sma+'</th><th '+th+'>MACD</th><th '+th+' title="Línea azul del Koncorde (manos fuertes)">Koncorde</th><th '+th.replace('right','left')+'>Señales de hoy</th></tr></thead><tbody>'+
+    L.map(function(x){var org=(x.o.cartera?'💼':'')+(x.o.vigilancia?'👁':'')+(x.o.fondos?'🏦':'');
+      if(x.sin)return '<tr>'+td('<b>'+x.t+'</b> <span style="font-size:.62rem">'+org+'</span>','',1)+td('<span style="color:var(--text3)">sin datos</span>')+td('')+td('')+td('')+td('')+td('<span style="color:var(--text3);font-family:var(--sans);font-size:.66rem">no hay historia diaria en data912</span>','',1)+'</tr>';
+      var V=_tecVals(x,C),bt=_tecBTtxt(x,C);
+      return '<tr>'+td('<b>'+x.t+'</b> <span style="font-size:.62rem">'+org+'</span>','',1)+td('<b style="font-size:.9rem;color:'+_tecCol(x.sc)+'">'+_tecSc(x.sc)+'</b>')+td(V.rsi)+td(V.sma)+td(V.macd)+td(V.konc)+
+        td((x.sg.length?x.sg.map(function(s){return '<div style="color:'+(s.v>0?'var(--accent)':'var(--red)')+'">'+(s.v>0?'▲ ':'▼ ')+s.txt+'</div>';}).join(''):'<span style="color:var(--text3)">—</span>')+(bt?'<div style="color:var(--text3);font-size:.62rem;margin-top:3px">'+bt+'</div>':''),'font-family:var(--sans);min-width:260px',1)+'</tr>';}).join('')+'</tbody></table></div>'+
+    '<div style="font-size:.62rem;color:var(--text3);margin-top:8px;line-height:1.5">💼 en tu cartera · 👁 en Vigilancia · 🏦 en los 15 de los fondos. Puntaje: +1 por cada señal de compra y −1 por cada señal de venta (de −4 a +4). Debajo de cada señal, cuántas veces apareció en ese activo en el último año y cuántas acertó a '+C.fw+' ruedas (subió si era de compra, bajó si era de venta). data912 tiene un año de historia diaria para los Cedears, así que la media de '+C.sma+' y el Koncorde recién tienen datos en los últimos meses. Es una ayuda para decidir, no una recomendación.</div></div>';
+  c.innerHTML=h;}
