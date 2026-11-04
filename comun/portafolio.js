@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=299, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=300, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v300 | 2026-11-03 | Bonos en dólares: "Tu TIR" y "Tu TNA" se calculan solo con las compras que seguís teniendo (las ventas descuentan primero las compras más viejas); antes promediaba también lo que ya vendiste.',
   'v299 | 2026-11-03 | Bonos en dólares: además de la TIR (tasa efectiva anual) se muestra la TNA, con la capitalización según cada cuánto paga el bono (AO29 mensual, la mayoría semestral), y la tasa mensual. Debajo de la TIR en la fila del bono y en la ventana 📈 TIR USD, donde también aparece tu TNA según tus compras.',
   'v298 | 2026-11-03 | Splits conocidos: ETHA hizo un split inverso 1 por 3 el 06/10/2026 (cada 3 acciones pasaron a 1 y el precio se triplicó). Al abrir, las compras y ventas anteriores a esa fecha se ajustan solas (cantidad ÷ 3, precio × 3; el total invertido no cambia) y se guardan con una nota. Antes la app mostraba +126% de ganancia porque comparaba el precio nuevo contra la cantidad vieja.',
   'v297 | 2026-11-03 | 🎯 Semáforo pre-balance: ahora aparece al lado de cada activo del Portafolio que presenta balance en los próximos 21 días (punto de color + 📊 si faltan 4 días o menos, o los días que faltan) y, al abrir la fila, el detalle: sugerencia, señales, por qué, sus últimos balances y qué harías. La tarjeta completa (clima, todos tus balances y ¿Acertó el semáforo?) pasa del DashBoard a la solapa Balances.',
@@ -11569,8 +11570,12 @@ function _hdCurvaSvg(L,t){if(L.length<4)return '';var W=760,H=250,l=40,r=12,tp=1
     g+='<g><title>'+x.t+' · TIR '+(x.tir*100).toFixed(2).replace('.',',')+'% · duration '+x.y.toFixed(1).replace('.',',')+' años · paga '+_hdTag(x)+'</title><circle cx="'+cx+'" cy="'+cy+'" r="'+(me?6.5:mine?5.5:4)+'" fill="'+col+'"'+(me?' stroke="#fbbf24" stroke-width="2"':'')+'/></g>'+
       '<text x="'+(cx-7)+'" y="'+(cy-8)+'" fill="'+(me||mine?'#e8f0ff':'#7a9cc5')+'" font-size="10" text-anchor="end" font-weight="'+(me||mine?700:400)+'">'+x.t+'</text>';});
   return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="font-family:JetBrains Mono,ui-monospace,monospace">'+g+'</svg><div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.62rem;color:var(--text2);margin-top:2px"><span>⚪ este bono</span><span style="color:#fbbf24">● los que tenés</span><span style="color:#38bdf8">● mercado (paga cable)</span><span style="color:#64748b">● mercado (paga MEP)</span><span style="color:#fbbf24">- - curva</span></div>';}
-function _hdTuya(t){var L=movimientos.filter(function(m){return m&&m.ticker===t&&m.tipo==='compra'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);}),s=0,w=0,n=0;
-  L.forEach(function(m){var iso=_phIso(m.fecha);if(!iso)return;var r=hdTIR(t,(+m.precioARS||0)*100,iso);if(!r||!isFinite(r.tir))return;var q=+m.qty||0;s+=r.tir*q;w+=q;n++;});return w>0?{tir:s/w,n:n,de:L.length}:null;}
+function _hdTuya(t){ // TIR promedio de lo que tenés hoy: las ventas se descuentan de las compras más viejas (FIFO)
+  var L=movimientos.filter(function(m){return m&&m.ticker===t&&(m.tipo==='compra'||m.tipo==='venta')&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);})
+    .map(function(m){return {m:m,iso:_phIso(m.fecha)};}).filter(function(x){return x.iso;}).sort(function(a,b){return a.iso<b.iso?-1:a.iso>b.iso?1:(a.m.tipo==='compra'?-1:1);});
+  var lotes=[],de=0;L.forEach(function(x){var q=+x.m.qty||0;if(x.m.tipo==='compra'){de++;var r=hdTIR(t,(+x.m.precioARS||0)*100,x.iso);lotes.push({q:q,tir:r&&isFinite(r.tir)?r.tir:null});}
+    else{while(q>1e-9&&lotes.length){var a=lotes[0],u=Math.min(a.q,q);a.q-=u;q-=u;if(a.q<=1e-9)lotes.shift();}}});
+  var s=0,w=0,n=0;lotes.forEach(function(a){if(a.tir==null||a.q<=0)return;s+=a.tir*a.q;w+=a.q;n++;});return w>0?{tir:s/w,n:n,de:de}:null;}
 function hdCerrar(){var o=document.getElementById('hd-ov');if(o)o.style.display='none';}
 async function hdModal(t){var ov=document.getElementById('hd-ov');
   if(!ov){ov=document.createElement('div');ov.id='hd-ov';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:4vh 12px';ov.onclick=function(e){if(e.target===ov)hdCerrar();};document.body.appendChild(ov);}
@@ -11581,7 +11586,7 @@ async function hdModal(t){var ov=document.getElementById('hd-ov');
   if(!r){ov.innerHTML=h+'<div style="color:var(--text2);font-size:.8rem">No pude calcular la TIR: falta el precio de hoy o los flujos del bono.</div></div>';return;}
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px">'+kb('TIR en dólares',P(r.tir),'paga '+_hdTag(r)+(r.cb&&MEP_HOY?' · incluye brecha '+P(CCL_HOY/MEP_HOY-1):''),'#fbbf24')+
     (function(){var z=_hdTNA(t,r.tir);return kb('TNA de hoy',(z.tna*100).toFixed(2).replace('.',',')+'%','capitalización '+z.cap+' · mensual '+(z.tem*100).toFixed(2).replace('.',',')+'%','#fbbf24');})()+
-    (tu?kb('Tu TIR (tus compras)',P(tu.tir),'promedio de '+tu.n+' compra'+(tu.n>1?'s':''),tu.tir>=r.tir?'#22c55e':'#f59e0b'):'')+
+    (tu?kb('Tu TIR (tus compras)',P(tu.tir),'promedio de las '+tu.n+' compra'+(tu.n>1?'s':'')+' que seguís teniendo',tu.tir>=r.tir?'#22c55e':'#f59e0b'):'')+
     (tu?(function(){var z=_hdTNA(t,tu.tir);return kb('Tu TNA (tus compras)',(z.tna*100).toFixed(2).replace('.',',')+'%','capitalización '+z.cap+' · mensual '+(z.tem*100).toFixed(2).replace('.',',')+'%',tu.tir>=r.tir?'#22c55e':'#f59e0b');})():'')+
     kb('Precio','USD '+r.pxU.toFixed(2).replace('.',','),'c/100 VN · $ '+N(px)+' al '+(r.cb?'CCL':'MEP'))+kb('Duration',r.y.toFixed(1).replace('.',',')+' años','plazo promedio de cobro')+'</div>';
   // barras: este bono + tus 3 bonos en dólares más grandes (solo HD)
