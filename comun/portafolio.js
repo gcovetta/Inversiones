@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=311, APP_VERSION_FECHA='04/11/2026';
+var APP_VERSION=312, APP_VERSION_FECHA='04/11/2026';
 var APP_CHANGELOG=[
+  'v312 | 2026-11-04 | Arreglo: Recomendaciones (y otras solapas largas como Movimientos, DashBoard, Vigilancia o Noticias) no dejaban bajar con el scroll cuando el contenido pasaba el alto de la pantalla. Todas las solapas quedan dentro del área que se desplaza.',
   'v311 | 2026-11-04 | Señales técnicas: corrige el texto "RSI < 30" que se cortaba en el historial de aciertos.',
   'v310 | 2026-11-04 | Señales técnicas: para los Cedears, RSI, media de 200 y MACD se calculan con el precio de la acción en EE.UU. (10 años de historia, sin el ruido del CCL); el Koncorde sigue con precio y volumen del Cedear en BYMA. Ahora entran KLAC, TSM, UBER, SNDK y otras que antes quedaban sin datos, y el "¿acertó?" mira los últimos 2 años.',
   'v309 | 2026-11-04 | Señales técnicas: si data912 no tiene la historia diaria de un Cedear (KLAC, TSM, UBER, SNDK…), se usan los cierres que guarda la app; en esos casos el Koncorde queda sin calcular porque necesita volumen.',
@@ -13348,3 +13349,10 @@ function tecRender(){var pg=document.getElementById('page-recomendaciones');if(!
         td((x.sg.length?x.sg.map(function(s){return '<div style="color:'+(s.v>0?'var(--accent)':'var(--red)')+'">'+(s.v>0?'▲ ':'▼ ')+s.txt+'</div>';}).join(''):'<span style="color:var(--text3)">—</span>')+(bt?'<div style="color:var(--text3);font-size:.62rem;margin-top:3px">'+bt+'</div>':''),'font-family:var(--sans);min-width:260px',1)+'</tr>';}).join('')+'</tbody></table></div>'+
     '<div style="font-size:.62rem;color:var(--text3);margin-top:8px;line-height:1.5">💼 en tu cartera · 👁 en Vigilancia · 🏦 en los 15 de los fondos. Puntaje: +1 por cada señal de compra y −1 por cada señal de venta (de −4 a +4). Debajo de cada señal, cuántas veces apareció en ese activo en los últimos 2 años y cuántas acertó a '+C.fw+' ruedas (subió si era de compra, bajó si era de venta). Cedears: RSI, media y MACD con el precio de la acción en EE.UU. (10 años de historia en data912); el Koncorde, con el precio y el volumen del Cedear en BYMA (un año). Acciones argentinas: precio en BYMA pasado a dólares al CCL. Es una ayuda para decidir, no una recomendación.</div></div>';
   c.innerHTML=h;}
+
+// ─── Todas las solapas dentro del área con scroll (.content) ───
+// En el HTML varias páginas quedaron fuera de .content (hijas directas de #main, que tiene overflow:hidden), así que
+// cuando eran más altas que la pantalla no se podía bajar. Se mueven al cargar, en el mismo orden.
+(function(){var go=function(){var m=document.getElementById('main');if(!m)return;var c=null;for(var i=0;i<m.children.length;i++)if(m.children[i].classList.contains('content')){c=m.children[i];break;}if(!c)return;
+  [].slice.call(m.children).forEach(function(e){if(e!==c&&e.classList&&e.classList.contains('page'))c.appendChild(e);});};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
