@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=306, APP_VERSION_FECHA='04/11/2026';
+var APP_VERSION=307, APP_VERSION_FECHA='04/11/2026';
 var APP_CHANGELOG=[
+  'v307 | 2026-11-04 | 13F: el valor se muestra en miles de millones ("mil M").',
   'v306 | 2026-11-04 | Recomendaciones: nueva sección 🏦 Lo que tienen los grandes fondos (13F de la SEC, Q2 2026): las 15 acciones más presentes, cuáles tenés y cuánto pesan en tu renta variable, las que te faltan y se pueden comprar como Cedear (con su beta, si está cara o barata y si presenta balance pronto) y tus posiciones grandes que no están en el top. Arriba de Recomendaciones también aparece el beta de tu renta variable. En el Portafolio, nuevo recuadro Beta RV al lado de Posiciones.',
   'v305 | 2026-11-04 | DashBoard: nueva tarjeta 📐 Beta de tu renta variable. Compara todas tus acciones, Cedears y cripto (sin bonos ni ONs) contra el S&P 500 con precios semanales del último año en dólares: beta total, qué pasaría si el S&P cae 10%, volatilidad y correlación, beta por grupo (USA, Argentina, Brasil…) y las acciones que más y menos te mueven. Se recalcula una vez por día.',
   'v304 | 2026-11-03 | Bonos: la TNA y tu TNA/TIR de compra debajo de la TIR se ven más grandes y más claras ("Tu TNA (compra)", "Tu TIR (compra)").',
@@ -13227,7 +13228,7 @@ function recoExtras(){var pg=document.getElementById('page-recomendaciones');if(
   var tengo=0,pesoT=0,falta=0,filas=HF13F.L.map(function(x,i){var mio=M.A[x[0]],ced=_hfCedear(x[0]),w=mio&&M.tot?mio.usd/M.tot:0;if(mio){tengo++;pesoT+=w;}else if(ced)falta++;
       var bb=D&&D.hfb?D.hfb[x[0]]:null,v=null;try{v=_valDe(mio?mio.t:ced||x[0]);}catch(e){}var bal='';try{bal=semBadge(mio?mio.t:(ced||x[0]))||'';}catch(e){}
       var td=function(x,st,l){return '<td style="padding:7px;border-bottom:1px solid var(--border);text-align:'+(l?'left':'right')+';'+(st||'')+'">'+x+'</td>';};
-      return '<tr>'+td(i+1,'color:var(--text3)')+td('<b>'+x[0]+'</b> <span style="color:var(--text2);font-size:.68rem;font-family:var(--sans)">'+x[1]+'</span>'+bal,'',1)+td(x[2])+td('USD '+x[3].toFixed(1).replace('.',',')+' MM')+
+      return '<tr>'+td(i+1,'color:var(--text3)')+td('<b>'+x[0]+'</b> <span style="color:var(--text2);font-size:.68rem;font-family:var(--sans)">'+x[1]+'</span>'+bal,'',1)+td(x[2])+td('USD '+x[3].toFixed(1).replace('.',',')+' mil M')+
         td(mio?'<b style="color:var(--accent)">✓ '+(w*100).toFixed(1).replace('.',',')+'%</b>':'<span style="color:var(--text3)">no</span>')+
         td(ced?'✓':'<span title="No encontré Cedear en BYMA">—</span>',ced?'color:var(--text2)':'color:var(--text3)')+
         td(f2(bb),'color:'+_betaCol(bb)+';font-weight:700')+td(v?_valPill(v):'<span style="color:var(--text3)">—</span>')+
