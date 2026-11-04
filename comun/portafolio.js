@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=305, APP_VERSION_FECHA='04/11/2026';
+var APP_VERSION=306, APP_VERSION_FECHA='04/11/2026';
 var APP_CHANGELOG=[
+  'v306 | 2026-11-04 | Recomendaciones: nueva sección 🏦 Lo que tienen los grandes fondos (13F de la SEC, Q2 2026): las 15 acciones más presentes, cuáles tenés y cuánto pesan en tu renta variable, las que te faltan y se pueden comprar como Cedear (con su beta, si está cara o barata y si presenta balance pronto) y tus posiciones grandes que no están en el top. Arriba de Recomendaciones también aparece el beta de tu renta variable. En el Portafolio, nuevo recuadro Beta RV al lado de Posiciones.',
   'v305 | 2026-11-04 | DashBoard: nueva tarjeta 📐 Beta de tu renta variable. Compara todas tus acciones, Cedears y cripto (sin bonos ni ONs) contra el S&P 500 con precios semanales del último año en dólares: beta total, qué pasaría si el S&P cae 10%, volatilidad y correlación, beta por grupo (USA, Argentina, Brasil…) y las acciones que más y menos te mueven. Se recalcula una vez por día.',
   'v304 | 2026-11-03 | Bonos: la TNA y tu TNA/TIR de compra debajo de la TIR se ven más grandes y más claras ("Tu TNA (compra)", "Tu TIR (compra)").',
   'v303 | 2026-11-03 | Bonos: el promedio de compra se recalcula cuando terminan de cargar los dólares MEP/CCL históricos (antes podía quedar calculado con el dólar de hoy para algunas compras).',
@@ -10730,7 +10731,7 @@ function nvRender(){
  var root=document.getElementById('nv-root');
  if(!root){root=document.createElement('div');root.id='nv-root';var ov=document.getElementById('port-pin-overlay');pg.insertBefore(root,ov?ov.nextSibling:pg.firstChild);
   var hi=document.querySelector('header img'),col=hi?getComputedStyle(hi).borderColor:'#22c55e';root.style.setProperty('--nvc',col);
-  root.innerHTML='<div class="topbar nvtb" id="nv-tb0"><span style="display:flex;align-items:center;gap:4px"><input id="nv-q" type="text" placeholder="🔍 Ticker" autocomplete="off" oninput="nvBuscar(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';nvBuscar(\'\')}" style="width:110px;background:var(--surface);border:1px solid var(--border2);border-radius:999px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 10px;outline:none;text-transform:uppercase"><span id="nv-qx" class="nvclr" style="display:none" onclick="var i=document.getElementById(\'nv-q\');i.value=\'\';nvBuscar(\'\')">✕</span><span id="nv-mon" class="nvmon" onclick="nvMon()" title="Ver la tabla en pesos o en dólares"></span></span></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v port-sensitive" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="v" id="nv-kr"></div><div class="s port-sensitive" id="nv-krs"></div></div><div class="nvk"><div class="v" id="nv-kh"></div><div class="s port-sensitive" id="nv-khs"></div></div><div class="nvk" id="nv-kd" style="position:relative"><div class="nvlbl" style="display:flex;justify-content:space-between;gap:8px"><span>% USD</span><span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;opacity:.7">⚙️</span></div></div><div class="nvk" id="nv-kc"><div class="nvlbl">Posiciones</div></div><div class="nvk" id="nv-kt" style="cursor:help"></div><button class="btn" id="nv-rep" onclick="nvRepaso()" title="Repasar de a uno los activos marcados, cerca del P. Venta y los que más se movieron hoy">🌙 Repaso</button><div id="nv-fbar" class="nvfb"></div></div>'+
+  root.innerHTML='<div class="topbar nvtb" id="nv-tb0"><span style="display:flex;align-items:center;gap:4px"><input id="nv-q" type="text" placeholder="🔍 Ticker" autocomplete="off" oninput="nvBuscar(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';nvBuscar(\'\')}" style="width:110px;background:var(--surface);border:1px solid var(--border2);border-radius:999px;color:var(--text);font-family:var(--mono);font-size:.72rem;padding:3px 10px;outline:none;text-transform:uppercase"><span id="nv-qx" class="nvclr" style="display:none" onclick="var i=document.getElementById(\'nv-q\');i.value=\'\';nvBuscar(\'\')">✕</span><span id="nv-mon" class="nvmon" onclick="nvMon()" title="Ver la tabla en pesos o en dólares"></span></span></div><div class="nvtop"><img id="nv-img" src="'+(hi?hi.src:'')+'" alt=""><div class="nvk"><div class="nvlbl">Valor total</div><div class="v port-sensitive" id="nv-kv"></div><div class="s" id="nv-kva"></div></div><div class="nvk"><div class="v" id="nv-kr"></div><div class="s port-sensitive" id="nv-krs"></div></div><div class="nvk"><div class="v" id="nv-kh"></div><div class="s port-sensitive" id="nv-khs"></div></div><div class="nvk" id="nv-kd" style="position:relative"><div class="nvlbl" style="display:flex;justify-content:space-between;gap:8px"><span>% USD</span><span onclick="dolzTogglePopover(event)" title="Configurar activos dolarizados" style="cursor:pointer;opacity:.7">⚙️</span></div></div><div class="nvk" id="nv-kc"><div class="nvlbl">Posiciones</div></div><div class="nvk" id="nv-kb" style="cursor:pointer" title="Beta de tu renta variable contra el S&amp;P 500. Tocá para ver el detalle." onclick="betaIr()"><div class="nvlbl">Beta RV</div><div class="v" id="nv-kbv">—</div></div><div class="nvk" id="nv-kt" style="cursor:help"></div><button class="btn" id="nv-rep" onclick="nvRepaso()" title="Repasar de a uno los activos marcados, cerca del P. Venta y los que más se movieron hoy">🌙 Repaso</button><div id="nv-fbar" class="nvfb"></div></div>'+
    '<div class="nvdist"><div class="nvbox"><div id="nv-dF"></div></div><div class="nvbox"><div id="nv-dG"></div></div><div class="nvbox"><div id="nv-dM"></div></div><div class="nvbox" title="Cuánto de lo invertido hay en cada tipo de activo (sin liquidez)"><div id="nv-dT"></div></div></div>'+
    '<div id="nv-tw2"></div><div id="nv-row2" style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-top:14px"><div id="nv-opw"><div class="nvseg" id="nv-seg"></div><div id="nv-ops"></div></div><div id="nv-calw" style="min-width:0;max-width:100%;padding-top:41px;display:flex"></div></div><div id="nv-cards" style="margin-top:14px"></div>';
   var ops=document.getElementById('nv-ops');['vbuy-card','vsell-card'].forEach(function(id){var c=document.getElementById(id);if(c){ops.appendChild(c);var h=c.querySelector('.card-header');if(h)h.style.display='none';}});
@@ -13148,7 +13149,7 @@ function _betaSem(ser){var m={};(ser||[]).forEach(function(x){var d=new Date(x[0
 async function betaCalc(forzar){if(BETA.run)return;BETA.run=true;nvBeta(true);
   try{var A={},tot=0;NV_ROWS.forEach(function(o){if(!o.rv||!(o.usd>0))return;tot+=o.usd;var a=A[o.t]=A[o.t]||{t:o.t,s:o.s,usd:0};a.usd+=o.usd;});
     var L=Object.keys(A).map(function(k){return A[k];});if(!L.length||!tot)return;
-    var q=L.map(function(x){return x.t;}).concat(['SPY']),i=0;
+    var q=L.map(function(x){return x.t;}).concat(['SPY']),i=0;HF13F.L.forEach(function(h){var c=_hfCedear(h[0]);if(c&&q.indexOf(c)<0)q.push(c);});
     await Promise.all([0,1,2].map(async function(){while(i<q.length){var t=q[i++];try{await _phSerie(t,A[t]?A[t].s:'nyse');}catch(e){}}}));
     var spy=_phSer.SPY&&_phSer.SPY.ser;if(!spy||spy.length<60)return;
     var d0=new Date();d0.setDate(d0.getDate()-371);var k0=d0.toISOString().slice(0,10),S=_betaSem(spy),W=Object.keys(S).filter(function(k){return k>=k0;}).sort();
@@ -13159,30 +13160,37 @@ async function betaCalc(forzar){if(BETA.run)return;BETA.run=true;nvBeta(true);
     L.forEach(function(x){var w=x.usd/tot,sr=_phSer[x.t],r=sr&&sr.ser?ret(_betaSem(sr.ser)):null,e=r?est(r):null;
       items.push({t:x.t,s:x.s,w:w,b:e?e.b:null,c:e?e.c:null});if(e){cov+=w;bw+=w*e.b;Object.keys(r).forEach(function(k){port[k]=(port[k]||0)+w*r[k];});}});
     if(!cov)return;Object.keys(port).forEach(function(k){port[k]/=cov;});
+    var hfb={};HF13F.L.forEach(function(h){var c=_hfCedear(h[0]);if(!c)return;var sr=_phSer[c],r=sr&&sr.ser?ret(_betaSem(sr.ser)):null,e=r?est(r):null;if(e)hfb[h[0]]=e.b;});
     var ep=est(port),es=est(RS),G={};
     items.forEach(function(x){var g=G[x.s]=G[x.s]||{w:0,bw:0,wc:0};g.w+=x.w;if(x.b!=null){g.bw+=x.w*x.b;g.wc+=x.w;}});
     BETA.d={ts:Date.now(),b:bw/cov,cov:cov,corr:ep?ep.c:null,vol:ep?ep.vol:null,volS:es?es.vol:null,n:ep?ep.n:0,rv:tot,
       g:Object.keys(G).map(function(k){var g=G[k];return {s:k,w:g.w,b:g.wc?g.bw/g.wc:null};}).sort(function(a,b){return b.w-a.w;}),
-      it:items.map(function(x){return {t:x.t,s:x.s,w:x.w,b:x.b,c:x.c};})};
+      it:items.map(function(x){return {t:x.t,s:x.s,w:x.w,b:x.b,c:x.c};}),hfb:hfb};
     try{localStorage.setItem(BETA_LS(),JSON.stringify(BETA.d));}catch(e){}
-  }catch(e){console.warn('betaCalc',e);}finally{BETA.run=false;nvBeta(true);}}
-function betaTog(){NV.bt=!NV.bt;nvSave();nvBeta(true);}
+  }catch(e){console.warn('betaCalc',e);}finally{BETA.run=false;nvBeta(true);try{recoExtras();}catch(e){}}}
+function _betaCol(b){return b==null?'var(--text3)':b>1.15?'var(--red)':b<0.85?'var(--accent)':'var(--amber,#ffd600)';}
+function _betaCajas(D){var f2=function(x){return x==null?'—':x.toFixed(2).replace('.',',');},pc=function(x){return x==null?'—':(x*100).toFixed(1).replace('.',',')+'%';};
+  var b=D.b,txt=b>1.15?'más agresiva que el mercado':b<0.85?'más tranquila que el mercado':'se mueve parecido al mercado';
+  var box=function(l,v,sub,c){return '<div style="flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700">'+l+'</div><div style="font-family:var(--mono);font-size:1.35rem;font-weight:700;margin-top:2px;color:'+(c||'var(--text)')+'">'+v+'</div><div style="font-size:.68rem;color:var(--text2);line-height:1.4;margin-top:2px">'+sub+'</div></div>';};
+  return '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
+    box('Beta',f2(b),txt,_betaCol(b))+
+    box('Si el S&P cae 10%','−'+(b*10).toFixed(1).replace('.',',')+'%','lo que tiende a caer tu renta variable (≈ USD '+Math.round(D.rv*b*.1).toLocaleString('es-AR')+'); si sube 10%, sube parecido')+
+    box('Volatilidad anual',pc(D.vol),'S&P 500: '+pc(D.volS)+' · correlación '+f2(D.corr))+'</div>';}
+function _betaKpi(){var e=document.getElementById('nv-kbv');if(!e)return;var D=BETA.d;if(!D){e.textContent=BETA.run?'…':'—';e.style.color='';return;}e.textContent=D.b.toFixed(2).replace('.',',');e.style.color=_betaCol(D.b);
+  var k=document.getElementById('nv-kb');if(k)k.title='Beta de tu renta variable contra el S&P 500: si el S&P cae 10%, tus acciones tienden a caer '+(D.b*10).toFixed(1).replace('.',',')+'%. Tocá para ver el detalle.';}
+function betaIr(){var c=document.getElementById('nv-beta');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});}
 function nvBeta(interno){var cw=document.getElementById('nv-cards');if(!cw||!NV_ROWS.length)return;
   var card=document.getElementById('nv-beta');if(!card){card=document.createElement('div');card.className='card';card.id='nv-beta';card.style.cssText='margin-top:1rem;padding:14px 16px';}
   var ref=document.getElementById('nv-val')||document.getElementById('nv-linea');if(card.parentNode!==cw||card.nextSibling!==ref){if(ref)cw.insertBefore(card,ref);else cw.appendChild(card);}
   if(!BETA.d){try{BETA.d=JSON.parse(localStorage.getItem(BETA_LS())||'null');}catch(e){}}
+  _betaKpi();
   if(!interno&&!BETA.run&&(!BETA.d||Date.now()-BETA.d.ts>20*3600e3)&&!BETA.prog){BETA.prog=1;setTimeout(function(){BETA.prog=0;betaCalc();},5000);}
   var D=BETA.d,f2=function(x){return x==null?'—':x.toFixed(2).replace('.',',');},pc=function(x){return x==null?'—':(x*100).toFixed(1).replace('.',',')+'%';};
   var h='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span class="card-title">📐 Beta de tu renta variable</span><span style="font-size:.66rem;color:var(--text3)">acciones, Cedears y cripto contra el S&P 500 · sin bonos</span>'+
     '<span style="margin-left:auto;font-size:.64rem;color:var(--text3)">'+(BETA.run?'calculando…':D?'actualizado '+new Date(D.ts).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span>'+
     (BETA.run?'':'<button class="btn btn-sm" style="padding:2px 8px" onclick="betaCalc(true)" title="Recalcular">⟳</button>')+'</div>';
   if(!D){card.innerHTML=h+'<div style="font-size:.74rem;color:var(--text3)">'+(BETA.run?'Bajando un año de precios de cada acción…':'Se calcula en unos segundos.')+'</div>';return;}
-  var b=D.b,col=b>1.15?'var(--red)':b<0.85?'var(--accent)':'var(--amber,#ffd600)',txt=b>1.15?'más agresiva que el mercado':b<0.85?'más tranquila que el mercado':'se mueve parecido al mercado';
-  var box=function(l,v,sub,c){return '<div style="flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700">'+l+'</div><div style="font-family:var(--mono);font-size:1.35rem;font-weight:700;margin-top:2px;color:'+(c||'var(--text)')+'">'+v+'</div><div style="font-size:.68rem;color:var(--text2);line-height:1.4;margin-top:2px">'+sub+'</div></div>';};
-  h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
-    box('Beta',f2(b),txt,col)+
-    box('Si el S&P cae 10%','−'+(b*10).toFixed(1).replace('.',',')+'%','lo que tiende a caer tu renta variable (≈ USD '+Math.round(D.rv*b*.1).toLocaleString('es-AR')+'); si sube 10%, sube parecido','var(--text)')+
-    box('Volatilidad anual',pc(D.vol),'S&P 500: '+pc(D.volS)+' · correlación '+f2(D.corr),'var(--text)')+'</div>';
+  h+=_betaCajas(D);
   // por grupo
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px"><div><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:6px">Por grupo</div>'+
     D.g.map(function(g){var bb=g.b,w=Math.min(100,(bb||0)/2.5*100),c=bb==null?'var(--text3)':bb>1.15?'var(--red)':bb<0.85?'var(--accent)':'var(--amber,#ffd600)';
@@ -13196,4 +13204,43 @@ function nvBeta(interno){var cw=document.getElementById('nv-cards');if(!cw||!NV_
     '<div><div style="font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:6px">Las más tranquilas</div>'+men.map(fila).join('')+'</div></div>';
   var sin=D.it.filter(function(x){return x.b==null;});
   h+='<div style="font-size:.62rem;color:var(--text3);margin-top:10px;line-height:1.5">Precios semanales del último año en dólares (Cedears y acciones argentinas pasados al CCL) contra SPY. Beta 1 = se mueve igual que el S&P; 1,5 = 50% más; 0,5 = la mitad. Calculado sobre el '+(D.cov*100).toFixed(0)+'% de tu renta variable'+(sin.length?' (sin historia suficiente: '+sin.slice(0,8).map(function(x){return x.t;}).join(', ')+(sin.length>8?'…':'')+')':'')+'. Las acciones argentinas se mueven más con el Merval que con el S&P, así que su beta acá suele salir bajo.</div>';
-  card.innerHTML=h;}
+  card.innerHTML=h;_betaKpi();}
+
+// ─── 🏦 Lo que tienen los grandes fondos (13F de la SEC) ────────────────────────────────────────────
+// Tabla fija que se actualiza a mano cada trimestre (la SEC no deja consultar EDGAR desde el navegador).
+// L: [ticker EE.UU., nombre, gestores que la tienen, valor total en los 13F (miles de millones USD)]
+var HF13F={q:'Q2 2026',fuente:'SEC 13F · ETFs excluidos',L:[
+  ['AMZN','Amazon',49,65.63],['MSFT','Microsoft',47,52.35],['NVDA','NVIDIA',45,76.11],['META','Meta Platforms',45,27.54],['GOOGL','Alphabet A',43,39.23],
+  ['TSM','Taiwan Semiconductor',43,27.92],['AVGO','Broadcom',42,55.15],['INTC','Intel',41,15.74],['MU','Micron',39,39.44],['SNDK','SanDisk',39,24.84],
+  ['AMD','AMD',39,20.19],['V','Visa',37,24.15],['LRCX','Lam Research',37,20.53],['STX','Seagate',37,14.37],['TMO','Thermo Fisher',37,5.27]]};
+function _hfCedear(sym){if(typeof RATIOS_TABLE!=='undefined'&&RATIOS_TABLE[sym])return sym;for(var k in BYMA_TO_NYSE)if(BYMA_TO_NYSE[k]===sym)return k;
+  if(NV_ROWS.some(function(o){return o.t===sym;}))return sym;return null;}
+function _hfMias(){var A={},tot=0;NV_ROWS.forEach(function(o){if(!o.rv||!(o.usd>0))return;tot+=o.usd;var sym=String(getSector(o.t)==='argentina'?(BYMA_TO_NYSE[o.t]||o.t):getFinnhubTicker(o.t)).toUpperCase();var a=A[sym]=A[sym]||{t:o.t,usd:0};a.usd+=o.usd;});return {A:A,tot:tot};}
+function recoExtras(){var pg=document.getElementById('page-recomendaciones');if(!pg||!NV_ROWS.length)return;
+  var c=document.getElementById('reco-extra');if(!c){c=document.createElement('div');c.id='reco-extra';pg.insertBefore(c,pg.firstChild);}
+  if(!BETA.d){try{BETA.d=JSON.parse(localStorage.getItem(BETA_LS())||'null');}catch(e){}}
+  if(!BETA.run&&(!BETA.d||Date.now()-BETA.d.ts>20*3600e3||!BETA.d.hfb))setTimeout(function(){betaCalc();},300);
+  var D=BETA.d,M=_hfMias(),f2=function(x){return x==null?'—':x.toFixed(2).replace('.',',');};
+  var h='<div class="card" style="padding:14px 16px;margin-bottom:1rem"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span class="card-title">📐 Beta de tu renta variable</span><span style="font-size:.66rem;color:var(--text3)">acciones, Cedears y cripto contra el S&P 500 · sin bonos</span><span style="margin-left:auto;font-size:.64rem;color:var(--text3)">'+(BETA.run?'calculando…':'')+'</span></div>'+
+    (D?_betaCajas(D):'<div style="font-size:.74rem;color:var(--text3)">Calculando con un año de precios…</div>')+'</div>';
+  // 13F
+  var tengo=0,pesoT=0,falta=0,filas=HF13F.L.map(function(x,i){var mio=M.A[x[0]],ced=_hfCedear(x[0]),w=mio&&M.tot?mio.usd/M.tot:0;if(mio){tengo++;pesoT+=w;}else if(ced)falta++;
+      var bb=D&&D.hfb?D.hfb[x[0]]:null,v=null;try{v=_valDe(mio?mio.t:ced||x[0]);}catch(e){}var bal='';try{bal=semBadge(mio?mio.t:(ced||x[0]))||'';}catch(e){}
+      var td=function(x,st,l){return '<td style="padding:7px;border-bottom:1px solid var(--border);text-align:'+(l?'left':'right')+';'+(st||'')+'">'+x+'</td>';};
+      return '<tr>'+td(i+1,'color:var(--text3)')+td('<b>'+x[0]+'</b> <span style="color:var(--text2);font-size:.68rem;font-family:var(--sans)">'+x[1]+'</span>'+bal,'',1)+td(x[2])+td('USD '+x[3].toFixed(1).replace('.',',')+' MM')+
+        td(mio?'<b style="color:var(--accent)">✓ '+(w*100).toFixed(1).replace('.',',')+'%</b>':'<span style="color:var(--text3)">no</span>')+
+        td(ced?'✓':'<span title="No encontré Cedear en BYMA">—</span>',ced?'color:var(--text2)':'color:var(--text3)')+
+        td(f2(bb),'color:'+_betaCol(bb)+';font-weight:700')+td(v?_valPill(v):'<span style="color:var(--text3)">—</span>')+
+        td(!mio&&ced?'<span class="nvchip" onclick="nvComprar(\''+ced+'\')">🛒 Comprar</span>':'');}).join('');
+  var sym15={};HF13F.L.forEach(function(x){sym15[x[0]]=1;});
+  var fuera=Object.keys(M.A).filter(function(k){return !sym15[k]&&M.A[k].usd/M.tot>=0.03;}).sort(function(a,b){return M.A[b].usd-M.A[a].usd;}).slice(0,8);
+  var kb=function(l,v,sub){return '<div style="flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700">'+l+'</div><div style="font-family:var(--mono);font-size:1.35rem;font-weight:700;margin-top:2px">'+v+'</div><div style="font-size:.68rem;color:var(--text2);margin-top:2px">'+sub+'</div></div>';};
+  var th='style="font-size:.58rem;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);font-weight:700;padding:6px 7px;border-bottom:1px solid var(--border);text-align:right"';
+  h+='<div class="card" style="padding:14px 16px;margin-bottom:1rem"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span class="card-title">🏦 Lo que tienen los grandes fondos</span><span style="font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--border2);color:var(--text2)">'+HF13F.q+' · '+HF13F.fuente+'</span></div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+kb('Coincidencias',tengo+' de '+HF13F.L.length,'de las 15 más presentes en los fondos')+kb('Peso en tu renta variable',(pesoT*100).toFixed(0)+'%','lo que tenés en esas '+tengo)+kb('Te faltan',falta,'de las 15, que se pueden comprar como Cedear')+'</div>'+
+    '<div class="tw"><table style="width:100%;border-collapse:collapse;font-size:.76rem;font-family:var(--mono)"><thead><tr><th '+th+'>#</th><th '+th.replace('text-align:right','text-align:left')+'>Empresa</th><th '+th+' title="Cantidad de gestores que la tienen">Gestores</th><th '+th+'>Valor 13F</th><th '+th+' title="Peso en tu renta variable">Vos</th><th '+th+'>Cedear</th><th '+th+' title="Beta contra el S&P 500 (último año, semanal)">Beta</th><th '+th+' title="P/E de hoy vs su mediana de 5 años (de ¿Cara o barata?, solo para las que tenés)">P/E</th><th '+th+'></th></tr></thead><tbody>'+
+    filas+'</tbody></table></div>'+
+    (fuera.length?'<div style="margin-top:12px;font-size:.74rem;line-height:1.6"><b>Lo que tenés mucho y no está en el top:</b> '+fuera.map(function(k){return '<b>'+M.A[k].t+'</b> <span style="color:var(--text3)">('+(M.A[k].usd/M.tot*100).toFixed(1).replace('.',',')+'%)</span>';}).join(' · ')+'. No quiere decir que esté mal: es para revisar si la idea por la que la compraste sigue en pie.</div>':'')+
+    '<div style="font-size:.62rem;color:var(--text3);margin-top:10px;line-height:1.5">Fuente: formularios 13F que los fondos presentan a la SEC cada trimestre (llegan con hasta 45 días de atraso y solo muestran compras, no apuestas a la baja). Que una acción esté en muchos fondos no la hace barata: si todos están en la misma, la caída suele ser más fuerte cuando algo sale mal. Por eso al lado está el beta y si está cara o barata. Se actualiza a mano cada trimestre.</div></div>';
+  c.innerHTML=h;}
+(function(){if(typeof showPage!=='function')return;var _o=showPage;showPage=function(id){var r=_o.apply(this,arguments);if(id==='recomendaciones'){try{recoExtras();}catch(e){console.warn('recoExtras',e);}}return r;};})();
