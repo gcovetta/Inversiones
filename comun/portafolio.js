@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=298, APP_VERSION_FECHA='03/11/2026';
+var APP_VERSION=299, APP_VERSION_FECHA='03/11/2026';
 var APP_CHANGELOG=[
+  'v299 | 2026-11-03 | Bonos en dólares: además de la TIR (tasa efectiva anual) se muestra la TNA, con la capitalización según cada cuánto paga el bono (AO29 mensual, la mayoría semestral), y la tasa mensual. Debajo de la TIR en la fila del bono y en la ventana 📈 TIR USD, donde también aparece tu TNA según tus compras.',
   'v298 | 2026-11-03 | Splits conocidos: ETHA hizo un split inverso 1 por 3 el 06/10/2026 (cada 3 acciones pasaron a 1 y el precio se triplicó). Al abrir, las compras y ventas anteriores a esa fecha se ajustan solas (cantidad ÷ 3, precio × 3; el total invertido no cambia) y se guardan con una nota. Antes la app mostraba +126% de ganancia porque comparaba el precio nuevo contra la cantidad vieja.',
   'v297 | 2026-11-03 | 🎯 Semáforo pre-balance: ahora aparece al lado de cada activo del Portafolio que presenta balance en los próximos 21 días (punto de color + 📊 si faltan 4 días o menos, o los días que faltan) y, al abrir la fila, el detalle: sugerencia, señales, por qué, sus últimos balances y qué harías. La tarjeta completa (clima, todos tus balances y ¿Acertó el semáforo?) pasa del DashBoard a la solapa Balances.',
   'v296 | 2026-11-03 | ☀️/🌙 Modo día y modo noche: botón en la barra de herramientas (al lado de la cinta). Se recuerda en cada dispositivo y vale para todas las carteras, la vista mini y el índice. Los colores del modo día están en comun/tema.css.',
@@ -11579,7 +11580,9 @@ async function hdModal(t){var ov=document.getElementById('hd-ov');
   var h='<div class="card" style="max-width:820px;width:100%;padding:14px 16px;font-family:var(--mono)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;font-family:var(--sans)"><b style="font-size:1.05rem">📈 '+t+' · bono en dólares'+(r?' · vence '+r.vto.split('-').reverse().join('/'):'')+'</b><span style="margin-left:auto;cursor:pointer;font-size:1.2rem;color:var(--text2)" onclick="hdCerrar()">✕</span></div>';
   if(!r){ov.innerHTML=h+'<div style="color:var(--text2);font-size:.8rem">No pude calcular la TIR: falta el precio de hoy o los flujos del bono.</div></div>';return;}
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px">'+kb('TIR en dólares',P(r.tir),'paga '+_hdTag(r)+(r.cb&&MEP_HOY?' · incluye brecha '+P(CCL_HOY/MEP_HOY-1):''),'#fbbf24')+
+    (function(){var z=_hdTNA(t,r.tir);return kb('TNA de hoy',(z.tna*100).toFixed(2).replace('.',',')+'%','capitalización '+z.cap+' · mensual '+(z.tem*100).toFixed(2).replace('.',',')+'%','#fbbf24');})()+
     (tu?kb('Tu TIR (tus compras)',P(tu.tir),'promedio de '+tu.n+' compra'+(tu.n>1?'s':''),tu.tir>=r.tir?'#22c55e':'#f59e0b'):'')+
+    (tu?(function(){var z=_hdTNA(t,tu.tir);return kb('Tu TNA (tus compras)',(z.tna*100).toFixed(2).replace('.',',')+'%','capitalización '+z.cap+' · mensual '+(z.tem*100).toFixed(2).replace('.',',')+'%',tu.tir>=r.tir?'#22c55e':'#f59e0b');})():'')+
     kb('Precio','USD '+r.pxU.toFixed(2).replace('.',','),'c/100 VN · $ '+N(px)+' al '+(r.cb?'CCL':'MEP'))+kb('Duration',r.y.toFixed(1).replace('.',',')+' años','plazo promedio de cobro')+'</div>';
   // barras: este bono + tus 3 bonos en dólares más grandes (solo HD)
   var mep=MEP_HOY||CCL_HOY,B=[[t+' (este)',r.tir,'#fbbf24']];getPositions().filter(function(p){return p.qty>0.000001&&p.ticker!==t&&_hdEs(p.ticker);}).map(function(p){var pa=_hdPxARS(p.ticker),x=pa?hdTIR(p.ticker,pa):null;return x?{t:p.ticker,x:x,v:p.qty/100*pa/mep}:null;}).filter(Boolean).sort(function(a,b){return b.v-a.v;}).slice(0,3).forEach(function(o){B.push([o.t+' ('+(o.x.cb?'cable':'MEP')+')',o.x.tir,'#fcd34d']);});
@@ -11591,7 +11594,10 @@ async function hdModal(t){var ov=document.getElementById('hd-ov');
   var sw=_hdSwaps(L).filter(function(s){return s.de.t===t;})[0];if(sw)h+=_hdSwapHtml(sw);
   h+='</div><div style="font-size:.66rem;color:var(--text3);margin-top:10px;line-height:1.5;font-family:var(--sans)">TIR con el precio en pesos pasado a dólares al CCL (si paga en cable) o al MEP. La curva usa los soberanos (AL/GD/AE) y los bonos en dólares de la tabla de flujos; los ley NY suelen rendir menos que los ley Argentina por menor riesgo legal. Precios: data912.</div></div>';
   ov.innerHTML=h;}
-function hdCelda(t){var px=_hdPxARS(t),r=px?hdTIR(t,px):null;if(!r)return null;return '<span style="color:#fbbf24;font-weight:600;cursor:pointer" title="TIR en dólares ('+_hdTag(r)+'). Tocá para ver la curva y comparar." onclick="event.stopPropagation();hdModal(\''+t+'\')">'+(r.tir*100).toFixed(2)+'%</span>';}
+function _hdFrec(t){var F=(FLUJOS_BONOS[t]&&FLUJOS_BONOS[t].flujos)||[],h=new Date().toISOString().slice(0,10),L=F.filter(function(x){return x.f>h;}).slice(0,13),g=[];
+  for(var i=1;i<L.length;i++)g.push((Date.parse(L[i].f)-Date.parse(L[i-1].f))/864e5);if(!g.length)return 2;g.sort(function(a,b){return a-b;});var m=g[Math.floor(g.length/2)];return m<=45?12:m<=120?4:m<=240?2:1;}
+function _hdTNA(t,tir){var n=_hdFrec(t);return {n:n,tna:n*(Math.pow(1+tir,1/n)-1),tem:Math.pow(1+tir,1/12)-1,cap:{12:'mensual',4:'trimestral',2:'semestral',1:'anual'}[n]};}
+function hdCelda(t){var px=_hdPxARS(t),r=px?hdTIR(t,px):null;if(!r)return null;var z=_hdTNA(t,r.tir);return '<span style="color:#fbbf24;font-weight:600;cursor:pointer" title="TIR en dólares ('+_hdTag(r)+'). TNA '+(z.tna*100).toFixed(2).replace('.',',')+'% (capitalización '+z.cap+') · tasa mensual '+(z.tem*100).toFixed(2).replace('.',',')+'%. Tocá para ver la curva y comparar." onclick="event.stopPropagation();hdModal(\''+t+'\')">'+(r.tir*100).toFixed(2)+'%<span style="display:block;font-size:.62em;font-weight:400;color:var(--text3);line-height:1.1">TNA '+(z.tna*100).toFixed(1).replace('.',',')+'%</span></span>';}
 // ─── v263 🧠 Tus decisiones: sesgo como inversor y "si no vendías" (página de Rotaciones) ───
 var DEC={exc:null,per:6};
 async function _decExcCargar(){if(DEC.exc!==null)return;try{DEC.exc=await sbGetConfig('dec_excluir');}catch(e){}
