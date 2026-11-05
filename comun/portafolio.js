@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=314, APP_VERSION_FECHA='05/11/2026';
+var APP_VERSION=315, APP_VERSION_FECHA='05/11/2026';
 var APP_CHANGELOG=[
+  'v315 | 2026-11-05 | RSI en vivo: también corrige el día de atraso de los precios de EE.UU. (data912 publica el cierre al día siguiente): fuera de horario usa la variación de la última rueda si ese cierre todavía no estaba.',
   'v314 | 2026-11-05 | RSI en vivo: el recuadro RSI de cada acción se recalcula con el precio de ahora (último cierre + la variación del día) cada vez que se actualizan las cotizaciones. Fuera del horario de mercado muestra el RSI al último cierre.',
   'v313 | 2026-11-05 | Portafolio: recuadro RSI al lado de cada acción (junto al T±). Verde si está en 30 o menos (barato), naranja entre 60 y 70 (se está calentando), rojo en 70 o más (caro) y gris en el medio. Usa los mismos límites que ⚙️ Variables de Señales técnicas.',
   'v312 | 2026-11-04 | Arreglo: Recomendaciones (y otras solapas largas como Movimientos, DashBoard, Vigilancia o Noticias) no dejaban bajar con el scroll cuando el contenido pasaba el alto de la pantalla. Todas las solapas quedan dentro del área que se desplaza.',
@@ -13361,9 +13362,9 @@ function tecRender(){var pg=document.getElementById('page-recomendaciones');if(!
 
 // RSI al lado del ticker: verde ≤ rsiB (barato), naranja entre rsiC−10 y rsiC (se calienta), rojo ≥ rsiC (caro), gris en el medio.
 function rsiVivo(t){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t];if(!x||x.sin||!x.rw)return null;var q=quotes&&quotes[t],ch=q&&q.changePct;if(ch==null||!isFinite(ch))return null;
-  var hoy=new Date(),iso=_balIso(hoy),dw=hoy.getDay();if(x.rw.d>=iso)return null;
-  // solo un día hábil después del último cierre usado: si el último cierre es de hoy no se suma nada; fin de semana o antes de la apertura, no se suma
-  if(dw===0||dw===6||(hoy.getHours()*60+hoy.getMinutes())<10*60+30)return null;
+  // la variación de las cotizaciones es la de la última rueda (hoy desde las 10:30; si no, el último día hábil): se suma solo si el cierre usado es anterior
+  var sd=new Date();if(sd.getDay()===0||sd.getDay()===6||(sd.getHours()*60+sd.getMinutes())<10*60+30){do{sd.setDate(sd.getDate()-1);}while(sd.getDay()===0||sd.getDay()===6);}
+  if(x.rw.d>=_balIso(sd))return null;
   var p=x.rw.c*(1+ch/100),d=p-x.rw.c,g=d>0?d:0,l=d<0?-d:0,ag=(x.rw.ag*13+g)/14,al=(x.rw.al*13+l)/14;return al?100-100/(1+ag/al):100;}
 function rsiBadge(t,rsiApp){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t],rv=null;try{rv=rsiVivo(t);}catch(e){}var r=rv!=null?rv:(x&&!x.sin&&x.rsi!=null)?x.rsi:(rsiApp!=null&&isFinite(rsiApp)?+rsiApp:null);if(r==null)return '';
   var C=_tecCfg(),col,txt;if(r<=C.rsiB){col='var(--accent)';txt='barato';}else if(r>=C.rsiC){col='var(--red)';txt='caro';}else if(r>=C.rsiC-10){col='var(--orange,#ff9100)';txt='se está calentando';}else{col='var(--text3)';txt='neutral';}
