@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=313, APP_VERSION_FECHA='05/11/2026';
+var APP_VERSION=314, APP_VERSION_FECHA='05/11/2026';
 var APP_CHANGELOG=[
+  'v314 | 2026-11-05 | RSI en vivo: el recuadro RSI de cada acción se recalcula con el precio de ahora (último cierre + la variación del día) cada vez que se actualizan las cotizaciones. Fuera del horario de mercado muestra el RSI al último cierre.',
   'v313 | 2026-11-05 | Portafolio: recuadro RSI al lado de cada acción (junto al T±). Verde si está en 30 o menos (barato), naranja entre 60 y 70 (se está calentando), rojo en 70 o más (caro) y gris en el medio. Usa los mismos límites que ⚙️ Variables de Señales técnicas.',
   'v312 | 2026-11-04 | Arreglo: Recomendaciones (y otras solapas largas como Movimientos, DashBoard, Vigilancia o Noticias) no dejaban bajar con el scroll cuando el contenido pasaba el alto de la pantalla. Todas las solapas quedan dentro del área que se desplaza.',
   'v311 | 2026-11-04 | Señales técnicas: corrige el texto "RSI < 30" que se cortaba en el historial de aciertos.',
@@ -13257,7 +13258,7 @@ function recoExtras(){var pg=document.getElementById('page-recomendaciones');if(
 // (OHLCV en pesos) pasados a dólares al CCL de cada día y ajustados por cambios de ratio/splits.
 // Puntaje = suma de señales (+1 compra / −1 venta). Variables editables (config 'tecnico').
 var TEC={r:null,run:false,cfg:null,ab:false,filtro:'todos'},TEC_DEF={rsiB:30,rsiC:70,sma:200,toca:2,f:12,l:26,sg:9,vent:5,konc:10,fw:20};
-function _tecLS(){return PFX+'tec_v1';}
+function _tecLS(){return PFX+'tec_v2';}
 function _tecCfg(){return Object.assign({},TEC_DEF,TEC.cfg||{});}
 async function _tecCfgCargar(){if(TEC.cfg)return;try{var v=await sbGetConfig('tecnico');TEC.cfg=(v&&typeof v==='object')?v:{};}catch(e){TEC.cfg={};}}
 function _tecUniverso(){var U={};
@@ -13276,13 +13277,13 @@ async function _tecUSA(t,s){if(['nyse','brasil','europa','china','cripto'].index
   var r=await fetchWithTimeout('https://data912.com/historical/usa_stocks/'+encodeURIComponent(sym),{headers:{Accept:'application/json'}},15000);if(!r.ok)return null;var j=await r.json();
   if(!j||!Array.isArray(j.dates)||!Array.isArray(j.prices)||j.dates.length<60)return null;var out=[];j.dates.forEach(function(d,i){var c=+j.prices[i];if(c>0)out.push({d:d,o:c,h:c,l:c,c:c,v:0});});return out.length>=60?out:null;}
 function _tecEMA(a,n){var k=2/(n+1),o=[],p=null;a.forEach(function(v,i){if(v==null){o.push(p);return;}p=p==null?v:v*k+p*(1-k);o.push(p);});return o;}
-function _tecInd(S,C){var c=S.map(function(x){return x.c;}),n=c.length,rsi=new Array(n).fill(null),ag=0,al=0;
-  for(var i=1;i<n;i++){var d=c[i]-c[i-1],g=d>0?d:0,l=d<0?-d:0;if(i<=14){ag+=g/14;al+=l/14;if(i===14)rsi[i]=al?100-100/(1+ag/al):100;}else{ag=(ag*13+g)/14;al=(al*13+l)/14;rsi[i]=al?100-100/(1+ag/al):100;}}
+function _tecInd(S,C){var c=S.map(function(x){return x.c;}),n=c.length,rsi=new Array(n).fill(null),ag=0,al=0,AG=new Array(n).fill(null),AL=new Array(n).fill(null);
+  for(var i=1;i<n;i++){var d=c[i]-c[i-1],g=d>0?d:0,l=d<0?-d:0;if(i<=14){ag+=g/14;al+=l/14;if(i===14)rsi[i]=al?100-100/(1+ag/al):100;}else{ag=(ag*13+g)/14;al=(al*13+l)/14;rsi[i]=al?100-100/(1+ag/al):100;}if(i>=14){AG[i]=ag;AL[i]=al;}}
   var sma=new Array(n).fill(null),sum=0;for(i=0;i<n;i++){sum+=c[i];if(i>=C.sma)sum-=c[i-C.sma];if(i>=C.sma-1)sma[i]=sum/C.sma;}
   var e1=_tecEMA(c,C.f),e2=_tecEMA(c,C.l),macd=c.map(function(_,i){return i>=C.l-1?e1[i]-e2[i]:null;}),sig=_tecEMA(macd,C.sg);
   var nvi=[1000];for(i=1;i<n;i++)nvi.push(S[i].v<S[i-1].v&&S[i].v>0?nvi[i-1]*(1+(c[i]-c[i-1])/c[i-1]):nvi[i-1]);
   var nm=_tecEMA(nvi,15),azul=new Array(n).fill(null);for(i=104;i<n;i++){var mx=-1e18,mn=1e18;for(var k=i-89;k<=i;k++){if(nm[k]>mx)mx=nm[k];if(nm[k]<mn)mn=nm[k];}azul[i]=mx>mn?(nvi[i]-nm[i])*100/(mx-mn):0;}
-  return {c:c,rsi:rsi,sma:sma,macd:macd,sig:sig,azul:azul};}
+  return {c:c,rsi:rsi,sma:sma,macd:macd,sig:sig,azul:azul,AG:AG,AL:AL};}
 // señales en la rueda i → [{k,v:+1/−1,txt}]
 function _tecSig(I,i,C){var out=[],c=I.c[i],r=I.rsi[i],sm=I.sma[i];
   if(r!=null){if(r<C.rsiB)out.push({k:'rsi',v:1,txt:'RSI '+Math.round(r)+' (barato)'+(sm?(c>sm?' en tendencia alcista':' pero bajo la media de '+C.sma):'')});else if(r>C.rsiC)out.push({k:'rsi',v:-1,txt:'RSI '+Math.round(r)+' (caro)'});}
@@ -13300,7 +13301,7 @@ async function tecCalc(forzar){if(TEC.run)return;TEC.run=true;try{tecRender();}c
       var I=_tecInd(S,C);if(Su){var Ic=Sc?_tecInd(Sc,C):null,mp={};if(Ic)Sc.forEach(function(x,j){mp[x.d]=Ic.azul[j];});I.azul=S.map(function(x){return mp[x.d]!=null?mp[x.d]:null;});sv=!Ic;}
       var k=S.length-1;if(Su&&Sc&&I.azul[k]==null){var lk=Sc.length-1;I.azul[k]=Ic.azul[lk];}
       var sg=_tecSig(I,k,C),bt=_tecBT(I,C);
-      R[u.t]={t:u.t,s:u.s,o:u.o,sc:sg.reduce(function(a,x){return a+x.v;},0),sg:sg,rsi:I.rsi[k],dsma:I.sma[k]?(I.c[k]/I.sma[k]-1)*100:null,macd:I.macd[k],macdP:I.macd[k-1],azul:I.azul[k],bt:bt,n:S.length,f:S[k].d,sv:sv,us:!!Su};}catch(e){R[u.t]={t:u.t,o:u.o,sin:1};}}}));
+      R[u.t]={t:u.t,s:u.s,o:u.o,sc:sg.reduce(function(a,x){return a+x.v;},0),sg:sg,rsi:I.rsi[k],dsma:I.sma[k]?(I.c[k]/I.sma[k]-1)*100:null,macd:I.macd[k],macdP:I.macd[k-1],azul:I.azul[k],bt:bt,n:S.length,f:S[k].d,sv:sv,us:!!Su,rw:(function(){var j=S[k].d>=_balIso(new Date())?k-1:k;return I.AG[j]!=null?{ag:I.AG[j],al:I.AL[j],c:I.c[j],d:S[j].d}:null;})()};}catch(e){R[u.t]={t:u.t,o:u.o,sin:1};}}}));
     TEC.r={ts:Date.now(),R:R};try{localStorage.setItem(_tecLS(),JSON.stringify(TEC.r));}catch(e){}
   }catch(e){console.warn('tecCalc',e);}finally{TEC.run=false;try{tecRender();}catch(e){}try{nvRender();}catch(e){}}}
 function _tecData(){if(!TEC.r){try{TEC.r=JSON.parse(localStorage.getItem(_tecLS())||'null');}catch(e){}}
@@ -13359,7 +13360,12 @@ function tecRender(){var pg=document.getElementById('page-recomendaciones');if(!
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();})();
 
 // RSI al lado del ticker: verde ≤ rsiB (barato), naranja entre rsiC−10 y rsiC (se calienta), rojo ≥ rsiC (caro), gris en el medio.
-function rsiBadge(t,rsiApp){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t],r=(x&&!x.sin&&x.rsi!=null)?x.rsi:(rsiApp!=null&&isFinite(rsiApp)?+rsiApp:null);if(r==null)return '';
+function rsiVivo(t){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t];if(!x||x.sin||!x.rw)return null;var q=quotes&&quotes[t],ch=q&&q.changePct;if(ch==null||!isFinite(ch))return null;
+  var hoy=new Date(),iso=_balIso(hoy),dw=hoy.getDay();if(x.rw.d>=iso)return null;
+  // solo un día hábil después del último cierre usado: si el último cierre es de hoy no se suma nada; fin de semana o antes de la apertura, no se suma
+  if(dw===0||dw===6||(hoy.getHours()*60+hoy.getMinutes())<10*60+30)return null;
+  var p=x.rw.c*(1+ch/100),d=p-x.rw.c,g=d>0?d:0,l=d<0?-d:0,ag=(x.rw.ag*13+g)/14,al=(x.rw.al*13+l)/14;return al?100-100/(1+ag/al):100;}
+function rsiBadge(t,rsiApp){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t],rv=null;try{rv=rsiVivo(t);}catch(e){}var r=rv!=null?rv:(x&&!x.sin&&x.rsi!=null)?x.rsi:(rsiApp!=null&&isFinite(rsiApp)?+rsiApp:null);if(r==null)return '';
   var C=_tecCfg(),col,txt;if(r<=C.rsiB){col='var(--accent)';txt='barato';}else if(r>=C.rsiC){col='var(--red)';txt='caro';}else if(r>=C.rsiC-10){col='var(--orange,#ff9100)';txt='se está calentando';}else{col='var(--text3)';txt='neutral';}
-  var tip='RSI '+Math.round(r)+' ('+txt+'). Verde ≤ '+C.rsiB+' · naranja '+(C.rsiC-10)+'–'+C.rsiC+' · rojo ≥ '+C.rsiC+'.';
+  var tip='RSI '+Math.round(r)+' ('+txt+')'+(rv!=null?' · en vivo: último cierre + la variación de hoy':x&&x.f?' · al cierre del '+x.f.split('-').reverse().slice(0,2).join('/'):'')+'. Verde ≤ '+C.rsiB+' · naranja '+(C.rsiC-10)+'–'+C.rsiC+' · rojo ≥ '+C.rsiC+'.';
   return '<span class="nvf" data-tip="'+tip+'" onclick="event.stopPropagation();nvTip(this,true)" style="border-color:'+col+';color:'+col+';font-weight:700">RSI '+Math.round(r)+'</span>';}
