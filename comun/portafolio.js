@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=325, APP_VERSION_FECHA='06/11/2026';
+var APP_VERSION=326, APP_VERSION_FECHA='06/11/2026';
 var APP_CHANGELOG=[
+  'v326 | 2026-11-06 | Señal combinada, acciones argentinas: nueva COMPRA ★★ cuando hay divergencia alcista junto con MACD compra fuerte o Koncorde ↑ (en el backtest +4,6% frente a lo normal a 3 meses, contra +3,4% de la combinada anterior). Si la compra MACD + Koncorde ya estaba y además hay divergencia, también pasa a ★★.',
   'v325 | 2026-11-06 | Divergencias RSI/MACD: alcista cuando el precio hace un mínimo más bajo y el RSI o el MACD uno más alto; bajista al revés con los máximos. Recuadro DIV ▲/▼ al lado del activo, tarjetas en el panel y backtest. Nuevo 📒 Seguimiento real en Recomendaciones: cada señal combinada que aparece se guarda con fecha y precio y se mide qué pasó al mes y a los 3 meses.',
   'v324 | 2026-11-06 | Señal combinada (según el backtest de 66 activos): recuadro COMPRA ★ / ★★ o VENTA ★ / ★★ al lado del activo, recuadro grande en el panel y columna en Recomendaciones. Argentinas: compra = MACD compra fuerte + Koncorde ↑ (★★ con WMA21 ↑). Cedears: compra = RSI ≤ 30 (★★ con MACD fuerte o Koncorde ↑). Todos: venta = MACD venta fuerte + Koncorde ↓ (★★ con montañas en pico). Cuenta si las señales aparecieron en las últimas 5 ruedas.',
   'v323 | 2026-11-06 | Señales técnicas: la media de 200 pasa a ser exponencial (EMA200) en lugar de simple; el recuadro al lado del activo ahora dice EMA200. Nueva WMA21 (media ponderada de 21 ruedas): señal de compra cuando el precio la cruza hacia arriba y de venta cuando la cruza hacia abajo; se ve en el gráfico de precio, en las señales de hoy, en las tarjetas de ¿funcionó? y suma al puntaje T.',
@@ -13331,9 +13332,10 @@ function _tecCombo(I,k,C,sect){var n=I.c.length,V=C.vent,c=I.c,M=I.macd,G=I.sig,
   f.mp=!!KM&&en(function(i){var m=_konMontana(KM,i,C);return m&&m.v<0;});
   f.wa=!!W&&en(function(i){return W[i-1]!=null&&W[i]!=null&&c[i-1]<=W[i-1]&&c[i]>W[i];});
   f.rb=en(function(i){return R[i]!=null&&R[i]<=C.rsiB;});
-  var ar=sect==='argentina',v=0,niv=0,txt='',ref='';
+  var ar=sect==='argentina',v=0,niv=0,txt='',ref='';if(ar){var dvx=_tecDiv(I,k,C);f.dv=!!(dvx&&dvx.v>0);}
   if(f.mb&&f.kb){v=-1;niv=f.mp?2:1;txt='MACD venta fuerte + Koncorde ↓'+(f.mp?' + montañas en pico':'');ref=f.mp?'En el análisis: −3,9% frente a lo normal a 3 meses (argentinas −4,7%, Cedears −2,0%)':'En el análisis: −2,8% frente a lo normal a 3 meses (argentinas −3,5%)';}
-  else if(ar&&f.ma&&f.ka){v=1;niv=f.wa?2:1;txt='MACD compra fuerte + Koncorde ↑'+(f.wa?' + precio cruza WMA'+C.wma+' ↑':'');ref=f.wa?'En el análisis: +4,3% frente a lo normal a 3 meses en acciones argentinas':'En el análisis: +3,7% frente a lo normal a 3 meses en acciones argentinas';}
+  else if(ar&&f.ma&&f.ka){v=1;niv=f.wa?2:1;txt='MACD compra fuerte + Koncorde ↑'+(f.wa?' + precio cruza WMA'+C.wma+' ↑':'');ref=f.wa?'En el análisis: +4,3% frente a lo normal a 3 meses en acciones argentinas':'En el análisis: +3,7% frente a lo normal a 3 meses en acciones argentinas';if(f.dv){niv=2;txt+=' + divergencia alcista';}}
+  else if(ar&&f.dv&&(f.ma||f.ka)){v=1;niv=2;txt='Divergencia alcista + '+(f.ma?'MACD compra fuerte':'Koncorde ↑');ref='En el análisis: +4,6% frente a lo normal a 3 meses en acciones argentinas';}
   else if(!ar&&f.rb){v=1;niv=(f.ma||f.ka)?2:1;txt='RSI ≤ '+C.rsiB+((f.ma||f.ka)?' + '+(f.ma?'MACD compra fuerte':'Koncorde ↑'):'');ref='En el análisis: +2,8% frente a lo normal a 3 meses en Cedears';}
   return v?{v:v,niv:niv,txt:txt,ref:ref,f:f}:{v:0,f:f};}
 // Divergencias: pivotes de precio (mínimo/máximo de ±3 ruedas). Alcista = el precio hace un mínimo más bajo y el RSI (o el MACD) uno más alto;
