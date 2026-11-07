@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=328, APP_VERSION_FECHA='06/11/2026';
+var APP_VERSION=329, APP_VERSION_FECHA='06/11/2026';
 var APP_CHANGELOG=[
+  'v329 | 2026-11-06 | GDC en el celular: el botón "Abrir cartera completa" de la vista mini ahora abre la vista completa (igual que tocar "Ver todo"), no la vista simple.',
   'v328 | 2026-11-06 | El análisis técnico (señales, RSI, EMA200, MACD, Koncorde, divergencias, señal combinada y seguimiento real) queda solo en GDC. En Ana, Hilda, Juli y Omar no se calcula ni se muestra, y se borran sus copias en el navegador.',
   'v327 | 2026-11-06 | Espacio del navegador: se borran solas las copias viejas de las señales técnicas (tec_v1 a tec_v6, que quedaban de versiones anteriores). Si igual queda poco lugar, se borran las copias que se vuelven a bajar solas (calendario de balances, noticias, índices) antes de avisar.',
   'v326 | 2026-11-06 | Señal combinada, acciones argentinas: nueva COMPRA ★★ cuando hay divergencia alcista junto con MACD compra fuerte o Koncorde ↑ (en el backtest +4,6% frente a lo normal a 3 meses, contra +3,4% de la combinada anterior). Si la compra MACD + Koncorde ya estaba y además hay divergencia, también pasa a ★★.',
@@ -12208,7 +12209,8 @@ function miniRender(){
 }
 function miniOjo(){_miniOjo=!_miniOjo;try{localStorage.setItem(PFX+'mini_ojo',_miniOjo?'1':'0');}catch(e){}_miniUlt='';miniRender();}
 function miniActualizar(b){if(b)b.textContent='Actualizando…';try{Promise.resolve(fetchAllQuotes()).then(function(){_miniUlt='';miniRender();});}catch(e){}}
-function miniAbrir(pagina){var u=new URL(location.href);u.searchParams.delete('mini');if(pagina)u.hash='#'+pagina;location.href=u.toString();}
+function miniAbrir(pagina){if(PFX==='ptNYSE_'){try{sessionStorage.setItem(PFX+'mob_full','1');}catch(e){}} // v329: en GDC abre la vista completa, no la simple del celular
+  var u=new URL(location.href);u.searchParams.delete('mini');if(pagina)u.hash='#'+pagina;location.href=u.toString();}
 if(MINI){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',miniRender);else setTimeout(miniRender,0);
   setInterval(miniRender,3000);
