@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=327, APP_VERSION_FECHA='06/11/2026';
+var APP_VERSION=328, APP_VERSION_FECHA='06/11/2026';
 var APP_CHANGELOG=[
+  'v328 | 2026-11-06 | El análisis técnico (señales, RSI, EMA200, MACD, Koncorde, divergencias, señal combinada y seguimiento real) queda solo en GDC. En Ana, Hilda, Juli y Omar no se calcula ni se muestra, y se borran sus copias en el navegador.',
   'v327 | 2026-11-06 | Espacio del navegador: se borran solas las copias viejas de las señales técnicas (tec_v1 a tec_v6, que quedaban de versiones anteriores). Si igual queda poco lugar, se borran las copias que se vuelven a bajar solas (calendario de balances, noticias, índices) antes de avisar.',
   'v326 | 2026-11-06 | Señal combinada, acciones argentinas: nueva COMPRA ★★ cuando hay divergencia alcista junto con MACD compra fuerte o Koncorde ↑ (en el backtest +4,6% frente a lo normal a 3 meses, contra +3,4% de la combinada anterior). Si la compra MACD + Koncorde ya estaba y además hay divergencia, también pasa a ★★.',
   'v325 | 2026-11-06 | Divergencias RSI/MACD: alcista cuando el precio hace un mínimo más bajo y el RSI o el MACD uno más alto; bajista al revés con los máximos. Recuadro DIV ▲/▼ al lado del activo, tarjetas en el panel y backtest. Nuevo 📒 Seguimiento real en Recomendaciones: cada señal combinada que aparece se guarda con fecha y precio y se mide qué pasó al mes y a los 3 meses.',
@@ -13275,6 +13276,9 @@ function recoExtras(){var pg=document.getElementById('page-recomendaciones');if(
 // Universo: renta variable de la cartera + Vigilancia + las 15 del 13F con Cedear. Precios diarios de data912
 // (OHLCV en pesos) pasados a dólares al CCL de cada día y ajustados por cambios de ratio/splits.
 // Puntaje = suma de señales (+1 compra / −1 venta). Variables editables (config 'tecnico').
+// v328: el análisis técnico es solo para GDC (prefijo ptNYSE_). En los otros portafolios no se calcula ni se muestra.
+var TEC_ON=(PFX==='ptNYSE_');
+(function(){if(TEC_ON)return;try{for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k.indexOf(PFX)===0&&/_tec_v\d+$/.test(k))localStorage.removeItem(k);}}catch(e){}})();
 var TEC={r:null,run:false,cfg:null,ab:false,filtro:'todos'},TEC_DEF={rsiB:30,rsiC:70,sma:200,toca:2,cerca:3,f:12,l:26,sg:9,vent:5,mFuerte:50,mPer:252,konc:10,kBajo:20,kPico:80,kAz:15,wma:21,fw:20};
 function _tecLS(){return PFX+'tec_v7';}
 function _tecCfg(){return Object.assign({},TEC_DEF,TEC.cfg||{});}
@@ -13383,7 +13387,7 @@ function _tecSig(I,i,C){var out=[],c=I.c[i],r=I.rsi[i],sm=I.sma[i];
 function _tecBT(I,C){var B={},n=I.c.length,prev={};/* macd: k=macd+, macd++ (fuerte), macd-, macd-- */
   for(var i=Math.max(30,n-504);i<n-C.fw;i++){var S=_tecSig(I,i,C),now={};S.forEach(function(x){var k=x.k+(x.v>0?'+':'-')+(x.fuerte?(x.v>0?'+':'-'):'');now[k]=1;if(prev[k])return;var r=I.c[i+C.fw]/I.c[i]-1,b=B[k]=B[k]||{n:0,ok:0,s:0};b.n++;b.s+=r;if(x.v>0?r>0:r<0)b.ok++;});prev=now;}
   return B;}
-async function tecCalc(forzar){if(TEC.run)return;TEC.run=true;try{tecRender();}catch(e){}
+async function tecCalc(forzar){if(!TEC_ON||TEC.run)return;TEC.run=true;try{tecRender();}catch(e){}
   try{await _tecCfgCargar();var C=_tecCfg(),U=_tecUniverso(),R={},i=0;
     await Promise.all([0,1,2].map(async function(){while(i<U.length){var u=U[i++];try{var Sc=null,Su=null,sv=false;try{Sc=await _tecSerie(u.t,u.s);}catch(e){}try{Su=await _tecUSA(u.t,u.s);}catch(e){}
       var S=Su||Sc;if(!S){R[u.t]={t:u.t,o:u.o,sin:1};continue;}
@@ -13394,7 +13398,7 @@ async function tecCalc(forzar){if(TEC.run)return;TEC.run=true;try{tecRender();}c
     TEC.r={ts:Date.now(),R:R};try{localStorage.setItem(_tecLS(),JSON.stringify(TEC.r));}catch(e){}
     try{await _tecSegRegistrar(R);}catch(e){console.warn('tecSeg',e);}
   }catch(e){console.warn('tecCalc',e);}finally{TEC.run=false;try{tecRender();}catch(e){}try{nvRender();}catch(e){}}}
-function _tecData(){if(!TEC.r){try{TEC.r=JSON.parse(localStorage.getItem(_tecLS())||'null');}catch(e){}}
+function _tecData(){if(!TEC_ON)return null;if(!TEC.r){try{TEC.r=JSON.parse(localStorage.getItem(_tecLS())||'null');}catch(e){}}
   if(!TEC.run&&!TEC.prog&&(!TEC.r||Date.now()-TEC.r.ts>20*3600e3)){TEC.prog=1;setTimeout(function(){TEC.prog=0;tecCalc();},8000);}
   return TEC.r;}
 function _tecCol(sc){return sc>=2?'var(--accent)':sc===1?'#4ade80':sc===0?'var(--text3)':sc===-1?'#f59e0b':'var(--red)';}
@@ -13418,7 +13422,7 @@ function tecFiltro(f){TEC.filtro=f;tecRender();}
 function tecAjustes(){TEC.ab=!TEC.ab;tecRender();}
 async function tecGuardarCfg(){var C={};Object.keys(TEC_DEF).forEach(function(k){var e=document.getElementById('tec-c-'+k);if(e){var v=parseFloat(String(e.value).replace(',','.'));if(isFinite(v))C[k]=v;}});
   TEC.cfg=C;try{await sbSetConfig('tecnico',C);}catch(e){}TEC.r=null;try{localStorage.removeItem(_tecLS());}catch(e){}tecCalc(true);}
-function tecRender(){var pg=document.getElementById('page-recomendaciones');if(!pg)return;
+function tecRender(){if(!TEC_ON){var e0=document.getElementById('reco-tec');if(e0)e0.remove();return;}var pg=document.getElementById('page-recomendaciones');if(!pg)return;
   var c=document.getElementById('reco-tec');if(!c){c=document.createElement('div');c.id='reco-tec';var ref=document.getElementById('reco-extra');if(ref&&ref.nextSibling)pg.insertBefore(c,ref.nextSibling);else pg.insertBefore(c,pg.firstChild);}
   var D=_tecData(),C=_tecCfg();
   var h='<div class="card" style="padding:14px 16px;margin-bottom:1rem"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><span class="card-title">📡 Señales técnicas</span><span style="font-size:.66rem;color:var(--text3)">RSI · EMA '+C.sma+' · MACD · Koncorde — precios diarios en dólares</span>'+
@@ -13456,7 +13460,7 @@ function rsiVivo(t){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t];
   var sd=new Date();if(sd.getDay()===0||sd.getDay()===6||(sd.getHours()*60+sd.getMinutes())<10*60+30){do{sd.setDate(sd.getDate()-1);}while(sd.getDay()===0||sd.getDay()===6);}
   if(x.rw.d>=_balIso(sd))return null;
   var p=x.rw.c*(1+ch/100),d=p-x.rw.c,g=d>0?d:0,l=d<0?-d:0,ag=(x.rw.ag*13+g)/14,al=(x.rw.al*13+l)/14;return al?100-100/(1+ag/al):100;}
-function rsiBadge(t,rsiApp){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t],rv=null;try{rv=rsiVivo(t);}catch(e){}var r=rv!=null?rv:(x&&!x.sin&&x.rsi!=null)?x.rsi:(rsiApp!=null&&isFinite(rsiApp)?+rsiApp:null);if(r==null)return '';
+function rsiBadge(t,rsiApp){if(!TEC_ON)return '';var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t],rv=null;try{rv=rsiVivo(t);}catch(e){}var r=rv!=null?rv:(x&&!x.sin&&x.rsi!=null)?x.rsi:(rsiApp!=null&&isFinite(rsiApp)?+rsiApp:null);if(r==null)return '';
   var C=_tecCfg(),col,txt;if(r<=C.rsiB){col='var(--accent)';txt='barato';}else if(r>=C.rsiC){col='var(--red)';txt='caro';}else if(r>=C.rsiC-10){col='var(--orange,#ff9100)';txt='se está calentando';}else{col='var(--text3)';txt='neutral';}
   var tip='RSI '+Math.round(r)+' ('+txt+')'+(rv!=null?' · en vivo: último cierre + la variación de hoy':x&&x.f?' · al cierre del '+x.f.split('-').reverse().slice(0,2).join('/'):'')+'. Verde ≤ '+C.rsiB+' · naranja '+(C.rsiC-10)+'–'+C.rsiC+' · rojo ≥ '+C.rsiC+'.';
   return '<span class="nvf" title="'+tip+'" onclick="event.stopPropagation();tecModal(\''+t+'\')" style="cursor:pointer;border-color:'+col+';color:'+col+';font-weight:700">RSI '+Math.round(r)+'</span>';}
@@ -13479,7 +13483,7 @@ async function _tecSerieUna(t){TEC.ser=TEC.ser||{};if(TEC.ser[t]&&TEC.ser[t].wma
   TEC.ser[t]={d:S.map(function(z){return z.d;}),c:I.c,sma:I.sma,wma:I.wma,rsi:I.rsi,macd:I.macd,sig:I.sig,kmar:I.kmar,kmed:I.kmed,kver:I.kver,kaz:I.azul,us:!!Su};return TEC.ser[t];}
 function tecCerrar(){var m=document.getElementById('tec-modal');if(m)m.remove();try{if(TEC.ch)TEC.ch.destroy();}catch(e){}TEC.ch=null;document.removeEventListener('keydown',_tecEsc);}
 function _tecEsc(e){if(e.key==='Escape')tecCerrar();}
-async function tecModal(t){tecCerrar();var ov=document.createElement('div');ov.id='tec-modal';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px';
+async function tecModal(t){if(!TEC_ON)return;tecCerrar();var ov=document.createElement('div');ov.id='tec-modal';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px';
   ov.onclick=function(e){if(e.target===ov)tecCerrar();};document.addEventListener('keydown',_tecEsc);
   ov.innerHTML='<div id="tec-box" style="width:100%;max-width:1080px;background:var(--bg);border:1px solid var(--border2);border-radius:14px;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.5)"><div style="display:flex;align-items:center;gap:10px"><b style="font-size:1.05rem">📊 Señales técnicas · '+t+'</b><button class="btn btn-sm" style="margin-left:auto" onclick="tecCerrar()">✕</button></div><div style="padding:30px;text-align:center;color:var(--text3);font-size:.8rem">Bajando la historia de precios…</div></div>';
   document.body.appendChild(ov);TEC.mv=TEC.mv||'mm';
@@ -13603,7 +13607,7 @@ function divBadge(t){var D=null;try{D=_tecData();}catch(e){}var x=D&&D.R&&D.R[t]
 // en dólares de ese día. En cada recálculo se mide qué pasó 20 y 60 ruedas después (≈1 y 3 meses) con la serie diaria.
 // No se repite la misma señal (activo y dirección) si ya se guardó una en los 15 días anteriores.
 async function _tecSegCargar(){if(TEC.seg)return TEC.seg;try{var v=await sbGetConfig('tec_seg');TEC.seg=Array.isArray(v)?v:[];}catch(e){TEC.seg=[];}return TEC.seg;}
-async function _tecSegRegistrar(R){var L=await _tecSegCargar(),cambio=false;
+async function _tecSegRegistrar(R){if(!TEC_ON)return;var L=await _tecSegCargar(),cambio=false;
   Object.keys(R).forEach(function(t){var x=R[t];if(!x||x.sin||!x.cb||!x.cb.v)return;var S=TEC.ser&&TEC.ser[t];if(!S)return;var k=S.c.length-1;
     var ya=L.some(function(e){return e.t===t&&e.v===x.cb.v&&(new Date(x.f)-new Date(e.f))/864e5<15;});if(ya)return;
     L.push({t:t,f:x.f,v:x.cb.v,niv:x.cb.niv,txt:x.cb.txt,px:S.c[k],s:x.s||'',o:x.o||{}});cambio=true;});
