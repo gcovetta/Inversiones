@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=326, APP_VERSION_FECHA='06/11/2026';
+var APP_VERSION=327, APP_VERSION_FECHA='06/11/2026';
 var APP_CHANGELOG=[
+  'v327 | 2026-11-06 | Espacio del navegador: se borran solas las copias viejas de las señales técnicas (tec_v1 a tec_v6, que quedaban de versiones anteriores). Si igual queda poco lugar, se borran las copias que se vuelven a bajar solas (calendario de balances, noticias, índices) antes de avisar.',
   'v326 | 2026-11-06 | Señal combinada, acciones argentinas: nueva COMPRA ★★ cuando hay divergencia alcista junto con MACD compra fuerte o Koncorde ↑ (en el backtest +4,6% frente a lo normal a 3 meses, contra +3,4% de la combinada anterior). Si la compra MACD + Koncorde ya estaba y además hay divergencia, también pasa a ★★.',
   'v325 | 2026-11-06 | Divergencias RSI/MACD: alcista cuando el precio hace un mínimo más bajo y el RSI o el MACD uno más alto; bajista al revés con los máximos. Recuadro DIV ▲/▼ al lado del activo, tarjetas en el panel y backtest. Nuevo 📒 Seguimiento real en Recomendaciones: cada señal combinada que aparece se guarda con fecha y precio y se mide qué pasó al mes y a los 3 meses.',
   'v324 | 2026-11-06 | Señal combinada (según el backtest de 66 activos): recuadro COMPRA ★ / ★★ o VENTA ★ / ★★ al lado del activo, recuadro grande en el panel y columna en Recomendaciones. Argentinas: compra = MACD compra fuerte + Koncorde ↑ (★★ con WMA21 ↑). Cedears: compra = RSI ≤ 30 (★★ con MACD fuerte o Koncorde ↑). Todos: venta = MACD venta fuerte + Koncorde ↓ (★★ con montañas en pico). Cuenta si las señales aparecieron en las últimas 5 ruedas.',
@@ -200,7 +201,12 @@ var PFX=CFG.lsPrefix||('pt'+String(CFG.id||'x')+'_');
   ks.forEach(function(k){var v=localStorage.getItem(k);localStorage.removeItem(k);if(hecho||v==null)return;var nk='ptNYSE_'+k.slice(9);try{localStorage.removeItem(nk);localStorage.setItem(nk,v);}catch(e){}});
   if(!hecho)localStorage.setItem('ptNYSE_mig_pfx','1');}catch(e){}})();
 // Aviso si el espacio del navegador (compartido por las 5 carteras y el index) pasa del 80% de lo habitual (~5 millones de caracteres).
-setTimeout(function(){try{var n=0,i,k;for(i=0;i<localStorage.length;i++){k=localStorage.key(i);n+=k.length+(localStorage.getItem(k)||'').length;}
+// v327: se borran las copias viejas de las señales técnicas (cada cambio de versión dejaba la anterior: tec_v1…tec_v6).
+// Si igual queda poco lugar, se borran las copias que se vuelven a bajar solas (calendario de balances, noticias, índices, señales).
+setTimeout(function(){try{var n=0,i,k,cur=(typeof _tecLS==='function')?_tecLS():'',ks=[];for(i=0;i<localStorage.length;i++)ks.push(localStorage.key(i));
+  ks.forEach(function(k){if(k&&/_tec_v\d+$/.test(k)&&k!==cur&&(k.indexOf(PFX)===0?true:/^pt\w+_tec_v([0-6])$/.test(k)))localStorage.removeItem(k);});
+  var tam=function(){var t=0;for(var j=0;j<localStorage.length;j++){var q=localStorage.key(j);t+=q.length+(localStorage.getItem(q)||'').length;}return t;};n=tam();
+  if(n>4e6){['bal_cal_v2','gdc_nws_v1','gdc_nws_log_v1','idx_cache_v1'].forEach(function(q){localStorage.removeItem(q);});for(i=localStorage.length-1;i>=0;i--){k=localStorage.key(i);if(k&&/_tec_v\d+$/.test(k)&&k!==cur)localStorage.removeItem(k);}n=tam();}
   if(n>4e6)_errAnotar('Espacio del navegador casi lleno: '+(n/1e6).toFixed(1).replace('.',',')+' millones de caracteres de ~5. Puede dejar de guardar copias locales.','almacenamiento');}catch(e){}},15000);
 
 // ── Soporte coma como separador decimal ──────────────────────────────────
