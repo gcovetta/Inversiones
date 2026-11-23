@@ -21,10 +21,11 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=331, APP_VERSION_FECHA='23/11/2026';
+var APP_VERSION=332, APP_VERSION_FECHA='23/11/2026';
 var APP_CHANGELOG=[
-  'v331 | 2026-11-23 | Fix Cedears teóricos en feriado: ya no se ignoran subas de más de 25% (pasaba con NVDA +32%). Ahora se controla que sea la misma acción comparando el CCL implícito del cierre (BYMA vs EE.UU.) con el CCL de la app (±15%); si el Cedear no tiene ratio cargado, se acepta hasta ±60%.',
-  'v330 | 2026-11-23 | Solo GDC: cuando BYMA está cerrado por feriado y Wall Street opera, los Cedears se valúan a precio teórico: cierre del último día en BYMA × la variación de hoy de la acción en EE.UU. (Finnhub). Punto violeta en el activo, aviso "Feriado BYMA · Cedears teóricos" junto a la hora de actualización y la variación del día es la de EE.UU. Si una variación da más de 25% se ignora. Acciones argentinas y bonos quedan con el último cierre. Función nueva _cedTeoFeriado (llamada al final de fetchAllQuotes).',
+  'v332 | 2026-11-23 | Se quitan los Cedears a precio teórico en feriados de BYMA (v330-v331): en los feriados se vuelve a mostrar el último cierre de BYMA.',
+  'v331 | 2026-11-23 | Fix Cedears teóricos en feriado (control por CCL implícito). Quitado en v332.',
+  'v330 | 2026-11-23 | Solo GDC: Cedears a precio teórico en feriados de BYMA. Quitado en v332.',
   'v329 | 2026-11-06 | GDC en el celular: el botón "Abrir cartera completa" de la vista mini ahora abre la vista completa (igual que tocar "Ver todo"), no la vista simple.',
   'v328 | 2026-11-06 | El análisis técnico (señales, RSI, EMA200, MACD, Koncorde, divergencias, señal combinada y seguimiento real) queda solo en GDC. En Ana, Hilda, Juli y Omar no se calcula ni se muestra, y se borran sus copias en el navegador.',
   'v327 | 2026-11-06 | Espacio del navegador: se borran solas las copias viejas de las señales técnicas (tec_v1 a tec_v6, que quedaban de versiones anteriores). Si igual queda poco lugar, se borran las copias que se vuelven a bajar solas (calendario de balances, noticias, índices) antes de avisar.',
@@ -657,8 +658,8 @@ function _quoteAgeTxt(ts){
 function quoteHealthDot(q){
   if(!q||q.price==null||!q.source) return '';
   var stale=q.runId!=null&&q.runId!==_quoteRunId;
-  var colorVar=stale?'var(--red)':q.source==='teorico'?'#a78bfa':q.source==='data912'?'var(--accent)':q.source==='yahoo'?'var(--blue)':q.source==='finnhub'?'var(--orange)':'var(--blue)';
-  var label=stale?'No se pudo refrescar en el último intento':q.source==='teorico'?'Precio teórico (feriado BYMA): cierre '+(q.bymaPrice!=null?q.bymaPrice.toLocaleString('es-AR',{maximumFractionDigits:2}):'')+' × variación en EE.UU. '+(q.changePct>=0?'+':'')+(q.changePct||0).toFixed(2)+'%':q.source==='data912'?'Fuente: data912 (primaria)':q.source==='yahoo'?'Fuente: Yahoo Finance (fallback)':q.source==='finnhub'?'Fuente: Finnhub (fallback)':'Fuente: CAFCI / ArgentinaDatos';
+  var colorVar=stale?'var(--red)':q.source==='data912'?'var(--accent)':q.source==='yahoo'?'var(--blue)':q.source==='finnhub'?'var(--orange)':'var(--blue)';
+  var label=stale?'No se pudo refrescar en el último intento':q.source==='data912'?'Fuente: data912 (primaria)':q.source==='yahoo'?'Fuente: Yahoo Finance (fallback)':q.source==='finnhub'?'Fuente: Finnhub (fallback)':'Fuente: CAFCI / ArgentinaDatos';
   var age=q.ts?_quoteAgeTxt(q.ts):'';
   var title=label+(age?' — '+(stale?'último precio conocido '+age:'actualizado '+age):'');
   return '<span class="qhelp" style="width:6px;height:6px;border-radius:50%;margin-left:5px;vertical-align:middle;background:'+colorVar+(stale?';animation:pulse 1.4s infinite':'')+'"><span class="qhelp-tip">'+title.replace(/</g,'&lt;')+'</span></span>';
@@ -5719,63 +5720,6 @@ async function fetchAllQuotes(){
   if(CFG.rsi&&typeof fetchAllRSI==='function') fetchAllRSI();
   if(CFG.rsi&&typeof fetchAllTIR==='function') fetchAllTIR();
   if(typeof nwsAfterQuotes==='function') nwsAfterQuotes();
-  if(CFG.id==='gdc') _cedTeoFeriado();
-}
-
-// ─── Cedears a precio teórico en feriados de BYMA (solo GDC) ────────────────
-// Si hoy es día de semana pero feriado en Argentina, data912 devuelve el cierre del último día hábil.
-// Cada Cedear pasa a valer: ese cierre en pesos × (precio actual / cierre anterior) de la acción en EE.UU.
-// No usa ratio ni CCL (evita los errores de ratio faltante); el dólar queda el del último cierre.
-var _cedTeoBusy=false;
-function _nyFecha(ms){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(ms));}catch(e){return '';}}
-function _cedTeoAviso(n){
-  var l=document.getElementById('lupd');if(!l)return;
-  var b=document.getElementById('cedteo-aviso');
-  if(!n){if(b)b.remove();return;}
-  if(!b){b=document.createElement('span');b.id='cedteo-aviso';b.style.cssText='margin-left:6px;font-size:.62rem;color:#a78bfa;border:1px solid #a78bfa;border-radius:4px;padding:1px 5px;white-space:nowrap';l.parentNode.insertBefore(b,l.nextSibling);}
-  b.textContent='Feriado BYMA · '+n+' Cedears teóricos';
-  b.title='BYMA cerrado hoy. Los Cedears se valúan con el cierre del último día hábil en BYMA multiplicado por la variación de hoy de la acción en EE.UU. El dólar queda el del último cierre. Acciones argentinas y bonos: último cierre.';
-}
-async function _cedTeoFeriado(){
-  var hoy=_flujosHoyStr();
-  var dw=new Date().getDay();
-  if(dw===0||dw===6||!FERIADOS_AR.has(hoy)){_cedTeoAviso(0);return;}
-  if(_cedTeoBusy)return;_cedTeoBusy=true;
-  var sect=new Set(['nyse','europa','china','cripto']);
-  var pos=getPositions().filter(function(p){return p.qty>0.000001&&sect.has(getSector(p.ticker))&&!BRL_TICKERS.has(p.ticker);});
-  var run=_quoteRunId,n=0;
-  try{
-    for(var i=0;i<pos.length;i++){
-      if(run!==_quoteRunId)return;
-      var t=pos[i].ticker,q=quotes[t];
-      if(!q||!(q.price>0)||!q.fromByma)continue;
-      var base=q.teorico?q.bymaPrice:q.price;
-      try{
-        var r=await fetchWithTimeout(FBASE+'/quote?symbol='+encodeURIComponent(getFinnhubTicker(t))+'&token='+FKEY,{},8000);
-        if(r.ok){var d=await r.json();
-          // Solo si EE.UU. ya operó hoy (si no, c y pc son de días anteriores ya incluidos en el cierre de BYMA)
-          if(d&&d.c>0&&d.pc>0&&d.t&&_nyFecha(d.t*1000)===hoy){
-            var v=d.c/d.pc;
-            // Control: que sea la misma acción. Con ratio conocido, el CCL implícito del cierre (BYMA vs EE.UU.) tiene que estar a ±15% del CCL de la app; sin ratio, se acepta hasta ±60%.
-            var _rt=RATIOS_TABLE[BYMA_TO_NYSE[t]||t],_ok;
-            if(_rt>0&&CCL_HOY>0){_ok=Math.abs((base*_rt/d.pc)/CCL_HOY-1)<=0.15;}else{_ok=Math.abs(v-1)<=0.6;}
-            if(_ok){
-              quotes[t]={price:base*v,prevClose:base,changePct:(v-1)*100,fromByma:true,teorico:true,bymaPrice:base,usPrice:d.c};
-              _stampQuote(t,'teorico');n++;
-              if(n%4===0)renderPortfolio();
-            }
-          }
-        }
-      }catch(e){}
-      if(i<pos.length-1)await new Promise(function(res){setTimeout(res,1100);});
-    }
-  }finally{_cedTeoBusy=false;}
-  _cedTeoAviso(n);
-  if(n){
-    renderPortfolio();
-    (function(){var _d=document.getElementById('page-dashboard');if(_d&&_d.classList.contains('active'))setTimeout(renderDashboard,80);})();
-    try{localStorage.setItem((PFX+'q3'),JSON.stringify(quotes));localStorage.setItem((PFX+'q3_ts'),Date.now());}catch(e){}
-  }
 }
 
 // ─── RSI (14, método Wilder) ───────────────────────────────────────────────
