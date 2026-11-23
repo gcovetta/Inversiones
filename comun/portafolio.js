@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=330, APP_VERSION_FECHA='23/11/2026';
+var APP_VERSION=331, APP_VERSION_FECHA='23/11/2026';
 var APP_CHANGELOG=[
+  'v331 | 2026-11-23 | Fix Cedears teóricos en feriado: ya no se ignoran subas de más de 25% (pasaba con NVDA +32%). Ahora se controla que sea la misma acción comparando el CCL implícito del cierre (BYMA vs EE.UU.) con el CCL de la app (±15%); si el Cedear no tiene ratio cargado, se acepta hasta ±60%.',
   'v330 | 2026-11-23 | Solo GDC: cuando BYMA está cerrado por feriado y Wall Street opera, los Cedears se valúan a precio teórico: cierre del último día en BYMA × la variación de hoy de la acción en EE.UU. (Finnhub). Punto violeta en el activo, aviso "Feriado BYMA · Cedears teóricos" junto a la hora de actualización y la variación del día es la de EE.UU. Si una variación da más de 25% se ignora. Acciones argentinas y bonos quedan con el último cierre. Función nueva _cedTeoFeriado (llamada al final de fetchAllQuotes).',
   'v329 | 2026-11-06 | GDC en el celular: el botón "Abrir cartera completa" de la vista mini ahora abre la vista completa (igual que tocar "Ver todo"), no la vista simple.',
   'v328 | 2026-11-06 | El análisis técnico (señales, RSI, EMA200, MACD, Koncorde, divergencias, señal combinada y seguimiento real) queda solo en GDC. En Ana, Hilda, Juli y Omar no se calcula ni se muestra, y se borran sus copias en el navegador.',
@@ -5755,7 +5756,10 @@ async function _cedTeoFeriado(){
           // Solo si EE.UU. ya operó hoy (si no, c y pc son de días anteriores ya incluidos en el cierre de BYMA)
           if(d&&d.c>0&&d.pc>0&&d.t&&_nyFecha(d.t*1000)===hoy){
             var v=d.c/d.pc;
-            if(Math.abs(v-1)<=0.25){
+            // Control: que sea la misma acción. Con ratio conocido, el CCL implícito del cierre (BYMA vs EE.UU.) tiene que estar a ±15% del CCL de la app; sin ratio, se acepta hasta ±60%.
+            var _rt=RATIOS_TABLE[BYMA_TO_NYSE[t]||t],_ok;
+            if(_rt>0&&CCL_HOY>0){_ok=Math.abs((base*_rt/d.pc)/CCL_HOY-1)<=0.15;}else{_ok=Math.abs(v-1)<=0.6;}
+            if(_ok){
               quotes[t]={price:base*v,prevClose:base,changePct:(v-1)*100,fromByma:true,teorico:true,bymaPrice:base,usPrice:d.c};
               _stampQuote(t,'teorico');n++;
               if(n%4===0)renderPortfolio();
