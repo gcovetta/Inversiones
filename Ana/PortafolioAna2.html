@@ -97,6 +97,12 @@ button.arb-src.man{background:none;border:none;padding:0;color:#ffd600;cursor:po
 .arb-nom-v{font-weight:700;color:var(--text)}
 .arb-nom-c{font-size:.68rem;color:var(--text2)}
 .arb-nom-w{font-family:var(--sans);font-size:.62rem;color:#ffb74d;cursor:help}
+.arb-navdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#00c968;margin-left:6px;box-shadow:0 0 0 3px rgba(0,201,104,.25);vertical-align:middle}
+.arb-aviso{position:fixed;left:14px;bottom:14px;z-index:9000;max-width:min(420px,calc(100vw - 28px));background:var(--surface);border:1px solid #00c968;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.45);padding:.7rem .85rem;font-size:.8rem;color:var(--text);display:flex;flex-direction:column;gap:6px}
+.arb-aviso-tit{font-weight:700;color:#00c968}
+.arb-aviso-item{display:flex;flex-direction:column;gap:1px;line-height:1.35}
+.arb-aviso-item span{font-size:.72rem;color:var(--text2)}
+.arb-aviso-acc{display:flex;gap:6px;justify-content:flex-end;margin-top:2px}
 .arb-input-name{font-weight:700;font-size:.81rem;color:var(--text);text-align:center}
 .topbar{display:flex;align-items:center;gap:0;padding:0 1.2rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:.68rem;font-family:var(--mono);color:var(--text3);flex-wrap:wrap;flex-shrink:0;height:32px}
 .topbar-item{display:flex;align-items:center;gap:.3rem;padding:0 .85rem;border-right:1px solid var(--border);height:100%}
@@ -1264,7 +1270,7 @@ window.PORTFOLIO_CONFIG={"vistaNueva": true, "persona": "Ana", "comisionBonos": 
 };
 </script>
 <script src="../comun/datos.js?d=6"></script>
-<script src="../comun/portafolio.min.js?v=338"></script>
+<script src="../comun/portafolio.min.js?v=339"></script>
 <script>
 // ─── Funciones propias de Ana (pisan las del código común) ───
 // comparación de posiciones con Cocos e importador de dividendos de Veta con vista previa

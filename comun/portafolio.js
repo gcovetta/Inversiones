@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=338, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=339, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v339 | 2026-11-24 | Arbitraje: aviso en el portafolio cuando se cumple una regla de ida o vuelta (fila de 24h con puntas en vivo, revisa cada minuto aunque la solapa esté cerrada). Cartel abajo a la izquierda con qué hacer y cuántos nominales, punto verde en el menú y notificación del navegador si la app está en segundo plano y tenés los avisos activados.',
   'v338 | 2026-11-24 | Arbitraje: se saca el ratio objetivo del encabezado (ya lo dan la ida y la vuelta) y la flecha. La regla muestra la tenencia del bono en el que estás y un % a rotar; cada plazo calcula cuántos nominales vender y cuántos comprar aprox. (con comisiones), y avisa si la punta no alcanza.',
   'v337 | 2026-11-24 | Arbitraje: la fila de 24h se completa sola con las puntas de data912 cruzadas según la regla (ida: vendedora de A / compradora de B; vuelta: compradora de A / vendedora de B), con la cantidad de cada punta. Se actualiza cada minuto con la solapa abierta. Si escribís otro precio queda manual; ↺ lo vuelve a automático. CI sigue manual.',
   'v336 | 2026-11-24 | Arbitraje: regla de ida y vuelta por par (Estoy en A/B, Ida → A si ratio < X, Vuelta → B si ratio > Y). Voy automático, distancia al gatillo, banda con el ratio de cada plazo y neto del ciclo después de comisiones (tasas de Pases). Reemplaza la condición por fila de v334.',
@@ -1104,7 +1105,7 @@ function showPage(id,btn){
   if(id==='tracker'){ initTracker(); try{dnRender();}catch(e){} }
   if(id==='dividendos') divPopulateSelect();
   if(id==='movimientos') resetMFechaHoy();
-  if(id==='arbitraje') arbRender();
+  if(id==='arbitraje'){ arbRender(); var _av=document.getElementById('arb-aviso'); if(_av) _av.remove(); }
   if(id==='rotaciones') rotRender();
   if(id==='balances') balRender();
   if(id==='evolucion') evoRender();
@@ -6513,7 +6514,7 @@ function arbApplyPuntas(pi){
   if(cambio) arbSave();
   arbRenderRatios(pi);
 }
-function arbApplyPuntasAll(){ ARB_PAIRS.forEach(function(_,pi){ arbApplyPuntas(pi); }); arbPuntasBar(); }
+function arbApplyPuntasAll(){ ARB_PAIRS.forEach(function(_,pi){ arbApplyPuntas(pi); }); arbPuntasBar(); try{arbChequearAvisos();}catch(e){} }
 function arbSrcHtml(pi,ri,L){
   var pair=ARB_PAIRS[pi], r=pair.rows[ri];
   if(!arbEsAuto(r)) return '';
@@ -6532,13 +6533,88 @@ function arbVolverAuto(pi,ri,L){
   var inp=document.getElementById('arb-p'+L+'-'+pi+'-'+ri);
   if(inp) inp.value=ARB_PAIRS[pi].rows[ri]['precio'+L]||'';
 }
+// Corre siempre (no solo con la solapa abierta) para poder avisar en el portafolio.
+function arbHayReglas(){ return ARB_PAIRS.some(function(p){ return !isNaN(arbRule(p).trig); }); }
 function arbPuntasAuto(){
   if(_arbPuntasTimer) return;
   _arbPuntasTimer=setInterval(function(){
     var pg=document.getElementById('page-arbitraje');
-    if(pg&&pg.classList.contains('active')&&!document.hidden) arbFetchPuntas(true);
+    var abierta=pg&&pg.classList.contains('active');
+    var notif=typeof Notification!=='undefined'&&Notification.permission==='granted';
+    if(document.hidden&&!notif) return;
+    if(abierta||arbHayReglas()) arbFetchPuntas(true);
   },60000);
 }
+
+// ── 🔔 Aviso en el portafolio cuando se cumple una regla (solo filas de 24h, con puntas en vivo) ──
+var _arbAvisoPrev={}, _arbAvisoCerrado={};
+function arbChequearAvisos(){
+  var lista=[];
+  ARB_PAIRS.forEach(function(pair,pi){
+    var R=arbRule(pair); if(isNaN(R.trig)) return;
+    pair.rows.forEach(function(r,ri){
+      if(!arbEsAuto(r)) return;
+      var ratio=r.precioB>0?r.precioA/r.precioB*100:0;
+      var e=arbRowEval(pair,ratio);
+      var k=pi+'|'+ri+'|'+arbEstoy(pair)+'|'+pair.a+'/'+pair.b+'|'+(pair.ida||'')+'|'+(pair.vuelta||'');
+      if(e.est==='ok') lista.push({k:k,pi:pi,pair:pair,row:r,ratio:ratio,R:R,nuevo:!_arbAvisoPrev[k]});
+    });
+  });
+  var vigentes={}; lista.forEach(function(x){vigentes[x.k]=1;});
+  Object.keys(_arbAvisoCerrado).forEach(function(k){ if(!vigentes[k]) delete _arbAvisoCerrado[k]; });
+  var nuevos=lista.filter(function(x){return x.nuevo;});
+  _arbAvisoPrev=vigentes;
+  arbAvisoPintar(lista.filter(function(x){return !_arbAvisoCerrado[x.k];}));
+  if(nuevos.length) arbAvisoNotificar(nuevos);
+}
+function arbAvisoTexto(x){
+  var f=function(n){return n.toFixed(2).replace('.',',');};
+  var p=x.pair, ida=x.R.enB;
+  return (ida?'Ida':'Vuelta')+' '+p.a+'/'+p.b+': ratio '+f(x.ratio)+'% '+(ida?'<':'>')+' '+f(x.R.trig)+' → pasate a '+(ida?p.a:p.b);
+}
+function arbAvisoPintar(lista){
+  var nav=document.querySelector('.nav-item[onclick*="arbitraje"]');
+  if(nav){
+    var dot=nav.querySelector('.arb-navdot');
+    if(lista.length&&!dot){ dot=document.createElement('span'); dot.className='arb-navdot'; dot.title='Hay una regla de arbitraje que se cumple'; nav.appendChild(dot); }
+    if(!lista.length&&dot) dot.remove();
+  }
+  var box=document.getElementById('arb-aviso');
+  var pg=document.getElementById('page-arbitraje');
+  if(!lista.length||(pg&&pg.classList.contains('active'))){ if(box) box.remove(); return; }
+  if(!box){ box=document.createElement('div'); box.id='arb-aviso'; box.className='arb-aviso'; document.body.appendChild(box); }
+  var h='<div class="arb-aviso-tit">⇄ Arbitraje: se cumple '+(lista.length>1?lista.length+' reglas':'una regla')+'</div>';
+  lista.slice(0,4).forEach(function(x){
+    var n=arbNominales(x.pair,x.row);
+    h+='<div class="arb-aviso-item"><b>'+arbAvisoTexto(x).replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</b>'+(n.txt&&n.txt.indexOf('Vendo')===0?'<span>'+n.txt+(n.sub?' '+n.sub:'')+'</span>':'')+'</div>';
+  });
+  h+='<div class="arb-aviso-acc"><button class="btn btn-sm btn-a" onclick="arbAvisoVer()">Ver en Arbitraje</button><button class="btn btn-sm" onclick="arbAvisoCerrar()">Cerrar</button></div>';
+  box.innerHTML=h;
+  box._lista=lista;
+}
+function arbAvisoVer(){
+  var nav=document.querySelector('.nav-item[onclick*="arbitraje"]');
+  try{ showPage('arbitraje',nav); }catch(e){}
+  var box=document.getElementById('arb-aviso'); if(box) box.remove();
+}
+// Cerrar lo oculta hasta que la condición deje de cumplirse y se vuelva a dar
+function arbAvisoCerrar(){
+  var box=document.getElementById('arb-aviso');
+  if(box&&box._lista) box._lista.forEach(function(x){_arbAvisoCerrado[x.k]=1;});
+  if(box) box.remove();
+}
+async function arbAvisoNotificar(nuevos){
+  if(typeof Notification==='undefined'||Notification.permission!=='granted') return;
+  if(!document.hidden) return;
+  var body=nuevos.map(arbAvisoTexto).join('\n');
+  try{
+    var reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration('../');
+    if(reg&&reg.showNotification){ await reg.showNotification('⇄ Arbitraje',{body:body,tag:'arbitraje'}); return; }
+  }catch(e){}
+  try{ new Notification('⇄ Arbitraje',{body:body,tag:'arbitraje'}); }catch(e){}
+}
+// Arranca solo al cargar la página
+setTimeout(function(){ try{ arbLoad(); arbPuntasAuto(); if(arbHayReglas()) arbFetchPuntas(true); }catch(e){} },6000);
 
 // Umbral de ida/vuelta: como factor (1,082) o como % (108,2). Devuelve el % o NaN.
 function arbCondVal(s){
