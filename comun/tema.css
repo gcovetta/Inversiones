@@ -16,6 +16,15 @@ html[data-tema="dia"] .arb-row.arb-no{background:#fff1d6!important}
 html[data-tema="dia"] .arb-opsw button.on{background:#2457c5;color:#fff}
 html[data-tema="dia"] .arb-estado.ok{background:#0a8f4a;color:#fff}
 html[data-tema="dia"] .arb-estado.no{background:#d9480f;color:#fff}
+html[data-tema="dia"] .arb-rule{background:#eef3fb}
+html[data-tema="dia"] .arb-leg.on{border-color:#2457c5;background:#e3ecfb}
+html[data-tema="dia"] .arb-neto.pos{background:#0a8f4a;color:#fff}
+html[data-tema="dia"] .arb-neto.neg{background:#d9480f;color:#fff}
+html[data-tema="dia"] .arb-neto.err{background:#fde3e3;color:#b71c1c}
+html[data-tema="dia"] .arb-bm.ida{color:#0a8f4a}
+html[data-tema="dia"] .arb-bm.vta{color:#2457c5}
+html[data-tema="dia"] .arb-voy.a{color:#6a3fd1}
+html[data-tema="dia"] .arb-voy.b{color:#2457c5}
 html[data-tema="dia"] .qhelp .qhelp-tip,html[data-tema="dia"] #nv-tipbox{background:#ffffff!important;color:var(--text)!important;box-shadow:0 6px 20px rgba(20,33,61,.18)}
 html[data-tema="dia"] .btn-a,html[data-tema="dia"] .btn-a:hover{color:#ffffff}
 html[data-tema="dia"] .btn-d:hover{background:#fde3e3}
