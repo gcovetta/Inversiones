@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=332, APP_VERSION_FECHA='23/11/2026';
+var APP_VERSION=333, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v333 | 2026-11-24 | Solapa Arbitraje: letras ~30% más grandes en la calculadora de arbitraje (y en la tabla de Pases de GDC); columnas un poco más anchas para que entren los números.',
   'v332 | 2026-11-23 | Se quitan los Cedears a precio teórico en feriados de BYMA (v330-v331): en los feriados se vuelve a mostrar el último cierre de BYMA.',
   'v331 | 2026-11-23 | Fix Cedears teóricos en feriado (control por CCL implícito). Quitado en v332.',
   'v330 | 2026-11-23 | Solo GDC: Cedears a precio teórico en feriados de BYMA. Quitado en v332.',
@@ -6463,16 +6464,16 @@ function arbRender(){
     html+='<div class="arb-pair-header">';
     html+='<div class="arb-label" style="border-radius:var(--rsm) 0 0 0"></div>';
     html+='<div class="arb-label" style="flex-direction:column;gap:2px">';
-    html+='<input class="arb-input arb-input-name" value="'+pair.a+'" onchange="arbUpdate('+pi+',-1,\'a\',this.value)" style="color:#a78bfa;width:90px" oninput="arbUpdate('+pi+',-1,\'a\',this.value)">';
+    html+='<input class="arb-input arb-input-name" value="'+pair.a+'" onchange="arbUpdate('+pi+',-1,\'a\',this.value)" style="color:#a78bfa;width:115px" oninput="arbUpdate('+pi+',-1,\'a\',this.value)">';
     html+='</div>';
     html+='<div class="arb-label" style="flex-direction:column;gap:2px">';
-    html+='<input class="arb-input arb-input-name" value="'+pair.b+'" onchange="arbUpdate('+pi+',-1,\'b\',this.value)" style="color:#448aff;width:90px" oninput="arbUpdate('+pi+',-1,\'b\',this.value)">';
+    html+='<input class="arb-input arb-input-name" value="'+pair.b+'" onchange="arbUpdate('+pi+',-1,\'b\',this.value)" style="color:#448aff;width:115px" oninput="arbUpdate('+pi+',-1,\'b\',this.value)">';
     html+='</div>';
-    html+='<div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="'+pair.pctObj+'%" style="width:72px;color:#ffd600;font-weight:700" oninput="arbUpdate('+pi+',-1,\'pctObj\',this.value.replace(\'%\',\'\'))"></div>';
+    html+='<div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="'+pair.pctObj+'%" style="width:90px;color:#ffd600;font-weight:700" oninput="arbUpdate('+pi+',-1,\'pctObj\',this.value.replace(\'%\',\'\'))"></div>';
     html+='<div class="arb-label"></div>';
     html+='<div class="arb-label">Condición</div>';
     html+='<div class="arb-label">Voy</div>';
-    html+='<div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair('+pi+')" style="padding:1px 5px;font-size:.6rem;margin-left:4px" title="Eliminar par">✕</button></div>';
+    html+='<div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair('+pi+')" style="padding:1px 5px;font-size:.78rem;margin-left:4px" title="Eliminar par">✕</button></div>';
     html+='</div>';
 
     pair.rows.forEach(function(row, ri){
@@ -6482,7 +6483,7 @@ function arbRender(){
       var isLast=(ri===pair.rows.length-1)&&true;
       var rowBg=ri%2===0?'':'background:rgba(255,255,255,.025)';
       html+='<div class="arb-row" style="'+rowBg+'">';
-      html+='<div class="arb-cell arb-plazo"><input class="arb-input" value="'+row.plazo+'" style="width:36px;font-weight:700;color:var(--text2)" oninput="arbUpdate('+pi+','+ri+',\'plazo\',this.value)"></div>';
+      html+='<div class="arb-cell arb-plazo"><input class="arb-input" value="'+row.plazo+'" style="width:46px;font-weight:700;color:var(--text2)" oninput="arbUpdate('+pi+','+ri+',\'plazo\',this.value)"></div>';
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioA||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioA\',this.value)" style="color:#a78bfa"></div>';
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioB||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioB\',this.value)" style="color:#448aff"></div>';
       html+='<div class="arb-cell" id="arb-ratio-'+pi+'-'+ri+'"><span class="'+cls+'">'+(ratio>0?ratio.toFixed(2)+'%':'—')+'</span></div>';
@@ -6494,7 +6495,7 @@ function arbRender(){
     });
 
     html+='<div style="text-align:right;margin-top:3px;margin-bottom:2px">';
-    html+='<button class="btn btn-sm" onclick="arbAddRow('+pi+')" style="font-size:.6rem;padding:2px 8px">+ plazo</button>';
+    html+='<button class="btn btn-sm" onclick="arbAddRow('+pi+')" style="font-size:.78rem;padding:2px 8px">+ plazo</button>';
     html+='</div>';
 
     html+='</div>';
