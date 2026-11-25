@@ -21,8 +21,10 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=336, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=338, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v338 | 2026-11-24 | Arbitraje: se saca el ratio objetivo del encabezado (ya lo dan la ida y la vuelta) y la flecha. La regla muestra la tenencia del bono en el que estás y un % a rotar; cada plazo calcula cuántos nominales vender y cuántos comprar aprox. (con comisiones), y avisa si la punta no alcanza.',
+  'v337 | 2026-11-24 | Arbitraje: la fila de 24h se completa sola con las puntas de data912 cruzadas según la regla (ida: vendedora de A / compradora de B; vuelta: compradora de A / vendedora de B), con la cantidad de cada punta. Se actualiza cada minuto con la solapa abierta. Si escribís otro precio queda manual; ↺ lo vuelve a automático. CI sigue manual.',
   'v336 | 2026-11-24 | Arbitraje: regla de ida y vuelta por par (Estoy en A/B, Ida → A si ratio < X, Vuelta → B si ratio > Y). Voy automático, distancia al gatillo, banda con el ratio de cada plazo y neto del ciclo después de comisiones (tasas de Pases). Reemplaza la condición por fila de v334.',
   'v335 | 2026-11-24 | Arbitraje: la calculadora (y Pases en GDC) ya no ocupa todo el ancho de la pantalla; las tarjetas se ajustan al tamaño de la tabla.',
   'v334 | 2026-11-24 | Arbitraje: en Condición se elige si se busca un ratio mayor (>) o menor (<) al valor. Si se cumple la fila se pinta de verde, si no de naranja; nueva columna Estado. El valor se lee como ratio (1,025 = 102,5%).',
@@ -6424,14 +6426,118 @@ function arbUpdate(pi, ri, field, val){
   if(ri===-1){
     if(field==='a'||field==='b'){ pair[field]=val.trim().toUpperCase(); arbSave(); arbRenderRatios(pi); return; }
     else if(field==='pctObj') pair.pctObj=parseFloat(val)||100;
-    else if(field==='ida'||field==='vuelta') pair[field]=val;
+    else if(field==='ida'||field==='vuelta'||field==='rotar') pair[field]=val;
   } else {
     var r=pair.rows[ri];
-    if(field==='precioA'||field==='precioB') r[field]=parseFloat(val)||0;
+    if(field==='precioA'||field==='precioB'){
+      r[field]=arbNum(val);
+      if(arbEsAuto(r)){ r[field==='precioA'?'manualA':'manualB']=true; arbSrcUpdate(pi,ri); }
+    }
     else r[field]=val;
   }
   arbSave();
   arbRenderRatios(pi);
+}
+// Número en formato argentino (89.150,5) o simple (89150.5)
+function arbNum(v){
+  var s=String(v==null?'':v).trim().replace(/[$\s]/g,'');
+  if(!s) return 0;
+  if(s.indexOf(',')>=0) return parseFloat(s.replace(/\./g,'').replace(',','.'))||0;
+  var p=s.split('.');
+  if(p.length>1&&p[p.length-1].length===3) return parseFloat(p.join(''))||0;
+  return parseFloat(s)||0;
+}
+
+// ── Puntas en vivo (data912): la fila de 24h se completa sola con el cruce que corresponde ──
+// Ida (estoy en B): vendo B a la compradora (bid) y compro A a la vendedora (ask).
+// Vuelta (estoy en A): vendo A a la compradora (bid) y compro B a la vendedora (ask).
+// Si el usuario escribe un precio, esa punta queda manual hasta que toque ↺.
+var ARB_PUNTAS={}, ARB_PUNTAS_TS=0, ARB_PUNTAS_ERR='', _arbPuntasBusy=false, _arbPuntasTimer=null;
+function arbEsAuto(row){ return /^24/i.test(String(row.plazo||'').trim()); }
+async function arbFetchPuntas(force){
+  if(_arbPuntasBusy) return;
+  if(!force&&ARB_PUNTAS_TS&&Date.now()-ARB_PUNTAS_TS<45000){ arbApplyPuntasAll(); return; }
+  _arbPuntasBusy=true; arbPuntasBar('Buscando puntas…');
+  var urls=['arg_bonds','arg_corp','arg_notes','arg_stocks','arg_cedears'].map(function(k){return 'https://data912.com/live/'+k;});
+  try{
+    var res=await Promise.allSettled(urls.map(function(u){
+      return fetchWithTimeout(u,{headers:{'Accept':'application/json'}},8000).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+    }));
+    var m={}, ok=0;
+    res.forEach(function(x){
+      if(x.status!=='fulfilled'||!Array.isArray(x.value)) return;
+      ok++;
+      x.value.forEach(function(it){
+        if(!it||!it.symbol) return;
+        var t=String(it.symbol).toUpperCase();
+        if(m[t]) return;
+        m[t]={ bid:parseFloat(it.px_bid)||0, ask:parseFloat(it.px_ask)||0, qb:parseFloat(it.q_bid)||0, qa:parseFloat(it.q_ask)||0, c:parseFloat(it.c)||0 };
+      });
+    });
+    if(ok){ ARB_PUNTAS=m; ARB_PUNTAS_TS=Date.now(); ARB_PUNTAS_ERR=''; }
+    else ARB_PUNTAS_ERR='No se pudieron traer las puntas';
+  }catch(e){ ARB_PUNTAS_ERR='No se pudieron traer las puntas'; }
+  _arbPuntasBusy=false;
+  arbApplyPuntasAll();
+}
+function arbPuntasBar(msg){
+  var el=document.getElementById('arb-puntas-bar'); if(!el) return;
+  var hora=ARB_PUNTAS_TS?new Date(ARB_PUNTAS_TS).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
+  var t=msg||(ARB_PUNTAS_ERR?ARB_PUNTAS_ERR:(hora?'Puntas 24h de data912 · '+hora:'Puntas 24h: sin datos todavía'));
+  el.innerHTML='<span class="'+(ARB_PUNTAS_ERR&&!msg?'err':'')+'">'+t+'</span><button class="btn btn-sm" onclick="arbFetchPuntas(true)" title="Actualizar puntas">↻</button><span class="arb-puntas-ayuda">La fila de 24h se completa sola con la punta que corresponde (vendo a la compradora, compro a la vendedora). Si escribís otro precio queda manual; ↺ lo vuelve a automático.</span>';
+}
+// Punta que corresponde a cada lado según la regla activa
+function arbPuntaLado(pair, lado){
+  var enB=arbEstoy(pair)==='B';
+  var p=ARB_PUNTAS[String(lado==='A'?pair.a:pair.b).toUpperCase()];
+  // enB: A se compra (ask), B se vende (bid). enA: A se vende (bid), B se compra (ask).
+  var compra=(lado==='A')===enB;
+  if(!p) return { px:0, q:0, tipo:compra?'vend.':'compr.' };
+  return { px:compra?p.ask:p.bid, q:compra?p.qa:p.qb, tipo:compra?'vend.':'compr.' };
+}
+function arbApplyPuntas(pi){
+  var pair=ARB_PAIRS[pi], cambio=false;
+  pair.rows.forEach(function(r,ri){
+    if(!arbEsAuto(r)) return;
+    ['A','B'].forEach(function(L){
+      if(r['manual'+L]) return;
+      var pt=arbPuntaLado(pair,L);
+      if(pt.px>0&&r['precio'+L]!==pt.px){
+        r['precio'+L]=pt.px; cambio=true;
+        var inp=document.getElementById('arb-p'+L+'-'+pi+'-'+ri);
+        if(inp&&document.activeElement!==inp) inp.value=pt.px;
+      }
+    });
+    arbSrcUpdate(pi,ri);
+  });
+  if(cambio) arbSave();
+  arbRenderRatios(pi);
+}
+function arbApplyPuntasAll(){ ARB_PAIRS.forEach(function(_,pi){ arbApplyPuntas(pi); }); arbPuntasBar(); }
+function arbSrcHtml(pi,ri,L){
+  var pair=ARB_PAIRS[pi], r=pair.rows[ri];
+  if(!arbEsAuto(r)) return '';
+  if(r['manual'+L]) return '<button class="arb-src man" onclick="arbVolverAuto('+pi+','+ri+',\''+L+'\')" title="Volver a la punta automática">manual ↺</button>';
+  var pt=arbPuntaLado(pair,L);
+  if(!(pt.px>0)) return '<span class="arb-src off">sin punta</span>';
+  return '<span class="arb-src" title="Punta '+(pt.tipo==='vend.'?'vendedora':'compradora')+' de data912">'+pt.tipo+(pt.q>0?' · '+Math.round(pt.q).toLocaleString('es-AR'):'')+'</span>';
+}
+function arbSrcUpdate(pi,ri){
+  ['A','B'].forEach(function(L){ var el=document.getElementById('arb-s'+L+'-'+pi+'-'+ri); if(el) el.innerHTML=arbSrcHtml(pi,ri,L); });
+}
+function arbVolverAuto(pi,ri,L){
+  ARB_PAIRS[pi].rows[ri]['manual'+L]=false;
+  arbSave();
+  arbApplyPuntas(pi);
+  var inp=document.getElementById('arb-p'+L+'-'+pi+'-'+ri);
+  if(inp) inp.value=ARB_PAIRS[pi].rows[ri]['precio'+L]||'';
+}
+function arbPuntasAuto(){
+  if(_arbPuntasTimer) return;
+  _arbPuntasTimer=setInterval(function(){
+    var pg=document.getElementById('page-arbitraje');
+    if(pg&&pg.classList.contains('active')&&!document.hidden) arbFetchPuntas(true);
+  },60000);
 }
 
 // Umbral de ida/vuelta: como factor (1,082) o como % (108,2). Devuelve el % o NaN.
@@ -6494,10 +6600,43 @@ function arbBandHtml(pi){
   return h;
 }
 
+// Tenencia actual del ticker en esta cartera (VN)
+function arbTenencia(t){
+  t=String(t||'').toUpperCase(); var q=0;
+  try{ getPositions().forEach(function(p){ if(String(p.ticker||'').toUpperCase()===t) q+=p.qty||0; }); }catch(e){}
+  return q>0?q:0;
+}
+function arbRotarPct(pair){ var v=parseFloat(String(pair.rotar==null?'100':pair.rotar).replace(',','.')); return isNaN(v)?NaN:Math.max(0,Math.min(100,v)); }
+// Nominales a vender del bono en el que estoy y nominales aproximados a comprar del otro, con los precios de la fila
+function arbNominales(pair, row){
+  var enB=arbEstoy(pair)==='B', tv=enB?pair.b:pair.a, tc=enB?pair.a:pair.b;
+  var ten=arbTenencia(tv), pct=arbRotarPct(pair);
+  if(!(ten>0)) return { txt:'Sin tenencia de '+tv, sub:'', warn:'' };
+  if(isNaN(pct)) return { txt:'Cargá el %', sub:'', warn:'' };
+  var vende=Math.floor(ten*pct/100);
+  var pv=enB?row.precioB:row.precioA, pc=enB?row.precioA:row.precioB, c=arbCostoOp(pair)/100;
+  var compra=(pv>0&&pc>0)?Math.floor(vende*pv*(1-c)/(pc*(1+c))):0;
+  var f=function(n){return Math.round(n).toLocaleString('es-AR');};
+  var warn='';
+  if(arbEsAuto(row)){
+    var sv=arbPuntaLado(pair,enB?'B':'A'), sc=arbPuntaLado(pair,enB?'A':'B');
+    if((sv.q>0&&vende>sv.q)||(sc.q>0&&compra>sc.q)) warn='La cantidad de la punta no alcanza para toda la operación';
+  }
+  return { txt:'Vendo '+f(vende)+' '+tv, sub:compra>0?'→ compro ≈ '+f(compra)+' '+tc:'', warn:warn };
+}
+function arbNomHtml(pair,row){
+  var n=arbNominales(pair,row);
+  return '<span class="arb-nom-v">'+n.txt+'</span>'+(n.sub?'<span class="arb-nom-c">'+n.sub+'</span>':'')+(n.warn?'<span class="arb-nom-w" title="'+n.warn+'">⚠ punta chica</span>':'');
+}
+function arbTenTxt(pair){
+  var t=arbEstoy(pair)==='B'?pair.b:pair.a;
+  return 'Tengo <b>'+Math.round(arbTenencia(t)).toLocaleString('es-AR')+'</b> VN de '+t;
+}
+
 function arbSetEstoy(pi, lado){
   ARB_PAIRS[pi].estoy=(lado==='A'?'A':'B');
   arbSave();
-  arbRenderRatios(pi);
+  arbApplyPuntas(pi);
 }
 
 function arbRatioClass(ratio, target){
@@ -6519,16 +6658,12 @@ function arbRenderRatios(pi){
   var n=arbNeto(pair);
   set('arb-neto-'+pi,function(el){el.className='arb-neto '+n.cls; el.textContent=n.txt; el.title=n.tip;});
   set('arb-band-'+pi,function(el){el.innerHTML=arbBandHtml(pi);});
+  set('arb-ten-'+pi,function(el){el.innerHTML=arbTenTxt(pair);});
   pair.rows.forEach(function(row, ri){
     var ratio=row.precioB>0?(row.precioA/row.precioB*100):0;
-    var cls=arbRatioClass(ratio, pair.pctObj);
-    set('arb-ratio-'+pi+'-'+ri,function(el){ el.innerHTML='<span class="'+cls+'">'+(ratio>0?ratio.toFixed(2)+'%':'—')+'</span>'; });
-    set('arb-arrow-'+pi+'-'+ri,function(el){
-      var above=ratio>=(pair.pctObj||100);
-      el.textContent=ratio>0?(above?'>':'<'):'';
-      el.className='arb-cell arb-op '+(above?'sell':'buy');
-    });
     var e=arbRowEval(pair, ratio);
+    set('arb-ratio-'+pi+'-'+ri,function(el){ el.innerHTML='<span class="arb-ratio-'+e.est+'">'+(ratio>0?ratio.toFixed(2).replace('.',',')+'%':'—')+'</span>'; });
+    set('arb-nom-'+pi+'-'+ri,function(el){el.innerHTML=arbNomHtml(pair,row);});
     set('arb-row-'+pi+'-'+ri,function(el){el.className='arb-row arb-'+e.est;});
     set('arb-dist-'+pi+'-'+ri,function(el){el.textContent=e.dist;});
     set('arb-voy-'+pi+'-'+ri,function(el){el.textContent=e.voy?'→ '+e.voy:'—'; el.className='arb-cell arb-voy'+(e.voy?(e.voy===pair.a?' a':' b'):'');});
@@ -6541,7 +6676,7 @@ function arbRender(){
   var container=document.getElementById('arb-container');
   if(!container)return;
   var esc=function(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
-  var html='';
+  var html='<div id="arb-puntas-bar" class="arb-puntas-bar"></div>';
   ARB_PAIRS.forEach(function(pair, pi){
     var enB=arbEstoy(pair)==='B';
     html+='<div class="arb-wrap">';
@@ -6553,11 +6688,10 @@ function arbRender(){
     html+='<div class="arb-label" style="flex-direction:column;gap:2px">';
     html+='<input class="arb-input arb-input-name" value="'+esc(pair.b)+'" onchange="arbUpdate('+pi+',-1,\'b\',this.value)" style="color:#448aff;width:115px" oninput="arbUpdate('+pi+',-1,\'b\',this.value)">';
     html+='</div>';
-    html+='<div class="arb-label" style="flex-direction:column;gap:2px">Ratio<br><input class="arb-input" value="'+pair.pctObj+'%" style="width:90px;color:#ffd600;font-weight:700" oninput="arbUpdate('+pi+',-1,\'pctObj\',this.value.replace(\'%\',\'\'))"></div>';
-    html+='<div class="arb-label"></div>';
+    html+='<div class="arb-label">Ratio</div>';
     html+='<div class="arb-label">Distancia al gatillo</div>';
     html+='<div class="arb-label">Voy</div>';
-    html+='<div class="arb-label">Nominales</div>';
+    html+='<div class="arb-label">Vendo → compro</div>';
     html+='<div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Estado<button class="btn btn-d btn-sm" onclick="arbRemovePair('+pi+')" style="padding:1px 5px;font-size:.78rem;margin-left:4px" title="Eliminar par">✕</button></div>';
     html+='</div>';
 
@@ -6569,25 +6703,23 @@ function arbRender(){
     html+='<button id="arb-estA-'+pi+'" class="'+(enB?'':'on')+'" onclick="arbSetEstoy('+pi+',\'A\')" title="Hoy tengo este bono">'+esc(pair.a)+'</button></span>';
     html+='<label id="arb-legI-'+pi+'" class="arb-leg '+(enB?'on':'off')+'"><b>Ida</b> → <span id="arb-legIt-'+pi+'">'+esc(pair.a)+'</span> si ratio &lt; <input class="arb-input" value="'+esc(pair.ida)+'" placeholder="108,2" oninput="arbUpdate('+pi+',-1,\'ida\',this.value)"></label>';
     html+='<label id="arb-legV-'+pi+'" class="arb-leg '+(enB?'off':'on')+'"><b>Vuelta</b> → <span id="arb-legVt-'+pi+'">'+esc(pair.b)+'</span> si ratio &gt; <input class="arb-input" value="'+esc(pair.vuelta)+'" placeholder="108,5" oninput="arbUpdate('+pi+',-1,\'vuelta\',this.value)"></label>';
+ html+='<span class="arb-leg arb-rotar"><span id="arb-ten-'+pi+'">'+arbTenTxt(pair)+'</span> · Rotar <input class="arb-input" value="'+esc(pair.rotar==null?'100':pair.rotar)+'" placeholder="100" oninput="arbUpdate('+pi+',-1,\'rotar\',this.value)"> %</span>';
     html+='<span id="arb-neto-'+pi+'" class="arb-neto '+n.cls+'" title="'+esc(n.tip)+'">'+n.txt+'</span>';
     html+='</div>';
     html+='<div class="arb-band"><div class="arb-band-in" id="arb-band-'+pi+'">'+arbBandHtml(pi)+'</div></div>';
 
     pair.rows.forEach(function(row, ri){
       var ratio=row.precioB>0?(row.precioA/row.precioB*100):0;
-      var cls=arbRatioClass(ratio, pair.pctObj);
-      var above=ratio>=(pair.pctObj||100);
       var e=arbRowEval(pair, ratio);
       var rowBg=ri%2===0?'':'background:rgba(255,255,255,.025)';
       html+='<div class="arb-row arb-'+e.est+'" id="arb-row-'+pi+'-'+ri+'" style="'+rowBg+'">';
       html+='<div class="arb-cell arb-plazo"><input class="arb-input" value="'+esc(row.plazo)+'" style="width:46px;font-weight:700;color:var(--text2)" oninput="arbUpdate('+pi+','+ri+',\'plazo\',this.value)"></div>';
-      html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioA||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioA\',this.value)" style="color:#a78bfa"></div>';
-      html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioB||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioB\',this.value)" style="color:#448aff"></div>';
-      html+='<div class="arb-cell" id="arb-ratio-'+pi+'-'+ri+'"><span class="'+cls+'">'+(ratio>0?ratio.toFixed(2)+'%':'—')+'</span></div>';
-      html+='<div class="arb-cell arb-op '+(above?'sell':'buy')+'" id="arb-arrow-'+pi+'-'+ri+'">'+(ratio>0?(above?'>':'<'):'')+'</div>';
+      html+='<div class="arb-cell arb-pcell"><input class="arb-input" id="arb-pA-'+pi+'-'+ri+'" value="'+(row.precioA||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioA\',this.value)" style="color:#a78bfa"><span id="arb-sA-'+pi+'-'+ri+'">'+arbSrcHtml(pi,ri,'A')+'</span></div>';
+      html+='<div class="arb-cell arb-pcell"><input class="arb-input" id="arb-pB-'+pi+'-'+ri+'" value="'+(row.precioB||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioB\',this.value)" style="color:#448aff"><span id="arb-sB-'+pi+'-'+ri+'">'+arbSrcHtml(pi,ri,'B')+'</span></div>';
+      html+='<div class="arb-cell" id="arb-ratio-'+pi+'-'+ri+'"><span class="arb-ratio-'+e.est+'">'+(ratio>0?ratio.toFixed(2).replace('.',',')+'%':'—')+'</span></div>';
       html+='<div class="arb-cell arb-dist" id="arb-dist-'+pi+'-'+ri+'">'+e.dist+'</div>';
       html+='<div class="arb-cell arb-voy'+(e.voy?(e.voy===pair.a?' a':' b'):'')+'" id="arb-voy-'+pi+'-'+ri+'">'+(e.voy?'→ '+esc(e.voy):'—')+'</div>';
-      html+='<div class="arb-cell"><input class="arb-input" value="'+esc(row.nominales)+'" placeholder="—" oninput="arbUpdate('+pi+','+ri+',\'nominales\',this.value)"></div>';
+      html+='<div class="arb-cell arb-nom" id="arb-nom-'+pi+'-'+ri+'">'+arbNomHtml(pair,row)+'</div>';
       html+='<div class="arb-cell"><span class="arb-estado '+e.est+'" id="arb-est-'+pi+'-'+ri+'">'+ARB_ESTADO_TXT[e.est]+'</span></div>';
       html+='</div>';
     });
@@ -6599,6 +6731,9 @@ function arbRender(){
     html+='</div>';
   });
   container.innerHTML=html;
+  arbPuntasBar();
+  arbFetchPuntas(false);
+  arbPuntasAuto();
 }
 
 function arbAddRow(pi){
