@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=340, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=341, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v341 | 2026-11-25 | Dividendos: nueva opción "En acciones" en Moneda. Se carga la cantidad recibida; suma esa cantidad a la tenencia con el mismo costo total (baja el PPC, con confirmación antes/después) y queda en Movimientos como "div. en acciones". No cuenta como renta en efectivo ni aparece en el diario.',
   'v340 | 2026-11-25 | Arbitraje: escáner de pares para los bonos en cartera (gemelo AL/GD, AE38/GD38 y bonos de la misma familia): ratio de hoy contra el último año con percentil, promedio, zona 15%–85%, gráfico y señal; "+ Crear par" lo agrega con ida y vuelta sugeridas. En GDC las reglas se publican en Supabase (push_arb) para que la función de avisos mande el push con la app cerrada.',
   'v339 | 2026-11-24 | Arbitraje: aviso en el portafolio cuando se cumple una regla de ida o vuelta (fila de 24h con puntas en vivo, revisa cada minuto aunque la solapa esté cerrada). Cartel abajo a la izquierda con qué hacer y cuántos nominales, punto verde en el menú y notificación del navegador si la app está en segundo plano y tenés los avisos activados.',
   'v338 | 2026-11-24 | Arbitraje: se saca el ratio objetivo del encabezado (ya lo dan la ida y la vuelta) y la flecha. La regla muestra la tenencia del bono en el que estás y un % a rotar; cada plazo calcula cuántos nominales vender y cuántos comprar aprox. (con comisiones), y avisa si la punta no alcanza.',
@@ -3077,7 +3078,7 @@ function movProblemas(){
     if(!iso||isNaN(Date.parse(iso)))add(m,'fecha inválida ('+(m.fecha||'vacía')+')');else if(iso>hoy)add(m,'fecha futura ('+m.fecha+')');
     if(!m.ticker||!String(m.ticker).trim())add(m,'sin ticker');
     if(!(+m.qty>0))add(m,'cantidad en 0 o negativa');
-    if(!((m.precioARS||0)>0)&&!((m.precioUSD||0)>0))add(m,'sin precio');
+    if(!m.divAcc&&!((m.precioARS||0)>0)&&!((m.precioUSD||0)>0))add(m,'sin precio');
   });
   var vis={};ops.forEach(function(m){var k=[m.fecha,m.tipo,m.ticker,m.qty,m.precioARS||m.precioUSD,m.cartera||'principal'].join('|');(vis[k]=vis[k]||[]).push(m);});
   Object.keys(vis).forEach(function(k){if(vis[k].length>1)vis[k].forEach(function(m){add(m,'posible duplicado ('+vis[k].length+' iguales: misma fecha, cantidad y precio)');});});
@@ -3198,7 +3199,7 @@ function renderMovimientos(){
     }
     return '<tr>'+
       '<td class="mono">'+m.fecha+'</td>'+
-      '<td><span class="badge badge-'+m.tipo+'">'+m.tipo+'</span></td>'+
+      '<td><span class="badge badge-'+(m.divAcc?'dividendo':m.tipo)+'"'+(m.divAcc?' title="Dividendo pagado en acciones: suma cantidad sin costo (baja el PPC)"':'')+'>'+(m.divAcc?'div. en acciones':m.tipo)+'</span></td>'+
       '<td><span class="mkt">'+mLabel+'</span></td>'+
       '<td style="font-weight:600">'+m.ticker+_movProbIcon(m)+((m.cartera==='cocos')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2a1650;color:#c9a6ff;border:1px solid #5b2f8f">COCOS</span>':(m.cartera==='vetajeep')?' <span style="font-size:.55rem;font-weight:600;padding:1px 5px;border-radius:8px;background:#2b2410;color:#e0c674;border:1px solid #5c4a1f">VETAJEEP</span>':'')+'</td>'+
       '<td class="mono">'+(m.qty||'')+'</td>'+
@@ -3281,6 +3282,16 @@ function getPositions(){
     if(!lots[key])lots[key]=[];
     var priceUSD=m.precioUSD||0;
     var comUSD=m.comision||0;
+    if(m.tipo==='compra'&&m.divAcc){
+      var _qd=+m.qty||0, _ol=lots[key]||[], _qo=_ol.reduce(function(s,l){return s+l.qtyOpen;},0);
+      if(_qd>0){
+        p.qty+=_qd;
+        if(_qo>0.000001){ var _fx=(_qo+_qd)/_qo; _ol.forEach(function(l){ l.qtyOpen*=_fx; l.unitUSD/=_fx; l.unitUSDpuro/=_fx; l.unitARS/=_fx; }); }
+        else _ol.push({qtyOpen:_qd,unitUSD:0,unitUSDpuro:0,unitARS:0,fecha:m.fecha,id:m.id});
+        lots[key]=_ol;
+      }
+      return;
+    }
     if(m.tipo==='dividendo'){p.dividendsUSD+=priceUSD;}
     else if(m.tipo==='compra'){
       var _tc=(m.mercado==='BONOS'||m.mercado==='ON'||m.mercado==='FCI')
@@ -7276,6 +7287,7 @@ function trkAddDiv(){
   var sel=document.getElementById('trk-add-status');
   if(!ticker){flash(sel,'Ingresá el ticker',true);return;}
   if(!fecha){flash(sel,'Seleccioná la fecha',true);return;}
+  if(moneda==='ACC') return trkAddDivAcciones(ticker,fecha,monto,sel);
   if(!monto||monto<=0){flash(sel,'Ingresá el monto',true);return;}
   var cclFecha=(moneda==='ARS')?(MEP_TABLE[fecha.split('-').reverse().join('/')]||(typeof MEP_HOY!=='undefined'&&MEP_HOY)||null):null;
   if(moneda==='ARS'&&!cclFecha){flash(sel,'Necesitás el MEP para convertir (no hay MEP cargado para esa fecha ni del día)',true);return;}
@@ -7313,6 +7325,39 @@ function trkAddDiv(){
   flash(sel,pncApplied?(pncTarget==='ppc'?'Dividendo registrado — PPC ajustado':'Dividendo registrado — sumado a ganancia de venta'):'Dividendo registrado',false);
   trkRender();
   renderPortfolio();
+}
+
+// Dividendo pagado en acciones: se guarda como movimiento (compra sin costo, divAcc:true).
+// getPositions suma la cantidad y reparte el mismo costo entre más acciones (baja el PPC).
+function trkAddDivAcciones(ticker,fechaIso,cant,sel){
+  cant=Math.round(+cant||0);
+  if(!(cant>0)){flash(sel,'Ingresá la cantidad de acciones recibidas',true);return;}
+  var pos=getPositions().find(function(p){return p.ticker===ticker;});
+  if(!pos||!(pos.qty>0.000001)){flash(sel,'No tenés '+ticker+' en esta cartera: el dividendo en acciones necesita una tenencia',true);return;}
+  var fecha=fechaIso.split('-').reverse().join('/');
+  var f2=function(n){return n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:4});};
+  var f0=function(n){return Math.round(n).toLocaleString('es-AR');};
+  var ppcA=pos.costUSDpuro/pos.qty, qN=pos.qty+cant, ppcN=pos.costUSDpuro/qN;
+  var msg='Dividendo en acciones de '+ticker+' del '+fecha+'.\n\n'+
+    'Tenencia: '+f0(pos.qty)+' → '+f0(qN)+' (+'+f0(cant)+')\n'+
+    'Costo total: USD '+f2(pos.costUSDpuro)+' (no cambia)\n'+
+    'PPC: USD '+f2(ppcA)+' → USD '+f2(ppcN)+' ('+(((ppcN/ppcA)-1)*100).toFixed(2).replace('.',',')+'%)\n\n'+
+    'Se guarda en Movimientos como "div. en acciones". ¿Confirmás?';
+  if(!confirm(msg)){flash(sel,'Cancelado — no se guardó',true);return;}
+  var mkt=pos.mercado||'CEDEAR', tc=getTC(fecha,mkt)||(typeof CCL_HOY!=='undefined'?CCL_HOY:0);
+  movimientos.push({id:Date.now(),fecha:fecha,tipo:'compra',divAcc:true,mercado:mkt,ticker:ticker,qty:cant,precioARS:0,ccl:tc,ratio:getRatio(ticker),precioUSD:0,comision:0,comisionPct:0,
+    notas:'Dividendo en acciones',cartera:(typeof CARTERA_ACTIVA!=='undefined'&&CARTERA_ACTIVA)||'principal'});
+  saveAndRender();
+  document.getElementById('trk-ticker').value='';document.getElementById('trk-monto').value='';document.getElementById('trk-acc').value='';
+  document.getElementById('trk-moneda').value='USD'; trkMonedaCambio();
+  flash(sel,'Dividendo en acciones registrado — '+f0(cant)+' '+ticker+' sumadas, PPC ajustado',false);
+}
+function trkMonedaCambio(){
+  var acc=document.getElementById('trk-moneda').value==='ACC';
+  var m=document.getElementById('trk-monto'); if(!m) return;
+  m.placeholder=acc?'Cantidad recibida':'0.00'; m.step=acc?'1':'0.01';
+  var lb=m.parentNode&&m.parentNode.querySelector('label'); if(lb) lb.textContent=acc?'Acciones recibidas':'Monto recibido';
+  var a=document.getElementById('trk-acc'); if(a&&a.parentNode) a.parentNode.style.display=acc?'none':'';
 }
 
 // ══ Histórico Veta → PPC (importación ÚNICA, formato viejo "Movimientos Dividendos y
@@ -12527,7 +12572,7 @@ function _diaInputs(){
   });
 }
 function _diaMovs(){
-  return (movimientos||[]).filter(function(m){return m&&(m.tipo==='compra'||m.tipo==='venta')&&m.ticker&&m.owner!=='cristian'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);});
+  return (movimientos||[]).filter(function(m){return m&&!m.divAcc&&(m.tipo==='compra'||m.tipo==='venta')&&m.ticker&&m.owner!=='cristian'&&(typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA);});
 }
 function _diaEdad(m){var f=_phIso(m.fecha);if(!f)return 0;return Math.floor((Date.now()-new Date(f+'T12:00:00').getTime())/864e5);}
 function diaPendientes(){return _diaMovs().filter(function(m){return m.porque&&!m.porqueRev&&_diaEdad(m)>=DIA_DIAS;}).length;}
