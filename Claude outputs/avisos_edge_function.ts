@@ -9,6 +9,7 @@
 //           ?resumen=1 (cron 17:30) → además manda el resumen del día de la cartera
 //                                      y guarda los precios de cierre en la tabla precios_hist (historial)
 //           ?test=1 (con tu sesión) → manda un aviso de prueba.
+//   push_arb    → reglas de arbitraje de ida y vuelta (las publica la app al guardarlas en la solapa Arbitraje)
 // Cada corrida guarda config push_log (hora, modo, avisos, dispositivos, error) para el panel 🛠 Sistema.
 import webpush from "npm:web-push@3.6.7";
 
@@ -36,6 +37,7 @@ const p1 = (x: number) => (x > 0 ? "+" : x < 0 ? "−" : "") + Math.abs(x).toFix
 
 async function precios() {
   const map: Record<string, number> = {}, pct: Record<string, number> = {};
+  const pt: Record<string, { bid: number; ask: number }> = {};
   for (const p of ["arg_bonds", "arg_corp", "arg_notes", "arg_stocks", "arg_cedears"]) {
     try {
       const r = await fetch(`https://data912.com/live/${p}`, { headers: { Accept: "application/json" } });
@@ -44,6 +46,7 @@ async function precios() {
       for (const it of items) {
         const t = String(it.ticker || it.symbol || it.id || it.name || "").toUpperCase();
         const px = parseFloat(it.last ?? it.price ?? it.close ?? it.c ?? it.bid ?? 0) || 0;
+        if (t && pt[t] == null) pt[t] = { bid: parseFloat(it.px_bid) || 0, ask: parseFloat(it.px_ask) || 0 };
         if (t && px > 0 && map[t] == null) {
           map[t] = px;
           const prev = parseFloat(it.prev_close ?? it.prevClose ?? it.previous_close ?? 0) || 0;
@@ -53,10 +56,10 @@ async function precios() {
       }
     } catch { /* sigue con el resto */ }
   }
-  return { map, pct };
+  return { map, pct, pt };
 }
 // Una sola bajada de precios por corrida
-let _P: { map: Record<string, number>; pct: Record<string, number> } | null = null;
+let _P: { map: Record<string, number>; pct: Record<string, number>; pt: Record<string, { bid: number; ask: number }> } | null = null;
 async function preciosMemo() { if (!_P) _P = await precios(); return _P; }
 
 // Historial: una fila por rueda con el cierre de todos los activos de data912 (+ CCL y MEP)
@@ -133,7 +136,7 @@ async function correr(req: Request, url: URL, modo: string) {
 
   // 1) Precio de venta alcanzado
   const tgs: any[] = w.targets || [], pos: any[] = w.pos || [];
-  const P = (tgs.length || pos.length) ? await preciosMemo() : { map: {}, pct: {} };
+  const P = (tgs.length || pos.length) ? await preciosMemo() : { map: {}, pct: {}, pt: {} };
   const px: Record<string, number> = P.map, pct: Record<string, number> = P.pct;
   if (tgs.length) {
     const ccl = await tc("contadoconliqui"), mep = await tc("bolsa");
@@ -185,6 +188,30 @@ async function correr(req: Request, url: URL, modo: string) {
     const dias = Math.round((Date.parse(c.fecha) - Date.parse(hoy)) / 86400e3);
     const k = `cie:${c.nombre}:${c.fecha}:${dias}`;
     if ((dias === 7 || dias === 0) && !estado[k]) avisos.push({ title: `📅 ${c.nombre}: cierre de período`, body: dias ? `El período cierra el ${fd(c.fecha)} (en 7 días).` : `Hoy cierra el período: abrí la app y tocá "Cerrar período".`, tag: "cie", key: k });
+  }
+
+  // 4) Arbitraje: regla de ida o vuelta cumplida, con las puntas (vendo a la compradora, compro a la vendedora)
+  //    Estoy en B → ida a A si (vendedora A / compradora B) < ida. Estoy en A → vuelta a B si (compradora A / vendedora B) > vuelta.
+  const arb = await getCfg("push_arb");
+  const reglas: any[] = (arb && Array.isArray(arb.reglas)) ? arb.reglas : [];
+  if (reglas.length) {
+    const PT = (await preciosMemo()).pt;
+    const f2 = (x: number) => x.toFixed(2).replace(".", ",");
+    const hits: string[] = [];
+    for (const r of reglas) {
+      const A = PT[String(r.a).toUpperCase()], B = PT[String(r.b).toUpperCase()];
+      if (!A || !B) continue;
+      const enB = r.estoy !== "A", trig = +(enB ? r.ida : r.vuelta);
+      if (!(trig > 0)) continue;
+      const ratio = enB ? (A.ask > 0 && B.bid > 0 ? A.ask / B.bid * 100 : 0) : (A.bid > 0 && B.ask > 0 ? A.bid / B.ask * 100 : 0);
+      if (!(ratio > 0)) continue;
+      const ok = enB ? ratio < trig : ratio > trig;
+      const key = `arb:${r.a}/${r.b}:${enB ? "B" : "A"}:${trig}`;
+      if (ok && !estado[key]) { hits.push(`${enB ? "Ida" : "Vuelta"} ${r.a}/${r.b}: ${f2(ratio)}% ${enB ? "<" : ">"} ${f2(trig)} → pasate a ${enB ? r.a : r.b}`); estado[key] = hoy; }
+      // se rearma cuando se aleja 0,1 del gatillo (para no avisar en cada corrida si oscila justo en el borde)
+      if (estado[key] && (enB ? ratio > trig + 0.1 : ratio < trig - 0.1)) delete estado[key];
+    }
+    if (hits.length) avisos.push({ title: `⇄ ${cart}: arbitraje`, body: hits.join(" · "), tag: "arb", key: "" });
   }
 
   let enviados = 0;

@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=339, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=340, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v340 | 2026-11-25 | Arbitraje: escáner de pares para los bonos en cartera (gemelo AL/GD, AE38/GD38 y bonos de la misma familia): ratio de hoy contra el último año con percentil, promedio, zona 15%–85%, gráfico y señal; "+ Crear par" lo agrega con ida y vuelta sugeridas. En GDC las reglas se publican en Supabase (push_arb) para que la función de avisos mande el push con la app cerrada.',
   'v339 | 2026-11-24 | Arbitraje: aviso en el portafolio cuando se cumple una regla de ida o vuelta (fila de 24h con puntas en vivo, revisa cada minuto aunque la solapa esté cerrada). Cartel abajo a la izquierda con qué hacer y cuántos nominales, punto verde en el menú y notificación del navegador si la app está en segundo plano y tenés los avisos activados.',
   'v338 | 2026-11-24 | Arbitraje: se saca el ratio objetivo del encabezado (ya lo dan la ida y la vuelta) y la flecha. La regla muestra la tenencia del bono en el que estás y un % a rotar; cada plazo calcula cuántos nominales vender y cuántos comprar aprox. (con comisiones), y avisa si la punta no alcanza.',
   'v337 | 2026-11-24 | Arbitraje: la fila de 24h se completa sola con las puntas de data912 cruzadas según la regla (ida: vendedora de A / compradora de B; vuelta: compradora de A / vendedora de B), con la cantidad de cada punta. Se actualiza cada minuto con la solapa abierta. Si escribís otro precio queda manual; ↺ lo vuelve a automático. CI sigue manual.',
@@ -6395,7 +6396,7 @@ var ARB_PAIRS = [
   }
 ];
 
-function arbSave(){ try{localStorage.setItem((PFX+'arb_pairs'),JSON.stringify(ARB_PAIRS));}catch(e){} }
+function arbSave(){ try{localStorage.setItem((PFX+'arb_pairs'),JSON.stringify(ARB_PAIRS));}catch(e){} try{arbPushPublicar();}catch(e){} }
 function arbLoad(){
   try{
     var s=localStorage.getItem((PFX+'arb_pairs'));
@@ -6613,8 +6614,150 @@ async function arbAvisoNotificar(nuevos){
   }catch(e){}
   try{ new Notification('⇄ Arbitraje',{body:body,tag:'arbitraje'}); }catch(e){}
 }
+
+// ── 🔎 Escáner de pares para los bonos que tengo en cartera ──
+// Arma pares con el "gemelo" de cada bono (AL↔GD del mismo año, AE38↔GD38) y entre bonos de la misma familia que tengo.
+// Compara el ratio de hoy contra el último año: percentil, promedio y zona del 15%–85%.
+var ARB_SCAN={ts:0,rows:null,busy:false,err:''};
+function arbFamilia(t){ if(/^(AL|GD|AE)\d\d$/.test(t)) return 'HD'; var m=/^([A-Z]{2})\d\d$/.exec(t); return m?m[1]:null; }
+function arbGemelo(t){ var m; if(t==='AE38') return 'GD38'; if(t==='GD38') return 'AE38'; if((m=/^AL(\d\d)$/.exec(t))) return 'GD'+m[1]; if((m=/^GD(\d\d)$/.exec(t))) return 'AL'+m[1]; return null; }
+function arbBonosCartera(){
+  var o={};
+  try{ getPositions().forEach(function(p){
+    if(!(p.qty>0.000001)||p.mercado!=='BONOS') return;
+    var t=String(p.ticker||'').toUpperCase(); if(/^[A-Z]{2}\d\d[DC]$/.test(t)) t=t.slice(0,4);
+    if(!arbFamilia(t)) return;
+    o[t]=(o[t]||0)+p.qty;
+  }); }catch(e){}
+  return o;
+}
+function arbScanPares(){
+  var H=arbBonosCartera(), ts=Object.keys(H), vistos={}, out=[];
+  var add=function(x,y){
+    if(!x||!y||x===y) return; var k=[x,y].sort().join('/'); if(vistos[k]) return; vistos[k]=1;
+    var hx=!!H[x], hy=!!H[y], a, b;
+    if(hx&&!hy){ a=y; b=x; } else if(hy&&!hx){ a=x; b=y; } else { var s=[x,y].sort(); a=s[0]; b=s[1]; }
+    out.push({a:a,b:b,qa:H[a]||0,qb:H[b]||0});
+  };
+  ts.forEach(function(t){ add(t,arbGemelo(t)); });
+  ts.forEach(function(t,i){ ts.slice(i+1).forEach(function(u){ if(arbFamilia(t)===arbFamilia(u)) add(t,u); }); });
+  return out;
+}
+async function arbScan(force){
+  if(ARB_SCAN.busy) return;
+  if(!force&&ARB_SCAN.rows&&Date.now()-ARB_SCAN.ts<30*60000){ arbScanPintar(); return; }
+  ARB_SCAN.busy=true; ARB_SCAN.err=''; arbScanPintar();
+  try{
+    await arbFetchPuntas(false);
+    var pares=arbScanPares(), tks={};
+    pares.forEach(function(p){ tks[p.a]=1; tks[p.b]=1; });
+    var S={};
+    await Promise.all(Object.keys(tks).map(function(t){ return _phSerie(t,'bonos').then(function(r){ S[t]={}; (r&&r.ser||[]).forEach(function(x){ S[t][x[0]]=x[1]; }); }).catch(function(){ S[t]={}; }); }));
+    var desde=new Date(); desde.setFullYear(desde.getFullYear()-1); var d0=desde.toISOString().slice(0,10);
+    ARB_SCAN.rows=pares.map(function(p){
+      var sa=S[p.a]||{}, sb=S[p.b]||{}, ser=[];
+      Object.keys(sa).sort().forEach(function(d){ if(d>=d0&&sb[d]>0&&sa[d]>0) ser.push([d,sa[d]/sb[d]*100]); });
+      var A=ARB_PUNTAS[p.a]||{}, B=ARB_PUNTAS[p.b]||{}, hoy=0, fuente='último';
+      if(p.qb>0&&!(p.qa>0)&&A.ask>0&&B.bid>0){ hoy=A.ask/B.bid*100; fuente='puntas: vend. '+p.a+' / compr. '+p.b; }
+      else if(p.qa>0&&!(p.qb>0)&&A.bid>0&&B.ask>0){ hoy=A.bid/B.ask*100; fuente='puntas: compr. '+p.a+' / vend. '+p.b; }
+      else if(A.c>0&&B.c>0){ hoy=A.c/B.c*100; }
+      var r={a:p.a,b:p.b,qa:p.qa,qb:p.qb,hoy:hoy,fuente:fuente,ser:ser,n:ser.length};
+      if(ser.length>=20){
+        var v=ser.map(function(x){return x[1];}).sort(function(x,y){return x-y;});
+        var q=function(f){ return v[Math.min(v.length-1,Math.max(0,Math.round(f*(v.length-1))))]; };
+        r.min=v[0]; r.max=v[v.length-1]; r.p15=q(0.15); r.p85=q(0.85);
+        r.prom=v.reduce(function(s,x){return s+x;},0)/v.length;
+        if(hoy>0){ var k=0; v.forEach(function(x){ if(x<=hoy) k++; }); r.pct=k/v.length*100; }
+      }
+      // Señal: ratio bajo = A barato frente a B; ratio alto = A caro frente a B
+      r.sig='na'; r.sigTxt=hoy>0?(r.n<20?'Sin historia suficiente':'Zona normal'):'Sin precio hoy';
+      if(r.pct!=null){
+        if(r.pct<=15&&r.qb>0){ r.sig='op'; r.sigTxt='Oportunidad: pasar de '+r.b+' a '+r.a; }
+        else if(r.pct>=85&&r.qa>0){ r.sig='op'; r.sigTxt='Oportunidad: pasar de '+r.a+' a '+r.b; }
+        else if(r.pct<=15) r.sigTxt=r.a+' barato frente a '+r.b;
+        else if(r.pct>=85) r.sigTxt=r.a+' caro frente a '+r.b;
+      }
+      return r;
+    }).sort(function(x,y){ return (x.sig==='op'?0:1)-(y.sig==='op'?0:1) || Math.abs(50-(y.pct==null?50:y.pct))-Math.abs(50-(x.pct==null?50:x.pct)); });
+    ARB_SCAN.ts=Date.now();
+  }catch(e){ ARB_SCAN.err='No se pudo armar el escáner'; }
+  ARB_SCAN.busy=false;
+  arbScanPintar();
+}
+function arbSpark(r){
+  if(!r.ser||r.ser.length<2) return '';
+  var W=150,H=34,vs=r.ser.map(function(x){return x[1];}), lo=Math.min.apply(null,vs.concat([r.hoy||vs[0]])), hi=Math.max.apply(null,vs.concat([r.hoy||vs[0]])), sp=(hi-lo)||1;
+  var y=function(v){ return (H-3-(v-lo)/sp*(H-6)).toFixed(1); };
+  var pts=r.ser.map(function(x,i){ return (i/(r.ser.length-1)*(W-8)).toFixed(1)+','+y(x[1]); }).join(' ');
+  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Ratio del último año">';
+  if(r.p15!=null) s+='<rect x="0" y="'+y(r.p85)+'" width="'+(W-8)+'" height="'+Math.max(1,y(r.p15)-y(r.p85))+'" fill="rgba(91,140,255,.13)"/>';
+  s+='<polyline points="'+pts+'" fill="none" stroke="#8fa3c7" stroke-width="1.3"/>';
+  if(r.hoy>0) s+='<circle cx="'+(W-6)+'" cy="'+y(r.hoy)+'" r="3.5" fill="'+(r.sig==='op'?'#00c968':'#ffd600')+'"/>';
+  return s+'</svg>';
+}
+function arbScanPintar(){
+  var el=document.getElementById('arb-scan-body'); if(!el) return;
+  if(ARB_SCAN.busy&&!ARB_SCAN.rows){ el.innerHTML='<div class="arb-scan-msg">Buscando la historia de tus bonos…</div>'; return; }
+  if(ARB_SCAN.err){ el.innerHTML='<div class="arb-scan-msg err">'+ARB_SCAN.err+'</div>'; return; }
+  var rows=ARB_SCAN.rows||[];
+  if(!rows.length){ el.innerHTML='<div class="arb-scan-msg">No encontré pares para los bonos que tenés en cartera.</div>'; return; }
+  var f=function(n){ return n==null||!(n>0)?'—':n.toFixed(2).replace('.',','); };
+  var n0=function(n){ return Math.round(n).toLocaleString('es-AR'); };
+  var h='<div class="arb-scan-wrap"><table class="arb-scan"><thead><tr><th>Par (A / B)</th><th>Tengo</th><th>Ratio hoy</th><th>Promedio 1 año</th><th>Zona 15%–85%</th><th>Percentil</th><th>Último año</th><th>Señal</th><th></th></tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    var ya=ARB_PAIRS.some(function(p){ return (p.a===r.a&&p.b===r.b)||(p.a===r.b&&p.b===r.a); });
+    var tengo=[]; if(r.qa>0) tengo.push(n0(r.qa)+' '+r.a); if(r.qb>0) tengo.push(n0(r.qb)+' '+r.b);
+    h+='<tr class="'+(r.sig==='op'?'op':'')+'">';
+    h+='<td class="par"><span style="color:#a78bfa">'+r.a+'</span> / <span style="color:#448aff">'+r.b+'</span></td>';
+    h+='<td>'+tengo.join('<br>')+'</td>';
+    h+='<td title="'+r.fuente+'"><b>'+f(r.hoy)+'%</b></td>';
+    h+='<td>'+f(r.prom)+'%</td>';
+    h+='<td>'+(r.p15!=null?f(r.p15)+' – '+f(r.p85):'—')+'<br><span class="arb-scan-sub">mín '+f(r.min)+' · máx '+f(r.max)+'</span></td>';
+    h+='<td>'+(r.pct!=null?'<span class="arb-pctbar"><i style="left:'+r.pct.toFixed(0)+'%"></i></span><span class="arb-scan-sub">'+r.pct.toFixed(0)+'%</span>':'—')+'</td>';
+    h+='<td>'+arbSpark(r)+'</td>';
+    h+='<td><span class="arb-sig '+r.sig+'">'+r.sigTxt+'</span></td>';
+    h+='<td>'+(ya?'<span class="arb-scan-sub">Ya está en la calculadora</span>':(r.p15!=null?'<button class="btn btn-sm" onclick="arbScanCrear('+i+')" title="Agrega el par con ida en el 15% y vuelta en el 85% del último año">+ Crear par</button>':''))+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  var hora=ARB_SCAN.ts?new Date(ARB_SCAN.ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'';
+  h+='<div class="arb-scan-msg">Ratio = A ÷ B × 100. Si tenés solo uno de los dos, el ratio de hoy usa las puntas para pasarte al otro. Percentil bajo = A barato frente a B; alto = A caro. "+ Crear par" pone la ida en el 15% y la vuelta en el 85% del último año.'+(hora?' · Actualizado '+hora:'')+'</div>';
+  el.innerHTML=h;
+}
+function arbScanCrear(i){
+  var r=(ARB_SCAN.rows||[])[i]; if(!r) return;
+  var f=function(n){ return n.toFixed(2).replace('.',','); };
+  ARB_PAIRS.push({ a:r.a, b:r.b, pctObj:100, estoy:(r.qa>0&&!(r.qb>0))?'A':'B', ida:f(r.p15), vuelta:f(r.p85), rotar:'100',
+    rows:[ { plazo:'CI', precioA:0, precioB:0, condicion:'', voy:'', nominales:'' }, { plazo:'24', precioA:0, precioB:0, condicion:'', voy:'', nominales:'' } ] });
+  arbSave();
+  arbRender();
+}
+function arbScanCard(){
+  var cont=document.getElementById('arb-container'); if(!cont) return;
+  if(!document.getElementById('arb-scan-card')){
+    var card=cont.closest('.card'); if(!card||!card.parentNode) return;
+    var d=document.createElement('div'); d.className='card'; d.id='arb-scan-card'; d.style.marginTop='.6rem';
+    d.innerHTML='<div class="card-header" style="gap:10px;flex-wrap:wrap"><span class="card-title">🔎 Escáner de pares — bonos en cartera</span><button class="btn btn-sm" onclick="arbScan(true)" style="margin-left:auto" title="Volver a calcular">↻</button></div><div class="card-body" style="padding:.45rem" id="arb-scan-body"></div>';
+    card.parentNode.insertBefore(d,card.nextSibling);
+  }
+  arbScan(false);
+}
+
+// ── 🔔 Reglas para los avisos push con la app cerrada (función "avisos" de Supabase) ──
+var _arbPushT=null;
+function arbPushReglas(){
+  return ARB_PAIRS.map(function(p){ return { a:String(p.a||'').toUpperCase(), b:String(p.b||'').toUpperCase(), estoy:arbEstoy(p), ida:arbCondVal(p.ida), vuelta:arbCondVal(p.vuelta) }; })
+    .filter(function(r){ return r.a&&r.b&&(r.ida>0||r.vuelta>0); })
+    .map(function(r){ return { a:r.a, b:r.b, estoy:r.estoy, ida:r.ida>0?Math.round(r.ida*100)/100:null, vuelta:r.vuelta>0?Math.round(r.vuelta*100)/100:null }; });
+}
+function arbPushPublicar(){
+  if(typeof CFG==='undefined'||!CFG.push||typeof sbSetConfig!=='function') return;
+  clearTimeout(_arbPushT);
+  _arbPushT=setTimeout(function(){ try{ sbSetConfig('push_arb',{ts:Date.now(),reglas:arbPushReglas()}); }catch(e){} },2500);
+}
+
 // Arranca solo al cargar la página
-setTimeout(function(){ try{ arbLoad(); arbPuntasAuto(); if(arbHayReglas()) arbFetchPuntas(true); }catch(e){} },6000);
+setTimeout(function(){ try{ arbLoad(); arbPuntasAuto(); if(arbHayReglas()) arbFetchPuntas(true); arbPushPublicar(); }catch(e){} },6000);
 
 // Umbral de ida/vuelta: como factor (1,082) o como % (108,2). Devuelve el % o NaN.
 function arbCondVal(s){
@@ -6807,6 +6950,7 @@ function arbRender(){
     html+='</div>';
   });
   container.innerHTML=html;
+  try{ arbScanCard(); }catch(e){}
   arbPuntasBar();
   arbFetchPuntas(false);
   arbPuntasAuto();
