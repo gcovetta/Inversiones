@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=333, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=334, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v334 | 2026-11-24 | Arbitraje: en Condición se elige si se busca un ratio mayor (>) o menor (<) al valor. Si se cumple la fila se pinta de verde, si no de naranja; nueva columna Estado. El valor se lee como ratio (1,025 = 102,5%).',
   'v333 | 2026-11-24 | Solapa Arbitraje: letras ~30% más grandes en la calculadora de arbitraje (y en la tabla de Pases de GDC); columnas un poco más anchas para que entren los números.',
   'v332 | 2026-11-23 | Se quitan los Cedears a precio teórico en feriados de BYMA (v330-v331): en los feriados se vuelve a mostrar el último cierre de BYMA.',
   'v331 | 2026-11-23 | Fix Cedears teóricos en feriado (control por CCL implícito). Quitado en v332.',
@@ -6429,6 +6430,28 @@ function arbUpdate(pi, ri, field, val){
   arbRenderRatios(pi);
 }
 
+// Condición: valor como factor (1,025) o como % (102,5). Devuelve el % o NaN.
+function arbCondVal(s){
+  if(s==null) return NaN;
+  var t=String(s).replace(/[$%\s]/g,'').replace(',','.');
+  var v=parseFloat(t);
+  if(isNaN(v)) return NaN;
+  return v<10 ? v*100 : v;
+}
+// 'ok' (se cumple) · 'no' (todavía no) · 'na' (sin condición o sin precios)
+function arbCondEstado(row, ratio){
+  var v=arbCondVal(row.condicion);
+  if(isNaN(v)||!(ratio>0)) return 'na';
+  var op=row.condOp==='<'?'<':'>';
+  return (op==='<' ? ratio<=v : ratio>=v) ? 'ok' : 'no';
+}
+var ARB_ESTADO_TXT={ok:'✓ Se cumple', no:'✕ Todavía no', na:'—'};
+function arbSetOp(pi, ri, op){
+  ARB_PAIRS[pi].rows[ri].condOp=(op==='<'?'<':'>');
+  arbSave();
+  arbRenderRatios(pi);
+}
+
 function arbRatioClass(ratio, target){
   if(!target) return 'arb-ratio-green';
   var diff=ratio-target;
@@ -6451,6 +6474,15 @@ function arbRenderRatios(pi){
       arr.textContent=above?'>':'<';
       arr.className='arb-cell arb-op '+(above?'sell':'buy');
     }
+    var est=arbCondEstado(row, ratio);
+    var rowEl=document.getElementById('arb-row-'+pi+'-'+ri);
+    if(rowEl) rowEl.className='arb-row arb-'+est;
+    var estEl=document.getElementById('arb-est-'+pi+'-'+ri);
+    if(estEl){ estEl.className='arb-estado '+est; estEl.textContent=ARB_ESTADO_TXT[est]; }
+    var op=row.condOp==='<'?'<':'>';
+    var bM=document.getElementById('arb-opM-'+pi+'-'+ri), bm=document.getElementById('arb-opm-'+pi+'-'+ri);
+    if(bM) bM.className=(op==='>'?'on':'');
+    if(bm) bm.className=(op==='<'?'on':'');
   });
 }
 
@@ -6473,7 +6505,8 @@ function arbRender(){
     html+='<div class="arb-label"></div>';
     html+='<div class="arb-label">Condición</div>';
     html+='<div class="arb-label">Voy</div>';
-    html+='<div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Nominales<button class="btn btn-d btn-sm" onclick="arbRemovePair('+pi+')" style="padding:1px 5px;font-size:.78rem;margin-left:4px" title="Eliminar par">✕</button></div>';
+    html+='<div class="arb-label">Nominales</div>';
+    html+='<div class="arb-label" style="border-radius:0 var(--rsm) 0 0;gap:4px">Estado<button class="btn btn-d btn-sm" onclick="arbRemovePair('+pi+')" style="padding:1px 5px;font-size:.78rem;margin-left:4px" title="Eliminar par">✕</button></div>';
     html+='</div>';
 
     pair.rows.forEach(function(row, ri){
@@ -6482,15 +6515,18 @@ function arbRender(){
       var above=ratio>=(pair.pctObj||100);
       var isLast=(ri===pair.rows.length-1)&&true;
       var rowBg=ri%2===0?'':'background:rgba(255,255,255,.025)';
-      html+='<div class="arb-row" style="'+rowBg+'">';
+      var est=arbCondEstado(row, ratio);
+      var op=row.condOp==='<'?'<':'>';
+      html+='<div class="arb-row arb-'+est+'" id="arb-row-'+pi+'-'+ri+'" style="'+rowBg+'">';
       html+='<div class="arb-cell arb-plazo"><input class="arb-input" value="'+row.plazo+'" style="width:46px;font-weight:700;color:var(--text2)" oninput="arbUpdate('+pi+','+ri+',\'plazo\',this.value)"></div>';
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioA||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioA\',this.value)" style="color:#a78bfa"></div>';
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.precioB||'')+'" placeholder="$0" oninput="arbUpdate('+pi+','+ri+',\'precioB\',this.value)" style="color:#448aff"></div>';
       html+='<div class="arb-cell" id="arb-ratio-'+pi+'-'+ri+'"><span class="'+cls+'">'+(ratio>0?ratio.toFixed(2)+'%':'—')+'</span></div>';
       html+='<div class="arb-cell arb-op '+(above?'sell':'buy')+'" id="arb-arrow-'+pi+'-'+ri+'">'+(ratio>0?(above?'>':'<'):'')+'</div>';
-      html+='<div class="arb-cell"><input class="arb-input" value="'+(row.condicion||'')+'" placeholder="$1.00" oninput="arbUpdate('+pi+','+ri+',\'condicion\',this.value)"></div>';
+      html+='<div class="arb-cell"><span class="arb-opsw"><button id="arb-opM-'+pi+'-'+ri+'" class="'+(op==='>'?'on':'')+'" onclick="arbSetOp('+pi+','+ri+',\'>\')" title="Busco ratio mayor o igual" aria-label="Busco ratio mayor o igual">&gt;</button><button id="arb-opm-'+pi+'-'+ri+'" class="'+(op==='<'?'on':'')+'" onclick="arbSetOp('+pi+','+ri+',\'<\')" title="Busco ratio menor o igual" aria-label="Busco ratio menor o igual">&lt;</button></span><input class="arb-input" value="'+(row.condicion||'')+'" placeholder="1,025" oninput="arbUpdate('+pi+','+ri+',\'condicion\',this.value)"></div>';
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.voy||'')+'" placeholder="ticker" oninput="arbUpdate('+pi+','+ri+',\'voy\',this.value)" style="text-transform:uppercase;font-weight:600"></div>';
       html+='<div class="arb-cell"><input class="arb-input" value="'+(row.nominales||'')+'" placeholder="—" oninput="arbUpdate('+pi+','+ri+',\'nominales\',this.value)"></div>';
+      html+='<div class="arb-cell"><span class="arb-estado '+est+'" id="arb-est-'+pi+'-'+ri+'">'+ARB_ESTADO_TXT[est]+'</span></div>';
       html+='</div>';
     });
 
