@@ -1,0 +1,25 @@
+name: Chequeo
+
+# Corre en cada push y en cada pull request. Si algo falla, el commit queda con una ✕ roja en GitHub
+# y te llega un mail. Se puede correr a mano desde la pestaña Actions → Chequeo → Run workflow.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  chequeo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sintaxis, versión y archivos
+        run: node tools/chequeo.js
