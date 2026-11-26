@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=342, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=343, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v343 | 2026-11-26 | Arbitraje: si no tenés nominales del bono que tendrías que vender, no avisa (ni el cartel ni el push) hasta que vuelvas a tener. Si tenés solo uno de los dos bonos del par, "Estoy en" sigue tu tenencia sola.',
   'v342 | 2026-11-26 | Portafolio: los recuadros de % ahora dicen si son anuales o diarios ("Anual · en el año" / "Del período" y "Diario · hoy"), en la vista completa y en la vista del celular.',
   'v341 | 2026-11-25 | Dividendos: nueva opción "En acciones" en Moneda. Se carga la cantidad recibida; suma esa cantidad a la tenencia con el mismo costo total (baja el PPC, con confirmación antes/después) y queda en Movimientos como "div. en acciones". No cuenta como renta en efectivo ni aparece en el diario.',
   'v340 | 2026-11-25 | Arbitraje: escáner de pares para los bonos en cartera (gemelo AL/GD, AE38/GD38 y bonos de la misma familia): ratio de hoy contra el último año con percentil, promedio, zona 15%–85%, gráfico y señal; "+ Crear par" lo agrega con ida y vuelta sugeridas. En GDC las reglas se publican en Supabase (push_arb) para que la función de avisos mande el push con la app cerrada.',
@@ -5182,7 +5183,7 @@ async function famSaveSnapshot(d){
     try{doc.salud=saludCalc(d);}catch(e){}
     try{doc.ops30=_ops30();}catch(e){}
     if(cart==='principal'&&CFG.vistaFamiliar){try{await vistaPublicar(d);}catch(e){}}
-    if(cart==='principal'&&CFG.push){try{await pushWatchPublicar(d);}catch(e){}}
+    if(cart==='principal'&&CFG.push){try{await pushWatchPublicar(d);}catch(e){}try{arbLoad();arbPushPublicar();}catch(e){}}
     if(cart==='principal'){try{doc.sist={vista:CFG.vistaFamiliar?Date.now():null,aportes:(CFG.aportes&&_aporLoaded)?APOR.length:null,avisos:CFG.push?true:null,bk:(function(){try{return localStorage.getItem(PFX+'bk_last')||null;}catch(e){return null;}})()};}catch(e){}}
     if(cart==='principal'){try{if(CFG.historial&&typeof histLoad==='function')await histLoad();var rp=rendPeriodos();if(Object.keys(rp).length)doc.rendPer=rp;else delete doc.rendPer;}catch(e){}
     if(cart==='principal'){try{if(typeof histLoad==='function')await histLoad();var _bs=b100Serie();if(_bs)doc.b100=_bs;else delete doc.b100;delete doc.b100cov;
@@ -6565,6 +6566,7 @@ function arbChequearAvisos(){
   var lista=[];
   ARB_PAIRS.forEach(function(pair,pi){
     var R=arbRule(pair); if(isNaN(R.trig)) return;
+    if(!(arbTengoParaVender(pair)>0)) return;
     pair.rows.forEach(function(r,ri){
       if(!arbEsAuto(r)) return;
       var ratio=r.precioB>0?r.precioA/r.precioB*100:0;
@@ -6758,9 +6760,9 @@ function arbScanCard(){
 // ── 🔔 Reglas para los avisos push con la app cerrada (función "avisos" de Supabase) ──
 var _arbPushT=null;
 function arbPushReglas(){
-  return ARB_PAIRS.map(function(p){ return { a:String(p.a||'').toUpperCase(), b:String(p.b||'').toUpperCase(), estoy:arbEstoy(p), ida:arbCondVal(p.ida), vuelta:arbCondVal(p.vuelta) }; })
+  return ARB_PAIRS.map(function(p){ return { a:String(p.a||'').toUpperCase(), b:String(p.b||'').toUpperCase(), estoy:arbEstoy(p), ida:arbCondVal(p.ida), vuelta:arbCondVal(p.vuelta), tengo:arbTengoParaVender(p)>0 }; })
     .filter(function(r){ return r.a&&r.b&&(r.ida>0||r.vuelta>0); })
-    .map(function(r){ return { a:r.a, b:r.b, estoy:r.estoy, ida:r.ida>0?Math.round(r.ida*100)/100:null, vuelta:r.vuelta>0?Math.round(r.vuelta*100)/100:null }; });
+    .map(function(r){ return { a:r.a, b:r.b, estoy:r.estoy, tengo:r.tengo, ida:r.ida>0?Math.round(r.ida*100)/100:null, vuelta:r.vuelta>0?Math.round(r.vuelta*100)/100:null }; });
 }
 function arbPushPublicar(){
   if(typeof CFG==='undefined'||!CFG.push||typeof sbSetConfig!=='function') return;
@@ -6780,7 +6782,15 @@ function arbCondVal(s){
   return v<10 ? v*100 : v;
 }
 // Regla del par. Ratio = A / B. Estoy en B → ida a A si ratio < ida. Estoy en A → vuelta a B si ratio > vuelta.
-function arbEstoy(pair){ return pair.estoy==='A'?'A':'B'; }
+function arbEstoy(pair){
+  var hA=arbTenencia(pair.a), hB=arbTenencia(pair.b);
+  if(hA>0&&!(hB>0)) return 'A';
+  if(hB>0&&!(hA>0)) return 'B';
+  return pair.estoy==='A'?'A':'B';
+}
+// Lo que tengo para vender según la regla activa (sin nominales → no se avisa)
+function arbTengoParaVender(pair){ return arbTenencia(arbEstoy(pair)==='B'?pair.b:pair.a); }
+function arbEstoyAuto(pair){ var hA=arbTenencia(pair.a)>0, hB=arbTenencia(pair.b)>0; return hA!==hB; }
 function arbRule(pair){
   var ida=arbCondVal(pair.ida), vta=arbCondVal(pair.vuelta), enB=arbEstoy(pair)==='B';
   return { ida:ida, vta:vta, enB:enB, trig:enB?ida:vta };
@@ -6832,10 +6842,15 @@ function arbBandHtml(pi){
 }
 
 // Tenencia actual del ticker en esta cartera (VN)
+var _arbTenMemo={k:'',ts:0,m:{}};
 function arbTenencia(t){
-  t=String(t||'').toUpperCase(); var q=0;
-  try{ getPositions().forEach(function(p){ if(String(p.ticker||'').toUpperCase()===t) q+=p.qty||0; }); }catch(e){}
-  return q>0?q:0;
+  t=String(t||'').toUpperCase();
+  var k=(typeof movimientos!=='undefined'&&movimientos?movimientos.length+'|'+(movimientos.length?movimientos[movimientos.length-1].id:''):'')+'|'+(typeof CARTERA_ACTIVA!=='undefined'?CARTERA_ACTIVA:'');
+  if(_arbTenMemo.k!==k||Date.now()-_arbTenMemo.ts>3000){
+    var m={}; try{ getPositions().forEach(function(p){ var x=String(p.ticker||'').toUpperCase(); m[x]=(m[x]||0)+(p.qty||0); }); }catch(e){}
+    _arbTenMemo={k:k,ts:Date.now(),m:m};
+  }
+  var q=_arbTenMemo.m[t]||0; return q>0.000001?q:0;
 }
 function arbRotarPct(pair){ var v=parseFloat(String(pair.rotar==null?'100':pair.rotar).replace(',','.')); return isNaN(v)?NaN:Math.max(0,Math.min(100,v)); }
 // Nominales a vender del bono en el que estoy y nominales aproximados a comprar del otro, con los precios de la fila
@@ -6860,8 +6875,9 @@ function arbNomHtml(pair,row){
   return '<span class="arb-nom-v">'+n.txt+'</span>'+(n.sub?'<span class="arb-nom-c">'+n.sub+'</span>':'')+(n.warn?'<span class="arb-nom-w" title="'+n.warn+'">⚠ punta chica</span>':'');
 }
 function arbTenTxt(pair){
-  var t=arbEstoy(pair)==='B'?pair.b:pair.a;
-  return 'Tengo <b>'+Math.round(arbTenencia(t)).toLocaleString('es-AR')+'</b> VN de '+t;
+  var t=arbEstoy(pair)==='B'?pair.b:pair.a, q=arbTenencia(t);
+  if(!(q>0)) return '<span class="arb-sinten" title="No te aviso hasta que tengas nominales de '+t+' o del otro bono del par">Sin nominales de '+t+' · sin aviso</span>';
+  return 'Tengo <b>'+Math.round(q).toLocaleString('es-AR')+'</b> VN de '+t+(arbEstoyAuto(pair)?' <span class="arb-rule-lbl" title="Como tenés solo uno de los dos bonos, \'Estoy en\' sigue tu tenencia">(según tu tenencia)</span>':'');
 }
 
 function arbSetEstoy(pi, lado){

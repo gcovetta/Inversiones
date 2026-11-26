@@ -203,6 +203,10 @@ async function correr(req: Request, url: URL, modo: string) {
       if (!A || !B) continue;
       const enB = r.estoy !== "A", trig = +(enB ? r.ida : r.vuelta);
       if (!(trig > 0)) continue;
+      // Sin nominales del bono que habría que vender → no se avisa hasta volver a tener
+      const vende = String(enB ? r.b : r.a).toUpperCase();
+      if (r.tengo === false) continue;
+      if (pos.length && !pos.some((p: any) => String(p.sym || p.t).toUpperCase() === vende)) continue;
       const ratio = enB ? (A.ask > 0 && B.bid > 0 ? A.ask / B.bid * 100 : 0) : (A.bid > 0 && B.ask > 0 ? A.bid / B.ask * 100 : 0);
       if (!(ratio > 0)) continue;
       const ok = enB ? ratio < trig : ratio > trig;
