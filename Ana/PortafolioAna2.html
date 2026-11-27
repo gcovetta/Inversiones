@@ -122,6 +122,19 @@ button.arb-src.man{background:none;border:none;padding:0;color:#ffd600;cursor:po
 .arb-cic tr.abierto td{background:rgba(255,214,0,.05)}
 .arb-cic-res{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
 .arb-cic-tot{font-family:var(--mono);font-size:.74rem;padding:4px 10px;border-radius:999px;background:rgba(0,201,104,.12);border:1px solid rgba(0,201,104,.35);color:var(--text)}
+.arb-cic-grp{border:1px solid var(--border2);border-radius:8px;margin-bottom:8px;overflow:hidden;background:var(--surface)}
+.arb-cic-grp.open{border-color:#3d5a8f}
+.arb-cic-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;width:100%;padding:9px 12px;border:none;background:rgba(13,37,69,.35);color:var(--text);text-align:left;cursor:pointer;font-family:var(--sans)}
+.arb-cic-head:hover{background:rgba(13,37,69,.6)}
+.arb-cic-chev{font-size:.8rem;color:var(--text3);width:12px}
+.arb-cic-par{font-family:var(--mono);font-weight:700;font-size:.92rem;min-width:110px}
+.arb-cic-k{display:flex;flex-direction:column;line-height:1.2;font-family:var(--mono);font-size:.78rem}
+.arb-cic-k .l{font-family:var(--sans);font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.arb-cic-k b.big{font-size:1.05rem}
+.arb-cic-k small{font-size:.64rem;color:var(--text2)}
+.arb-cic-k b.pos{color:var(--accent)}
+.arb-cic-k b.neg{color:var(--red)}
+.arb-cic-grp .arb-scan-wrap{padding:6px}
 .arb-input-name{font-weight:700;font-size:.81rem;color:var(--text);text-align:center}
 .topbar{display:flex;align-items:center;gap:0;padding:0 1.2rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:.68rem;font-family:var(--mono);color:var(--text3);flex-wrap:wrap;flex-shrink:0;height:32px}
 .topbar-item{display:flex;align-items:center;gap:.3rem;padding:0 .85rem;border-right:1px solid var(--border);height:100%}
@@ -1289,7 +1302,7 @@ window.PORTFOLIO_CONFIG={"vistaNueva": true, "persona": "Ana", "comisionBonos": 
 };
 </script>
 <script src="../comun/datos.js?d=6"></script>
-<script src="../comun/portafolio.min.js?v=344"></script>
+<script src="../comun/portafolio.min.js?v=345"></script>
 <script>
 // ─── Funciones propias de Ana (pisan las del código común) ───
 // comparación de posiciones con Cocos e importador de dividendos de Veta con vista previa

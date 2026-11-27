@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=344, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=345, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v345 | 2026-11-27 | Historial de ciclos de arbitraje: un resumen por par con el % acumulado (ciclos encadenados), cantidad de ciclos, promedio y mejor ciclo, nominales, ganancia en $ y USD y el último ciclo. Tocando el par se despliega el detalle de cada ciclo con el acumulado hasta ese momento.',
   'v344 | 2026-11-27 | Arbitraje: los pares de la calculadora se guardan en Supabase (config arb_pairs) y quedan iguales en la compu y el celular. Nuevo 📒 Historial de ciclos: sale solo de los movimientos (ida y vuelta de cada par) con ratios, nominales ganados, pesos, % sobre lo vendido y USD, más el total por par; ✕ para ocultar uno que no sea arbitraje.',
   'v343 | 2026-11-26 | Arbitraje: si no tenés nominales del bono que tendrías que vender, no avisa (ni el cartel ni el push) hasta que vuelvas a tener. Si tenés solo uno de los dos bonos del par, "Estoy en" sigue tu tenencia sola.',
   'v342 | 2026-11-26 | Portafolio: los recuadros de % ahora dicen si son anuales o diarios ("Anual · en el año" / "Del período" y "Diario · hoy"), en la vista completa y en la vista del celular.',
@@ -6846,36 +6847,73 @@ function arbCiclos(pair){
   });
   return out.sort(function(a,b){ return a.iniIso<b.iniIso?1:-1; });
 }
+var ARB_CIC_OPEN={};
+function arbCicToggle(par){ ARB_CIC_OPEN[par]=!ARB_CIC_OPEN[par]; try{localStorage.setItem(PFX+'arb_cic_open',JSON.stringify(ARB_CIC_OPEN));}catch(e){} arbCiclosCard(); }
 function arbCiclosHtml(){
-  var f2=function(n){ return n==null?'—':n.toFixed(2).replace('.',','); };
+  try{ var _o=localStorage.getItem(PFX+'arb_cic_open'); if(_o&&!Object.keys(ARB_CIC_OPEN).length) ARB_CIC_OPEN=JSON.parse(_o)||{}; }catch(e){}
+  var f2=function(n){ return n==null||!isFinite(n)?'—':n.toFixed(2).replace('.',','); };
   var n0=function(n){ return Math.round(n).toLocaleString('es-AR'); };
   var sg=function(n){ return (n>0?'+':n<0?'−':'')+n0(Math.abs(n)); };
-  var vistos={}, filas='', tot={};
+  var sgp=function(n){ return n==null||!isFinite(n)?'—':(n>0?'+':n<0?'−':'')+f2(Math.abs(n))+'%'; };
+  var cl=function(n){ return n>0?'pos':n<0?'neg':''; };
+  // Ciclos agrupados por par
+  var vistos={}, G=[];
   ARB_PAIRS.forEach(function(p){
     var k=[String(p.a).toUpperCase(),String(p.b).toUpperCase()].sort().join('/'); if(vistos[k]) return; vistos[k]=1;
-    arbCiclos(p).forEach(function(c){
-      if(ARB_IGN[c.key]) return;
-      var par=c.A+'/'+c.B;
-      if(!c.abierto){ var T=tot[par]=tot[par]||{n:0,vn:{},pesos:0,usd:0}; T.n++; T.vn[c.Y]=(T.vn[c.Y]||0)+c.vn; T.pesos+=c.total; T.usd+=c.usd||0; }
-      filas+='<tr class="'+(c.abierto?'abierto':'')+'"><td class="par"><span style="color:#a78bfa">'+c.A+'</span> / <span style="color:#448aff">'+c.B+'</span></td>'+
-        '<td>'+c.ini+'<span class="arb-scan-sub">'+c.Y+' → '+c.X+' · '+f2(c.rIda)+'%</span></td>'+
-        '<td>'+(c.abierto?'<span class="arb-sig">En curso</span>':c.fin+'<span class="arb-scan-sub">'+c.X+' → '+c.Y+' · '+f2(c.rVta)+'%</span>')+'</td>'+
-        '<td>'+n0(c.iYq)+' '+c.Y+'<span class="arb-scan-sub">$ '+n0(c.iYv)+'</span></td>'+
-        '<td>'+(c.abierto?n0(c.iXq)+' '+c.X:n0(c.vYq)+' '+c.Y)+'</td>'+
-        '<td><b class="'+(c.abierto?'':(c.vn>=0?'pos':'neg'))+'">'+(c.abierto?'—':sg(c.vn)+' VN')+'</b></td>'+
-        '<td>'+(c.abierto?'—':'$ '+sg(c.total)+'<span class="arb-scan-sub">pesos libres $ '+sg(c.pesos)+'</span>')+'</td>'+
-        '<td><b class="'+(c.abierto?'':(c.pct>=0?'pos':'neg'))+'">'+(c.abierto?'—':f2(c.pct)+'%')+'</b>'+(c.abierto?'':'<span class="arb-scan-sub">'+c.dias+' día'+(c.dias===1?'':'s')+'</span>')+'</td>'+
-        '<td>'+(c.abierto||c.usd==null?'—':'USD '+sg(c.usd))+'</td>'+
-        '<td><button class="btn btn-sm" onclick="arbCicloOcultar(\''+c.key+'\')" title="No es un arbitraje: ocultarlo del historial">✕</button></td></tr>';
+    var L=arbCiclos(p).filter(function(c){ return !ARB_IGN[c.key]; }); if(!L.length) return;
+    var C=L.filter(function(c){ return !c.abierto; }), ab=L.filter(function(c){ return c.abierto; });
+    var g={par:L[0].A+'/'+L[0].B, A:L[0].A, B:L[0].B, L:L, n:C.length, abiertos:ab.length, comp:1, sum:0, pesos:0, usd:0, vn:{}, dias:0, mejor:null, ult:null};
+    C.slice().sort(function(a,b){ return a.iniIso<b.iniIso?-1:1; }).forEach(function(c){
+      if(c.pct!=null){ g.comp*=1+c.pct/100; g.sum+=c.pct; if(g.mejor==null||c.pct>g.mejor) g.mejor=c.pct; }
+      g.pesos+=c.total; g.usd+=c.usd||0; g.vn[c.Y]=(g.vn[c.Y]||0)+c.vn; g.dias+=c.dias||0; g.ult=c;
     });
+    g.acum=C.length?(g.comp-1)*100:null; g.prom=C.length?g.sum/C.length:null;
+    G.push(g);
   });
-  if(!filas) return '<div class="arb-scan-msg">Todavía no hay ciclos. Aparecen solos cuando cargás en Movimientos la ida (vendés un bono y comprás el otro el mismo día) y la vuelta de un par de la calculadora.</div>';
-  var res=Object.keys(tot).map(function(par){ var T=tot[par];
-    return '<span class="arb-cic-tot"><b>'+par+'</b> · '+T.n+' ciclo'+(T.n===1?'':'s')+' · '+Object.keys(T.vn).map(function(t){return sg(T.vn[t])+' VN '+t;}).join(' · ')+' · $ '+sg(T.pesos)+' · USD '+sg(T.usd)+'</span>'; }).join('');
+  if(!G.length) return '<div class="arb-scan-msg">Todavía no hay ciclos. Aparecen solos cuando cargás en Movimientos la ida (vendés un bono y comprás el otro el mismo día) y la vuelta de un par de la calculadora.</div>';
+  // Total de todos los pares
+  var T={n:0,pesos:0,usd:0,comp:1};
+  G.forEach(function(g){ T.n+=g.n; T.pesos+=g.pesos; T.usd+=g.usd; });
+  var h='';
+  if(G.length>1) h+='<div class="arb-cic-res"><span class="arb-cic-tot"><b>Todos los pares</b> · '+T.n+' ciclo'+(T.n===1?'':'s')+' · $ '+sg(T.pesos)+' · USD '+sg(T.usd)+'</span></div>';
+  G.forEach(function(g){
+    var open=!!ARB_CIC_OPEN[g.par];
+    h+='<div class="arb-cic-grp'+(open?' open':'')+'">';
+    h+='<button class="arb-cic-head" onclick="arbCicToggle(\''+g.par+'\')" aria-expanded="'+open+'" title="'+(open?'Ocultar':'Ver')+' los ciclos de '+g.par+'">';
+    h+='<span class="arb-cic-chev">'+(open?'▾':'▸')+'</span>';
+    h+='<span class="arb-cic-par"><span style="color:#a78bfa">'+g.A+'</span> / <span style="color:#448aff">'+g.B+'</span></span>';
+    h+='<span class="arb-cic-k"><span class="l">Acumulado</span><b class="big '+cl(g.acum)+'">'+sgp(g.acum)+'</b></span>';
+    h+='<span class="arb-cic-k"><span class="l">Ciclos</span><b>'+g.n+(g.abiertos?' <small class="arb-sig">+1 en curso</small>':'')+'</b></span>';
+    h+='<span class="arb-cic-k"><span class="l">Promedio por ciclo</span><b class="'+cl(g.prom)+'">'+sgp(g.prom)+'</b></span>';
+    h+='<span class="arb-cic-k"><span class="l">Mejor ciclo</span><b class="'+cl(g.mejor)+'">'+sgp(g.mejor)+'</b></span>';
+    h+='<span class="arb-cic-k"><span class="l">Nominales</span><b>'+Object.keys(g.vn).map(function(t){return sg(g.vn[t])+' '+t;}).join(' · ')+'</b></span>';
+    h+='<span class="arb-cic-k"><span class="l">Ganancia</span><b class="'+cl(g.pesos)+'">$ '+sg(g.pesos)+'</b><small>USD '+sg(g.usd)+'</small></span>';
+    h+='<span class="arb-cic-k"><span class="l">Último</span><b>'+(g.ult?g.ult.fin:'—')+'</b><small>'+(g.ult?sgp(g.ult.pct):'')+'</small></span>';
+    h+='</button>';
+    if(open){
+      h+='<div class="arb-scan-wrap"><table class="arb-scan arb-cic"><thead><tr><th>Ida</th><th>Vuelta</th><th>Vendiste</th><th>Volviste con</th><th>Nominales</th><th>Ganancia</th><th>% s/ vendido</th><th>Acumulado</th><th>USD</th><th></th></tr></thead><tbody>';
+      var acc=1, accDe={};
+      g.L.filter(function(c){return !c.abierto;}).slice().sort(function(a,b){ return a.iniIso<b.iniIso?-1:1; }).forEach(function(c){ if(c.pct!=null) acc*=1+c.pct/100; accDe[c.key]=(acc-1)*100; });
+      g.L.forEach(function(c){
+        h+='<tr class="'+(c.abierto?'abierto':'')+'">'+
+          '<td>'+c.ini+'<span class="arb-scan-sub">'+c.Y+' → '+c.X+' · '+f2(c.rIda)+'%</span></td>'+
+          '<td>'+(c.abierto?'<span class="arb-sig">En curso</span>':c.fin+'<span class="arb-scan-sub">'+c.X+' → '+c.Y+' · '+f2(c.rVta)+'%</span>')+'</td>'+
+          '<td>'+n0(c.iYq)+' '+c.Y+'<span class="arb-scan-sub">$ '+n0(c.iYv)+'</span></td>'+
+          '<td>'+(c.abierto?n0(c.iXq)+' '+c.X:n0(c.vYq)+' '+c.Y)+'</td>'+
+          '<td><b class="'+(c.abierto?'':cl(c.vn))+'">'+(c.abierto?'—':sg(c.vn)+' VN')+'</b></td>'+
+          '<td>'+(c.abierto?'—':'$ '+sg(c.total)+'<span class="arb-scan-sub">pesos libres $ '+sg(c.pesos)+'</span>')+'</td>'+
+          '<td><b class="'+(c.abierto?'':cl(c.pct))+'">'+(c.abierto?'—':sgp(c.pct))+'</b>'+(c.abierto?'':'<span class="arb-scan-sub">'+c.dias+' día'+(c.dias===1?'':'s')+'</span>')+'</td>'+
+          '<td>'+(c.abierto?'—':'<b class="'+cl(accDe[c.key])+'">'+sgp(accDe[c.key])+'</b>')+'</td>'+
+          '<td>'+(c.abierto||c.usd==null?'—':'USD '+sg(c.usd))+'</td>'+
+          '<td><button class="btn btn-sm" onclick="arbCicloOcultar(\''+c.key+'\')" title="No es un arbitraje: ocultarlo del historial">✕</button></td></tr>';
+      });
+      h+='</tbody></table></div>';
+    }
+    h+='</div>';
+  });
   var nIgn=Object.keys(ARB_IGN).length;
-  return (res?'<div class="arb-cic-res">'+res+'</div>':'')+
-    '<div class="arb-scan-wrap"><table class="arb-scan arb-cic"><thead><tr><th>Par</th><th>Ida</th><th>Vuelta</th><th>Vendiste</th><th>Volviste con</th><th>Nominales</th><th>Ganancia</th><th>% s/ vendido</th><th>USD</th><th></th></tr></thead><tbody>'+filas+'</tbody></table></div>'+
-    '<div class="arb-scan-msg">Sale de tus movimientos: la ida es el día en que vendés un bono del par y comprás el otro, y la vuelta cuando volvés a quedar en 0 del bono intermedio. Ganancia = pesos que te quedaron libres + nominales ganados al precio de la vuelta (menos comisiones si las cargaste). USD al MEP del día de la vuelta.'+(nIgn?' · <a href="#" onclick="arbCicloMostrarTodos();return false">Mostrar '+nIgn+' oculto'+(nIgn===1?'':'s')+'</a>':'')+'</div>';
+  h+='<div class="arb-scan-msg">Tocá un par para ver sus ciclos. Acumulado = los % de cada ciclo encadenados (lo que creció lo que rotás si reinvertís todo en cada vuelta). Los ciclos salen de tus movimientos: la ida es el día en que vendés un bono del par y comprás el otro, y la vuelta cuando volvés a quedar en 0 del bono intermedio. Ganancia = pesos libres + nominales ganados al precio de la vuelta (menos comisiones si las cargaste); USD al MEP del día de la vuelta.'+(nIgn?' · <a href="#" onclick="arbCicloMostrarTodos();return false">Mostrar '+nIgn+' oculto'+(nIgn===1?'':'s')+'</a>':'')+'</div>';
+  return h;
 }
 function arbCiclosCard(){
   var cont=document.getElementById('arb-container'); if(!cont) return;
