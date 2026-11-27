@@ -117,6 +117,11 @@ button.arb-src.man{background:none;border:none;padding:0;color:#ffd600;cursor:po
 .arb-sig{font-family:var(--sans);font-size:.7rem;color:var(--text2);white-space:nowrap}
 .arb-sig.op{background:#00c968;color:#06210f;font-weight:700;padding:2px 8px;border-radius:999px}
 .arb-sinten{color:var(--text3);font-style:italic}
+.arb-cic td b.pos{color:var(--accent)}
+.arb-cic td b.neg{color:var(--red)}
+.arb-cic tr.abierto td{background:rgba(255,214,0,.05)}
+.arb-cic-res{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.arb-cic-tot{font-family:var(--mono);font-size:.74rem;padding:4px 10px;border-radius:999px;background:rgba(0,201,104,.12);border:1px solid rgba(0,201,104,.35);color:var(--text)}
 .arb-input-name{font-weight:700;font-size:.81rem;color:var(--text);text-align:center}
 .topbar{display:flex;align-items:center;gap:0;padding:0 1.2rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:.68rem;font-family:var(--mono);color:var(--text3);flex-wrap:wrap;flex-shrink:0;height:32px}
 .topbar-item{display:flex;align-items:center;gap:.3rem;padding:0 .85rem;border-right:1px solid var(--border);height:100%}
@@ -1241,7 +1246,7 @@ window.PORTFOLIO_CONFIG={"vistaNueva": true, "persona": "Omar", "comisionBonos":
 };
 </script>
 <script src="../comun/datos.js?d=6"></script>
-<script src="../comun/portafolio.min.js?v=343"></script>
+<script src="../comun/portafolio.min.js?v=344"></script>
 <script>
 // ─── Funciones propias de Omar (pisan las del código común) ───
 // carteras Principal / Cocos / VetaJeep (selector, filtro y badge en Movimientos, Próximos Cobros siempre de Principal) y comparación con Bull

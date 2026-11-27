@@ -21,8 +21,9 @@ window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;_errA
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Versión de la app (única para los 5 portafolios) ───────────────────────
-var APP_VERSION=343, APP_VERSION_FECHA='24/11/2026';
+var APP_VERSION=344, APP_VERSION_FECHA='24/11/2026';
 var APP_CHANGELOG=[
+  'v344 | 2026-11-27 | Arbitraje: los pares de la calculadora se guardan en Supabase (config arb_pairs) y quedan iguales en la compu y el celular. Nuevo 📒 Historial de ciclos: sale solo de los movimientos (ida y vuelta de cada par) con ratios, nominales ganados, pesos, % sobre lo vendido y USD, más el total por par; ✕ para ocultar uno que no sea arbitraje.',
   'v343 | 2026-11-26 | Arbitraje: si no tenés nominales del bono que tendrías que vender, no avisa (ni el cartel ni el push) hasta que vuelvas a tener. Si tenés solo uno de los dos bonos del par, "Estoy en" sigue tu tenencia sola.',
   'v342 | 2026-11-26 | Portafolio: los recuadros de % ahora dicen si son anuales o diarios ("Anual · en el año" / "Del período" y "Diario · hoy"), en la vista completa y en la vista del celular.',
   'v341 | 2026-11-25 | Dividendos: nueva opción "En acciones" en Moneda. Se carga la cantidad recibida; suma esa cantidad a la tenencia con el mismo costo total (baja el PPC, con confirmación antes/después) y queda en Movimientos como "div. en acciones". No cuenta como renta en efectivo ni aparece en el diario.',
@@ -1109,7 +1110,7 @@ function showPage(id,btn){
   if(id==='tracker'){ initTracker(); try{dnRender();}catch(e){} }
   if(id==='dividendos') divPopulateSelect();
   if(id==='movimientos') resetMFechaHoy();
-  if(id==='arbitraje'){ arbRender(); var _av=document.getElementById('arb-aviso'); if(_av) _av.remove(); }
+  if(id==='arbitraje'){ arbRender(); try{arbCloudSync();}catch(e){} var _av=document.getElementById('arb-aviso'); if(_av) _av.remove(); }
   if(id==='rotaciones') rotRender();
   if(id==='balances') balRender();
   if(id==='evolucion') evoRender();
@@ -6409,11 +6410,12 @@ var ARB_PAIRS = [
   }
 ];
 
-function arbSave(){ try{localStorage.setItem((PFX+'arb_pairs'),JSON.stringify(ARB_PAIRS));}catch(e){} try{arbPushPublicar();}catch(e){} }
+function arbSave(){ try{localStorage.setItem((PFX+'arb_pairs'),JSON.stringify(ARB_PAIRS));localStorage.setItem(PFX+'arb_ign',JSON.stringify(ARB_IGN||{}));localStorage.setItem(PFX+'arb_ts',String(Date.now()));}catch(e){} try{arbPushPublicar();}catch(e){} try{arbCloudGuardar();}catch(e){} }
 function arbLoad(){
   try{
     var s=localStorage.getItem((PFX+'arb_pairs'));
     if(s){ ARB_PAIRS=JSON.parse(s); }
+    var ig=localStorage.getItem(PFX+'arb_ign'); if(ig) ARB_IGN=JSON.parse(ig)||{};
   }catch(e){}
 }
 
@@ -6770,8 +6772,127 @@ function arbPushPublicar(){
   _arbPushT=setTimeout(function(){ try{ sbSetConfig('push_arb',{ts:Date.now(),reglas:arbPushReglas()}); }catch(e){} },2500);
 }
 
+// ── ☁️ Pares de arbitraje en Supabase (config 'arb_pairs'), iguales en todos los dispositivos ──
+var ARB_IGN={}, _arbCloudT=null, _arbCloudOk=false;
+function arbCloudGuardar(){
+  if(typeof sbSetConfig!=='function') return;
+  clearTimeout(_arbCloudT);
+  _arbCloudT=setTimeout(function(){
+    var ts=0; try{ ts=+localStorage.getItem(PFX+'arb_ts')||Date.now(); }catch(e){ ts=Date.now(); }
+    try{ sbSetConfig('arb_pairs',{ts:ts,pairs:ARB_PAIRS,ign:ARB_IGN}); }catch(e){}
+  },2000);
+}
+async function arbCloudSync(){
+  if(typeof sbGetConfig!=='function') return;
+  try{
+    var c=await sbGetConfig('arb_pairs'); if(typeof c==='string'){ try{ c=JSON.parse(c); }catch(e){ c=null; } }
+    var lts=0, lp=null; try{ lts=+localStorage.getItem(PFX+'arb_ts')||0; lp=localStorage.getItem(PFX+'arb_pairs'); }catch(e){}
+    if(c&&Array.isArray(c.pairs)&&(+c.ts||0)>lts){
+      ARB_PAIRS=c.pairs; ARB_IGN=c.ign||{};
+      try{ localStorage.setItem(PFX+'arb_pairs',JSON.stringify(ARB_PAIRS)); localStorage.setItem(PFX+'arb_ign',JSON.stringify(ARB_IGN)); localStorage.setItem(PFX+'arb_ts',String(+c.ts)); }catch(e){}
+      var pg=document.getElementById('page-arbitraje'); if(pg&&pg.classList.contains('active')) arbRender();
+    } else if(lp&&(!c||lts>(+c.ts||0))){ arbCloudGuardar(); }
+    _arbCloudOk=true;
+  }catch(e){}
+}
+
+// ── 📒 Historial de ciclos de arbitraje (sale solo de los movimientos) ──
+// Un ciclo con X como bono intermedio e Y como origen: empieza el día en que, sin tener X, comprás X
+// y vendés Y el mismo día (ida); termina cuando volvés a quedar en 0 de X. La vuelta son los días
+// en que vendés X y comprás Y el mismo día. Las compras de Y en otros días no cuentan.
+function _arbIsoF(f){ var p=String(f||'').split('/'); return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):''; }
+function arbCiclos(pair){
+  var A=String(pair.a||'').toUpperCase(), B=String(pair.b||'').toUpperCase(); if(!A||!B||A===B) return [];
+  var ms=(movimientos||[]).filter(function(m){
+    if(!m||(m.tipo!=='compra'&&m.tipo!=='venta')) return false;
+    var t=String(m.ticker||'').toUpperCase(); if(t!==A&&t!==B) return false;
+    if(m.owner==='cristian') return false;
+    return typeof CARTERA_ACTIVA==='undefined'||(m.cartera||'principal')===CARTERA_ACTIVA;
+  }).map(function(m){ return {d:_arbIsoF(m.fecha),f:m.fecha,id:+m.id||0,t:String(m.ticker).toUpperCase(),tipo:m.tipo,q:+m.qty||0,px:+m.precioARS||0,com:+m.comision||0,div:!!m.divAcc}; })
+    .filter(function(m){ return m.d&&m.q>0; })
+    .sort(function(a,b){ return a.d<b.d?-1:a.d>b.d?1:a.id-b.id; });
+  var dias=[]; ms.forEach(function(m){ var u=dias[dias.length-1]; if(!u||u.d!==m.d){ u={d:m.d,f:m.f,L:[]}; dias.push(u); } u.L.push(m); });
+  var out=[];
+  [[A,B],[B,A]].forEach(function(xy){
+    var X=xy[0], Y=xy[1], hold=0, cur=null;
+    dias.forEach(function(dd){
+      var s=function(t,tp){ var q=0,v=0,c=0; dd.L.forEach(function(m){ if(m.t===t&&m.tipo===tp&&!m.div){ q+=m.q; v+=m.q*m.px; c+=m.com; } }); return {q:q,v:v,c:c}; };
+      var xb=s(X,'compra'), xs=s(X,'venta'), yb=s(Y,'compra'), ys=s(Y,'venta');
+      var xdiv=dd.L.filter(function(m){return m.t===X&&m.div;}).reduce(function(a,m){return a+m.q;},0);
+      if(!cur&&hold<=0.5&&xb.q>0&&ys.q>0) cur={X:X,Y:Y,A:A,B:B,ini:dd.f,iniIso:dd.d,fin:null,iYq:0,iYv:0,iXq:0,iXv:0,vXq:0,vXv:0,vYq:0,vYv:0,com:0};
+      if(cur){
+        if(xb.q>0&&ys.q>0){ cur.iYq+=ys.q; cur.iYv+=ys.v; cur.iXq+=xb.q; cur.iXv+=xb.v; cur.com+=xb.c+ys.c; }
+        if(xs.q>0&&yb.q>0){ cur.vXq+=xs.q; cur.vXv+=xs.v; cur.vYq+=yb.q; cur.vYv+=yb.v; cur.com+=xs.c+yb.c; }
+      }
+      hold+=xb.q+xdiv-xs.q;
+      if(cur&&hold<=0.5&&cur.vXq>0){ cur.fin=dd.f; cur.finIso=dd.d; out.push(cur); cur=null; }
+    });
+    if(cur&&cur.iYq>0){ cur.abierto=true; out.push(cur); }
+  });
+  out.forEach(function(c){
+    var pYi=c.iYq?c.iYv/c.iYq:0, pXi=c.iXq?c.iXv/c.iXq:0, pXv=c.vXq?c.vXv/c.vXq:0, pYv=c.vYq?c.vYv/c.vYq:0;
+    var rr=function(px,py){ return (px>0&&py>0)?(c.X===c.A?px/py:py/px)*100:null; };
+    c.rIda=rr(pXi,pYi); c.rVta=c.abierto?null:rr(pXv,pYv);
+    c.key=c.A+'/'+c.B+'|'+c.X+'|'+c.iniIso;
+    if(!c.abierto){
+      c.vn=c.vYq-c.iYq;
+      c.pesos=(c.iYv-c.iXv)+(c.vXv-c.vYv)-c.com;
+      c.total=c.pesos+c.vn*pYv;
+      c.pct=c.iYv>0?c.total/c.iYv*100:null;
+      var tc=(typeof getMEP==='function'&&getMEP(c.fin))||(typeof MEP_HOY!=='undefined'?MEP_HOY:0);
+      c.usd=tc>0?c.total/tc:null;
+      c.dias=Math.round((Date.parse(c.finIso)-Date.parse(c.iniIso))/86400000);
+    }
+  });
+  return out.sort(function(a,b){ return a.iniIso<b.iniIso?1:-1; });
+}
+function arbCiclosHtml(){
+  var f2=function(n){ return n==null?'—':n.toFixed(2).replace('.',','); };
+  var n0=function(n){ return Math.round(n).toLocaleString('es-AR'); };
+  var sg=function(n){ return (n>0?'+':n<0?'−':'')+n0(Math.abs(n)); };
+  var vistos={}, filas='', tot={};
+  ARB_PAIRS.forEach(function(p){
+    var k=[String(p.a).toUpperCase(),String(p.b).toUpperCase()].sort().join('/'); if(vistos[k]) return; vistos[k]=1;
+    arbCiclos(p).forEach(function(c){
+      if(ARB_IGN[c.key]) return;
+      var par=c.A+'/'+c.B;
+      if(!c.abierto){ var T=tot[par]=tot[par]||{n:0,vn:{},pesos:0,usd:0}; T.n++; T.vn[c.Y]=(T.vn[c.Y]||0)+c.vn; T.pesos+=c.total; T.usd+=c.usd||0; }
+      filas+='<tr class="'+(c.abierto?'abierto':'')+'"><td class="par"><span style="color:#a78bfa">'+c.A+'</span> / <span style="color:#448aff">'+c.B+'</span></td>'+
+        '<td>'+c.ini+'<span class="arb-scan-sub">'+c.Y+' → '+c.X+' · '+f2(c.rIda)+'%</span></td>'+
+        '<td>'+(c.abierto?'<span class="arb-sig">En curso</span>':c.fin+'<span class="arb-scan-sub">'+c.X+' → '+c.Y+' · '+f2(c.rVta)+'%</span>')+'</td>'+
+        '<td>'+n0(c.iYq)+' '+c.Y+'<span class="arb-scan-sub">$ '+n0(c.iYv)+'</span></td>'+
+        '<td>'+(c.abierto?n0(c.iXq)+' '+c.X:n0(c.vYq)+' '+c.Y)+'</td>'+
+        '<td><b class="'+(c.abierto?'':(c.vn>=0?'pos':'neg'))+'">'+(c.abierto?'—':sg(c.vn)+' VN')+'</b></td>'+
+        '<td>'+(c.abierto?'—':'$ '+sg(c.total)+'<span class="arb-scan-sub">pesos libres $ '+sg(c.pesos)+'</span>')+'</td>'+
+        '<td><b class="'+(c.abierto?'':(c.pct>=0?'pos':'neg'))+'">'+(c.abierto?'—':f2(c.pct)+'%')+'</b>'+(c.abierto?'':'<span class="arb-scan-sub">'+c.dias+' día'+(c.dias===1?'':'s')+'</span>')+'</td>'+
+        '<td>'+(c.abierto||c.usd==null?'—':'USD '+sg(c.usd))+'</td>'+
+        '<td><button class="btn btn-sm" onclick="arbCicloOcultar(\''+c.key+'\')" title="No es un arbitraje: ocultarlo del historial">✕</button></td></tr>';
+    });
+  });
+  if(!filas) return '<div class="arb-scan-msg">Todavía no hay ciclos. Aparecen solos cuando cargás en Movimientos la ida (vendés un bono y comprás el otro el mismo día) y la vuelta de un par de la calculadora.</div>';
+  var res=Object.keys(tot).map(function(par){ var T=tot[par];
+    return '<span class="arb-cic-tot"><b>'+par+'</b> · '+T.n+' ciclo'+(T.n===1?'':'s')+' · '+Object.keys(T.vn).map(function(t){return sg(T.vn[t])+' VN '+t;}).join(' · ')+' · $ '+sg(T.pesos)+' · USD '+sg(T.usd)+'</span>'; }).join('');
+  var nIgn=Object.keys(ARB_IGN).length;
+  return (res?'<div class="arb-cic-res">'+res+'</div>':'')+
+    '<div class="arb-scan-wrap"><table class="arb-scan arb-cic"><thead><tr><th>Par</th><th>Ida</th><th>Vuelta</th><th>Vendiste</th><th>Volviste con</th><th>Nominales</th><th>Ganancia</th><th>% s/ vendido</th><th>USD</th><th></th></tr></thead><tbody>'+filas+'</tbody></table></div>'+
+    '<div class="arb-scan-msg">Sale de tus movimientos: la ida es el día en que vendés un bono del par y comprás el otro, y la vuelta cuando volvés a quedar en 0 del bono intermedio. Ganancia = pesos que te quedaron libres + nominales ganados al precio de la vuelta (menos comisiones si las cargaste). USD al MEP del día de la vuelta.'+(nIgn?' · <a href="#" onclick="arbCicloMostrarTodos();return false">Mostrar '+nIgn+' oculto'+(nIgn===1?'':'s')+'</a>':'')+'</div>';
+}
+function arbCiclosCard(){
+  var cont=document.getElementById('arb-container'); if(!cont) return;
+  var card=document.getElementById('arb-cic-card');
+  if(!card){
+    var base=cont.closest('.card'); if(!base||!base.parentNode) return;
+    card=document.createElement('div'); card.className='card'; card.id='arb-cic-card'; card.style.marginTop='.6rem';
+    card.innerHTML='<div class="card-header"><span class="card-title">📒 Historial de ciclos</span></div><div class="card-body" style="padding:.45rem" id="arb-cic-body"></div>';
+    base.parentNode.insertBefore(card,base.nextSibling);
+  }
+  var b=document.getElementById('arb-cic-body'); if(b) b.innerHTML=arbCiclosHtml();
+}
+function arbCicloOcultar(k){ ARB_IGN[k]=1; arbSave(); arbCiclosCard(); }
+function arbCicloMostrarTodos(){ ARB_IGN={}; arbSave(); arbCiclosCard(); }
+
 // Arranca solo al cargar la página
-setTimeout(function(){ try{ arbLoad(); arbPuntasAuto(); if(arbHayReglas()) arbFetchPuntas(true); arbPushPublicar(); }catch(e){} },6000);
+setTimeout(function(){ try{ arbLoad(); arbCloudSync().then(function(){ try{ arbPuntasAuto(); if(arbHayReglas()) arbFetchPuntas(true); arbPushPublicar(); }catch(e){} }); }catch(e){} },6000);
 
 // Umbral de ida/vuelta: como factor (1,082) o como % (108,2). Devuelve el % o NaN.
 function arbCondVal(s){
@@ -6979,6 +7100,7 @@ function arbRender(){
   });
   container.innerHTML=html;
   try{ arbScanCard(); }catch(e){}
+  try{ arbCiclosCard(); }catch(e){}
   arbPuntasBar();
   arbFetchPuntas(false);
   arbPuntasAuto();
